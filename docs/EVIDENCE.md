@@ -437,3 +437,33 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   no title, 115.700 s. Encoded `libvorbis -q:a 5`, 48,000 Hz stereo; total output 2,718,641 bytes;
   ogg durations read ~0.1 s longer than source probes (decoder padding; tracker loop semantics
   unresolved, P2.14 concern).
+
+### EV-0033 - P3.8 fonts/UI/cursor: 15 bitmap fonts parsed and converted, verified in Godot
+- Date: 2026-10-15
+- Type: observation
+- Source: `tools\convert-fonts.ps1` (inputs: `docs\analysis\resources.json` + `data\*.txt`/`*.gif`
+  in the canonical install) and `tools\godot\verify_fonts.gd`; outputs: `assets_raw\fonts\`
+  (15 x `<ID>.fnt` + `<ID>.png` + `raw\` layers) + `assets_raw\fonts.json`; decision D-0007
+- Confidence: high (atlas choice validated by rect-extent fit on all 15; every font re-loads in
+  Godot with all expected chars present; verifier exit 0)
+- Notes: descriptor format decoded: `Define` blocks CharList/WidthList/RectList/OffsetList/
+  KerningPairs/KerningValues (cp1252) + trailer commands `LayerSetImage` (atlas name),
+  `LayerSetAscent` (baseline), `LayerSetCharWidths Main (' ') (N)` (explicit space width 3-10 px;
+  space is NOT in CharList), `LayerSetAscentPadding`, `LayerSetLineSpacingOffset`, `PointSize`.
+  Atlas resolution: 5 fonts use `data\<name>.gif` (JungleFever 10/12/15/17outline,
+  ContinuumBold12outline), 10 resolve via the underscore name (`_<name>.gif`); all 15 glyph-rect
+  extents (+offsets) fit their atlas exactly (maxExtent = atlas size - 1..2 px). On the 5
+  two-file fonts, base = thin fill layer and mask = expanded silhouette (JungleFever10outline
+  first 140 columns: base ink 484 px vs mask 728 px; "outline text" = tinted fill + dark ring).
+  Kerning: pairs are 2-char strings with backslash-escaped quotes (e.g. `"\",","\".` ->
+  ('"',','),('"','.')); BlambotPro8 has 155 pairs once unescaped; 6 fonts (ContinuumBold12,
+  ContinuumBold12outline, ContinuumBold14, ContinuumBold14outback, Pix118, Pix118Bold) contain no
+  kerning sections at all. Totals: 1,788 glyphs, 813 kerning pairs, 327 KB output. Three fonts
+  genuinely lack glyphs: ContinuumBold12outline (no `{`,`}`,`~`), ContinuumBold14 and
+  ContinuumBold14outback (no `{`,`}`). Godot verification: 15/15 load as FontFile, 1,803 per-font
+  char checks (all expected codes + space), all sample string widths > 0, exit 0. Cursors:
+  manifest `CURSOR_POINTER/HAND/DRAGGING/TEXT` + `CROSSHAIR` (and `HELPARROW` = `arrow1.gif`) are
+  plain manifest Images already extracted pixel-exact in P3.3 - no conversion needed; P4 assigns
+  them via custom mouse cursors. Outside the manifest, `drm\common\fonts\` holds 5 more Arial
+  descriptors + underscore-only PNG atlases (DRM dialog layer, EV-0020) - inventoried, NOT
+  converted (DRM dialogs are out of remake scope unless P2.13 says otherwise).

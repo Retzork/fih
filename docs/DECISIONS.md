@@ -42,6 +42,19 @@
   imports directly in Godot. On-disk leftovers check: installed `bass.dll` is NOT imported
   statically by the exe (EV-0011), so nothing in this pipeline depends on it.
 
+### D-0007 - Font storage & composition (SexyApp bitmap fonts -> BMFont)
+- Date: 2026-10-15
+- Decision: Each font emits one Godot page PNG composed as RGB = base atlas pixel (or underscore
+  fallback atlas) and A = luminance of the mask atlas (or of the atlas itself when there is no
+  distinct mask), plus one BMFont-text `.fnt` (space glyph from `LayerSetCharWidths`;
+  `base` = `LayerSetAscent`; `lineHeight` = atlas cell height). Raw base/mask GIFs are kept 1:1
+  under `assets_raw\fonts\raw\`; all raw metric fields stay in `fonts.json`.
+- Why: reproduces the original two-image draw model (colorize/mul with alpha mask, which yields
+  the tint-fill + dark-outline look of the outline fonts) and imports directly in Godot
+  (EV-0033). Raw layers preserved so P4 can switch to explicit two-pass outline rendering if
+  P2.12 proves the engine tints layers separately. Line-advance semantics
+  (AscentPadding/LineSpacingOffset) are approximations until P2.12.
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15

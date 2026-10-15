@@ -1,6 +1,6 @@
 # Phase 3 notes - asset extraction & pipeline
 
-Status: P3.1-P3.7 complete (2026-10-15); EV-0024..EV-0032. P3.8 (fonts/UI/cursor) pending.
+Status: P3.1-P3.8 COMPLETE (2026-10-15); EV-0024..EV-0033. Phase 3 done - next is P2.1.
 Read `AGENTS.md` + `docs/PLAN.md` first; exact claims live in `docs/EVIDENCE.md`.
 
 ## Tools built
@@ -13,6 +13,8 @@ Read `AGENTS.md` + `docs/PLAN.md` first; exact claims live in `docs/EVIDENCE.md`
 | `tools/godot/gen_spriteframes.gd` | Godot headless SpriteFrames generator from the extraction manifest (P3.5) | `resources/sprites/<ID>.tres` |
 | `tools/extract-audio.ps1` | Sounds: copy `.ogg` 1:1, decode `.au` -> WAV (P3.6) | `assets_raw/sounds/`, `assets_raw/audio.json` |
 | `tools/decode-music.ps1` | Music: `.mo3` -> OGG via ffmpeg/libopenmpt (P3.7) | `assets_raw/music/`, `assets_raw/music.json` |
+| `tools/convert-fonts.ps1` | Parse SexyApp font descriptors, validate atlases, compose pages + BMFont `.fnt` (P3.8) | `assets_raw/fonts/`, `assets_raw/fonts.json` |
+| `tools/godot/verify_fonts.gd` | Headless Godot reload check of every `.fnt` vs its char list (P3.8) | stdout report, exit code |
 
 Run from the project root with `powershell -NoProfile -ExecutionPolicy Bypass -File tools/<tool>.ps1`.
 
@@ -84,6 +86,23 @@ Run from the project root with `powershell -NoProfile -ExecutionPolicy Bypass -F
   (115.70 s, no title). Tracker loop semantics unresolved (P2.14 concern). Side note:
   `tools/pe-imports.ps1` fails on `bass.dll` (import-walk ArgumentOutOfRangeException) - the
   export-listing route was retired, not needed.
+
+## P3.8 - fonts / UI / cursors (EV-0033, D-0007)
+
+- 15 SexyApp bitmap-font descriptors (`data\*.txt`, cp1252) parsed: CharList/WidthList/RectList/
+  OffsetList/KerningPairs/KerningValues + trailer (LayerSetImage/Ascent/CharWidths/pad/spacing/
+  PointSize). Space is never in CharList - it comes from `LayerSetCharWidths Main (' ') (N)`.
+- Atlas: `LayerSetImage` name -> `data\<name>.gif`, else `_<name>.gif`; choice validated by rect
+  (+offset) extent fit for all 15. 5 fonts have base+mask pairs (fill + expanded outline
+  silhouette); 10 are underscore-only. Line metrics: `.fnt base` = LayerSetAscent, `lineHeight` =
+  cell height; raw pad/spacing fields kept in `fonts.json` (approximation until P2.12).
+- Kerning tokens are 2-char strings with `\"` escapes; 813 pairs total; 6 fonts have none.
+- Outputs: `assets_raw/fonts/<ID>.fnt` + `<ID>.png` (composed RGB=base, A=lum(mask|self)) +
+  `raw/` layer copies + `fonts.json` (327 KB). Godot verify: 15/15 load, 1,803 char checks, exit 0.
+- Cursors: `CURSOR_*` + `CROSSHAIR` + `HELPARROW` (`arrow1.gif`) are regular manifest Images -
+  already in `assets_raw/images/` from P3.3; P4 uses them as custom mouse cursors (no extra
+  conversion). Inventory only: `drm\common\fonts\` (5 Arial descriptors + underscore PNG atlases,
+  DRM dialog layer) - NOT converted; revisit only if P2.13 pulls in the DRM dialogs.
 
 ## Extraction rules for P3.3 (decided)
 

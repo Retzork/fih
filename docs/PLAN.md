@@ -1,8 +1,7 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-15 (PHASE 3 IN PROGRESS: P3.1-P3.7 done; EV ledger through EV-0032).
-Next: P3.8 fonts/UI/cursor assets inventory + conversion (last P3 task).
-After P3: P2.1 frame-loop entry-point recon, then continue P2 top-down.
+Last updated: 2026-10-15 (PHASE 3 COMPLETE: P3.1-P3.8 done; EV ledger through EV-0033).
+Next: P2.1 frame-loop & timestep entry-point recon (then continue P2 top-down).
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -13,7 +12,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
 | P2 | Reverse engineer game systems | 0 | 16 | `[ ]` |
-| P3 | Asset extraction & pipeline | 7 | 8 | `[~]` |
+| P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
 
@@ -99,7 +98,9 @@ will confirm the actual rosters):
   `pcm_s16le`), 0 probe failures, 752 KB; command per file in `audio.json`. -> EV-0031 (2026-10-15)
 - [x] **P3.7** Music: 3 `.mo3` -> OGG via ffmpeg/libopenmpt (`libvorbis -q:a 5`), 3/3 verified,
   2.7 MB; tooling decision D-0006. -> EV-0032 (2026-10-15)
-- [ ] **P3.8** Fonts/UI/cursor assets inventory + conversion
+- [x] **P3.8** Fonts/UI/cursor: 15 SexyApp bitmap fonts parsed + converted (BMFont `.fnt` + composed
+  page PNGs, 1,788 glyphs, 813 kerns; atlas/extents validated), Godot verify 15/15 exit 0; cursors
+  already extracted as images in P3.3 (no conversion). -> EV-0033, D-0007 (2026-10-15)
 
 ## P4 - Godot implementation
 
