@@ -1,0 +1,81 @@
+# AGENTS.md - agent handoff protocol
+
+**Read this file first.** It is the entry point for any agent session (any tool or model)
+continuing this project. The docs under `docs/` are the single source of truth: if it is not
+written there, it did not happen.
+
+## What this is
+
+Remake of **Insaniquarium Deluxe v1.1 (Steam)** in **Godot 4.7.1**. The original has no source
+code; all behavioral claims come from binary analysis (REA + Ghidra, read-only) and file
+inspection. Human owner: Fauzi.
+
+## Reading order (start of every session)
+
+1. `docs/PLAN.md` - master task list with statuses and evidence refs. **Source of truth for progress.**
+2. `docs/TARGET.md` - target identity (paths, SHA-256s), environment, tool paths.
+3. `docs/EVIDENCE.md` - append-only ledger of verified claims (`EV-NNNN`).
+4. `docs/DECISIONS.md` - settled decisions (`D-NNNN`) and open questions (`Q-NNNN`).
+5. `docs/analysis/notes/` - per-subsystem investigation notes.
+
+## Hard rules
+
+1. **Read-only target.** Never modify, patch, rename, or write inside the game install
+   `C:\Games\Steam\steamapps\common\Insaniquarium Deluxe`. REA imports its own private copies.
+2. **Evidence first.** Every completed PLAN task records date + `EV-` refs on its line. Label
+   observations / inferences / unknowns exactly as `docs/EVIDENCE.md` defines. Static analysis
+   never proves runtime behavior.
+3. **Append-only evidence.** Never edit or delete existing `EV-NNNN` entries; correct them with
+   a new entry that cites the old ID. Never renumber `EV-`/`D-`/`Q-` sequences.
+4. **No invented facts.** If a search found nothing, record the bounded search (pattern, range)
+   as an explicit unknown. Never guess addresses, constants, or behavior.
+5. **Keep docs current as you go**, not only at session end: tick tasks, add evidence, update
+   the PLAN summary counts and its `Last updated` header (including its `Next:` pointer).
+6. **Personal-use assets.** Extracted game assets stay in this project only (Q-0006); do not
+   publish them.
+
+## Environment (verified 2026-10-15; re-verify before trusting)
+
+- Node 24.16.0, npm 12.2.0, `rea-agents` 6.5.0.
+- Ghidra 12.1.4 at `C:\tools\ghidra_12.1.4_PUBLIC`; JDK 21 Temurin at
+  `C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot`; provider `ghidra` (Windows
+  Ghidra P0 boundary: read-only, x86/x86-64 PE only).
+- Godot 4.7.1 stable: `C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe` (this project
+  imports/boots headless, exit 0).
+- REA reference: repo `C:\Users\Fauzi\Documents\project\rea\` - skill at
+  `.agents\skills\reverse-engineer-anything\SKILL.md`, docs at `docs\cli.md`,
+  `docs\native-investigation.md`, `docs\windows-ghidra-p0.md`.
+- Canonical target exe: `C:\Games\Steam\steamapps\common\Insaniquarium Deluxe\Insaniquarium.exe`.
+  The parent-folder copy (`...\project\Insaniquarium Deluxe\`) is byte-identical for the exe and
+  `bass.dll` but is NOT canonical (D-0001, EV-0007).
+
+## Running REA (CLI route)
+
+Always work from the project root and go through the wrapper (it sets `GHIDRA_INSTALL_DIR`,
+`JAVA_HOME`, `REA_ANALYSIS_PROVIDER` for the call):
+
+```powershell
+$exe  = "C:\Games\Steam\steamapps\common\Insaniquarium Deluxe\Insaniquarium.exe"
+$snap = "docs\analysis\snapshots\insaniquarium.json"
+
+& .\tools\rea.ps1 analyze   $exe --provider ghidra --json --snapshot $snap
+& .\tools\rea.ps1 search    $exe "<pattern>" --kind strings --provider ghidra --json --snapshot $snap
+& .\tools\rea.ps1 function  $exe 0xADDRESS --provider ghidra --json --snapshot $snap
+& .\tools\rea.ps1 decompile $exe 0xADDRESS --provider ghidra --json --snapshot $snap
+```
+
+- **Always pass `--snapshot`**: results are cached across sessions; identical queries become
+  free. New queries still run Ghidra (cold import, deadline ~330 s) - use tool timeouts >= 600 s.
+- Do not repeat an identical query whose result is already recorded. Reuse the snapshot,
+  exported JSON, or notes instead (REA skill rule).
+- Save bulky outputs as JSON under `docs\analysis\snapshots\` or `docs\evidence\`, then cite
+  the path + key excerpts in EVIDENCE.md. Quote addresses and hex exactly as returned.
+- MCP tools are not registered in opencode yet (P0.10 / Q-0007); use this CLI route.
+
+## Session end checklist
+
+- [ ] PLAN.md: statuses, dates, EV refs, summary counts, `Last updated` + `Next:` line.
+- [ ] EVIDENCE.md: appended entries for every new claim.
+- [ ] DECISIONS.md: new decisions/questions recorded.
+- [ ] Raw outputs saved under `docs/analysis/` or `docs/evidence/` and referenced.
+- [ ] Blocked tasks marked `[!]` with the exact blocker and what would unblock them.
