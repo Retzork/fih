@@ -465,5 +465,158 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   manifest `CURSOR_POINTER/HAND/DRAGGING/TEXT` + `CROSSHAIR` (and `HELPARROW` = `arrow1.gif`) are
   plain manifest Images already extracted pixel-exact in P3.3 - no conversion needed; P4 assigns
   them via custom mouse cursors. Outside the manifest, `drm\common\fonts\` holds 5 more Arial
-  descriptors + underscore-only PNG atlases (DRM dialog layer, EV-0020) - inventoried, NOT
-  converted (DRM dialogs are out of remake scope unless P2.13 says otherwise).
+   descriptors + underscore-only PNG atlases (DRM dialog layer, EV-0020) - inventoried, NOT
+   converted (DRM dialogs are out of remake scope unless P2.13 says otherwise).
+
+### EV-0034 - P2.1: main loop is a fixed-timestep 10 ms (100 Hz) loop in SexyAppBase::Process
+- Date: 2026-10-15
+- Type: observation (assembly/pseudocode); inference (object-layout naming)
+- Source: REA `decompile`/`instructions`/`function` on canonical exe:
+  `FUN_0049f1b4` (`0x49f1b4`), ctor `FUN_004a259f` (`0x4a259f`, inline `0x4a26af`);
+  raw: `docs/evidence/p2.1-process-instructions.json`, `p2.1-setter-4a26af.json`
+- Confidence: high for instructions/constants; naming follows SexyAppFramework conventions
+- Notes: loop reads `interval = this+0x44`, `last = this+0x50`, clock = `timeGetTime` (IAT
+  `0x5163f8`); per pass runs at most 10 updates; each update: if `now - last < interval` call
+  virtual `[EAX+0x1c]` (site `0x49f344`), advance `last += interval`, clamp `last = now - 1000`
+  when behind >1000 ms, increment frame count; else catch-up `Sleep(interval - (now - last))`
+  when `[this+0x6e]` set. Ctor sets `this+0x44 = 10` (`MOV dword ptr [ESI+0x44], 0xA` @
+  `0x4a26af`) -> **10 ms tick (100 logic updates/s)**; `this+0x40 = 0`; `this+0x70 = 0.85`
+  double read from `0x51bf00` (update multiplier); `this+0x10/0x14 = 0x280/0x1e0` (640x480).
+  Driver: DRM wrapper WinMain `FUN_004067cd` (`0x4067cd`) calls `FUN_0049f1b4(DAT_0055fbc0)`
+  after each message dispatch. Does NOT establish the Lua-side per-frame hook or the runtime
+  cadence on original hardware.
+
+### EV-0035 - P2.1: FPS overlay computes frames-per-1000ms (IMUL 0x3e8); debug string `FPS: %d`
+- Date: 2026-10-15
+- Type: observation
+- Source: REA `search`/`decompile`/`instructions`: string `FPS: %d` at `0x51bdec` (the only
+  "fps" string hit); draw `FUN_0049fdf1` (`0x49fdf1`), xref site `0x49ff64`; raw:
+  `docs/evidence/p2.1-fps-strings.json`, `p2.1-fps-draw.json`, `p2.1-fps-instructions.json`
+- Confidence: high
+- Notes: global frame counter `DAT_0055fbb8` (incremented per Process pass), reset every
+  1000 ms; FPS = `IMUL EAX,EAX,0x3e8` (x1000) / elapsed seconds (`0x4beb79` perf timer),
+  `FADD 0.5` (`0x539e78` double), int; drawn via `FPS: %d`. The 1000 ms threshold is baked in
+  FPU code - no stored 1000.0 double/float anywhere in the image (bounded negative: full-file
+  search for `00 00 00 00 00 00 8F 40` and `00 00 7A 44` = 0 hits). Overlay gated by byte
+  `DAT_0055fbc8`; exact enable point not yet located.
+
+### EV-0036 - P2.1: timing primitives - QueryPerformanceCounter timer class + timeGetTime
+- Date: 2026-10-15
+- Type: observation
+- Source: REA `instructions`/`decompile`; raw: `docs/evidence/p2.1-timer-primitive.json`,
+  `p2.1-timer-query.json`
+- Confidence: high for the routines; medium for class-identity naming
+- Notes: perf timer reset `FUN_004beb59` sets `[this+0x10] = 1` and calls
+  `QueryPerformanceCounter` (IAT `0x5160e0`); elapsed `FUN_004beb79` returns double seconds at
+  `[this+0x8]` (lazy init via `0x4beb0f`). Loop clock = WINMM `timeGetTime` (IAT `0x5163f8`).
+  `Sleep` IAT = `0x5161ec`; all `Sleep(1)` call sites resolved: `0x413ff5`/`0x41417a` (HTTP
+  transfer thread wait loops), `0x49dbe9` (worker thread spawn), `0x49f395` (Process catch-up,
+  see EV-0034); CRT `__malloc_crt` retry sleep chain at `0x4f2220+`. No DDraw/DSound timing.
+  Vtable anchors observed: arrays in `.rdata` at `0x516804`, `0x51be94`, `0x51bf3c`, `0x534934`
+  contain `FUN_004a002d` (frame gate); `SexyApp` vftables at `0x51bf1c`/`0x51bf0c` (from
+  `0x4a2a5f`), `SexyAppBase` at `0x51bd5c`/`0x51be74`/`0x51be68` (from
+  `0x4a259f`).
+
+### EV-0037 - Wrapper PE resources hold no scripts: DRM metadata + UI only
+- Date: 2026-10-16
+- Type: observation
+- Source: REA `inspect-pe-resources` on the canonical wrapper exe; raw:
+  `docs/evidence/p2.2-pe-resources.json`
+- Confidence: high
+- Notes: 18 resources total: custom `DATA/__GDF_XML` (3,280 B - DRM "Game Definition File"
+  XML), 12x `RT_ICON`, `RT_MENU`, `RT_DIALOG`, `RT_GROUP_ICON` (IDI_MAIN_ICON), `RT_VERSION`,
+  `RT_MANIFEST`. No RCDATA / script / Lua payloads of any size; rules out PE-resource storage
+  for a gameplay script layer. (`crash.txt` identifies the image as module `popcapgame1.exe`,
+  per EV-0010.)
+
+### EV-0038 - `drm\common\scripts\*.luc` = wide-string Lua 5.0.2 bytecode; DRM wrapper app only
+- Date: 2026-10-16
+- Type: observation
+- Source: byte-level header reads + full-file wide-string extraction over the 14 `.luc` files
+  in `C:\Games\Steam\steamapps\common\Insaniquarium Deluxe\drm\common\scripts\`; wrapper-exe
+  string search (REA) for `\drm\common\scripts\main.lua` etc. Extracted wide strings (1,060):
+  `docs/evidence/p2.2-luc-strings.txt`, cross-checked against the module string inventory
+  `docs/evidence/p2.2-game-module-strings.txt`
+- Confidence: high for format and for "wrapper-only" scope; medium for exact VM dialect
+- Notes: every `.luc` begins `1B 4C 75 61` + version byte `0x56` (non-stock 5.0.2 = `0x51`),
+  format byte `0x01`; all embedded strings, including source names (`@common\scripts\Game.lua`,
+  `main.lua`, ...) are UTF-16LE, so this is a **wide-string rebuild of Lua 5.0.2**. String
+  vocabulary is exclusively e-commerce/DRM app content: TrialScreen/BuyScreen/ExpireScreen,
+  `CheckSignature`, `drm.xml`, `gCheckSignatures`, LuaWidget/Layout/DProps/Bullets framework -
+  no fish/tank/game vocabulary. Wrapper exe host string: `\drm\common\scripts\main.lua`
+  @ 0x534884; Lua console/error strings at 0x535b40/0x535d48/0x535fec. Refines EV-0020/EV-0023
+  (compiled Lua layer) and EV-0019 (game vocabulary absent from the outer image).
+
+### EV-0039 - Canonical exe is a dual image: DRM wrapper + embedded full game module
+- Date: 2026-10-16
+- Type: observation
+- Source: PE section parse + byte reads of the canonical exe; deterministic carving via
+  `tools\extract-game-module.ps1`; string verification against
+  `docs\evidence\p2.2-game-module-strings.txt`; fresh REA string search over the whole wrapper
+  image (`docs/evidence/p2.2-gamewords-strings.json`)
+- Confidence: high
+- Notes: outer PE has 4 sections ending at file 0x188000; the trailing 0x214C38 bytes are an
+  overlay starting with ASCII `!popcapdrmprotect!` at 0x188000. A complete PE32 image starts at
+  file 0x1881A2 (MZ, e_lfanew 0xF0, ImageBase 0x400000, entry RVA 0x167F2E) and extends to EOF:
+  **2,181,782 bytes**, SHA-256
+  `33f34bae5eeee213c2a3819a13a4515c99a357f4247d42e5314da20621efe2c4`; sections `.text`
+  0x401000 (VS 0x1948FC), `.rdata` 0x596000 (0x481DC), `.data` 0x5DF000 (0x43B9C), `.rsrc`
+  0x623000 (0x28B44). Game text lives here: "Fish are about to die of hunger! Click on
+  aquarium!" @ module 0x598D14, pet bios, `IMAGE_*`/`SOUND_*` ids. The wrapper image itself has
+  0 hits for the fish/pet vocabulary. Carved read-only copy:
+  `docs\analysis\snapshots\insaniquarium-game-module.exe` (gitignored). Install untouched
+  (D-0004, Q-0006).
+
+### EV-0040 - Game module Ghidra overview (new snapshot `insaniquarium-game-module`)
+- Date: 2026-10-16
+- Type: observation
+- Source: REA `analyze` on the module; raw: `docs/evidence/p2.2-game-module-analyze.json`;
+  snapshot: `docs/analysis/snapshots/insaniquarium-game-module.json`
+- Confidence: high
+- Notes: 4 RAM segments (headers + .text/.rdata/.data/.rsrc); procedure_count 9,407;
+  string_count 4,021 (Ghidra-defined string data - not the full inventory; a byte-level local
+  scan found 17,849 strings >= 4 chars with VA mapping in
+  `docs/evidence/p2.2-game-module-strings.txt`). All module queries reuse this snapshot.
+
+### EV-0041 - Game-module MSVC RTTI map: 218 classes / 251 vtables (tool + TSV)
+- Date: 2026-10-16
+- Type: observation (addresses deterministic); inference (slot roles until decompiled)
+- Source: `tools\rtti-classmap.ps1` (byte-level chain: name string -> TypeDescriptor
+  `{vftable, spare=0, name inline at +8}` -> CompleteObjectLocator -> vtable with
+  `vtable[-4] = COL`); output: `docs/evidence/p2.2-module-rtti-classes.txt`; cross-ref string
+  inventory `docs/evidence/p2.2-game-module-strings.txt`
+- Confidence: high for class addresses; medium for slot semantics
+- Notes: 218 classes / 218 descriptors / 1054 locators / 251 recovered vtables. Selected
+  (vtable = slot-0 address): `GameObject` 0x596844, `Fish` 0x597D54 (desc 0x5DF768),
+  `DeadFish` 0x597BFC, `Food` 0x59817C, `Coin` 0x597964, `Alien` 0x59740C, `Breeder` 0x597814,
+  `Grubber` 0x59698C, `Larva` 0x596AD4, `Missle` 0x596C1C, `Penta` 0x596EE4, `Shadow` 0x59702C,
+  `Shot` 0x597174, `Warp` 0x5972C4, `Ultra` 0x59872C, `Gekko` 0x5982C4, `Oscar` 0x59843C,
+  `SylvesterFish` 0x5985BC, `FishTypePet` 0x597EC4, `BubbleMgr` 0x59D5B4, `TankScreen` 0x5A18B0
+  (7 slots) + 0x5A18D4 (64 slots). Screens (Title/Store/Hatch/Pets/SimFish/Help/HighScore/
+  Interlude/Story/Bonus/SimSetup) and widgets (FishButtonWidget/PetButtonWidget/MoneyDialog/
+  PetDialog/FishNamingDialog/...) also mapped. Refines EV-0009/EV-0013 (wrapper RTTI) with the
+  actual game class map. Tool caveat: slot walk capped at 64.
+
+### EV-0042 - P2.2: `Fish::Update` (slot 22 = 0x4F6970) + hover/facing slot 26 (0x4E4A90)
+- Date: 2026-10-16
+- Type: observation (pseudocode/constants); inference (field naming, path semantics)
+- Source: REA `function` on module: `docs/evidence/p2.2-fish-4F6970.json` (6.1 MB dossier) and
+  `docs/evidence/p2.2-fish-4E4A90.json`; vtable identity from EV-0041; full anatomy in
+  `docs/analysis/notes/p2.2-tank-sim.md` (sections 4-6)
+- Confidence: high for code/constants; medium for names
+- Notes: `Fish` (vtable 0x597D54) overrides slots 0 (0x4F0CB0), 22 (0x4F6970, 4,440 B, 0 call
+  sites - vtable-only), 26 (0x4E4A90, 381 B) vs `GameObject`; `Ultra` inherits 22/26, `DeadFish`
+  22=0x4F64E0, `Food` 22=0x4F8AA0, `Coin` 22=0x4F5050. Doubles: x@+0x158, y@+0x160 (+y down),
+  vx@+0x168, vy@+0x170, speed divisor@+0x180; ints: x/y@+0x30/+0x34, tank*@+0x88 (manager
+  +0x730; pause +0x94), bounds x@+0x194/+0x19C, y floor@+0x198, ceiling@+0x190; swim mode
+  @+0x1AC (0-4, 0x7B) with 30/39/40/50-frame timers, per-40-frame vel steps (±0.5/±1/±1.3),
+  mode presets vy +0.5 / -8.0, drag 0.95, wall bounce margins 20, `y>240 → mode 0`; random mode
+  reroll ~10 % per 20 frames; food-approach steering (dead bands ±5/±10 px: vx steps ±0.05/±0.2/
+  ±1.3 cap ±4, vy aim = food.y - 20, steps 0.7/-0.5/1.3/-1.0, caps +4/-3) gated by target
+  predicate (manager+0x174) + flag +0x229; cursor/global attractor path via `DAT_005e89d0`/
+  `DAT_005e89d4`/`DAT_005e89d8` (direct move, dead zone ±5, band ±50). Slot 26: hover check vs
+  the same globals (±8 px) toggling a double flag on `this[0x25]+0x168` (0/1), then virtual
+  slot 83 (`*this+0x14c`)(arg, flip) with flip from `+0xF5` or facing `[0x71]`; extra call
+  `FUN_004e1400(arg, 0)` when `+0xC4` set - candidate: draw with flip + overlay. Virtual slots
+  used inside Update: 41 (arg = RNG), 81 (+0x144, when target predicate false), 82 (+0x148,
+  suppress gate), 89 (+0x164).

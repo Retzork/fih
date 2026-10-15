@@ -1,6 +1,6 @@
 # Target dossier - Insaniquarium Deluxe v1.1 (Steam)
 
-Last verified: 2026-10-15
+Last verified: 2026-10-16
 
 ## Game (canonical analysis target - READ ONLY)
 
@@ -52,7 +52,15 @@ Other root files: `crash.txt`, `drmss.jpg`, `license.txt`, `readme.html`.
   `properties\resources.xml` (333 IDs; 30 pets, 9 aliens, 6 tank sets) - EV-0019, EV-0022.
   `properties\partner.xml`: 640x480, Steam appid 3320, ScrExe `WinFish_Scr.exe` - EV-0021.
 - Wrapper layer on disk: `drm\` folder (config XMLs + `.sig`, DRM screens, 14 compiled custom-Lua
-  `.luc` scripts) - EV-0020, EV-0023.
+  `.luc` scripts - wide-string Lua 5.0.2 dialect, EV-0038) - EV-0020, EV-0023.
+- **Embedded game module** (D-0009, EV-0039): the outer image is only the DRM/LuaApp wrapper
+  (file 0 - 0x188000); the actual game is a full PE32 embedded in the overlay (marker
+  `!popcapdrmprotect!` at 0x188000, module MZ at file 0x1881A2, 2,181,782 bytes, ImageBase
+  0x400000, entry RVA 0x167F2E, SHA-256
+  `33f34bae5eeee213c2a3819a13a4515c99a357f4247d42e5314da20621efe2c4`). Carved read-only copy:
+  `docs\analysis\snapshots\insaniquarium-game-module.exe` (gitignored; regenerate with
+  `tools\extract-game-module.ps1`). Game classes + strings live here (RTTI map: 218 classes,
+  `docs\evidence\p2.2-module-rtti-classes.txt`); P2 cites module VAs.
 
 ## Remake project
 

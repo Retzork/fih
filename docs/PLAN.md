@@ -1,8 +1,10 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-15 (PHASE 3 COMPLETE: P3.1-P3.8 done; EV ledger through EV-0033).
-Next: P2.1 frame-loop & timestep entry-point recon (then P2 top-down; Phase 2 closes with P2.18
-`docs\SPECS.md` per D-0008; asset-side contract for P4 is `docs\PIPELINE.md`).
+Last updated: 2026-10-16 (P2.2 in progress: game logic found in an embedded module inside the exe
+- carved + RTTI-mapped; `Fish::Update` (swim AI + food approach) and hover/facing slot located;
+EV-0037..EV-0042; note `docs\analysis\notes\p2.2-tank-sim.md`).
+Next: finish P2.2 (mode/slot semantics, species field, tank bounds) - then P2.3 feeding.
+Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -12,7 +14,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 0 | 18 | `[ ]` |
+| P2 | Reverse engineer game systems | 1 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -65,8 +67,14 @@ notes file + EV entries. Every system note MUST end with an "Implementation spec
 (constants+addresses, formulas, timings, state machines - see D-0008). Candidate systems (adjust
 as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
 
-- [ ] **P2.1** Frame loop & timestep (SexyAppFramework update cadence, dt handling, FPS target)
-- [ ] **P2.2** Tank simulation: fish swim/turn motion, tank bounds, direction/facing logic
+- [x] **P2.1** Frame loop & timestep: `SexyAppBase::Process` (`0x49f1b4`) = fixed 10 ms tick
+  (100 Hz), max 10 updates/message, catch-up Sleep, `timeGetTime` clock; ctor defaults
+  (640x480, 0.85 multiplier); FPS overlay `0x49fdf1` (1000 ms window). -> EV-0034, EV-0035,
+  EV-0036; notes `docs\analysis\notes\p2.1-frameloop.md` (2026-10-15)
+- [~] **P2.2** Tank simulation: fish swim/turn motion, tank bounds, direction/facing logic.
+  (2026-10-16: game module carved from exe + RTTI map (EV-0039..EV-0041); `Fish::Update`
+  0x4F6970 + slot 26 0x4E4A90 decompiled (EV-0042); note `docs\analysis\notes\p2.2-tank-sim.md`.
+  Open: mode/slot semantics, species field, module tick-rate re-check.)
 - [ ] **P2.3** Feeding: food drop physics, hunger/satiety timers, eating states, coin spawn rules
 - [ ] **P2.4** Fish growth & death: guppy -> carnivore -> ultravore stages, starvation, drops
 - [ ] **P2.5** Economy: coin values/denominations, pickup logic, money display, store prices
@@ -138,3 +146,6 @@ P2.18 lands) before starting; P4 tasks below assume both exist.
 ## Backlog / ideas (not committed)
 
 - Widescreen/HD layout (see Q-0005), mod support, achievements, localization.
+- `[!]` `tools\fnmap.ps1` batch runs hang (child-process output buffering + cold Ghidra imports);
+  use individual `rea` calls or move the function-map generation into the module snapshot.
+  Unblock: rewrite to poll/stream output, or run one shared `analyze` first.

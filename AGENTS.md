@@ -81,8 +81,14 @@ $snap = "docs\analysis\snapshots\insaniquarium.json"
   the path + key excerpts in EVIDENCE.md. Quote addresses and hex exactly as returned.
 - MCP tools are registered for opencode but only appear after a client restart (P0.10); until then
   use this CLI route.
-- Engine-free shortcut: `powershell -File tools\pe-imports.ps1 <exe>` prints the PE import table
-  without Ghidra (used for EV-0011).
+- **P2 game-module target** (D-0009): gameplay code is NOT in the outer image. Carve the embedded
+  module once with `powershell -File tools\extract-game-module.ps1` ->
+  `docs\analysis\snapshots\insaniquarium-game-module.exe`, then pass it as `<exe>` with snapshot
+  `docs\analysis\snapshots\insaniquarium-game-module.json`. Outer-exe addresses are only for
+  wrapper/DRM/main-loop behavior (P2.1).
+- Engine-free shortcuts: `powershell -File tools\pe-imports.ps1 <exe>` prints the PE import table
+  without Ghidra (used for EV-0011); `powershell -File tools\rtti-classmap.ps1` maps the module's
+  MSVC RTTI classes -> vtables/slots (EV-0041).
 
 ## Session end checklist
 

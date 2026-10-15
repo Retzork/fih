@@ -1,0 +1,15 @@
+# P2.1 frame loop & timestep - function map (addresses are VAs, image base 0x400000)
+# Format: 0xADDRESS Name [note]
+0x4067cd drm_winmain Wrapper WinMain: window classes DRMWindow/FakeGameWindow, msg pump, calls Process per message; Lua globals gXML*/gTimeLeft; TIMER 100ms
+0x4a002d sexy_widgetmanager_update_TODO FrameGate: this+0x2e0 widget manager; timeGetTime delta vs this+0x54 (1000ms); calls FPS draw when DAT_0055fbc8
+0x49fdf1 sexy_drawfps FPS overlay draw; frame counter DAT_0055fbb8; performance timer DAT_0055fbd0; 1000ms window; IMUL 0x3e8; +0.5 double 0x539e78; FPS: %d at 0x51bdec
+0x49f1b4 sexyappbase_process Main frame loop: this+0x44 interval, this+0x50 last tick, max 10 updates, catchup Sleep, virtuals [EAX+0x1c]/[EAX+0x20]
+0x4a662b sexy_widgetmanager_updateall Update all widgets in list this+0x4 (FUN_0049e610 iterator); resets this+0x7c
+0x4a655a sexy_widgetmanager_doupdateframes Widget update-frame scheduler: virtual +0x70 on frame match, this+0x7c next
+0x4a259f sexyappbase_ctor SexyAppBase ctor: vftables 0x51bd5c/0x51be74/0x51be68; width 0x280 height 0x1e0; +0x44=10 intervals; +0x70=0.85d; cursors
+0x4a2a5f sexyapp_ctor SexyApp ctor chain; vftables 0x51bf1c/0x51bf0c; DAT_0055fc1c
+0x465f90 luaapp_ctor LuaApp ctor chain; vftable; _DAT_0055ed64; 0x3b5=1
+0x4beb59 perf_timer_reset query perf counter reset; byte +0x10 = 1; IAT QueryPerformanceCounter 0x5160e0
+0x4beb79 perf_timer_getelapsed seconds double at +0x8; inits via 0x4beb0f when byte +0x10 == 0
+0x49ff64 fps string xref DrawFPS body address (thunk used by trace)
+0x4a26af sexyappbase_init_interval ctor body inline (also entry point used by xrefs)

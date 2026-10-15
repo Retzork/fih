@@ -65,6 +65,19 @@
 - Why: reverse-engineering output must be directly actionable; P4 should consume two complete
   contracts - assets (`docs\PIPELINE.md`) and behavior (`docs\SPECS.md`).
 
+### D-0009 - The embedded game module (carved from the exe) is the primary P2 analysis target
+- Date: 2026-10-16
+- Decision: Gameplay analysis (P2.x systems) cites **game-module VAs** from
+  `docs\analysis\snapshots\insaniquarium-game-module.exe` - a deterministic carve of the
+  canonical exe (embedded PE32 at file 0x1881A2, SHA-256
+  `33f34bae5eeee213c2a3819a13a4515c99a357f4247d42e5314da20621efe2c4`; regenerate with
+  `tools\extract-game-module.ps1`; REA snapshot `insaniquarium-game-module.json`). Outer-image
+  addresses remain canonical only for wrapper behavior (P2.1 main loop, DRM/LuaApp).
+- Why: the outer exe is a Lua/DRM e-commerce wrapper (EV-0037/EV-0038); all gameplay code,
+  classes and strings live in the PopCap-DRM-protected embedded module (EV-0039..EV-0042).
+  The install stays read-only (D-0004); the carved copy is derived, local, personal use (Q-0006)
+  and lives in a gitignored directory.
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15
