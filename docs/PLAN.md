@@ -1,7 +1,8 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
 Last updated: 2026-10-15 (PHASE 1 COMPLETE: all 10 P1 tasks done; EV ledger through EV-0023).
-Next: P2 kickoff - P2.1 frame-loop entry-point recon + P3.1 resources.xml parser (also unblocks P2.15).
+Next: P2.1 frame-loop entry-point recon (top-down next task; blocks all P2 behavior work).
+Optional cheap side quest: P3.1 resources.xml parser (engine-free; feeds P2.15/P3.2).
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
