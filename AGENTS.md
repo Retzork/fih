@@ -10,13 +10,21 @@ Remake of **Insaniquarium Deluxe v1.1 (Steam)** in **Godot 4.7.1**. The original
 code; all behavioral claims come from binary analysis (REA + Ghidra, read-only) and file
 inspection. Human owner: Fauzi.
 
-## Reading order (start of every session)
+## Reading order
 
-1. `docs/PLAN.md` - master task list with statuses and evidence refs. **Source of truth for progress.**
-2. `docs/TARGET.md` - target identity (paths, SHA-256s), environment, tool paths.
+**Mandatory every session:**
+
+1. `AGENTS.md` (this file).
+2. `docs/PLAN.md` - master task list with statuses and evidence refs. **Source of truth for progress.**
+
+**Read on demand only, when the current task needs them:**
+
 3. `docs/EVIDENCE.md` - append-only ledger of verified claims (`EV-NNNN`).
-4. `docs/DECISIONS.md` - settled decisions (`D-NNNN`) and open questions (`Q-NNNN`).
-5. `docs/analysis/notes/` - per-subsystem investigation notes.
+4. `docs/TARGET.md` - target identity (paths, SHA-256s), environment, tool paths.
+5. `docs/DECISIONS.md` - settled decisions (`D-NNNN`) and open questions (`Q-NNNN`).
+6. `docs/analysis/notes/` - per-subsystem investigation notes.
+
+(You still must UPDATE these when your work produces new evidence/decisions - see hard rules.)
 
 ## Hard rules
 

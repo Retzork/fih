@@ -25,6 +25,12 @@
 - Decision: The game install is never modified. No patching, no in-place debugging writes.
 - Why: integrity of the reference build; REA Windows P0 is read-only anyway.
 
+### D-0005 - Mandatory vs on-demand docs (user instruction, 2026-10-15)
+- Date: 2026-10-15
+- Decision: Every session reads `AGENTS.md` + `docs/PLAN.md` (mandatory). `EVIDENCE.md`, `TARGET.md`,
+  `DECISIONS.md`, and `docs/analysis/notes/` are read on demand, when the current task needs them.
+- Why: faster agent startup; PLAN.md already carries statuses plus EV refs into the rest.
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15
