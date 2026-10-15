@@ -9,7 +9,9 @@ Last verified: 2026-10-15
   Entertainment, published by PopCap Games; Steam edition.
 - Layout: loose files (no `.pak` archives observed); assets as `.gif/.jpg` under `images\`,
   audio as `.ogg/.au` under `sounds\`, music as `.mo3` under `music\`, manifests as XML under
-  `properties\` (`resources.xml`, `partner.xml` + `.sig`).
+  `properties\` (`resources.xml`, `partner.xml` + `.sig`). Other data dirs: `data\` (bitmap
+  fonts), `fishsongs\` (note-score text files), `drm\` (wrapper configs + compiled Lua scripts,
+  EV-0020); full non-asset file list in `docs/evidence/p1.7-datamap.txt`.
 
 ### Executables and libraries (SHA-256, size)
 

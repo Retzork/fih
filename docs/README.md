@@ -44,8 +44,8 @@ Native analysis runs through REA + Ghidra. Use the wrapper (sets `GHIDRA_INSTALL
 ```
 
 - Always analyze the **Steam exe**; never modify anything in the game folder.
-- Engine-free shortcut: `powershell -File tools\pe-imports.ps1 <exe>` prints the PE32 import table
-  (DLLs + functions) without Ghidra - used for EV-0011.
+- Engine-free shortcut: `powershell -File tools\pe-imports.ps1 <exe>` prints PE32 facts, sections,
+  imports, exports and delay-load imports without Ghidra (used for EV-0011, EV-0014).
 - The shared snapshot (`analysis/snapshots/insaniquarium.json`) caches results across agent
   sessions. Repeated identical queries hit the cache; new queries still need Ghidra (cold import
   can take minutes - set generous timeouts, >= 600s).
