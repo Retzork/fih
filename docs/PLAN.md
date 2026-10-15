@@ -1,7 +1,7 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-15 (docs verified; AGENTS.md created; Godot boot check done; target mirror check done).
-Next: P1.4 - first Ghidra import + binary overview of Insaniquarium.exe (cold import, allow >= 600 s).
+Last updated: 2026-10-15 (P1.4 done: overview + import audit + full-tree hash comparison; all questions answered).
+Next: P1.5/P1.6 - provenance markers (compiler/framework) and DRM/Steam boundary mapping (seeds: EV-0009, EV-0012).
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -9,8 +9,8 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 
 | Phase | Scope | Done | Total | Status |
 | --- | --- | --- | --- | --- |
-| P0 | Environment & tooling | 11 | 13 | `[~]` |
-| P1 | Reconnaissance & target identity | 4 | 9 | `[~]` |
+| P0 | Environment & tooling | 13 | 13 | `[x]` |
+| P1 | Reconnaissance & target identity | 6 | 10 | `[~]` |
 | P2 | Reverse engineer game systems | 0 | 16 | `[ ]` |
 | P3 | Asset extraction & pipeline | 0 | 8 | `[ ]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
@@ -30,29 +30,31 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 - [x] **P0.8** Create `tools\rea.ps1` wrapper (inline env for pre-change shells). (2026-10-15)
 - [x] **P0.9** Create docs scaffold (README, PLAN, EVIDENCE, TARGET, DECISIONS). (2026-10-15;
   AGENTS.md was missing on disk until P0.12)
-- [ ] **P0.10** (Optional, needs user approval - Q-0007) register REA MCP + skill into opencode:
-  `npx rea-agents setup --client opencode` after a `--dry-run` review.
+- [x] **P0.10** Registered REA MCP + skill into opencode (dry-run reviewed; config backup kept);
+  effective after next client restart. (2026-10-15)
 - [x] **P0.11** Locate local Godot editor + boot this project (Q-0001). Godot 4.7.1 stable at
   `C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe`; `--headless --import` exits 0. (2026-10-15)
 - [x] **P0.12** Create `AGENTS.md` handoff protocol at project root (referenced by D-0003; absent until now). (2026-10-15)
-- [ ] **P0.13** (Optional, needs user approval - Q-0008) `git init` the remake project for diffable agent handoffs.
+- [x] **P0.13** `git init` + initial commit `68f1d75` (14 files) for diffable agent handoffs. (2026-10-15)
 
 ## P1 - Reconnaissance & target identity
 
 - [x] **P1.1** Hash executables, screensaver, bass.dll; record sizes. -> EV-0001, TARGET.md (2026-10-15)
 - [x] **P1.2** Read `crash.txt` + `readme.html` for version/product facts. -> EV-0002, EV-0003 (2026-10-15)
 - [x] **P1.3** Full file inventory of the install root (recursive listing). -> EV-0004, EV-0005, EV-0006 (2026-10-15)
-- [ ] **P1.4** REA overview of `Insaniquarium.exe` (PE arch, sections, imports, strings, procedure
-  count) with shared snapshot. Confirm x86 vs x86-64 admission; confirm `bass.dll` imports (EV-0006).
-- [ ] **P1.5** Identify engine/build provenance from strings/symbols (PopCap SexyAppFramework
-  version markers, compiler, library versions).
+- [x] **P1.4** REA overview + import audit of `Insaniquarium.exe`: PE32 x86 admitted; 6 segments;
+  7,061 procedures; 2,496 strings; static imports = 10 system DLLs (no bass/ddraw/dsound/steam_api).
+  -> EV-0008, EV-0009, EV-0011 (2026-10-15)
+- [~] **P1.5** Engine/build provenance: seeds captured (PDB `DRMProtectRun2` EV-0009; PopCap/DRM
+  string family EV-0012); compiler/framework version markers still to identify.
 - [ ] **P1.6** Identify Steam/DRM wrapper boundary inside the exe (search steam_api, drmss, wrapper
   strings) - separates wrapper code from game code for later phases.
-- [ ] **P1.7** Enumerate subsystem seed strings (fish/pet/alien names, menu labels, cheat strings,
-  file/save names) and save the search results under `analysis/`.
+- [~] **P1.7** Subsystem seed strings: pass 1 done (PopCap/DRM family -> EV-0012, JSON under
+  `docs/evidence/`); fish/pet/alien/menu/save seeds pending.
 - [ ] **P1.8** Write Phase 1 dossier (`analysis/notes/p1-recon.md`) summarizing entry points,
   naming conventions, address ranges of interest; cross-link EV IDs.
 - [x] **P1.9** Hash-verify secondary local copy vs canonical: exe + bass.dll byte-identical. -> EV-0007 (2026-10-15)
+- [x] **P1.10** Full-tree hash comparison + fragment audit (leftovers identified; Q-0003 answered). -> EV-0010 (2026-10-15)
 
 ## P2 - Reverse engineer game systems (one investigation pass each; write notes per system)
 

@@ -32,32 +32,31 @@
   copy of the exe + zip sits in `Downloads\`). `--headless --import` of this project exits 0.
   See TARGET.md and PLAN P0.11.
 
-### Q-0002 - Project naming
-- The Godot project is `config/name="fih"`. Rename to e.g. "Insaniquarium Remake"? User call.
+### Q-0002 - Project naming - ANSWERED 2026-10-15
+- Keep `config/name="fih"`. User decision.
 
-### Q-0003 - `guppy_swim1.gif.frames.png` origin
-- Is it shipped with the Steam build or a leftover on this machine? If the user can re-download
-  / verify on a second install, that settles it.
+### Q-0003 - `*.frames.png` and `crash.txt` origin - ANSWERED 2026-10-15
+- Leftovers of a prior attempt on this machine (timestamps 12 Aug 2026; absent from the mirror
+  copy; user confirms the prior attempt). Not shipped content (EV-0010). Revisit only if a fresh
+  official install ever shows them.
 
-### Q-0004 - Remake scope
-- Full game (5 tanks x 5 levels, Adventure + Challenge + Time Trial + Virtual Tank, all pets,
-  all aliens) vs. vertical slice first (Tank 1 complete)? Recommendation: vertical slice first,
-  then widen. User decision.
+### Q-0004 - Remake scope - ANSWERED 2026-10-15
+- Vertical slice first: Tank 1 complete, then widen to all tanks/modes. Phase ordering should
+  serve the Tank 1 slice first.
 
-### Q-0005 - Display and resolution policy
-- Original is 640x480. Keep pixel-exact 4:3 window/scaling, or design a widescreen layout?
-  Affects asset pipeline and UI work. User decision.
+### Q-0005 - Display and resolution policy - ANSWERED 2026-10-15
+- Pixel-exact 640x480 4:3 with integer scaling; keep original asset dimensions.
 
 ### Q-0006 - Asset redistribution
 - Extracted PopCap assets are fine for personal use here. If distribution is ever intended,
   art/audio/music must be replaced with original or licensed work. Noted per AGENTS.md rule 6.
 
-### Q-0007 - REA MCP registration into opencode
-- `rea doctor` shows opencode registration missing. Registering (`npx rea-agents setup --client
-  opencode`) would give future sessions direct MCP tools instead of CLI-only. Needs user approval;
-  changes `C:\Users\Fauzi\.config\opencode\opencode.jsonc` and installs the REA skill.
+### Q-0007 - REA MCP registration into opencode - ANSWERED 2026-10-15
+- Registered via `npx rea-agents setup --client opencode` (dry-run reviewed first; config backup
+  at `opencode.jsonc.rea.backup`; skill installed to
+  `C:\Users\Fauzi\.agents\skills\reverse-engineer-anything`). Effective after the next opencode
+  restart; the CLI wrapper (`tools\rea.ps1`) remains the documented fallback.
 
-### Q-0008 - Version control for the remake project
-- `fih\fih` has `.gitignore` + `.gitattributes` but no `.git` repository. A local `git init`
-  (no remote needed) would make agent handoffs diffable and auditable - useful for agent hopping.
-  Needs user approval (PLAN P0.13).
+### Q-0008 - Version control for the remake project - ANSWERED 2026-10-15
+- `git init` done; initial commit `68f1d75` on `main` (14 files, baseline). Keep committing at
+  session ends for diffable agent handoffs.

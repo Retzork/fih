@@ -70,7 +70,10 @@ $snap = "docs\analysis\snapshots\insaniquarium.json"
   exported JSON, or notes instead (REA skill rule).
 - Save bulky outputs as JSON under `docs\analysis\snapshots\` or `docs\evidence\`, then cite
   the path + key excerpts in EVIDENCE.md. Quote addresses and hex exactly as returned.
-- MCP tools are not registered in opencode yet (P0.10 / Q-0007); use this CLI route.
+- MCP tools are registered for opencode but only appear after a client restart (P0.10); until then
+  use this CLI route.
+- Engine-free shortcut: `powershell -File tools\pe-imports.ps1 <exe>` prints the PE import table
+  without Ghidra (used for EV-0011).
 
 ## Session end checklist
 

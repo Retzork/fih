@@ -28,17 +28,20 @@ Other root files: `crash.txt`, `drmss.jpg`, `license.txt`, `readme.html`.
 - Path: `C:\Users\Fauzi\Documents\project\Insaniquarium Deluxe\` (repack build; extra wrapper
   files `revLoader.exe`, `rev.ini`, bundled Steam client DLLs, `steam_appid.txt`).
 - `Insaniquarium.exe` and `bass.dll` are **byte-identical** to the canonical Steam install
-  (same SHA-256s as the tables above; EV-0007). No other files in that copy were hash-verified.
-- Analysis and asset sourcing still use the Steam install (D-0001); the copy is only a
-  convenience mirror.
+  (EV-0007); full-tree comparison shows every shared file byte-identical (EV-0010).
+- User authorizes this copy as a fallback source if the Steam install is insufficient; analysis
+  still defaults to the Steam install (D-0001).
 
 ### Notes
 
-- `crash.txt` (shipped leftover crash log): internal module name `popcapgame1.exe`, Product
-  "Insaniquarium", Version 1.1, DirectDraw/DirectSound usage. Observations from it are historical,
-  not runtime evidence of the current install (see EVIDENCE.md).
-- `images\guppy_swim1.gif.frames.png` is an unexplained extra file (asset-tool artifact?). Shipped
-  vs. leftover is an open question (Q-0003).
+- `crash.txt` is a **local leftover from a prior run** (12 Aug 2026 15:53; absent from the mirror
+  copy; EV-0010), not shipped content. Internal module name `popcapgame1.exe`, Product
+  "Insaniquarium", Version 1.1, DirectDraw/DirectSound usage. Historical only.
+- `images\balrog.gif.frames.png` and `images\guppy_swim1.gif.frames.png` are leftovers of a prior
+  attempt on this machine (batch mtime 12 Aug 2026 12:15:16; absent from mirror; Q-0003 answered
+  in EV-0010).
+- Static imports (EV-0011): 10 system DLLs only - no bass.dll / ddraw / dsound / steam_api;
+  `LoadLibraryA` imported but `GetProcAddress` not (dynamic-resolution mechanism unknown; P1.6).
 
 ## Remake project
 
@@ -46,7 +49,8 @@ Other root files: `crash.txt`, `drmss.jpg`, `license.txt`, `readme.html`.
   stretch, Jolt for 3D; 2D game, 3D physics unused).
 - Editor: Godot 4.7.1 stable at `C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe` (also a
   zip + exe copy in `Downloads\`). `--headless --import` of this project exits 0 (2026-10-15).
-- `project.godot` `config/name="fih"` (rename planned; see Q-0002).
+- `project.godot` `config/name="fih"` (kept as-is per Q-0002).
+- Local git repo on `main` (initial commit `68f1d75`; Q-0008).
 
 ## Analysis environment (2026-10-15, verified working)
 
