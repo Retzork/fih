@@ -1,7 +1,8 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
 Last updated: 2026-10-15 (PHASE 3 COMPLETE: P3.1-P3.8 done; EV ledger through EV-0033).
-Next: P2.1 frame-loop & timestep entry-point recon (then continue P2 top-down).
+Next: P2.1 frame-loop & timestep entry-point recon (then P2 top-down; Phase 2 closes with P2.18
+`docs\SPECS.md` per D-0008; asset-side contract for P4 is `docs\PIPELINE.md`).
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -11,7 +12,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 0 | 16 | `[ ]` |
+| P2 | Reverse engineer game systems | 0 | 18 | `[ ]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -60,8 +61,9 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 ## P2 - Reverse engineer game systems (one investigation pass each; write notes per system)
 
 For each: find entry points -> focused function dossiers -> record constants via byte reads ->
-notes file + EV entries. Candidate systems (adjust as evidence dictates; P1.7 + resources.xml
-will confirm the actual rosters):
+notes file + EV entries. Every system note MUST end with an "Implementation spec for P4" section
+(constants+addresses, formulas, timings, state machines - see D-0008). Candidate systems (adjust
+as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
 
 - [ ] **P2.1** Frame loop & timestep (SexyAppFramework update cadence, dt handling, FPS target)
 - [ ] **P2.2** Tank simulation: fish swim/turn motion, tank bounds, direction/facing logic
@@ -81,6 +83,8 @@ will confirm the actual rosters):
 - [ ] **P2.15** Resource system: `properties\resources.xml` semantics (image/animation/sound tables)
 - [ ] **P2.16** Screensaver variants (`Insaniquarium.scr`, `WinFish_Scr.exe`): feature deltas
 - [ ] **P2.17** Cheat codes / debug hooks (string search; document only)
+- [ ] **P2.18** Write `docs\SPECS.md`: cross-system implementation contract for P4 (per-system
+  specs come from the P2.1-P2.17 notes; format modeled on `docs\PIPELINE.md`). (D-0008)
 
 ## P3 - Asset extraction & pipeline
 
@@ -103,6 +107,9 @@ will confirm the actual rosters):
   already extracted as images in P3.3 (no conversion). -> EV-0033, D-0007 (2026-10-15)
 
 ## P4 - Godot implementation
+
+Read `docs\PIPELINE.md` (asset contract) and the P2 implementation specs (`docs\SPECS.md` once
+P2.18 lands) before starting; P4 tasks below assume both exist.
 
 - [ ] **P4.1** Architecture doc: scenes, autoloads, signals, tick model mirroring P2.1
 - [ ] **P4.2** Resource loader mirroring resources.xml semantics (P2.15)

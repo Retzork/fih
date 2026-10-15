@@ -23,6 +23,7 @@ inspection. Human owner: Fauzi.
 4. `docs/TARGET.md` - target identity (paths, SHA-256s), environment, tool paths.
 5. `docs/DECISIONS.md` - settled decisions (`D-NNNN`) and open questions (`Q-NNNN`).
 6. `docs/analysis/notes/` - per-subsystem investigation notes.
+7. `docs/PIPELINE.md` - asset pipeline + Godot usage contract (read before any asset or P4 work).
 
 (You still must UPDATE these when your work produces new evidence/decisions - see hard rules.)
 
@@ -87,6 +88,7 @@ $snap = "docs\analysis\snapshots\insaniquarium.json"
 
 - [ ] PLAN.md: statuses, dates, EV refs, summary counts, `Last updated` + `Next:` line.
 - [ ] EVIDENCE.md: appended entries for every new claim.
+- [ ] P2 system notes end with an "Implementation spec for P4" section (D-0008).
 - [ ] DECISIONS.md: new decisions/questions recorded.
 - [ ] Raw outputs saved under `docs/analysis/` or `docs/evidence/` and referenced.
 - [ ] Blocked tasks marked `[!]` with the exact blocker and what would unblock them.

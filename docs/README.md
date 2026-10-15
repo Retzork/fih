@@ -11,6 +11,7 @@ rebuilt in **Godot 4.7** (this project).
 | `PLAN.md` | Master checklist: every task, its status, date, evidence refs. **The source of truth for progress.** |
 | `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA commands. |
+| `PIPELINE.md` | Asset pipeline + Godot usage contract (Phase 3 -> Phase 4): what exists, regeneration commands, how P4 consumes each asset class. |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####). |
 | `analysis/` | Investigation artifacts: snapshots, per-subsystem notes, exported evidence bundles. |
 | `evidence/` | Raw REA evidence exports / captured JSON, referenced from EVIDENCE.md. |

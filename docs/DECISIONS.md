@@ -55,6 +55,16 @@
   P2.12 proves the engine tints layers separately. Line-advance semantics
   (AscentPadding/LineSpacingOffset) are approximations until P2.12.
 
+### D-0008 - Phase 2 output standard: implementation specs for P4
+- Date: 2026-10-15
+- Decision: Every P2 system note (`docs\analysis\notes\p2*.md`) must end with an
+  "Implementation spec for P4" section: recovered constants (address + EV refs), formulas,
+  timings, state machines, spawn tables and file formats, written so P4 can be implemented
+  without re-reading the binary. Phase 2 closes with `docs\SPECS.md` (task P2.18), the
+  cross-system contract for P4, modeled on `docs\PIPELINE.md` (the asset-side contract).
+- Why: reverse-engineering output must be directly actionable; P4 should consume two complete
+  contracts - assets (`docs\PIPELINE.md`) and behavior (`docs\SPECS.md`).
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15
