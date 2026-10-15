@@ -76,3 +76,45 @@ foreach ($r in $results) {
     "== $($r.DLL) =="
     $r.Functions | Sort-Object | ForEach-Object { "  $_" }
 }
+
+""
+"SECTIONS:"
+$sects | ForEach-Object { "{0}  VA:0x{1:x}  VS:{2}  RAW:{3}" -f $_.Name, $_.VA, $_.VS, $_.RAW }
+
+""
+"EXPORT DIRECTORY (data directory 0):"
+$exRva = U32 ($dd + 0); $exSize = U32 ($dd + 4)
+"export_directory rva: 0x$($exRva.ToString('x'))  size: $exSize"
+if ($exRva -ne 0) {
+    $eo = RvaToOff $exRva
+    $nFuncs = U32 ($eo + 20); $nNames = U32 ($eo + 24); $aNames = U32 ($eo + 32)
+    "functions: $nFuncs  names: $nNames"
+    $no = RvaToOff $aNames
+    for ($i = 0; $i -lt [Math]::Min($nNames, 100); $i++) { "  " + (ReadStr (U32 ($no + 4 * $i))) }
+}
+
+""
+"DELAY-LOAD IMPORTS (data directory 13):"
+$dlRva = U32 ($dd + 104); $dlSize = U32 ($dd + 108)
+"delay_import_directory rva: 0x$($dlRva.ToString('x'))  size: $dlSize"
+if ($dlRva -ne 0 -and $dlSize -ne 0) {
+    $d = RvaToOff $dlRva
+    while ($true) {
+        $attr = U32 $d; $nameRva = U32 ($d + 4); $iat = U32 ($d + 16); $intRva = U32 ($d + 20)
+        if ($attr -eq 0 -and $nameRva -eq 0 -and $iat -eq 0 -and $intRva -eq 0) { break }
+        $dll = ReadStr $nameRva
+        $funcs = @()
+        $thunkRva = if ($intRva -ne 0) { $intRva } else { $iat }
+        $to = RvaToOff $thunkRva
+        while ($to -ge 0) {
+            $t = U32 $to
+            if ($t -eq 0) { break }
+            if (($t -band 0x80000000) -ne 0) { $funcs += "ordinal:$($t -band 0xffff)" }
+            else { $funcs += (ReadStr ($t + 2)) }
+            $to += 4
+        }
+        "  $dll  ($($funcs.Count) functions)"
+        $funcs | Sort-Object | ForEach-Object { "    $_" }
+        $d += 32
+    }
+}

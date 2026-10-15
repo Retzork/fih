@@ -42,6 +42,10 @@ Other root files: `crash.txt`, `drmss.jpg`, `license.txt`, `readme.html`.
   in EV-0010).
 - Static imports (EV-0011): 10 system DLLs only - no bass.dll / ddraw / dsound / steam_api;
   `LoadLibraryA` imported but `GetProcAddress` not (dynamic-resolution mechanism unknown; P1.6).
+  4 on-disk sections only; no exports; no delay-load imports (EV-0014).
+- Engine: PopCap **SexyAppFramework** (MSVC RTTI class map in `.rdata`) with embedded
+  **Lua 5.0.2**; Steam integration via legacy `Steam.dll` API; DRM build `DRMProtectRun2`
+  (EV-0009, EV-0013, EV-0015, EV-0016).
 
 ## Remake project
 

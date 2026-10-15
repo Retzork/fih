@@ -1,0 +1,301 @@
+pe_offset: 0x100  machine: 0x14c  sections: 4  magic: 0x10b
+import_directory rva: 0x152470  size: 220
+
+IMPORTED DLLs (10):
+WSOCK32.dll  (2 functions)
+KERNEL32.dll  (136 functions)
+USER32.dll  (74 functions)
+GDI32.dll  (20 functions)
+ADVAPI32.dll  (5 functions)
+SHELL32.dll  (1 functions)
+ole32.dll  (4 functions)
+OLEAUT32.dll  (2 functions)
+WININET.dll  (7 functions)
+WINMM.dll  (3 functions)
+
+
+== WSOCK32.dll ==
+  ordinal:115
+  ordinal:116
+
+== KERNEL32.dll ==
+  AllocConsole
+  CloseHandle
+  CompareStringA
+  CopyFileA
+  CreateDirectoryA
+  CreateEventA
+  CreateFileA
+  CreateFileMappingA
+  CreateMutexA
+  CreatePipe
+  CreateProcessA
+  CreateThread
+  CreateToolhelp32Snapshot
+  DeleteCriticalSection
+  DeleteFileA
+  DuplicateHandle
+  EnterCriticalSection
+  EnumResourceNamesA
+  EnumSystemLocalesA
+  ExitProcess
+  ExitThread
+  FindClose
+  FindFirstFileA
+  FindNextFileA
+  FlushFileBuffers
+  FreeConsole
+  FreeEnvironmentStringsA
+  FreeLibrary
+  GetACP
+  GetCommandLineA
+  GetConsoleCP
+  GetConsoleCursorInfo
+  GetConsoleMode
+  GetConsoleOutputCP
+  GetConsoleScreenBufferInfo
+  GetCurrentDirectoryA
+  GetCurrentProcess
+  GetCurrentProcessId
+  GetCurrentThread
+  GetCurrentThreadId
+  GetDateFormatA
+  GetDriveTypeA
+  GetEnvironmentStrings
+  GetExitCodeProcess
+  GetFileAttributesA
+  GetFileTime
+  GetFileType
+  GetFullPathNameA
+  GetLastError
+  GetLocaleInfoA
+  GetModuleFileNameA
+  GetModuleHandleA
+  GetOEMCP
+  GetProcessHeap
+  GetStartupInfoA
+  GetStdHandle
+  GetStringTypeA
+  GetSystemDirectoryA
+  GetSystemTimeAsFileTime
+  GetThreadPriority
+  GetTickCount
+  GetTimeFormatA
+  GetTimeZoneInformation
+  GetUserDefaultLCID
+  GetVersionExA
+  GetVolumeInformationA
+  GetWindowsDirectoryA
+  GlobalAlloc
+  GlobalLock
+  GlobalUnlock
+  HeapAlloc
+  HeapCreate
+  HeapDestroy
+  HeapFree
+  HeapReAlloc
+  HeapSize
+  InitializeCriticalSection
+  InterlockedDecrement
+  InterlockedExchange
+  InterlockedIncrement
+  IsDebuggerPresent
+  IsValidLocale
+  LCMapStringA
+  LeaveCriticalSection
+  LoadLibraryA
+  MapViewOfFile
+  MoveFileA
+  MoveFileExA
+  MulDiv
+  OpenEventA
+  OpenFileMappingA
+  OpenMutexA
+  OpenProcess
+  OutputDebugStringA
+  PeekConsoleInputA
+  Process32First
+  Process32Next
+  QueryPerformanceCounter
+  QueryPerformanceFrequency
+  RaiseException
+  ReadConsoleInputA
+  ReadFile
+  ReleaseMutex
+  ResumeThread
+  RtlUnwind
+  SetConsoleCtrlHandler
+  SetConsoleCursorInfo
+  SetConsoleCursorPosition
+  SetConsoleTextAttribute
+  SetConsoleTitleA
+  SetCurrentDirectoryA
+  SetEndOfFile
+  SetEnvironmentVariableA
+  SetEvent
+  SetFileAttributesA
+  SetFilePointer
+  SetFileTime
+  SetHandleCount
+  SetLastError
+  SetStdHandle
+  SetThreadPriority
+  SetUnhandledExceptionFilter
+  Sleep
+  TerminateProcess
+  TlsAlloc
+  TlsFree
+  TlsGetValue
+  TlsSetValue
+  UnhandledExceptionFilter
+  UnmapViewOfFile
+  VirtualAlloc
+  VirtualFree
+  WaitForMultipleObjects
+  WaitForSingleObject
+  WriteConsoleA
+  WriteFile
+
+== USER32.dll ==
+  AdjustWindowRect
+  AppendMenuA
+  BeginPaint
+  BringWindowToTop
+  ClientToScreen
+  CloseClipboard
+  CreateCaret
+  CreateCursor
+  CreatePopupMenu
+  CreateWindowExA
+  DefWindowProcA
+  DeleteMenu
+  DestroyCaret
+  DestroyCursor
+  DestroyWindow
+  DispatchMessageA
+  DrawMenuBar
+  EndPaint
+  EnumDisplayMonitors
+  EnumWindows
+  FillRect
+  FlashWindowEx
+  GetClientRect
+  GetCursor
+  GetCursorPos
+  GetDC
+  GetDesktopWindow
+  GetFocus
+  GetForegroundWindow
+  GetMessageA
+  GetParent
+  GetQueueStatus
+  GetSystemMenu
+  GetSystemMetrics
+  GetWindowPlacement
+  GetWindowRect
+  GetWindowTextA
+  GetWindowTextLengthA
+  GetWindowThreadProcessId
+  HideCaret
+  IntersectRect
+  IsIconic
+  IsWindow
+  IsWindowVisible
+  LoadCursorA
+  LoadImageA
+  MessageBoxA
+  MoveWindow
+  OpenClipboard
+  OpenIcon
+  PeekMessageA
+  PostMessageA
+  PostQuitMessage
+  PostThreadMessageA
+  RegisterClassA
+  RegisterWindowMessageA
+  ReleaseCapture
+  ReleaseDC
+  ScreenToClient
+  SendMessageA
+  SetCapture
+  SetCaretPos
+  SetClipboardData
+  SetCursor
+  SetFocus
+  SetForegroundWindow
+  SetTimer
+  SetWindowTextA
+  ShowCaret
+  ShowWindow
+  TrackPopupMenu
+  TranslateMessage
+  UnregisterClassA
+  WindowFromPoint
+
+== GDI32.dll ==
+  BitBlt
+  CreateCompatibleDC
+  CreateDIBSection
+  CreateFontA
+  CreateFontIndirectA
+  DeleteDC
+  DeleteObject
+  GdiFlush
+  GetCharABCWidthsA
+  GetDeviceCaps
+  GetObjectA
+  GetStockObject
+  GetTextMetricsA
+  IntersectClipRect
+  SelectClipRgn
+  SelectObject
+  SetBkMode
+  SetDIBitsToDevice
+  SetTextColor
+  StretchBlt
+
+== ADVAPI32.dll ==
+  RegCloseKey
+  RegCreateKeyExA
+  RegOpenKeyExA
+  RegQueryValueExA
+  RegSetValueExA
+
+== SHELL32.dll ==
+  ShellExecuteA
+
+== ole32.dll ==
+  CoCreateInstance
+  CoInitialize
+  CoInitializeSecurity
+  CoUninitialize
+
+== OLEAUT32.dll ==
+  ordinal:150
+  ordinal:6
+
+== WININET.dll ==
+  HttpOpenRequestA
+  HttpQueryInfoA
+  HttpSendRequestA
+  InternetCloseHandle
+  InternetConnectA
+  InternetOpenA
+  InternetReadFile
+
+== WINMM.dll ==
+  timeBeginPeriod
+  timeEndPeriod
+  timeGetTime
+
+SECTIONS:
+.text  VA:0x1000  VS:1131348  RAW:4096
+.rdata  VA:0x116000  VS:252696  RAW:1138688
+.data  VA:0x154000  VS:425184  RAW:1392640
+.rsrc  VA:0x1bc000  VS:167184  RAW:1437696
+
+EXPORT DIRECTORY (data directory 0):
+export_directory rva: 0x0  size: 0
+
+DELAY-LOAD IMPORTS (data directory 13):
+delay_import_directory rva: 0x0  size: 0

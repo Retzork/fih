@@ -143,3 +143,73 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   IPC_Response, ForceLock, BuyGame, ShowScreen, WaitUI), `SOFTWARE\PopCapInternal\SteamTest`
   (`0x534a24`), `PopCapSteamDebugQueryMsg` (`0x534ae8`). Seeds for P1.5 provenance and P1.6
   boundary mapping.
+
+### EV-0013 - Engine identified: PopCap SexyAppFramework with Lua binding layer (MSVC RTTI map)
+- Date: 2026-10-15
+- Type: observation (RTTI/class-name strings); inference (engine identification)
+- Source: REA string search `Sexy` (default case-insensitive literal), 322 matches; raw: `docs/evidence/p1.5-sexy-strings.json`
+- Confidence: high
+- Notes: `.rdata` region `0x5540a4-0x55e828` holds MSVC RTTI type-name strings (`.?AV...@Sexy@@`,
+  `. ?AV...@LuaLib@@`) exposing the class architecture. Highlights: `SexyAppBase`, `SexyApp`,
+  `LuaApp`, `PopLua`; widgets (`Widget`, `WidgetManager`, `WidgetContainer`, `ButtonWidget`,
+  `Checkbox`, `EditWidget`, `ListWidget`, `ScrollbarWidget`, `Dialog`, `HyperlinkWidget`,
+  `TextWidget`); Lua wrappers (`LuaWidget`, `LuaImage`, `LuaFont`, `LuaWidgetTpl<T>`,
+  `LuaHTTPTransfer`, `MethodWrapper<...>`); graphics (`Graphics`, `Image`, `DDImage`,
+  `MemoryImage`, `DDInterface`); text (`Font`, `ImageFont`, `SysFont`, `ActiveFontLayer`);
+  audio (`SoundManager`, `DSoundManager`, `SoundInstance`, `DSoundInstance`, `DSoundDecoder`,
+  `OggDecoder`); `XMLParser`, `PropertyBag`, `CircularBuffer`, `WinInetHTTPTransfer`,
+  `Message`. Also resource-name strings `sexy.Widget`, `sexy.WidgetManager`, `sexy.Graphics`,
+  `sexy.PlaySample`, `sexy.WidgetContainer` (`0x5171cc-0x518730`) and runtime message
+  `SexyChar sizes do not match with current build and state file: ` (`0x536618`).
+  Inference: the game runs PopCap's SexyAppFramework (MSVC C++), with a Lua scripting/binding
+  layer, DirectDraw-class and DirectSound-class graphics/audio backends, and an HTTP transfer
+  class. Explains WININET/WINMM/gdi32 imports and the MVC architecture to mirror in Godot.
+
+### EV-0014 - PE structure extras: 4 sections, no exports, no delay-load imports
+- Date: 2026-10-15
+- Type: observation; inference (import-resolution hypothesis)
+- Source: extended `tools\pe-imports.ps1` (now also prints sections/exports/delay-loads); raw:
+  `docs/evidence/p1.4-pe-imports-ext.txt`
+- Confidence: high for the read values; hypothesis explicitly unverified
+- Notes: on-disk section table has exactly 4 sections: `.text` VA `0x1000`, VS 1,131,348,
+  file offset 0x1000; `.rdata` VA `0x116000`, VS 252,696, off 0x116000; `.data` VA `0x154000`,
+  VS 425,184, off 0x154000; `.rsrc` VA `0x1bc000`, VS 167,184, off 0x1bc000. Export directory
+  empty (rva 0, size 0); delay-load import directory empty (rva 0, size 0). Therefore the
+  absent `GetProcAddress` (EV-0011) is NOT explained by delay loading. Hypothesis (unverified):
+  the DRMProtect build resolves dynamic APIs (ddraw/dsound/bass/steam) through a protector-
+  embedded resolver and/or a rewritten import table. Follow-up in P1.6/P2.14: locate the
+  loader/registration stub in `.text`.
+
+### EV-0015 - Steam integration: legacy Steam.dll API, loaded dynamically
+- Date: 2026-10-15
+- Type: observation; inference (API generation)
+- Source: REA string search `Steam`, 15 matches; raw: `docs/evidence/p1.6-steam-strings.json`
+- Confidence: high for strings; medium for which paths are active at runtime
+- Notes: matches - `STEAM ERROR` (`0x5330cc`), `Unable to load Steam.dll` (`0x5330d8`),
+  `SteamSetUser Failed` (`0x5330f4`), `SteamId` (`0x533548`), `SteamTestUserName` (`0x533558`),
+  `-steamuser` (`0x533b68`), `SOFTWARE\PopCapInternal\SteamTest` (`0x534a24`), `steam.dll`
+  (`0x534a54`), `SteamStartup` (`0x534a60`), `SteamBlockingCall` (`0x534a70`),
+  `SteamIsAppSubscribed` (`0x534a84`), `SteamSetUser` (`0x534a9c`), `SteamCleanup` (`0x534aac`),
+  `Failed to startup Steam: %s` (`0x534abc`), `PopCapSteamDebugQueryMsg` (`0x534ae8`).
+  Inference: integration uses Valve's pre-`steam_api.dll` `Steam.dll` API (Startup/BlockingCall/
+  IsAppSubscribed/SetUser/Cleanup are exports of that library), dynamically loaded at runtime.
+  `SteamIsAppSubscribed` indicates the entitlement check; `-steamuser` is a command-line switch.
+  Explains why the repack folder bundles old Steam client DLLs.
+
+### EV-0016 - Embedded Lua is version 5.0.2
+- Date: 2026-10-15
+- Type: observation
+- Source: REA string search `Lua 5`, 2 matches; raw: `docs/evidence/p1.5-lua-version.json`
+- Confidence: high
+- Notes: `0x535b40`: `$Lua: Lua 5.0.2 Copyright (C) 1994-2004 Tecgraf, PUC-Rio $` (+ Authors/URL
+  lines); `0x536ebc`: `Lua 5.0.2`. The scripting layer (LuaLib/PopLua per EV-0013) is Lua 5.0.2 -
+  fixes the language semantics baseline for any script-driven behavior in later phases.
+
+### EV-0017 - `drmss.jpg` is referenced by the DRM string cluster
+- Date: 2026-10-15
+- Type: observation
+- Source: REA string search `drmss`, 1 match; raw: `docs/evidence/p1.6-drmss.json`
+- Confidence: high
+- Notes: `0x5331f4`: `drmss.jpg` - inside the same `.rdata` cluster as `SOFTWARE\PopCap\`
+  (`0x5331a0`) and the `?popcapdrmprotect!` markers (`0x533b74/0x533b88`). The root `drmss.jpg`
+  image is loaded by the DRM subsystem (likely the DRM/entitlement splash screen asset).

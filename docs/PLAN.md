@@ -1,7 +1,7 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-15 (P1.4 done: overview + import audit + full-tree hash comparison; all questions answered).
-Next: P1.5/P1.6 - provenance markers (compiler/framework) and DRM/Steam boundary mapping (seeds: EV-0009, EV-0012).
+Last updated: 2026-10-15 (P1.5 done: SexyAppFramework + Lua 5.0.2 identified; P1.6 strings captured).
+Next: P1.7 seed pass 2 + P1.8 Phase-1 recon dossier; P1.6 caller-level mapping folds into P2.13/P2.14.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -10,7 +10,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | Phase | Scope | Done | Total | Status |
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
-| P1 | Reconnaissance & target identity | 6 | 10 | `[~]` |
+| P1 | Reconnaissance & target identity | 7 | 10 | `[~]` |
 | P2 | Reverse engineer game systems | 0 | 16 | `[ ]` |
 | P3 | Asset extraction & pipeline | 0 | 8 | `[ ]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
@@ -45,10 +45,11 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 - [x] **P1.4** REA overview + import audit of `Insaniquarium.exe`: PE32 x86 admitted; 6 segments;
   7,061 procedures; 2,496 strings; static imports = 10 system DLLs (no bass/ddraw/dsound/steam_api).
   -> EV-0008, EV-0009, EV-0011 (2026-10-15)
-- [~] **P1.5** Engine/build provenance: seeds captured (PDB `DRMProtectRun2` EV-0009; PopCap/DRM
-  string family EV-0012); compiler/framework version markers still to identify.
-- [ ] **P1.6** Identify Steam/DRM wrapper boundary inside the exe (search steam_api, drmss, wrapper
-  strings) - separates wrapper code from game code for later phases.
+- [x] **P1.5** Engine/build provenance identified: PopCap SexyAppFramework (MSVC RTTI class map),
+  embedded Lua 5.0.2, build project `DRMProtectRun2`. -> EV-0009, EV-0013, EV-0016 (2026-10-15)
+- [~] **P1.6** Steam/DRM boundary: legacy `Steam.dll` API strings captured (EV-0015); `drmss.jpg`
+  = DRM resource (EV-0017); no delay-loads/exports (EV-0014), `GetProcAddress`-less dynamic
+  resolution hypothesis pending caller-level mapping (folds into P2.13/P2.14).
 - [~] **P1.7** Subsystem seed strings: pass 1 done (PopCap/DRM family -> EV-0012, JSON under
   `docs/evidence/`); fish/pet/alien/menu/save seeds pending.
 - [ ] **P1.8** Write Phase 1 dossier (`analysis/notes/p1-recon.md`) summarizing entry points,
