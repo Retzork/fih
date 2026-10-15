@@ -1,0 +1,59 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/StoreAquariums.png" id="1_ptdsk"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_r2gk1"]
+atlas = ExtResource("1_ptdsk")
+region = Rect2(0, 0, 121, 71)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_r7xfj"]
+atlas = ExtResource("1_ptdsk")
+region = Rect2(121, 0, 121, 71)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_g274p"]
+atlas = ExtResource("1_ptdsk")
+region = Rect2(242, 0, 121, 71)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_782fq"]
+atlas = ExtResource("1_ptdsk")
+region = Rect2(363, 0, 121, 71)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mudbe"]
+atlas = ExtResource("1_ptdsk")
+region = Rect2(484, 0, 121, 71)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5dinh"]
+atlas = ExtResource("1_ptdsk")
+region = Rect2(605, 0, 121, 71)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_r2gk1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_r7xfj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_g274p")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_782fq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mudbe")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5dinh")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

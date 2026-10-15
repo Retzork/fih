@@ -1,0 +1,51 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/Merylblink.png" id="1_obl67"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q608i"]
+atlas = ExtResource("1_obl67")
+region = Rect2(0, 0, 55, 25)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ky4b2"]
+atlas = ExtResource("1_obl67")
+region = Rect2(55, 0, 55, 25)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ubewi"]
+atlas = ExtResource("1_obl67")
+region = Rect2(110, 0, 55, 25)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_r7wfj"]
+atlas = ExtResource("1_obl67")
+region = Rect2(55, 0, 55, 25)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ow2v0"]
+atlas = ExtResource("1_obl67")
+region = Rect2(0, 0, 55, 25)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q608i")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ky4b2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ubewi")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_r7wfj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ow2v0")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

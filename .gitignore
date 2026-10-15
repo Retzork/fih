@@ -4,3 +4,6 @@
 
 # REA snapshot cache (machine-local; regenerates on demand - durable results live in docs/evidence/)
 docs/analysis/snapshots/
+
+# Extracted game assets (personal use only, Q-0006; regenerate with tools/extract-assets.ps1)
+assets_raw/

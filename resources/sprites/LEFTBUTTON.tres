@@ -1,0 +1,35 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/leftbutton.png" id="1_eayyg"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mp3an"]
+atlas = ExtResource("1_eayyg")
+region = Rect2(0, 0, 63, 29)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_60jq8"]
+atlas = ExtResource("1_eayyg")
+region = Rect2(63, 0, 63, 29)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yo6g6"]
+atlas = ExtResource("1_eayyg")
+region = Rect2(126, 0, 63, 29)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mp3an")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_60jq8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yo6g6")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

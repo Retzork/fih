@@ -31,6 +31,17 @@
   `DECISIONS.md`, and `docs/analysis/notes/` are read on demand, when the current task needs them.
 - Why: faster agent startup; PLAN.md already carries statuses plus EV refs into the rest.
 
+### D-0006 - Music tooling: decode `.mo3` with ffmpeg/libopenmpt
+- Date: 2026-10-15
+- Decision: `.mo3` music is decoded/transcoded with ffmpeg (libopenmpt demuxer -> libvorbis
+  `-q:a 5`, 48 kHz stereo) via `tools\decode-music.ps1`; BASS P/Invoke decoding and a lossless
+  WAV archive are both rejected. The read-only install keeps the MO3 originals; `assets_raw\` is
+  gitignored and regenerable, so no second lossless copy is kept.
+- Why: ffprobe/ffmpeg verified to read all three MO3 v1 files natively (EV-0032), avoiding
+  32-bit PowerShell + x86 DLL loading entirely; OGG matches the game's own sound container and
+  imports directly in Godot. On-disk leftovers check: installed `bass.dll` is NOT imported
+  statically by the exe (EV-0011), so nothing in this pipeline depends on it.
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15

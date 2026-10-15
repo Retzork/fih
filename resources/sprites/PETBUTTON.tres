@@ -1,0 +1,43 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/petbutton.png" id="1_ds6ab"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d0pkw"]
+atlas = ExtResource("1_ds6ab")
+region = Rect2(0, 0, 90, 83)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_78toa"]
+atlas = ExtResource("1_ds6ab")
+region = Rect2(90, 0, 90, 83)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xggwx"]
+atlas = ExtResource("1_ds6ab")
+region = Rect2(180, 0, 90, 83)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8yvx6"]
+atlas = ExtResource("1_ds6ab")
+region = Rect2(270, 0, 90, 83)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_d0pkw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_78toa")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xggwx")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8yvx6")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

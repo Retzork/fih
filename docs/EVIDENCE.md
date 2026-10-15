@@ -293,3 +293,147 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   your own Virtual Tank screensaver!"); `BuyURL` = `steam://store/3320`; content descriptors
   ("Animated Blood", "Mild Cartoon Violence", "Suggestive Themes"); CopyrightDisclaimer
   "(c)2002 PopCap Games, Inc.". Context for the DRM UI seen in EV-0017/EV-0020.
+
+### EV-0024 - `resources.xml` parsed to a machine-readable inventory; syntax quirks; count corrections
+- Date: 2026-10-15
+- Type: observation
+- Source: `tools\parse-resources.ps1` against canonical `properties\resources.xml` (read-only);
+  raw: `docs\analysis\resources.json`
+- Confidence: high
+- Notes: 326 resource elements: 246 Image, 15 Font, 65 Sound; groups Init=14, Register=16,
+  LoadingThread=296. Corrects EV-0022 counts: the "333 `id=` attributes" figure was a regex
+  artifact (329 true element ids: 326 resources + 3 group ids; 4 extra matches were the tail of
+  `alphagrid="`); Sound entries are 65, not 68. Manifest syntax quirks (accepted by the game's
+  SexyApp XMLParser, rejected by strict parsers): 5 unquoted attribute values (`cols=3` x4,
+  `cols=4` x1) and 6 bare boolean attributes (`ddsurface` on AQUARIUM1-6). Pet roster (30 SCL_*),
+  aliens (9) and tank sets (6) match EV-0022.
+
+### EV-0025 - Manifest-to-disk resolution: all entries resolve; 14 need underscore-variant files
+- Date: 2026-10-15
+- Type: observation (disk files); inference (engine fallback hypothesis)
+- Source: `tools\parse-resources.ps1`; raw: `docs\analysis\resources.json`
+- Confidence: high for the on-disk facts; engine behavior explicitly unverified
+- Notes: resolution is case-insensitive (`Aquarium5.jpg` etc.) and probes .gif/.jpg/.png.
+  312/326 entries resolve by plain name; 14 Image entries have no plain-name file on disk:
+  TANKMASK1-6 -> `_maskN.jpg` (leading underscore), HATCHREFLECTION -> `_IncubatorReflection.gif`,
+  MENUBUTTONREFLECTION -> `_MBREFLECTION.gif`, TITLEPAGEMASK -> `titlescreenmask_.gif`
+  (trailing), PETBUTTONREFLECT -> `petbuttonreflect_.gif`, PETBUTTONHOLE -> `petbuttonhole_.gif`,
+  STORELEFTHILIGHT/STORETOPHILIGHT/STORERIGHTHILIGHT -> `*_.gif`. Hypothesis (UNVERIFIED): the
+  engine resolves these via the same underscore fallback; needs P2/P4 confirmation. Seven
+  unreferenced asset files exist: the two prior-attempt leftovers (EV-0010),
+  `images\nebula1.jpg`, `images\talkshow.jpg` (use unknown), and `music\Alien.mo3`,
+  `music\Insaniq2.mo3`, `music\Lullaby.mo3` (music is not in the manifest).
+
+### EV-0026 - Alpha model: grayscale mask companions; base GIFs are alpha-free except 3
+- Date: 2026-10-15
+- Type: observation; inference (composition semantics)
+- Source: `tools\inspect-images.ps1` (System.Drawing pixel reads); raw:
+  `docs\analysis\p3.2-image-report.json`
+- Confidence: high for the file/pixel facts; composition is an inference
+- Notes: 204/246 images have a literal mask file (17 explicit: MAINBUTTON/LEFTBUTTON/RIGHTBUTTON/
+  CENTERBUTTON via `alphagrid`, MENUBTND2 via `alphaimage`, TANKBACKDROP1-6, EGGBRINKLEY/
+  EGGNOSTRADAMUS/EGGSTANLEY/EGGWALTER, AA_TOP1/AA_TOP2; 187 matched via leading/trailing
+  underscore candidates). Masks are 100% grayscale except `bonusbuttonoverlay_.gif` (245x69) and
+  `bubbulator_.gif` (71x1840). 243/246 base images contain zero transparent pixels - alpha must
+  come from the mask layer. Exceptions with built-in GIF transparency: SLIDERTHUMB
+  (`SLIDERWIDGET.gif`, 132 px), HELPALIEN (763 px), HELPPETCHOOSE (300 px). `alphagrid` mask files
+  are one grid cell in size (mainbutton 270x29 base vs 90x29 mask; left/right/center 189x29 vs
+  63x29). Unexplained mismatch: EDITBOX 90x42 vs `_EditBox.gif` 96x33. TANKMASK1-6 base files are
+  themselves grayscale 640x80 (`_maskN.jpg`). Inference (unverified): the engine composites the
+  mask as alpha and may colorize grayscale art at runtime (see EV-0027).
+
+### EV-0027 - Frame geometry: exact declared grids; 80x80-cell convention; sim-fish two-layer art
+- Date: 2026-10-15
+- Type: observation; inference (grid for undeclared sheets)
+- Source: `tools\inspect-images.ps1`; visual inspection of `guppy_swim1.gif`, `_guppy_swim1.gif`
+  via image viewer; raw: `docs\analysis\p3.2-image-report.json`
+- Confidence: high for declared grids/dims; medium for the inferred 10x80px grid on undeclared sheets
+- Notes: every declared grid divides its image exactly (0 remainder issues across 246 images).
+  Character/effect sheets use 80x80 px cells; declared examples: STINKY 10x3, HUNGRYSWIM 10x5,
+  GEKKO 10x7 (all 800 px wide). 30 sheets have NO declared grid but are multi-cell:
+  SIMSWIM/SIMEAT/SIMTURN 1-3 are 800x240 (10x3), SMALLTURN/SMALLEAT/SMALLDIE/HUNGRYTURN/
+  HUNGRYEAT are 800x400 (10x5), SIMCARNIVORE and HUNGRYBREEDER are 800x960 (10x12); the
+  prior-attempt leftover `guppy_swim1.gif.frames.png` independently shows the same 10x3 eye
+  layout (EV-0010). Observed two-layer art for the sim fish: base sheet holds eyes only on black
+  (e.g. `guppy_swim1.gif`: 10x3 eyes), companion mask holds 3-size body silhouettes
+  (`_guppy_swim1.gif`); SIMSWIM2/3, SIMEAT2/3, SIMTURN2/3 have no mask file on disk. 36 base
+  images are grayscale-only (SPARKLE, ENERGYBALL, LASERS, SMOKEMISSILE, MISCITEMS, WAVESIDE,
+  WAVE, SIM* sheets, TANKMASK1-6, TITLEPAGEMASK, shadow/reflection masks-as-images, TANKLIGHTING,
+  GUMBOLIGHT, BLANK/PEANUT). Inference (unverified, needs P2): grayscale art is colorized at
+  runtime (laser upgrade colors, wave tints). Does NOT establish runtime composition, tint
+  colors, or animation semantics (framemap `-1` meaning remains unknown).
+
+### EV-0028 - P3.3 extraction: 244 base + 179 mask PNGs + 3,036 frames, pixel-exact
+- Date: 2026-10-15
+- Type: observation
+- Source: `tools\extract-assets.ps1`; outputs under `assets_raw\` (gitignored: personal-use
+  assets, Q-0006; regenerable); manifest: `assets_raw\extraction.json`
+- Confidence: high
+- Notes: 244 base PNGs written (246 Image records, 2 aliases deduped: PEANUT=blank,
+  MENUBTND2=mbuttond), 179 unique mask PNGs (shared masks deduped; 14 self-masks skipped:
+  TANKMASK1-6 and the underscore-only entries where base file = mask file), 3,036 frame PNGs
+  across 129 multi-cell sheets (3036 = declared grids + 16 inferred 10x(h/80) grids on
+  undeclared 800-px sheets). Total 3,460 files / 22.0 MB. Pipeline: GDI+ (System.Drawing)
+  32bppArgb, DrawImageUnscaled (no resampling), frames cropped by exact cell rects. Fidelity
+  check: SIMSWIM1 frame f013 vs source `guppy_swim1.gif` region (240,80)-(320,160) = 0/6,400
+  differing pixels. Frames keep color and alpha layers UNCOMPOSITED (decision in
+  `docs\analysis\notes\p3-assets.md`); masks exported as whole sheets, not per-frame.
+
+### EV-0029 - P3.4 outcome: the two `*.gif.frames.png` leftovers are plain GIF->PNG conversions
+- Date: 2026-10-15
+- Type: observation
+- Source: full-pixel comparison (System.Drawing LockBits) of leftovers vs source GIFs in the
+  canonical install (read-only)
+- Confidence: high
+- Notes: `guppy_swim1.gif.frames.png` = 800x240, 0/192,000 differing RGB pixels vs
+  `guppy_swim1.gif`; `balrog.gif.frames.png` = 1600x320, 0/512,000 differing RGB pixels vs
+  `balrog.gif`. Despite the ".frames" name they contain no slicing/rearrangement - the prior
+  attempt (EV-0010) performed straight format conversion only. Corroborates Q-0003's answer;
+  the files are ignored by this pipeline (not referenced by the manifest, EV-0025).
+
+### EV-0030 - P3.5 Godot import: 129 SpriteFrames resources generated and verified
+- Date: 2026-10-15
+- Type: observation
+- Source: `tools\godot\gen_spriteframes.gd` run via
+  `Godot_v4.7.1-stable_win64.exe --headless --path . --script ...`; inputs:
+  `assets_raw\extraction.json`; outputs: `resources\sprites\<ID>.tres`; Godot import of
+  `assets_raw` = 423 files (244 images + 179 masks; `frames\` excluded via `.gdignore`)
+- Confidence: high (generator self-verifies every resource; exit 0)
+- Notes: one SpriteFrames per multi-cell image: animation `default`, frames are AtlasTexture
+  regions (pixel rects) over the sheet PNG in `assets_raw\images\`; framemap order applied when
+  declared (MERYLBLINK = 5 frames from `0,1,2,1,0,-1` with -1 skipped; MERYLTAIL reversed).
+  129 generated / 129 re-loaded + frame-count verified / 0 failures; 3,038 total frames;
+  resources total 648 KB. Atlasing is region-based (AtlasTexture) - no repacking; masks are
+  imported as separate textures for P4 composition. Animation speeds/delays are NOT baked: the
+   manifest delay units are unresolved until P2.1; raw attrs remain in `extraction.json`.
+
+### EV-0031 - P3.6 sound extraction: 50 `.ogg` copied + 15 `.au` decoded to WAV, all probe-verified
+- Date: 2026-10-15
+- Type: observation
+- Source: `tools\extract-audio.ps1` run against `docs\analysis\resources.json` + canonical install;
+  outputs: `assets_raw\sounds\` (50 `.ogg` + 15 `.wav`) + `assets_raw\audio.json`
+- Confidence: high (manifest lists 65 sounds; 65 outputs; every output re-probed, 0 failures)
+- Notes: `.ogg` copied 1:1 (manifest-named stems); all 15 `.au` are `pcm_mulaw` 8,000 Hz mono
+  (verified by ffprobe; e.g. `sounds\buttonclick.au`) converted with
+  `ffmpeg -c:a pcm_s16le` to WAV - exact command per file recorded in `audio.json`. Total output
+  752,298 bytes; manifest `volume`/`alias` attrs preserved into `audio.json` (e.g. AWOOGA
+  alias=START). Install holds exactly 50 ogg + 15 au under `sounds\` (recounted).
+
+### EV-0032 - P3.7 music: 3 `.mo3` decoded to OGG via ffmpeg libopenmpt; BASS route abandoned
+- Date: 2026-10-15
+- Type: observation
+- Source: `tools\decode-music.ps1` run against `music\*.mo3` in the canonical install; outputs:
+  `assets_raw\music\{Alien,Insaniq2,Lullaby}.ogg` + `assets_raw\music.json`; tooling decision D-0006
+- Confidence: high (ffprobe identifies all 3 sources as `libopenmpt` demuxer, `TAG:encoder=MO3 v1`;
+  3/3 outputs re-probed, 0 failures)
+- Notes: the ffmpeg 8.1.1 build carries libopenmpt, so `.mo3` needs no x86 BASS P/Invoke; the
+  earlier plan (the P3.7 route via bass.dll exports) was retired - `tools\pe-imports.ps1` fails on
+  `bass.dll` with an ArgumentOutOfRangeException (import-walk bug for that DLL; the exe import
+  audit, EV-0011, is unaffected). Per-file facts: Alien.mo3 61,564 B
+  sha256=677773BFD665339D1DCA8DAA0B584E94E3FC434CEC0FE43DDBED8CC74162F393, tag title
+  "Alien Battle Music", 10.240 s; Insaniq2.mo3 334,214 B
+  sha256=4F78284DD170EE2AC97BE94573287CC6473EFAD9479FA4B833FB224D47FBD9D2, title "Winfish",
+  113.664 s; Lullaby.mo3 8,520 B sha256=7A13CDDFC9FF37AB7B248E9EF41A91121983CDB8A19BDC3FDF4C4A435E64E314,
+  no title, 115.700 s. Encoded `libvorbis -q:a 5`, 48,000 Hz stereo; total output 2,718,641 bytes;
+  ogg durations read ~0.1 s longer than source probes (decoder padding; tracker loop semantics
+  unresolved, P2.14 concern).

@@ -1,0 +1,51 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/crosshair.png" id="1_y0skk"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_x4uhc"]
+atlas = ExtResource("1_y0skk")
+region = Rect2(0, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mnt5e"]
+atlas = ExtResource("1_y0skk")
+region = Rect2(80, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_modvp"]
+atlas = ExtResource("1_y0skk")
+region = Rect2(160, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hyg53"]
+atlas = ExtResource("1_y0skk")
+region = Rect2(240, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_34e44"]
+atlas = ExtResource("1_y0skk")
+region = Rect2(320, 0, 80, 80)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_x4uhc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mnt5e")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_modvp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hyg53")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_34e44")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

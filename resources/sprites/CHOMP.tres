@@ -1,0 +1,51 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/Chomp.png" id="1_55bu8"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_r0mg5"]
+atlas = ExtResource("1_55bu8")
+region = Rect2(0, 0, 30, 30)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_53tno"]
+atlas = ExtResource("1_55bu8")
+region = Rect2(30, 0, 30, 30)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q10d5"]
+atlas = ExtResource("1_55bu8")
+region = Rect2(60, 0, 30, 30)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_s3svx"]
+atlas = ExtResource("1_55bu8")
+region = Rect2(90, 0, 30, 30)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0gdt6"]
+atlas = ExtResource("1_55bu8")
+region = Rect2(120, 0, 30, 30)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_r0mg5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_53tno")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q10d5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_s3svx")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0gdt6")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

@@ -1,0 +1,59 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/TrophyButts.png" id="1_vn21m"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_x50x6"]
+atlas = ExtResource("1_vn21m")
+region = Rect2(0, 0, 47, 40)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_odjrp"]
+atlas = ExtResource("1_vn21m")
+region = Rect2(47, 0, 47, 40)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qdjx5"]
+atlas = ExtResource("1_vn21m")
+region = Rect2(94, 0, 47, 40)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wgv6u"]
+atlas = ExtResource("1_vn21m")
+region = Rect2(141, 0, 47, 40)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3djjd"]
+atlas = ExtResource("1_vn21m")
+region = Rect2(188, 0, 47, 40)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_k5bws"]
+atlas = ExtResource("1_vn21m")
+region = Rect2(235, 0, 47, 40)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_x50x6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_odjrp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qdjx5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wgv6u")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3djjd")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_k5bws")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

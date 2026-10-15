@@ -1,0 +1,91 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/scl_nostradamus.png" id="1_7uuvg"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dl0rh"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(0, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_susyp"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(60, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6h1eo"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(120, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_egqrl"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(180, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uxk4y"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(240, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uwsk6"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(300, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_djeme"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(360, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kr7fc"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(420, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_r2y2s"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(480, 0, 60, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ldv41"]
+atlas = ExtResource("1_7uuvg")
+region = Rect2(540, 0, 60, 60)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dl0rh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_susyp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6h1eo")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_egqrl")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uxk4y")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uwsk6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_djeme")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kr7fc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_r2y2s")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ldv41")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

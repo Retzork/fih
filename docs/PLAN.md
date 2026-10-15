@@ -1,8 +1,8 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-15 (PHASE 1 COMPLETE: all 10 P1 tasks done; EV ledger through EV-0023).
-Next: P3.1 resources.xml parser (engine-free inventory build; feeds P2.15/P3.2; user-approved order).
-After P3.1: P2.1 frame-loop entry-point recon, then continue P2 top-down.
+Last updated: 2026-10-15 (PHASE 3 IN PROGRESS: P3.1-P3.7 done; EV ledger through EV-0032).
+Next: P3.8 fonts/UI/cursor assets inventory + conversion (last P3 task).
+After P3: P2.1 frame-loop entry-point recon, then continue P2 top-down.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -13,7 +13,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
 | P2 | Reverse engineer game systems | 0 | 16 | `[ ]` |
-| P3 | Asset extraction & pipeline | 0 | 8 | `[ ]` |
+| P3 | Asset extraction & pipeline | 7 | 8 | `[~]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
 
@@ -85,13 +85,20 @@ will confirm the actual rosters):
 
 ## P3 - Asset extraction & pipeline
 
-- [ ] **P3.1** Parse `resources.xml` into a machine-readable inventory (script under `tools\`)
-- [ ] **P3.2** Determine sprite frame geometry (sheet cell layout, offsets) from resource data
-- [ ] **P3.3** Extract per-animation frame sets into `assets_raw/` (input for Godot conversion)
-- [ ] **P3.4** Investigate `guppy_swim1.gif.frames.png` (Q-0003) and record the outcome
-- [ ] **P3.5** Build Godot import step: PNGs -> texture atlases + `SpriteFrames` per animation
-- [ ] **P3.6** Audio: collect `.ogg`; convert `.au` -> `.wav`; document conversion commands
-- [ ] **P3.7** Music: `.mo3` decode/transcode decision + pipeline (tooling choice in DECISIONS.md)
+- [x] **P3.1** Parse `resources.xml` into a machine-readable inventory (`tools\parse-resources.ps1`;
+  326 resources: 246 images/15 fonts/65 sounds; counts corrected vs EV-0022). -> EV-0024, EV-0025 (2026-10-15)
+- [x] **P3.2** Determine sprite frame geometry (all declared grids divide exactly; 80x80-cell
+  convention; 30 undeclared multi-cell sheets; mask/alpha model). -> EV-0026, EV-0027 (2026-10-15)
+- [x] **P3.3** Extract per-animation frame sets into `assets_raw/` (`tools\extract-assets.ps1`;
+  244 base + 179 mask PNGs + 3,036 frames, pixel-exact; layers uncompressed). -> EV-0028 (2026-10-15)
+- [x] **P3.4** Investigate `guppy_swim1.gif.frames.png` (Q-0003): both leftovers are pixel-exact
+  GIF->PNG conversions, no slicing; ignored by pipeline. -> EV-0029 (2026-10-15)
+- [x] **P3.5** Godot import step: `tools\godot\gen_spriteframes.gd` -> 129 SpriteFrames
+  (AtlasTexture regions; 129/129 verified; exit 0). -> EV-0030 (2026-10-15)
+- [x] **P3.6** Audio: 50 `.ogg` copied 1:1 + 15 `.au` -> `.wav` (`pcm_mulaw` 8k mono ->
+  `pcm_s16le`), 0 probe failures, 752 KB; command per file in `audio.json`. -> EV-0031 (2026-10-15)
+- [x] **P3.7** Music: 3 `.mo3` -> OGG via ffmpeg/libopenmpt (`libvorbis -q:a 5`), 3/3 verified,
+  2.7 MB; tooling decision D-0006. -> EV-0032 (2026-10-15)
 - [ ] **P3.8** Fonts/UI/cursor assets inventory + conversion
 
 ## P4 - Godot implementation

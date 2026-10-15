@@ -1,0 +1,59 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/energyball.png" id="1_ll63e"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_qn3kb"]
+atlas = ExtResource("1_ll63e")
+region = Rect2(0, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uw8pi"]
+atlas = ExtResource("1_ll63e")
+region = Rect2(80, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7vgmg"]
+atlas = ExtResource("1_ll63e")
+region = Rect2(160, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pd5cn"]
+atlas = ExtResource("1_ll63e")
+region = Rect2(240, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lstsk"]
+atlas = ExtResource("1_ll63e")
+region = Rect2(320, 0, 80, 80)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_k8db0"]
+atlas = ExtResource("1_ll63e")
+region = Rect2(400, 0, 80, 80)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_qn3kb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_uw8pi")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7vgmg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pd5cn")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lstsk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_k8db0")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

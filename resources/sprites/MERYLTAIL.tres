@@ -1,0 +1,75 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/tailflop.png" id="1_5gfhb"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0bmfj"]
+atlas = ExtResource("1_5gfhb")
+region = Rect2(1666, 0, 238, 165)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2hwlr"]
+atlas = ExtResource("1_5gfhb")
+region = Rect2(1428, 0, 238, 165)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5jibt"]
+atlas = ExtResource("1_5gfhb")
+region = Rect2(1190, 0, 238, 165)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nn61e"]
+atlas = ExtResource("1_5gfhb")
+region = Rect2(952, 0, 238, 165)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1pmha"]
+atlas = ExtResource("1_5gfhb")
+region = Rect2(714, 0, 238, 165)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_avvb8"]
+atlas = ExtResource("1_5gfhb")
+region = Rect2(476, 0, 238, 165)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yywys"]
+atlas = ExtResource("1_5gfhb")
+region = Rect2(238, 0, 238, 165)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_eai0g"]
+atlas = ExtResource("1_5gfhb")
+region = Rect2(0, 0, 238, 165)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0bmfj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2hwlr")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5jibt")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nn61e")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1pmha")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_avvb8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yywys")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_eai0g")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]

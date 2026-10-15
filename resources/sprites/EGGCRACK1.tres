@@ -1,0 +1,115 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets_raw/images/EggCrack1.png" id="1_21jly"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mu7pc"]
+atlas = ExtResource("1_21jly")
+region = Rect2(0, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rm033"]
+atlas = ExtResource("1_21jly")
+region = Rect2(118, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_44aa7"]
+atlas = ExtResource("1_21jly")
+region = Rect2(236, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2ogfi"]
+atlas = ExtResource("1_21jly")
+region = Rect2(354, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rsbhe"]
+atlas = ExtResource("1_21jly")
+region = Rect2(472, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0v8ji"]
+atlas = ExtResource("1_21jly")
+region = Rect2(590, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fcjjn"]
+atlas = ExtResource("1_21jly")
+region = Rect2(708, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7ft3s"]
+atlas = ExtResource("1_21jly")
+region = Rect2(826, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2ml4i"]
+atlas = ExtResource("1_21jly")
+region = Rect2(944, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8rhp2"]
+atlas = ExtResource("1_21jly")
+region = Rect2(1062, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mhsj8"]
+atlas = ExtResource("1_21jly")
+region = Rect2(1180, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rdrjs"]
+atlas = ExtResource("1_21jly")
+region = Rect2(1298, 0, 118, 145)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kgqm4"]
+atlas = ExtResource("1_21jly")
+region = Rect2(1416, 0, 118, 145)
+filter_clip = true
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mu7pc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rm033")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_44aa7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2ogfi")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rsbhe")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0v8ji")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fcjjn")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7ft3s")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2ml4i")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8rhp2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mhsj8")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rdrjs")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kgqm4")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 5.0
+}]
