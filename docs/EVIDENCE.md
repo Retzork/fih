@@ -213,3 +213,83 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
 - Notes: `0x5331f4`: `drmss.jpg` - inside the same `.rdata` cluster as `SOFTWARE\PopCap\`
   (`0x5331a0`) and the `?popcapdrmprotect!` markers (`0x533b74/0x533b88`). The root `drmss.jpg`
   image is loaded by the DRM subsystem (likely the DRM/entitlement splash screen asset).
+
+### EV-0018 - Asset inventory: 495 files; naming conventions; 30-pet select set
+- Date: 2026-10-15
+- Type: observation
+- Source: recursive listing of `images/`, `sounds/`, `music/`; raw: `docs/evidence/p1.7-assets-raw.txt`,
+  base-name set: `docs/evidence/p1.7-asset-names.txt`
+- Confidence: high
+- Notes: 495 files total: 390 `.gif`, 50 `.ogg`, 35 `.jpg`, 15 `.au`, 3 `.mo3`, 2 `.png`
+  (the 2 PNGs are the known prior-attempt leftovers, EV-0010). Naming: lowercase; trailing `_`
+  marks alpha/mask companions (e.g. `mainbutton_`); `N`-suffix = animation frame variants
+  (`guppy_swim1..3`); `scl_<pet>` = pet-select icon set (30 names).
+
+### EV-0019 - Bounded negatives: game-content names are NOT in the exe string inventory
+- Date: 2026-10-15
+- Type: observation (bounded searches); inference (data-driven content)
+- Source: three REA searches; raw: `docs/evidence/p1.7-creatures.json`,
+  `docs/evidence/p1.7-aliens-save.json`, `docs/evidence/p1.7-bass-literal.json`
+- Confidence: high for the negatives within the Ghidra-defined inventory
+- Notes: (1) regex `guppy|carnivore|ultravore|breeder|starcatcher|prego|scl_|<30 pet names>` = 0
+  matches. (2) regex `balrog|...|sylv|simcarnivore|userdata|savegame|highscore|cheat|timetrial|challenge`
+  = 13 matches, ALL false positives: 7 MSVC CRT strings (`...vector destructor iterator`,
+  `dynamic atexit destructor for`, etc. at `0x53270c-0x532a08`) and 6 Lua runtime strings
+  (`userdata`, `lightuserdata`, `UserData@%p`, `LightUserData@%p`, `userdata: %p`). (3) literal
+  `bass` (case-insensitive) = 0 matches. Inference: game content names/parameters live in data
+  files (`properties\resources.xml`), not in exe strings; and `bass.dll`/BASS symbols are never
+  plain strings - loading mechanism still unknown (P2.14).
+
+### EV-0020 - `drm\` subsystem on disk: config XMLs, DRM images, compiled custom Lua scripts
+- Date: 2026-10-15
+- Type: observation
+- Source: file inventory + header read of `drm\common\scripts\DRMApp.luc`
+- Confidence: high for files/bytes; variant interpretation marked unknown
+- Notes: contents: `drm\common\drm.xml` (6,790 B) + `.sig`, `drm\custom\drm.xml` (904 B) + `.sig`,
+  `drm\game.png`, `drm\logo.png`, `drm\common\fonts\` (5 Arial `.txt` + 5 `.png`), and
+  `drm\common\scripts\` with 14 `.luc` files: main, DRMApp, Game, Screen, Layout, LuaApp,
+  LuaWidget, LuaCommonWidgets, Common, Consts, DProps, Default, Bullets, ClassLink. `.luc` files
+  are binary; first bytes of DRMApp.luc: `1B 4C 75 61 56 01 02 04 04 04 06 08 09 09 08 B6` =
+  `ESC "LuaV"` - NOT a stock Lua 5.0 (`50`) or 5.1 (`51`) bytecode header; custom/obfuscated
+  variant (exact format unknown). Inference: the DRM/wrapper UI is implemented as a Lua-scripted
+  app (matches `LuaApp`/`LuaWidget`/`LuaWidgetTpl` RTTI, EV-0013).
+
+### EV-0021 - `properties\partner.xml`: 640x480 confirmed, Steam appid 3320, screensaver exe
+- Date: 2026-10-15
+- Type: observation
+- Source: direct file read (`properties\partner.xml`, 589 B)
+- Confidence: high
+- Notes: `Width 640`, `Height 480` (confirms the pixel policy answer Q-0005 against game data);
+  `SteamId 3320`; `Steam` partner; `ProdName Insaniquarium`; `DisplayName Insaniquarium Deluxe`;
+  `ScrExe WinFish_Scr.exe`; `RegistryKey PopCap\Insaniquarium`; `NoReg true`, `DontUpdate true`
+  (Steam build disables registration nag and updater); `VistaCompliant true`; `Offering 15`.
+
+### EV-0022 - `resources.xml` manifest: 333 IDs; full pet/alien/tank rosters; animation geometry
+- Date: 2026-10-15
+- Type: observation
+- Source: direct file read (`properties\resources.xml`, 21,253 B, 391 lines; 333 `id=`
+  attributes counted across groups Init/Register/LoadingThread)
+- Confidence: high
+- Notes: ROSTERS - pets (30, from `SCL_*` set): Stinky, Niko, Itchy, Prego, Zorf, Clyde, Vert,
+  Rufus, Meryl, Wadsworth, Seymour, Shrapnel, Gumbo, Blip, Rhubarb, Nimbus, Amp, Gash, Angie,
+  Presto, Brinkley, Nostradamus, Stanley, Walter, Oscar, Grubber, Starcatcher, Gekko, Breeder,
+  Ultra(vore). Aliens/boss (9, `<!-- aliens -->` block): Sylvester (`SYLV`, `MINISYLV`), Balrog,
+  Gus, Destructor, Ulysses, Psychosquid, Bilaterus, Boss. Tanks: `AQUARIUM1-6` + `TANKMASK1-6` +
+  `TANKBACKDROP1-6` (six sets). Fish families: `SIM{SWIM,EAT,TURN}1-3` (guppy stages by size),
+  `SMALL*`, `HUNGRY*` (hungry/carnivore visuals), `SIMCARNIVORE`, `BREEDER`, `ULTRA`,
+  `STARCATCHER`. Per-image animation geometry present as attributes: `cols`, `rows`, `framemap`,
+  `framedelay`, `begindelay`, `anim` (loop/once/pingpong), `alphaimage` (mask companion),
+  `ddsurface` (DirectDraw surface flag; used by AQUARIUM1-6), `perframedelay`. Sounds: 68
+  entries (`SOUND_*`) with `volume`/`alias` options. Screens: `TITLEPAGE`, `SELECTORSCREEN`,
+  `STORESCREEN`, `HATCHSCREEN`. Seeds P2.2-P2.12 (systems), P3.1/P3.2 (pipeline).
+
+### EV-0023 - `drm\custom\drm.xml` content: marketing bullets, Steam store link
+- Date: 2026-10-15
+- Type: observation
+- Source: direct file read (`drm\custom\drm.xml`, 904 B)
+- Confidence: high
+- Notes: bullet marketing strings for the DRM/upsell screen ("4 tanks with secret pets and
+  amazing new bosses!", "Challenge mode or beat the clock in Timed!", "Earn shells and customize
+  your own Virtual Tank screensaver!"); `BuyURL` = `steam://store/3320`; content descriptors
+  ("Animated Blood", "Mild Cartoon Violence", "Suggestive Themes"); CopyrightDisclaimer
+  "(c)2002 PopCap Games, Inc.". Context for the DRM UI seen in EV-0017/EV-0020.

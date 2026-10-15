@@ -46,6 +46,11 @@ Other root files: `crash.txt`, `drmss.jpg`, `license.txt`, `readme.html`.
 - Engine: PopCap **SexyAppFramework** (MSVC RTTI class map in `.rdata`) with embedded
   **Lua 5.0.2**; Steam integration via legacy `Steam.dll` API; DRM build `DRMProtectRun2`
   (EV-0009, EV-0013, EV-0015, EV-0016).
+- Content is data-driven: pet/alien/fish names do not appear in exe strings; rosters live in
+  `properties\resources.xml` (333 IDs; 30 pets, 9 aliens, 6 tank sets) - EV-0019, EV-0022.
+  `properties\partner.xml`: 640x480, Steam appid 3320, ScrExe `WinFish_Scr.exe` - EV-0021.
+- Wrapper layer on disk: `drm\` folder (config XMLs + `.sig`, DRM screens, 14 compiled custom-Lua
+  `.luc` scripts) - EV-0020, EV-0023.
 
 ## Remake project
 
