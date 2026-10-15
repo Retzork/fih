@@ -73,7 +73,8 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   EV-0036; notes `docs\analysis\notes\p2.1-frameloop.md` (2026-10-15)
 - [~] **P2.2** Tank simulation: fish swim/turn motion, tank bounds, direction/facing logic.
   (2026-10-16: game module carved from exe + RTTI map (EV-0039..EV-0041); `Fish::Update`
-  0x4F6970 + slot 26 0x4E4A90 decompiled (EV-0042); note `docs\analysis\notes\p2.2-tank-sim.md`.
+  0x4F6970 + full vtable map (91 slots), slot 26 = draw entry, slot 83 = sprite draw (EV-0042/
+  EV-0043); note `docs\analysis\notes\p2.2-tank-sim.md`.
   Open: mode/slot semantics, species field, module tick-rate re-check.)
 - [ ] **P2.3** Feeding: food drop physics, hunger/satiety timers, eating states, coin spawn rules
 - [ ] **P2.4** Fish growth & death: guppy -> carnivore -> ultravore stages, starvation, drops

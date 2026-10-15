@@ -620,3 +620,27 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   `FUN_004e1400(arg, 0)` when `+0xC4` set - candidate: draw with flip + overlay. Virtual slots
   used inside Update: 41 (arg = RNG), 81 (+0x144, when target predicate false), 82 (+0x148,
   suppress gate), 89 (+0x164).
+
+### EV-0043 - P2.2: Fish vtable fully mapped (91 slots); slot 26 = draw entry, slot 83 = sprite draw
+- Date: 2026-10-16
+- Type: observation (bytes/pseudocode); inference (role naming)
+- Source: local byte read of `docs\analysis\snapshots\insaniquarium-game-module.exe` (Fish
+  vtable 0x597D54, 96 dwords, file offset = VA - 0x400000); REA dossiers
+  `docs/evidence/p2.2-fish-4DEA00.json`, `p2.2-fish-4F22C0.json`, `p2.2-fish-4DA780.json`;
+  note updates in `docs/analysis/notes/p2.2-tank-sim.md`
+- Confidence: high for addresses/instructions; medium for role naming
+- Notes: Fish vtable real length **91 slots (0-90)** - the dword at 0x597EC0 (slot 91) is
+  `FishTypePet`'s COL (0x5C868C; FishTypePet vtable starts 0x597EC4). Fish overrides vs
+  `GameObject`: 0=0x4F0CB0, 22=0x4F6970 (Update), 26=0x4E4A90 (draw entry), 54=0x4E4C10,
+  56=0x4D5300, 70=0x51A440, 71=0x4D5A80, 81=0x4F1400, 82=0x4F15C0, 83=0x4DEA00, 89=0x4DE840
+  (remaining slots inherited, e.g. 0x46B5B0/0x46C690). **Slot 83 (0x4DEA00) = sprite draw**
+  (Graphics + flip args): 80x80 source cells; srcX = `this[0x1C0]` (frame column) * 80;
+  srcY = row * 80 with row = `this[0x1A0]` (0/1/2 as-is, 3->2, 4->3); colorize via
+  `FUN_004d6f30` / `FUN_004d5aa0` + `FUN_005008f0`; alt 3-frame flash style (bases 0xAE/0xB5/
+  0xB8, alpha toggling `FUN_004558c0`); hit-flash overlay when +0xA0 in 1..5 (alpha
+  `(a0*255)/5`); shadow when +0x98; special render path when `DAT_005e89ce != 0` (sheet column
+  6/9, `FUN_004560a0`). `FUN_004f22c0` = per-tick helper: decrements +0x108/+0x10C/+0xF8/+0x120
+  and, while the live handle at +0x11C exists (`FUN_00538490` check), emits an effect every 30
+  frames at `(x + w/2 - 20, y - 50)` via `FUN_005444e0` (started by `FUN_00540cc0(this[0x8c],
+  this[0x124])`). `FUN_004da780` = predicate "container at `this+0xB8` or `this+0xF4` non-empty"
+  (begin/end pointer pairs, 4-byte elements; 18 in-module callers) - not a hunger check.
