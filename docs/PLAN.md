@@ -1,11 +1,14 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-16 (P2.2 closed and P2.3/P2.5 started in one pass: object factory + type
-ids, spawn recipe, Tank save/load serializer (EV-0044); Food entity + physics + drop flow
-(EV-0045); money/`SpendMoney`+loan, store item enum, BuyItem hub, spawn map (EV-0046); notes
-`p2.2-tank-sim.md` (§9), `p2.3-feeding.md`, `p2.5-economy.md`).
-Next: P2.3 hunger timer/tint + eat states; P2.4 growth/death (coin value by stage); P2.5 coin
-value/pickup (dossier fetched). Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
+Last updated: 2026-10-16 (P2.2 + P2.3 closed; P2.4/P2.5 in progress. One pass: object factory +
+type ids, spawn recipe, Tank save/load serializer (EV-0044); Food entity + physics + drop flow
+(EV-0045); money/`SpendMoney`+loan, store item enum, BuyItem hub, spawn map (EV-0046);
+coin values/AddMoney/collection/spawn (EV-0047); click-feed, hunger counter, eating/growth
+pipeline, coin scheduler (EV-0048). Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final),
+`p2.5-economy.md`.)
+Next: P2.4 remaining (species mapping incl. carnivore/ultravore eat values, DeadFish anim,
+FishTypePet); then P2.5 remaining(price values at Tank init, loan semantics); P2.6 progression.
+Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -15,7 +18,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 1 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 3 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -79,14 +82,22 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   `docs\analysis\notes\p2.2-tank-sim.md`.
   Open (tracked in note §7 + backlog): slots 54/56/70/71/82/89 semantics, `FUN_004d6ae0`/
   `FUN_004e1400`, 0xAE/0xB5/0xB8 draw bases, module tick-rate re-check, periodic-effect spawn.)
-- [~] **P2.3** Feeding: food drop physics, hunger/satiety timers, eating states, coin spawn rules
+- [x] **P2.3** Feeding: food drop physics, hunger/satiety timers, eating states, coin spawn rules
   (2026-10-16: Food entity + ctor + `Food::Update` physics + `Tank::DropFood` + quality/quantity
-  globals -> EV-0045, note `docs\analysis\notes\p2.3-feeding.md`. Open: fish hunger counter/tint,
-  eat states, pellet cap formula, coin spawn (dossier `p2.3-coin-4F5050.json` fetched).)
+  globals -> EV-0045; second pass -> EV-0048: click-feed virtual (slot 54, pellet price
+  `Tank+0x4AC`), pellet cap formula (`quantity` non-special pellets), hunger counter `Fish+0x9C`
+  with thresholds -1/-200/-400/-500 and hint strings, eating pipeline slots 82/84/85/86/77,
+  nutrition/growth model (quality +500/+700/+1100, points `+0x1A4`/`+0x1A8`, stages 0..4, star
+  potion rules), coin scheduler slot 81. Note `docs\analysis\notes\p2.3-feeding.md` (finalized).
+  Open (tracked in note §9): module tick rate, runtime color table values, variant-2 pellet
+  source, `FUN_0053C280`/`FUN_00538230` roles, species vtable->name mapping.)
 - [~] **P2.4** Fish growth & death: guppy -> carnivore -> ultravore stages, starvation, drops
   (2026-10-16: spawn map + type ids (Guppy=0/Oscar=5/Ultra=6/Gekko=7/FishTypePet=0x15/
-  SylvesterFish=0x22/BallFish=0x23/BiFish=0x24) + high-water counters -> EV-0044/EV-0046.
-  Open: growth/stage transitions, starvation, coin value by stage.)
+  SylvesterFish=0x22/BallFish=0x23/BiFish=0x24) + high-water counters -> EV-0044/EV-0046;
+  growth/stage/starve-death model -> EV-0048 (section 7 of p2.3 note): stage points, stage 4
+  overshoot, slot 88 die `0x4D5F90`, star potion stage rules; coin kind->value table in P2.5.
+  Open: species-vtable name mapping, per-species slot 81/84/85/86/77 thresholds, DeadFish
+  `0x4F64E0`/`0x4DE030` animation, upgradeable FishTypePet (0x15) behavior.)
 - [~] **P2.5** Economy: coin values/denominations, pickup logic, money display, store prices
   (2026-10-16: money = `Tank+0x3F0`, `Tank::SpendMoney` + loan, store enum/`BuyItem` hub/
   price table `Tank+0x314[12]`, spawn map, demo money global, ShowMoney option -> EV-0046,
