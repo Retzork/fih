@@ -813,3 +813,18 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
 - Spawn fns are physics-only (FUN_00546D70 guppy: y=30, vy=rand%5+18, dart rand%10+45,
   high-water Tank+0x48C; FUN_00544C00 carnivore: y=40, vy=rand%5+23, Tank+0x46C).
 - Note `docs\analysis\notes\p2.4-growth-death.md` written (status COMPLETE; open items in §7).
+
+### EV-0050 - P2.4: play ctors, Ultra init, stage-carrying species spawner (extends EV-0049)
+- Species play ctors: `FUN_004EFDA0` Oscar (= guppy ctor + vtable + init `FUN_004D84C0`),
+  `FUN_004F02A0` Ultra (= guppy ctor + vtable + init `FUN_004D9EE0`).
+- Ultravore init `FUN_004D9EE0`: type 6, `+0x1A0 = 6` (stage), sprite box 160x160, bounds
+  left 0 / bottom 310 / top 75 / right 480, hunger `rand%200 + 600`, coin timer
+  `FUN_004D71D0(rand%250 + 200)`, `+0x229 = 0`, byte `+0x55 = DAT_005e8f14`.
+- Generic spawner `FUN_00546FC0(x, y, id, facing)` -> ctor `FUN_004EEF90(x, y, stage, facing)`
+  (base Fish at explicit stage; used as DeadFish's default corpse-spawn case; guppy list
+  counter `Tank+0x48C`).
+- Ultravore buy-spawn `FUN_00544E60` = ctor `FUN_004F02A0(rand x, rand y)` + vy `rand%5+25`,
+  y 40.0, dart `rand%10+45`, high-water `Tank+0x470`. Carnivore buy-spawn analog (EV-0049)
+  updates `Tank+0x46C`.
+- Correction to EV-0049/note: stages are NOT sequential per species (Oscar 5, Ultra 6;
+  guppy 0); shared growth machine.
