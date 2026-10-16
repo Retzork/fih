@@ -960,3 +960,95 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
 - Corrections/extends: EV-0044/EV-0046 "pending id 0x1B" -> DeadFish (EV-0052); EV-0051
   "ghost vs live" -> live successor spawn (EV-0053); EV-0049 "types 0xA-0xC parked" ->
   `Sexy::Breeder` (EV-0054).
+
+### EV-0056 - P2.4 third pass: per-species closure (init helpers, eat bodies, spawn paths, stage-size switch, pacing helper)
+- Date: 2026-10-16
+- Type: observation (pseudocode/assembly)
+- Source: `docs/evidence/p2.4-eat-*.json` (4E1950/4E3720/4E3C60/4E3F90/4E40A0),
+  `docs/evidence/p2.4b-init-*.json` (4D72B0/4D95C0/4DB2A0/4DB820/4D8D00/4D7970),
+  `docs/evidence/p2.4b-ctor2-*.json` (4EF9E3/4F0223/4F05B3/4F0673),
+  `docs/evidence/p2.4b-playctorxrefs-*.json` + `p2.4b-vtxrefs-5982C4/5985BC/5988B4/598A24.json`,
+  `p2.4b-randspawn-xrefs.json`, `p2.4b-randspawn-caller-52F17F.json`,
+  `p2.4b-spawndispatch-51B542.json`, `p2.4b-store-spawn-545080/545430.json`,
+  `docs/evidence/p2.4c-pacing-4D71D0.json`, `p2.4c-stageup-4D9D50.json`,
+  `p2.4c-coinkind-544430.json`, `p2.2-fish-4F1400.json` (slot-81 guard re-read);
+  note `docs/analysis/notes/p2.4-growth-death.md` §1/§5.1/§6
+- Confidence: high
+- Notes: init helpers (common shape: `[0x8C]=type`, byte `+0x229=0`, stage `+0x1A0`, top
+  `+0x198=0x69`, bottom `+0x190=0x168`, `+0x55=DAT_005e8f14`, `+0x224=FUN_004D71D0(rand%0xFA+200)`):
+  Gekko `FUN_004D72B0` (type 7, stage 7), Sylvester `FUN_004D95C0` (0x22, stage 1),
+  Ball `FUN_004DB2A0` (0x23, stage 0, box 0x32), Bi `FUN_004DB820` (0x24, stage 0, box 0x50,
+  `+0x230=rand()&1`, `+0x234=0`); Penta `FUN_004D8D00` (type 8: y=rand%5+360, box 80x80,
+  fall speed `+0x178` 2.7/2.5/2.6 by rand%3, hunger `+0x9C=rand%200+900`, `+0x194=40`,
+  growth threshold `+0x1A8=1`, `+0x190=rand%10`, speed `+0x180=45`); Grubber `FUN_004D7970`
+  (type 9: same, but `+0x1A8=0` and `+0x1AC=FUN_004D71D0(rand%200+300)`). Play ctors:
+  Gekko `FUN_004EF9A0`, Sylvester `FUN_004F01E0`, Ball `FUN_004F0570`, Bi `FUN_004F0630`
+  (guppy ctor + vtable swap + init helper + facing write).
+  Slot-77 eat bodies: Gekko `FUN_004E1950` (hunger +700 cap 1000; food test `prey+0x8C==0x1C`
+  -> sound `FUN_005384C0(fish+0x104)` else `FUN_00538560`), Sylvester `FUN_004E3720` (+700 cap
+  1000; grows only at stage 1 -> `FUN_004D9D50(2)`, reset points, grow anim `+0x1CC=10`,
+  sound 0x122), Ultra `FUN_004E3C60` (+900 cap 0x514; special sound `FUN_005384A0` when
+  `+0x124==4 && +0x11C!=-1`), Ball `FUN_004E3F90` (+700 cap 1000; inline stage++ while <2),
+  Bi `FUN_004E40A0` (+700 cap 1000).
+  Tank-roster spawner `FUN_0051B260`: weighted rand%100 Penta 26 / Grubber 25 / Gekko 25 /
+  Breeder 10 / Ultra 5 / Bi 3 / Ball 3 / Sylvester 3, dispatched to ctors `FUN_004EC0F0`/
+  `FUN_004EA7B0`/`FUN_004EF9A0`/`FUN_004EE530`/`FUN_004F02A0`/`FUN_004F0630`/`FUN_004F0570`/
+  `FUN_004F01E0` (alloc sizes 0x1B0/0x1B0/0x230/0x1E0; Bi 0x238); called by virtual-tank
+  populate `FUN_0052F0D0` (xref sites 0x52F17F/0x52F25D/0x52FE1F/0x52FE53) + internal retry
+  0x51B3A8. Store items: 7 "buy guppycruncher" `FUN_00545430` -> Grubber; 8 "buy
+  beetlemuncher" `FUN_00545080` -> Gekko. `FUN_004D9D50(stage)` = stage-size switch
+  (1: box 80x80, x/y +40, top 0x69, bottom 0x168, `+0x194=10`, `+0x19C=0x21C`; 2: box 160x160,
+  x/y -40, top 0x4B, bottom 0x136, `+0x194=0`, `+0x19C=0x1E0`; parent `+0x94` field `+0x15C`
+  = 0/2). `FUN_004D71D0(base)` = mode-5-only override `rand%200+0x10E0`, else base
+  (answers the EV-0049 "role open"); slot-81 drop guard `stage +0x1A0 < 1 && +0xAC < 0`
+  -> no drop (`FUN_004F1400` re-read). `Tank::SpawnCoin` `FUN_00544430` body: new via
+  `FUN_004EEAD0` (5 args), `coin+0x28 = param_6`, `FUN_00542EE0(coin, 0)`, list-add via
+  manager `+0x10` vtable +0xC, UI refresh `FUN_0053AA40()`.
+- Corrections/extends: EV-0049 "ctors are bare (no init helper)" for Gekko/Sylvester/Ball/Bi
+  -> each has an init helper (above); EV-0049/EV-0050 "FUN_004D71D0 role open" -> resolved;
+  note p2.4 §4 "stage-carrying spawner" unchanged. The Gekko eat-body fetch earlier failed
+  once (error JSON `p2.4b-playctorxrefs-4EF9A0.json` records the retryable snapshot-lock
+  message but retains the xrefs 0x51B486/0x52BA17/0x545105).
+
+### EV-0057 - P2.5 third pass: credit = uncollected coins; price arrays A/B/C/D; egg/level handler; SetStorePrice xrefs
+- Date: 2026-10-16
+- Type: observation (pseudocode/assembly/basic blocks); inference (mode naming deferred)
+- Source: `docs/evidence/p2.5c-loan-53A0B0.json`, `p2.5c-loancaller-53C2D3.json`,
+  `p2.5c-pricegen-5380C0.json` + `p2.5c-pricegen-xrefs.json`, `p2.5c-pricegen-caller-54810E.json`
+  (`Tank::Update` 0x547610 analyze), `p2.5c-eggpiece-545960.json` (decompile) +
+  `p2.5c-eggpiece-fn-545960.json` (assembly/basic blocks), `p2.5c-itemget-538090.json`,
+  `p2.5c-iteminit-5409B0.json`, `p2.5c-applyupgrade-5406A0.json`, `p2.5c-tankflush-537D30.json`,
+  `p2.4-site-546332.json` (serializer re-read); note `docs/analysis/notes/p2.5-economy.md` §1/§3/§3.1
+- Confidence: high for bodies/xrefs; mode naming deliberately left open
+- Notes: `FUN_0053A0B0` is NOT a loan: it sums uncollected coin values in the tank - lists
+  `+0xA8` and `+0xEC` via `Coin::Value()` `FUN_004D53A0` for members with byte `+0x198 != 0`,
+  plus list `+0xC8` (offset 200) via `FUN_004D7E60()` for members with byte `+0x174 != 0`;
+  `SpendMoney` therefore lets you spend coins still lying in the tank (the "we'll float you
+  a loan" text is flavor). `FUN_0053C2D0()` = `money += FUN_0053A0B0()` clamp 0..9,999,999 +
+  UI refresh - called by the egg handler (0x545BFD) and `Tank::Update` (0x547A17/0x548F3D).
+  Price arrays (all serialized by `FUN_00546240`): `+0x2E4`[12] = store slot id (-1 = not for
+  sale), `+0x314`[12] = current price (egg aliases `+0x340` = B[11]), `+0x344`[12] = base
+  price (reset target), `+0x374`[12] = mode-4 inflation increment; `+0x3A4+i` bytes =
+  item-present flags; `+0x404 + slot*4` = store item UI objects. `FUN_005380C0(index, price)`
+  = SetStorePrice (clamp 99999, write B, row refresh `FUN_00534380` via getter `FUN_00538090`);
+  only three call sites: 0x54810E (`Tank::Update`, mode==3 && `+0x2E0 < +0x2DC`
+  && tank `+0x3C8 != 5`: 12x `CreateStoreItem(i,1)` then `SetStorePrice(11, 0)`),
+  0x545A9A (egg handler mode-1 "buy random pet": `SetStorePrice(11, 2*B[11])`, `+0x498 += 1`),
+  0x545B81 (egg handler mode-4: reset B[i] = C[i], i != 11, "Prices have been reset!").
+  Egg/level handler `FUN_00545960` full flow in note §3.1: item-11 presence check; mode 3 ->
+  `FUN_00552230` (no spend); spend B[11]; mode 1 -> random-pet grant over the tank's 24 pet
+  slots `Tank+0x144` (skip i==0x13, filter `FUN_00501410(profile,i)`, grant `FUN_00544A90`,
+  double B[11], sound 0x111, return); else egg path (`+0x43C += 1` pieces owned, tutorial
+  "Collect 2 more egg pieces to finish level!", mode-4 `+0x454 = 500` + price reset, refresh
+  `FUN_005406A0(0xB,1)`); at `+0x43C >= 4`: `Tank+0x3FC = FUN_00538040()`, `+0x4EE = 0`,
+  collect-all `FUN_0053C2D0()`, mode 4 -> profile unlock `[profile+0x8B8 + 0x77 + tankIdx] = 1`
+  (tanks 1..4) + `FUN_005144C0`/`FUN_0054BF60` level-complete flow; else stats slot
+  `tank*5 - 6 + level` (`Tank+0x3C8` tank, `+0x3CC` level) via   `FUN_00501420`, tank-5 special
+  rebuilds the free-pet list into globals `DAT_005e8fe0` (array) + `DAT_005e9080` (count),
+  jingles/screens
+  `FUN_00501370`/`FUN_00501200`/`FUN_0054BE80`/`FUN_0053DC10`. Initial A/C/D values for a
+  fresh tank remain unfound (bounded search: `FUN_00538090`, `FUN_005409B0`, `FUN_005406A0`,
+  `FUN_00546240`, `FUN_00537D30`, `FUN_00546AA0` + all setter xref sites) - hand-off to P2.6.
+- Corrections/extends: EV-0046 "loan" -> uncollected-coin credit (correction); EV-0046 price
+  table `+0x314` -> four-array model A/B/C/D; p2.5 note §3.1 new; `FUN_00534450` = item-11
+  refresh when random-pet candidates <= 1 (role recorded, purpose open).

@@ -1,17 +1,20 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-16 (P2.2 + P2.3 closed; P2.4/P2.5 in progress. Object factory + type ids,
+Last updated: 2026-10-16 (P2.4 closed; P2.5 in progress. Object factory + type ids,
 spawn recipe, Tank save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045);
 money/`SpendMoney`+loan, store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/
 collection/spawn (EV-0047); click-feed, hunger counter, eating/growth pipeline, coin scheduler
 (EV-0048); species map, ctor tuning, Oscar/Ultravore inits, DeadFish + successor spawns
 (EV-0049/0050/0051); corpse spawner + DeadFish identity (type 0x1B) + full Update replay with
 LIVE successors (EV-0052/0053); death entry points + types 0xA-0xC = `Sexy::Breeder`
-(EV-0054); coin-hit dispatch mapped per list (EV-0055). Notes `p2.2-tank-sim.md` (§9),
-`p2.3-feeding.md` (final), `p2.4-growth-death.md`, `p2.5-economy.md`.)
-Next: P2.4 open items (Gekko/Sylvester/Ball/Bi spawn paths + eat bodies, FishTypePet; corpse
-revive trigger); then P2.5 remaining (initial price values, loan semantics, coin-hit gameplay
-intent); P2.6 progression. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
+(EV-0054); coin-hit dispatch mapped per list (EV-0055); per-species closure - init helpers,
+eat bodies, roster + store spawn paths, stage-size switch, coin pacing (EV-0056); credit =
+uncollected coins, price arrays A/B/C/D, egg/level handler + `SetStorePrice` xrefs (EV-0057).
+Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final), `p2.4-growth-death.md` (complete),
+`p2.5-economy.md`.)
+Next: P2.5 remaining opens (initial A/C/D price values - bounded search negative, level data
+hand-off to P2.6; mode enum naming -> P2.11; coin-hit gameplay intent Q-0010 -> runtime
+verify); then P2.6 progression. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -21,7 +24,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 3 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 4 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -95,7 +98,7 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   potion rules), coin scheduler slot 81. Note `docs\analysis\notes\p2.3-feeding.md` (finalized).
   Open (tracked in note §9): module tick rate, runtime color table values, variant-2 pellet
   source, `FUN_0053C280`/`FUN_00538230` roles, species vtable->name mapping.)
-- [~] **P2.4** Fish growth & death: guppy -> carnivore -> ultravore stages, starvation, drops
+- [x] **P2.4** Fish growth & death: guppy -> carnivore -> ultravore stages, starvation, drops
   (2026-10-16: spawn map + type ids (Guppy=0/Oscar=5/Ultra=6/Gekko=7/FishTypePet=0x15/
   SylvesterFish=0x22/BallFish=0x23/BiFish=0x24) + high-water counters -> EV-0044/0046;
   growth/stage/starve-death model -> EV-0048 (p2.3 note §7): stage points `+0x1A4`/`+0x1A8`,
@@ -111,18 +114,33 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   slot 0x144 = `FUN_004DB250` (EV-0053), death entry points slot 88 `FUN_004D5F90` +
   collectors `FUN_004F2890`/`FUN_004F3C60`/`FUN_004DD5D0` + starve gate `FUN_004D69D0`,
   types 0xA-0xC = `Sexy::Breeder` stages 0-2 (EV-0054).
-  Open: tank-roster spawn paths + eat-nutrition bodies for Gekko/Sylvester/Ball/Bi (`0x4E1950`/
-  `0x4E3720`/`0x4E3C60`/`0x4E3F90`/`0x4E40A0`), corpse revive trigger (writer of phase
-  `+0x190 <= 10`), FishTypePet (0x15) in P2.7 scope.)
+  Third pass (2026-10-16): CLOSED -> EV-0056: per-species init helpers (Gekko `FUN_004D72B0`
+  stage 7 / Sylvester `FUN_004D95C0` stage 1 / Ball `FUN_004DB2A0` / Bi `FUN_004DB820` +
+  Penta `FUN_004D8D00` / Grubber `FUN_004D7970`), slot-77 eat bodies of all five remaining
+  classes (+700 cap 1000; Ultra +900 cap 1300; Sylvester grows via `FUN_004D9D50(2)`;
+  Ball inline stage++), tank-roster weighted spawner `FUN_0051B260` (+ virtual populate
+  caller `FUN_0052F0D0`), store spawn mapping (guppycruncher -> Grubber, beetlemuncher ->
+  Gekko), stage-size switch `FUN_004D9D50`, coin-pacing helper `FUN_004D71D0` (mode-5-only
+  override) + slot-81 drop guard. Deferrals: FishTypePet (0x15) -> P2.7; corpse revive
+  trigger (writer of phase `+0x190 <= 10`) -> Q-0009 (P2.6/P2.7); stage->coin-kind per
+  species tracked in note §7.)
 - [~] **P2.5** Economy: coin values/denominations, pickup logic, money display, store prices
   (2026-10-16: money = `Tank+0x3F0`, `Tank::SpendMoney` + loan, store enum/`BuyItem` hub/
   price table `Tank+0x314[12]`, spawn map, demo money global, ShowMoney option -> EV-0046,
   note `docs\analysis\notes\p2.5-economy.md`; EV-0047 coin values/AddMoney/collection/spawn;
   EV-0055 coin-hit per-list dispatch (`+0xD0` Penta list verified; `+0xC4` Grubber /
   `+0xC0` Breeder family by inference).
-  Open: initial price values (4x12 arrays `+0x2E4/+0x314/+0x344/+0x374` are save/level state
-  restored by `FUN_00546240`), loan `FUN_0053A0B0` semantics, gameplay intent of the coin-hit
-  collector trio (EV-0055), money format `DAT_005adec0`.)
+  Third pass (2026-10-16): -> EV-0057: "loan" corrected - `FUN_0053A0B0` = value of
+  uncollected coins in the tank (lists `+0xA8`/`+0xEC`/`+0xC8`), so `SpendMoney` may spend
+  coins still on the floor; collect-all `FUN_0053C2D0`; price arrays A `+0x2E4` = slot /
+  B `+0x314` = price / C `+0x344` = base / D `+0x374` = increment, `SetStorePrice`
+  `FUN_005380C0` has exactly 3 call sites (mode-3 store rebuild + egg price 0; random-pet
+  doubling `2*B[11]`; mode-4 reset to C); egg/level handler `FUN_00545960` full flow
+  (24 pet slots `Tank+0x144`, `+0x43C` egg pieces, profile unlock `+0x77+tank` for tanks
+  1-4, stats slot `tank*5-6+level`); `Tank::SpawnCoin` `FUN_00544430` body.
+  Open: initial A/C/D values (bounded search negative - level data, hand-off to P2.6);
+  mode enum naming (0/1/3/4/5 observed conditions only -> P2.11); coin-hit trio gameplay
+  intent (Q-0010); money format `DAT_005adec0`.)
 - [ ] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
 - [ ] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
   per pass; each pet gets its own EV entries)
