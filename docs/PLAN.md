@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-16 (P2.4 closed; P2.5 in progress. Object factory + type ids,
+Last updated: 2026-10-16 (P2.4 closed; P2.5 done except P2.11-linked naming; P2.6 in progress. Object factory + type ids,
 spawn recipe, Tank save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045);
 money/`SpendMoney`+loan, store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/
 collection/spawn (EV-0047); click-feed, hunger counter, eating/growth pipeline, coin scheduler
@@ -11,13 +11,16 @@ LIVE successors (EV-0052/0053); death entry points + types 0xA-0xC = `Sexy::Bree
 eat bodies, roster + store spawn paths, stage-size switch, coin pacing (EV-0056); credit =
 uncollected coins, price arrays A/B/C/D, egg/level handler + `SetStorePrice` xrefs (EV-0057);
 money label `"%d"` (EV-0058); fourth pass: store item 6 spawn = Penta = Starcatcher (EV-0059);
-wiki cross-reference pass for names/modes/money/prices + wiki policy D-0010 (EV-0060).
+wiki cross-reference pass for names/modes/money/prices + wiki policy D-0010 (EV-0060);
+P2.6 first pass - level-start pair `FUN_0054CBF0`/`FUN_00541A20`, per-tank/level store tables
+`FUN_00541200`, session init `FUN_005498B0`, completion/overlays/tutorial, screen flow + credits
+(EV-0061-0065).
 Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final), `p2.4-growth-death.md` (complete),
-`p2.5-economy.md`, `wiki-refs.md`.)
-Next: P2.5 remaining opens (initial A/C/D price values - level data hand-off to P2.6; mode enum
-naming -> P2.11 with wiki cross-refs; coin-hit gameplay intent Q-0010 -> runtime verify; VT
-beetle value discrepancy); then P2.6 progression. Phase 2 closes with P2.18 `docs\SPECS.md`
-per D-0008.
+`p2.5-economy.md`, `p2.6-progression.md` (first pass), `wiki-refs.md`.)
+Next: P2.6 continues - tank/level advance writer (Q-0012), trophy screen (2nd "Congratulations!"
+xref 0x51D1D6), `FUN_00537C20`/`+0x2C0` roles; then P2.7 pets. P2.5 leftovers: mode enum naming
+-> P2.11; coin-hit intent Q-0010 -> runtime; VT beetle value. Phase 2 closes with P2.18
+`docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -150,7 +153,22 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   A/C/D values (bounded search negative - level data, hand-off to P2.6); mode enum naming
   (0/1/3/4/5 observed conditions only -> P2.11); coin-hit trio gameplay intent (Q-0010); VT
   beetle value (binary x5 vs wiki).)
-- [ ] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
+- [~] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
+  (2026-10-16, first pass -> EV-0061: level-start orchestrator `FUN_0054CBF0` + tank init
+  `FUN_00541A20` (tank/level = `profile+0x1C/+0x20`, money 200/999999, `+0x43C = 1` egg pieces,
+  `+0x3E4 = 2` pet slots, C = B, D = B/100, `+0x2DC` visible items); EV-0062: store initializer
+  `FUN_00541200` per tank/level (A/B tables, carnivore/starcatcher/guppycruncher/beetlemuncher/
+  ultravore availability, egg prices 150..99999, mode-4 overrides 5000/15000/25000, mode-1
+  egg = 100) - closes the EV-0057 initial-value hand-off; EV-0063: session init `FUN_005498B0`
+  (mode names: 0 Adventure / 1 Time Trial (+0x3BC 300/600 s) / 3 Sandbox / 4 Challenge / 5 VT;
+  welcome banners; pets from `profile+0x5A`; level clock base `+0x3B4/+0x3B8`); EV-0064:
+  completion (`+0x43C >= 4` = 3 purchases; tank 5 starts 3; `Tank+0x3FC` = elapsed seconds
+  via `FUN_00538040`; overlay spawners `FUN_0054BE80` 0xB8 / `FUN_0054BF60` 0x18C; tutorial
+  `FUN_004F1840` `+0x4D8` flag); EV-0065: screen flow (PetsScreen `FUN_005289F0` writes
+  `profile+0x5A`, 3-pet dialogs; next-screen spawns; event dispatcher `FUN_005527C0`; sandbox
+  entry `FUN_005177E0`; credits `FUN_00525A60`). Open: tank/level advance writer Q-0012; trophy
+  screen xref 0x51D1D6; `FUN_00537C20`; `+0x2C0`; mode 2 role. Note
+  `docs\analysis\notes\p2.6-progression.md`.)
 - [ ] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
   per pass; each pet gets its own EV entries)
 - [ ] **P2.8** Aliens: per-tank alien types, spawn waves, attack patterns, hitpoints

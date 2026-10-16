@@ -1117,3 +1117,138 @@ behavior or specs; follow up with a binary observation entry.
   Minisylvester growth (binary init stage 1 -> grows once to 160x160 stage 2, EV-0056; wiki
   describes two mini stages + adult); alien HP values (Sylvester 10, Balrog 22, Bilaterus 17
   per head - wiki only, verify P2.8). None of this changes any binary-derived value.
+
+### EV-0061 - P2.6 first pass: level-start pair - `Tank` init `FUN_00541A20` + orchestrator `FUN_0054CBF0` (closes the EV-0057 initial-value hand-off)
+- Date: 2026-10-16
+- Type: observation (decompile of two functions + caller xrefs)
+- Source: `docs/evidence/p2.6-storeinit-caller-541C1A.json` (`FUN_00541A20`), `p2.6-tankinit-caller-54CC19.json`
+  (`FUN_0054CBF0`), `p2.6-storeinit-xrefs.json`, `p2.6-tankinit-xrefs.json`
+- Confidence: high
+- Notes: `FUN_0054CBF0` (level-start orchestrator, single caller chain from menu/selector flows):
+  clears manager byte `+0x883`; mode 5 gate `FUN_0054CB20`; `FUN_0054C540()`; then `FUN_00541A20()`;
+  `FUN_0054B2A0()` true -> `FUN_00537E20()` + `FUN_0054B2D0()`; mode 5 -> `FUN_0053C3F0()` +
+  `FUN_0054B2D0()`; else `FUN_005498B0()` (EV-0063) + `FUN_0054B2D0()`.
+  `FUN_00541A20` (`Tank` method, `in_ECX` = tank, manager = `Tank+0x8C`) is the per-level state reset:
+  (1) 12-item loop zeroes `A` (`+0x2E4`) to -1, `B` (`+0x314`) to 0, `D` (`+0x374`) to -1, and
+  item-present bytes `+0x3A4+i` to 0; (2) mode 0 (Adventure): tank `+0x3C8 = profile+0x1C`,
+  level `+0x3CC = profile+0x20`; other modes: tank `= manager+0x888`, level = 5;
+  (3) money `Tank+0x3F0` = 999999 (mode 3) else 200; `+0x4AC = 5`; `+0x2C0 = 3000`;
+  **`+0x43C = 1` (egg-piece counter starts at 1)**; `+0x3E4 = 2` (pet slots); `+0x2BC = 2`;
+  demo (`manager+0x880 != 0`): `+0x3E4 = 8`, `+0x3F0 = 200`, `DAT_005df58c = 3`;
+  (4) clears `+0x460..+0x4A8`; (5) `FUN_0053A360()` (money label), `memset(Tank+0x4B0, 0, 0x36)`,
+  `FUN_00541200()` (EV-0062); (6) final 12-item loop: `C[i] = B[i]` (`+0x344 <- +0x314`),
+  `D[i] = B[i]/100` when `D[i] == -1`, and `+0x2DC` = number of items with `A[i] >= 0` (visible
+  item count used by the mode-3 store rebuild EV-0057); (7) mode 5 -> `FUN_0053E280()`, then a
+  vtable `+0x28` call. Resolves EV-0057's "initial A/C/D unfound": A/B come from `FUN_00541200`,
+  C = B and D = B/100 by default (`FUN_00537C20` role still open).
+
+### EV-0062 - P2.6: per-tank/level store initializer `FUN_00541200` (A/B tables, egg-piece prices, mode overrides)
+- Date: 2026-10-16
+- Type: observation
+- Source: `docs/evidence/p2.6-storeinit-541200.json`; located via REA `search-bytes` of
+  `E4 02 00 00` in `.text` 0x401000-0x595900 -> 10 hits (`docs/evidence/p2.6-disp2E4-search.json`),
+  one write site inside `FUN_00541200`
+- Confidence: high (bodies); table semantics per prior EV-0057 mapping
+- Notes: called only from `FUN_00541A20` (EV-0061). Non-demo branch writes per tank (`+0x3C8`) and
+  level (`+0x3CC`):
+  - tank 1: `B[0]=100` (guppy), `B[2]=200` (food quality), `B[3]=300` (food quantity),
+    `B[4]=1000` (carnivore), `B[10]=1000` (weapon); A slots present: 0/1/2/3/5/6; level switch
+    hides items by `A = -1` - L1 hides quality+quantity+carnivore+weapon, L2 hides
+    carnivore+weapon, L3-5 all present; egg price `B[11] = 150/500/2000/3000/5000` for L1-5.
+  - tank 2: `B[0]=100`, `B[2]=200`, `B[3]=300`, `B[5]=250`, `B[6]=750` (starcatcher, EV-0059),
+    `B[10]=1000`; A: 0->0 guppy, 2->1 quality, 3->2 quantity, 5->3 (B=250), 6->4 (starcatcher),
+    10->5 weapon, 11->6 egg; carnivore `A[4]` stays -1 (not sold); L1-2 hide weapon; egg price
+    750/3000/5000/7500/10000.
+  - tank 3: `B[0]=100`, `B[2]=200`, `B[3]=300`, `B[7]=750` (guppycruncher), `B[8]=2000`
+    (beetlemuncher), `B[10]=2000`; A: 0, 1, 2, 7->3, 8->4, 10->5, 11->6; no starcatcher
+    (`A[6]` stays -1); L1 hides weapon + beetlemuncher, L2 randomizes `+0x2BC = 4 | rand&1`;
+    egg price 1000/5000/7500/10000/15000.
+  - tank 4: `B[1]=200`, `B[2]=200`, `B[3]=300`, `B[4]=1000` (carnivore), `B[9]=10000`
+    (ultravore), `B[10]=5000`; A: 1->0 (breeder), 2->1, 3->2, 4->3, 8->4, 10->5, 11->6;
+    L1 hides weapon + beetlemuncher, L2 sets `+0x2BC=8`; egg price 3000/25000/50000/75000/99999.
+  - tank 5: egg price `B[11]=0`, `+0x43C = 3` (counter starts at 3 - one more piece completes),
+    `+0x2BC = 0x15`.
+  Demo branch (manager `+0x880 != 0`): sets `B[0]=100`, `B[4]=1000`, `B[6]=750`, `B[7]=750`,
+  `B[8]=2000`, `B[9]=10000`, `A[11]=6`, `A[0]=0`, egg price 5000/5000/10000/25000 for tanks
+  1-4 (sold slots: 0, 4, 6, 7, 8, 9, 11). Post-switch overrides: mode 4 -> egg price
+  5000/15000/25000 (tanks 2/3/4); mode 1 ->
+  `B[11] = 100` (Time Trial random-pet start, matches EV-0060 wiki table); mode 5 ->
+  `FUN_00538A10(profile+0x8C + 1)` (VT theme). Ends with 12x `FUN_005409B0(i, 1)`
+  (CreateStoreItem) + `FUN_00537C20()`. Wiki prices (EV-0060) now confirmed against binary for
+  guppy/food/starcatcher/guppycruncher/beetlemuncher; egg prices are per tank/level as above.
+
+### EV-0063 - P2.6: level-start screen init `FUN_005498B0` (mode names, welcome banners, pet grants, timers)
+- Date: 2026-10-16
+- Type: observation; inference (mode-2 role left open)
+- Source: `docs/evidence/p2.6-nextlevel-fn-549C6E.json` (xref of `"Welcome to the next level!"`
+  0x5A8BAC -> 0x549C6E)
+- Confidence: high
+- Notes: banner selection by mode/tank/level: mode 0 Adventure - `"Welcome to the Insaniquarium!"`
+  (tank1 L1, `profile+0x59 == 0`), `"Welcome to the Bonus Adventure!"` (same, `+0x59 != 0` +
+  `profile+0x50 == 1`), `"Welcome to the next level!"` (tank1 L2), `"Welcome to the second tank!
+  Now things get tricky!"` (tank2 L1); mode 1 Time Trial - `"Welcome to Time Trial mode!"` with
+  timer `Tank+0x3BC = 300` (tank1) / 600 (tanks 2-4) sec; mode 3 - `"You've discovered the
+  top-secret SANDBOX mode!"`; mode 4 - `"Welcome to Challenge mode!"`; mode 5 - no banner.
+  **Mode naming correction to EV-0060: mode 3 = Sandbox (not "Adventure level lifecycle"); mode 0
+  = Adventure.** Pet setup: if `((profile+0x59 == 0 || (mode != 1 && mode != 4)) && profile+0x18 < 4)`
+  loop i 0..0x12 with `FUN_00501410(i)` -> `FUN_00544A90(i)` (create owned pets); else loop i
+  0..0x17 and create pet i when `profile+0x5A+i != 0` (selection flags written by the PetsScreen,
+  EV-0065); tank 5: creates pets 0..0x11 unconditionally + `+0x2C0 = 300`. Tank 4 spawns
+  `FUN_005471E0()` and marks the last spawned object `+0x1A4 = 2`; tanks 1-4 spawn 2x
+  `FUN_00546EF0()` likewise (`+0x1A4 = 2`, tank1 L1 also sets `+0x228 = 1`). End: clears
+  `+0x444/+0x450/+0x454/+0x45C/+0x458`, sets `+0x3B4 = +0x3B8 = FUN_00537B60()` (level timer
+  base, feeds EV-0064's completion time), `+0x4E8 = 0`, `+0x4E6 = 0`.
+
+### EV-0064 - P2.6: completion path - egg counter semantics, elapsed time, overlay spawners, tutorial flag
+- Date: 2026-10-16
+- Type: observation
+- Source: `docs/evidence/p2.6-eggresult-538040.json` (`FUN_00538040`), `p2.6-levelcomplete-54BE80.json`
+  (`FUN_0054BE80`), `p2.6-levelcomplete-53DC10.json` (`FUN_0053DC10`), `p2.6-levelend-54BF60.json`
+  (`FUN_0054BF60`), `p2.6-egg3str-fn-4F19CE.json` (`FUN_004F1840`, xref of `"Buy 3 egg pieces to
+  complete level!"` 0x598DCC -> 0x4F19CE)
+- Confidence: high
+- Notes: (1) Egg counter closed: `+0x43C = 1` at level start (EV-0061), `FUN_00545960` increments per
+  purchase and completes at `>= 4` (EV-0057), tank 5 starts at 3 (EV-0062) - so 3 purchases per
+  level; the tutorial hint at `+0x43C == 1` (`"Collect 2 more egg pieces to finish level!"`) and
+  `"Buy 3 egg pieces to complete level!"` are consistent. (2) `FUN_00538040` =
+  `(FUN_00537B60() - Tank+0x3B8) / 1000` -> `Tank+0x3FC` = level completion time in seconds.
+  (3) Overlay spawners (not level advance): `FUN_0054BE80` allocs 0xB8 -> ctor `FUN_0051F450`
+  (`manager+0x814`) for the normal completion path (profile `+0x59 == 0`); `FUN_0054BF60` allocs
+  0x18C -> ctor `FUN_0052DAD0` (`manager+0x818`) for Challenge mode and tank5/L1 completions.
+  `FUN_0053DC10` = thin `profile+0x59 != 0` path: `+0x4EE = 1`, `FUN_0053C480(+0x10)`,
+  `FUN_0054B020`, `FUN_0054B1A0(2, 0x36, 0)`, `FUN_00537E20` (no overlay). (4) Tutorial driver
+  `FUN_004F1840` (step object `+0x1A0`): tank1 L1 sets `Tank+0x4B2 = 1` and pending flag
+  `Tank+0x4D8 = 1` (consumed by the egg handler, EV-0057); later steps show
+  `"Upgrade Food Quality to make food more nourishing!"` etc.; `+0x59 != 0` suppresses all hints.
+
+### EV-0065 - P2.6: screen flow - PetsScreen confirm, next-screen spawns, event dispatcher, sandbox entry, credits (open: profile tank/level writer)
+- Date: 2026-10-16
+- Type: observation; explicit unknown (advance writer)
+- Source: `docs/evidence/p2.6-selector-528D83.json` (`FUN_005289F0` = PetsScreen method 0x5289F0 per
+  RTTI vtable `PetsScreen::Sexy`), `p2.6-flow-552100.json` (`FUN_00552100`), `p2.6-start-552475.json`
+  (`FUN_00552380`), `p2.6-advance-552A1E.json` (`FUN_005527C0`), `p2.6-hatch-517843.json`
+  (`FUN_005177E0`), `p2.6-vanquished-fn-525B2F.json` (`FUN_00525A60`), `p2.6-hatch-51A500.json`
+  (`FUN_0051A500`), `p2.6-lvlreset-search.json`
+- Confidence: high for bodies; the advance writer is NOT located (no guess)
+- Notes: `FUN_005289F0(param)` = PetsScreen pet slots (`param < 0x18` toggles slot object
+  `+0x130`, sets current `+0xA4`); `param == 99` confirm: copies 24 slot flags (objects at `+0x14`,
+  stride 4) into `profile+0x5A+i`; when `this+0x9C <= 2` (fewer than 3 pets) shows the
+  `"Are you sure you want to continue to the next level without selecting 3 pets?"` /
+  `"...at least 3 pets?"` dialogs (branch `this+0xA8 < 4`); then `FUN_0054AF90()` and either
+  reload pets into the running tank (`manager+0x730 != 0`: `FUN_00538940()` + `FUN_0053DB80(0)`)
+  or start the level `FUN_0054CBF0()` (EV-0061); `param == 100` = back (`FUN_00552100`).
+  `FUN_00552100` spawns the next-screen object 0xE8 (`FUN_0052E070`) at `manager+0x738`.
+  `FUN_00552380`: clears `profile+0x5A..0x71`, tutorial branch (mode 0, tank1, `profile+0x20 < 4`,
+  `+0x59 == 0`) -> `FUN_0054C220(1)`; else `FUN_0054C2D0()` (spawns 0x138 screen `FUN_00527820` at
+  `manager+0x80C`) or `FUN_0054CBF0()`. `FUN_005527C0` = UI event dispatcher (switch over 0..0x28,
+  0xBBB/0xBBC/0xBD0-0xBE0, 2000+x, 3000+x; ids 4 and 0x14 call `FUN_0054CBF0`). Sandbox entry
+  `FUN_005177E0`: `profile+0xB0 > 5` -> `mode = 3`, `profile+0xB4 = max(profile+0xB4, 11)`,
+  `FUN_0054B360()` + `FUN_0054CBF0()`. Challenge-mode pet unlock bytes `profile+0x77+i` gate pet
+  buttons in `FUN_0051A500` (HatchScreen layout helper; Time Trial gates by `profile+0x1C` and
+  `+0x59`). `FUN_00525A60` = end-credits/victory sequence (uses `"Congratulations!"`,
+  `"You've successfully vanquished the alien hordes!"`, pet-loss jokes keyed on `DAT_005e9080`,
+  then the full PopCap credits roll; a second `"Congratulations!"` xref at 0x51D1D6 not yet
+  examined). **Open:** no writer of `profile+0x1C/+0x20` (tank/level advance) located this pass;
+  bounded `search-bytes` `C7 ?? 20 01 00 00 00` in `.text` -> 5 hits (`FUN_004B2010` 0x4B242E,
+  `FUN_00501530` 0x501541, `FUN_0051A500` 0x51A5BF = stack local, 2x CRT); first two unexamined
+  -> Q-0012.

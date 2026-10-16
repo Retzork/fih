@@ -147,3 +147,13 @@
   hostile aliens are plausibly `Alien` instances selected by type id/data (or classes without
   RTTI), but nothing is confirmed. Resolve in P2.8 by tracing the alien spawn waves and the
   `Alien` ctor callers; do not guess class names for the remake until then.
+
+### Q-0012 - Who writes the tank/level advance (`profile+0x1C`/`profile+0x20`)?
+- OPEN (2026-10-16, EV-0061/EV-0065). Adventure reads current tank/level from `profile+0x1C`
+  and `profile+0x20` at level start (`FUN_00541A20`), and the remake needs the writer to get
+  level-5 -> tank++ and the tank-5 victory transition right. First pass did not locate it:
+  bounded `search-bytes` `C7 ?? 20 01 00 00 00` in `.text` (0x401000-0x595900) returned only
+  `FUN_004B2010` (0x4B242E), `FUN_00501530` (0x501541), `FUN_0051A500` (0x51A5BF = stack local)
+  and 2x CRT (`p2.6-lvlreset-search.json`). Next: decompile `FUN_004B2010`/`FUN_00501530`,
+  the second `"Congratulations!"` xref (0x51D1D6, trophy screen region) and the HatchScreen
+  OK handler; do not guess the increment order (level++ vs tank++) until then.
