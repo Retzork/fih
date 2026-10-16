@@ -5,11 +5,13 @@ spawn recipe, Tank save/load serializer (EV-0044); Food entity/physics/drop flow
 money/`SpendMoney`+loan, store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/
 collection/spawn (EV-0047); click-feed, hunger counter, eating/growth pipeline, coin scheduler
 (EV-0048); species map, ctor tuning, Oscar/Ultravore inits, DeadFish + successor spawns
-(EV-0049/0050/0051). Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final),
-`p2.4-growth-death.md`, `p2.5-economy.md`.)
-Next: P2.4 open items (Gekko/Sylvester/Ball/Bi spawn paths + eat bodies, DeadFish successor
-semantics, FishTypePet); then P2.5 remaining (initial price values, loan semantics); P2.6
-progression. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
+(EV-0049/0050/0051); corpse spawner + DeadFish identity (type 0x1B) + full Update replay with
+LIVE successors (EV-0052/0053); death entry points + types 0xA-0xC = `Sexy::Breeder`
+(EV-0054); coin-hit dispatch mapped per list (EV-0055). Notes `p2.2-tank-sim.md` (§9),
+`p2.3-feeding.md` (final), `p2.4-growth-death.md`, `p2.5-economy.md`.)
+Next: P2.4 open items (Gekko/Sylvester/Ball/Bi spawn paths + eat bodies, FishTypePet; corpse
+revive trigger); then P2.5 remaining (initial price values, loan semantics, coin-hit gameplay
+intent); P2.6 progression. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -104,16 +106,23 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   gore splats) and Ultravore (stage 6, 160px, hunger 600-799) inits, DeadFish `FUN_004F64E0`
   (death sound 0x125, successor spawn table 5/6/7/8/9/10-12, corpse drift), stage-carrying
   spawner `FUN_004EEF90`.
+  Second pass (2026-10-16): corpse spawner `FUN_005441F0` + DeadFish type 0x1B + field map
+  (EV-0052), `DeadFish::Update` full replay with successors = LIVE spawns and detach
+  slot 0x144 = `FUN_004DB250` (EV-0053), death entry points slot 88 `FUN_004D5F90` +
+  collectors `FUN_004F2890`/`FUN_004F3C60`/`FUN_004DD5D0` + starve gate `FUN_004D69D0`,
+  types 0xA-0xC = `Sexy::Breeder` stages 0-2 (EV-0054).
   Open: tank-roster spawn paths + eat-nutrition bodies for Gekko/Sylvester/Ball/Bi (`0x4E1950`/
-  `0x4E3720`/`0x4E3C60`/`0x4E3F90`/`0x4E40A0`), DeadFish successor semantics (ghost vs live),
-  FishTypePet (0x15) in P2.7 scope.)
+  `0x4E3720`/`0x4E3C60`/`0x4E3F90`/`0x4E40A0`), corpse revive trigger (writer of phase
+  `+0x190 <= 10`), FishTypePet (0x15) in P2.7 scope.)
 - [~] **P2.5** Economy: coin values/denominations, pickup logic, money display, store prices
   (2026-10-16: money = `Tank+0x3F0`, `Tank::SpendMoney` + loan, store enum/`BuyItem` hub/
   price table `Tank+0x314[12]`, spawn map, demo money global, ShowMoney option -> EV-0046,
-  note `docs\analysis\notes\p2.5-economy.md`; EV-0047 coin values/AddMoney/collection/spawn.
+  note `docs\analysis\notes\p2.5-economy.md`; EV-0047 coin values/AddMoney/collection/spawn;
+  EV-0055 coin-hit per-list dispatch (`+0xD0` Penta list verified; `+0xC4` Grubber /
+  `+0xC0` Breeder family by inference).
   Open: initial price values (4x12 arrays `+0x2E4/+0x314/+0x344/+0x374` are save/level state
-  restored by `FUN_00546240`), loan `FUN_0053A0B0` semantics, collector class owners of
-  `FUN_004DD5D0`/`FUN_004F3C60`/`FUN_004F2890`, money format `DAT_005adec0`.)
+  restored by `FUN_00546240`), loan `FUN_0053A0B0` semantics, gameplay intent of the coin-hit
+  collector trio (EV-0055), money format `DAT_005adec0`.)
 - [ ] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
 - [ ] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
   per pass; each pet gets its own EV entries)

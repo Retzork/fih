@@ -841,3 +841,122 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   else -> FUN_00546FC0 -> FUN_004EEF90(x,y,stage,facing) (base Fish at stage).
 - Interpretation (ghost/next-tier successor vs live respawn) recorded as OPEN in note §4/§7;
   the call graph itself is exact.
+
+### EV-0052 - P2.4: corpse spawner `FUN_005441F0` + `DeadFish` identity/fields (closes EV-0044 pending id 0x1B)
+- Date: 2026-10-16
+- Type: observation (pseudocode/bytes); inference (class identity via RTTI vtable store)
+- Source: REA dossiers `docs/evidence/p2.4b-corpse-5441F0.json`,
+  `p2.4b-deadfishctor-4EED20.json`, `p2.4-4F64E0.json`, `p2.4b-die-4D5F90.json`,
+  `p2.4b-collector-4DD5D0.json`, `p2.4b-collector-4F2890.json`, `p2.4b-collector-4F3C60.json`,
+  `p2.4b-deadfish-slot81-4DB250.json`; RTTI map `docs/evidence/p2.2-module-rtti-classes.txt`
+- Confidence: high for addresses/fields; medium for spawner argument roles
+- Notes: `FUN_005441F0(...)` = corpse (`DeadFish`) spawner: alloc `0x1A8` -> `FUN_004EED20`,
+  then `FUN_00542EE0(obj, 0)` (activation flag 0 = inert; live creatures activate with 1),
+  list-add via `[manager+0x10]` vtable `+0xC`, `obj+0x94 = parent` (when non-null the parent's
+  `+0x158` receives the corpse back-pointer), UI refresh `FUN_0053AA40()`. Play ctor
+  `FUN_004EED20` stores `Sexy::DeadFish::vftable` (0x597BFC; Update slot 22 = 0x4F64E0 per
+  EV-0043) and type id `[0x8C] = 0x1B` - **this resolves the "pending 0x1B" factory id of
+  EV-0044/EV-0046 to DeadFish** (bare ctor `FUN_004EED00`, size 0x1A8; coin factory ids
+  0x19/0x1A remain pending). Field model (ctor + Update): position doubles `+0x160`
+  (vertical) / `+0x168` (horizontal) with packed int copies `+0x30/+0x34`; velocity doubles
+  `+0x170` (vx, raw from one spawner arg) / `+0x178` (vy = arg - drift; drift = 1.0 when
+  spawn vertical < 115.0 or vy < -3.0 else 2.0); speed divisor `+0x180`; facing byte `+0x158`;
+  frame int `+0x18C`; phase int `+0x190` = 100; jitter double `+0x198` = 1.0; stage int
+  `+0x1A0` = 0x7D (125); corpse id int `+0x1A4`; byte `+0x188` = 0; byte `+0x55` = 0; box
+  `+0x38/+0x3C` = 0x50 (0xA0 for id 6). `FUN_004DB250` (vtable slot 0x144) = generic detach:
+  manager list remove (`[tank+0x730]+0x10` vtable slot 0x10), tank vtable `+0x88` call,
+  `FUN_00541D90(obj, 0)`, parent cleanup `FUN_004D9080()` when `+0x94 != 0`.
+
+### EV-0053 - P2.4: `DeadFish::Update` (0x4F64E0) full replay; successor spawns are LIVE (closes EV-0051 open item)
+- Date: 2026-10-16
+- Type: observation (pseudocode); inference (lifecycle interpretation)
+- Source: `docs/evidence/p2.4-4F64E0.json` (173-line listing re-read 2026-10-16);
+  `docs/evidence/p2.4-544D80/544FE0/5451C0/545360/5454F0/546FC0/547270.json` (successor wrappers)
+- Confidence: high for control flow; medium for the phase/revive interpretation
+- Notes: gates (tank `[manager+0x730]`, paused `tank+0x94`), `FUN_004F22C0()`; phase `+0x190`:
+  outside [0,10] the anim frame `+0x18C` is chosen from stage `+0x1A0` and id `+0x1A4`
+  (id 8/9 -> 9, or `9-(stage-0x6A)/2` when stage > 0x69; others -> 7 for stage 0x65/0x66,
+  8 for 0x67/0x68, 6 when stage <= 100, 9 when stage > 100, `9-(stage-0x6A)/2` when
+  stage > 0x69); inside [0,10] phase decrements 1/tick and is used as the frame (a
+  decompiler-visible `if phase == 10 -> phase = 10` re-clamp is noted but has no observable
+  effect). While stage < 0x69, jitter `+0x198` decreases 0.02/tick (floor 0) and its value is
+  copied to `parent(+0x94)+0x168`. `stage < 1` -> slot 81 (`FUN_004DB250`, EV-0052) and
+  return (terminal, silent). `phase < 1` -> sound `FUN_00538230(0x125,3,1.0)`, slot 81, then
+  successor by id `+0x1A4` (7 -> `FUN_005451C0`, 5 -> `FUN_00544D80`, 9 -> `FUN_005454F0`,
+  8 -> `FUN_00545360`, 10-12 -> `FUN_00547270(id-10)`, 6 -> `FUN_00544FE0`, else
+  `FUN_00546FC0`) using packed ints `+0x30/+0x34` and facing `+0x158`. Stage decrement once
+  per tick when (id 6 and vertical > 300) or (id 8/9 and vertical > 365) or (vertical > 370
+  or stage > 0x69). vx `+0x170` decays 0.03/tick toward 0; vy `+0x178` ramps +0.05 toward
+  +2.0, or -0.05 toward -1.5 (wrapping back toward +2.0 at -1.5) when byte `+0x188 != 0`.
+  Motion: horizontal `+0x168` += vx/speed, vertical `+0x160` += vy/speed (speed `+0x180`);
+  clamps horizontal 10..540, vertical 85..370 (310 for id 6, 380 otherwise); commit
+  `FUN_00564160` x2 + vtable slot 0xA4. **Interpretation (closes EV-0051 open item):** all
+  successor wrappers activate `FUN_00542EE0(obj, 1)` while the corpse used flag 0 -> the
+  successor is a **live** creature spawned at the corpse's packed position after the corpse
+  is detached (slot 81). The natural lifecycle is: corpse sinks/animates until stage < 1 ->
+  silent removal (phase frozen at 100); the successor (revive) branch requires phase to be
+  set <= 10 by another subsystem - trigger source NOT found (open Q; candidates: pet revive
+  or zombie mode `DAT_005e89ce`). Recorded as explicit unknown, not runtime behavior.
+  Wrapper spot-checks: `FUN_00545360` (id 8) allocs 0x1B0 -> Penta ctor `FUN_004EC080`
+  (vtable 0x596EE4), appends to Tank list `+0xD0`, updates high-water `Tank+0x494`;
+  `FUN_005454F0` (id 9) allocs 0x1B0 -> Grubber ctor `FUN_004EA740` (vtable 0x59698C).
+
+### EV-0054 - P2.4: death entry points (slot 88, collector trio, hunger ticks) + types 0xA-0xC = `Sexy::Breeder`
+- Date: 2026-10-16
+- Type: observation (pseudocode); inference (creature attribution of callers)
+- Source: `docs/evidence/p2.4b-die-4D5F90.json`, `p2.4b-diehelper-538610.json`,
+  `p2.4b-collector-4DD5D0/4F2890/4F3C60.json`, `p2.4b-deathdispatch-4F139D/4F8FBA.json`,
+  `p2.4b-petstarve-4D69D0.json`, `p2.4b-type1012-ctor-4EE5C0.json`,
+  `p2.4b-type8-ctor-4EC080.json`, `p2.4b-type9-ctor-4EA740.json`
+- Confidence: high for routine bodies; medium for the creature class of the hunger ticks
+- Notes: `FUN_004D5F90` (fish-family die, slot 88): optional voice `FUN_00538610([0x8C])`,
+  vtable `0x15C(0)` call, facing = sign of `+0x168`, forwards `+0x168`/`+0x170`/`+0x180`
+  (velocity/speed), id `+0x1A0` (stage) and parent `+0x94` to `FUN_005441F0` -> corpse id =
+  stage. `FUN_00538610(type)` = creature audio helper: base id `0x117` shifted by type
+  (5 -> -6, 6 -> -12, 7/0x22/0x23/0x24 -> -3, 8 -> +4, 9 -> -6, 10 -> +5), playback via
+  manager `+0x4B4` vtable slots 0x20/0x10/0x1C with `DAT_005e8a70` (eat-vs-death semantic
+  open). Collector trio, same body shape (`param != 0` gates the voice call):
+  `FUN_004F2890` (region 0x4F8Fxx, xref inside `FUN_004F8F60` right before Grubber::Update
+  0x4F8FE0) -> `FUN_004F2740(0)`; `FUN_004F3C60` (region 0x4F93xx, xrefs 0x4F93C4/0x4F94BA
+  near Penta::Update 0x4F94E0) -> `FUN_004F3AD0(0)`; `FUN_004DD5D0` -> `FUN_004DD530(0)` and
+  **corpse id = `[+0x1A0] + 10`**. All three forward `(+0x168, 0, +0x178, id, facing, parent)`
+  to `FUN_005441F0` (id = `[0x8C]` for the first two).
+  **Types 0xA-0xC = `Sexy::Breeder` (vtable 0x597814, Update 0x4F4180 per EV-0041):** ctor
+  `FUN_004EE5C0` stores the Breeder vftable, base `FUN_004E9CB0` + `FUN_004DCBF0(x,y)`, sets
+  `+0x168` and `+0x188` = +/-1.0, stage `+0x1A0` = param, life/hunger field `+0x1D4` =
+  (stage 0/1 ? rand%400+1000 : rand%200+800). Corollary: corpse ids 10-12 revive as Breeder
+  at stage 0/1/2; the `[+0x1A0]+10` id accounting in `FUN_004DD5D0` fits a Breeder-family
+  creature whose stage selects the successor stage. Starvation gate `FUN_004D69D0`:
+  `+0xAC >= 0` -> false; demo (`[manager+0x880] != 0`): type 7/8/9 -> hunger `+0x9C` < -4319,
+  else < -2159; non-demo: hunger < 1. Callers: `FUN_004F1340` (region 0x4F1xxx; starve ->
+  `FUN_004DD5D0(1)`; hunger < 500 -> `FUN_004F0880` gated on tank list `+0xB8` member
+  `+0x1EC != 4`; beat-flash `FUN_004D6C50`) and `FUN_004F8F60` (region 0x4F8Fxx; starve ->
+  `FUN_004F2890(1)`; hunger < 900 -> `FUN_004EFAD0`); the exact creature class of these two
+  tick bodies is open (recorded by region only).
+
+### EV-0055 - P2.4/P2.5: Coin::Update collection dispatch mapped per list + corrections (extends EV-0047)
+- Date: 2026-10-16
+- Type: observation (pseudocode line refs); inference (list ownership where marked)
+- Source: `docs/evidence/p2.3-coin-4F5050.json` (raw re-read), `docs/evidence/p2.4-545360.json`
+  (list `+0xD0`), note `docs/analysis/notes/p2.5-economy.md` §5
+- Confidence: high for the dispatch; medium for gameplay meaning
+- Notes: normal-mode collection resolves per list (dossier line refs): first-phase entity
+  iterators (tank `+0xB8`/`+0xF4`, helpers `FUN_004E5040/FUN_004E3DD0/FUN_004E3E00`),
+  list `+0xD4` (probable) and list `+0xCC` -> virtual slot `0x160(1)` (default collector);
+  list `+0xD0` -> `FUN_004F3C60(1)`; list `+0xC4` -> `FUN_004F2890(1)`; list `+0xC0` ->
+  `FUN_004DD5D0(1)`; hit box = coin center `(x+36, y+36)` vs `[+0x10, +0x46]` of objects with
+  `+0xAC < 0`; after the handler: coin remove `FUN_004D5510` + particle burst
+  `FUN_005436F0(rand%3+3)` (raw lines ~211/220/270/361/404/417/459/470/512/523/560/595-598).
+  **List ownership (answers the EV-0046/EV-0047 "collector class owners" open item in part):**
+  `+0xD0` is the Penta list (verified: successor spawner `FUN_00545360` appends there,
+  EV-0053); the `+0xC4` and `+0xC0` handlers are the Grubber-region and Breeder-family
+  routines of EV-0054, so those lists most plausibly hold Grubber (type 9) and Breeder
+  (types 0xA-0xC) creatures - written as inference. The three handlers are the same routines
+  used by the starvation-death paths, so the observed pattern is "a creature touched by a
+  coin runs its corpse-spawn routine"; the gameplay intent (collect vs kill vs eat) is NOT
+  verified and stays open. `+0xAC < 0` filter: base GameObject ctor leaves `+0xAC = -1`;
+  the Fish family clears it (>= 0) - consistent with the EV-0048/p2.3 "pets" reading, but the
+  writer that clears it for fish is not yet pinned down (to refine in P2.7).
+- Corrections/extends: EV-0044/EV-0046 "pending id 0x1B" -> DeadFish (EV-0052); EV-0051
+  "ghost vs live" -> live successor spawn (EV-0053); EV-0049 "types 0xA-0xC parked" ->
+  `Sexy::Breeder` (EV-0054).

@@ -113,3 +113,15 @@
 ### Q-0008 - Version control for the remake project - ANSWERED 2026-10-15
 - `git init` done; initial commit `68f1d75` on `main` (14 files, baseline). Keep committing at
   session ends for diffable agent handoffs.
+
+### Q-0009 - Who sets the corpse revive phase (`DeadFish+0x190 <= 10`)?
+- OPEN (2026-10-16, EV-0052/0053). Natural death ends with silent corpse removal (`stage < 1`,
+  slot 0x144); the successor (revive) branch at `phase < 1` requires an external writer we have
+  not found yet (candidates: a pet ability in P2.7, zombie mode `DAT_005e89ce`). Revisit when
+  P2.6/P2.7 are analyzed; do not guess a trigger in the remake.
+
+### Q-0010 - Gameplay intent of the coin-vs-creature hit dispatch
+- OPEN (2026-10-16, EV-0055). A falling coin hit-tests `+0xAC < 0` objects per list and runs
+  the target's corpse-spawn routine for Penta (`+0xD0`), Grubber-region (`+0xC4`) and
+  Breeder-family (`+0xC0`) lists (same routines as their starvation deaths). Whether this is
+  collect/kill/eat behavior cannot be decided statically; verify in-game during P2.6/P2.8/P5.
