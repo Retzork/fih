@@ -24,6 +24,7 @@ inspection. Human owner: Fauzi.
 5. `docs/DECISIONS.md` - settled decisions (`D-NNNN`) and open questions (`Q-NNNN`).
 6. `docs/analysis/notes/` - per-subsystem investigation notes.
 7. `docs/PIPELINE.md` - asset pipeline + Godot usage contract (read before any asset or P4 work).
+8. `docs/analysis/notes/wiki-refs.md` - internal <-> wiki display-name index (D-0010).
 
 (You still must UPDATE these when your work produces new evidence/decisions - see hard rules.)
 
@@ -42,6 +43,23 @@ inspection. Human owner: Fauzi.
    the PLAN summary counts and its `Last updated` header (including its `Next:` pointer).
 6. **Personal-use assets.** Extracted game assets stay in this project only (Q-0006); do not
    publish them.
+7. **Wiki-guided understanding (D-0010).** Do not guess mechanics or terminology: consult the
+   game wiki (section below) before interpreting behavior. Record internal <-> display-name
+   bindings and wiki-only claims in `docs/analysis/notes/wiki-refs.md` + `wiki-ref` EV entries;
+   the binary remains the only proof of behavior, and wiki-vs-binary conflicts stay recorded as
+   open items, never silently resolved.
+
+## Game wiki (secondary source)
+
+- Base: `https://insaniquarium.fandom.com/wiki/` - fetch a page for review with `?action=raw`
+  appended (clean wikitext; the normal HTML page adds nav chrome).
+- Role (D-0010): reference for **display names, terminology and mechanics context**. Check it
+  before interpreting behavior so we do not guess. It is not proof: behavior/constants still
+  require a binary EV; wiki-only content enters as a `wiki-ref` EVIDENCE entry.
+- Name policy: use wiki display names in prose (notes, PLAN, specs) and keep internal
+  class/type names as the technical identifiers. Record every internal <-> display binding in
+  `docs/analysis/notes/wiki-refs.md` with its binding evidence (EV refs); record wiki-vs-binary
+  discrepancies as open items instead of silently picking one.
 
 ## Environment (verified 2026-10-15; re-verify before trusting)
 

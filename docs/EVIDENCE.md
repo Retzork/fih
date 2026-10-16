@@ -8,7 +8,7 @@ entries - correct them with a new entry that references the old ID.
 ```
 ### EV-NNNN - <one-line claim>
 - Date: YYYY-MM-DD
-- Type: observation | inference | unknown
+- Type: observation | inference | unknown | wiki-ref
 - Source: exact command / file / address range (+ REA Evidence ID if any)
 - Raw: relative path under docs/evidence/ or docs/analysis/ (if exported)
 - Confidence: high | medium | low
@@ -17,6 +17,9 @@ entries - correct them with a new entry that references the old ID.
 
 Rules: an inference must name the observations it is derived from. An unknown must say what was
 searched. Static analysis never proves runtime behavior; mark runtime-dependent claims accordingly.
+A `wiki-ref` entry cites the Insaniquarium Wiki (secondary source, D-0010; page URL + access
+date) for display names/terminology/mechanics context - it is never sufficient alone for
+behavior or specs; follow up with a binary observation entry.
 
 ---
 
@@ -1064,3 +1067,53 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   Raw bytes at VA 0x5ADEC0: `25 64 00 00` = `"%d"` (immediately followed by
   "Content-Length: " at 0x5ADEC4); the string dump missed it (2-char string). The shell icon
   is drawn separately; the label is the bare integer.
+
+### EV-0059 - P2.5: store item 6 "buy starcatcher" spawns `Sexy::Penta` (type 8)
+- Date: 2026-10-16
+- Type: observation
+- Source: REA `decompile` of `FUN_00545260` (module); raw:
+  `docs\evidence\p2.5c-starcatcher-spawn-545260.json`
+  (evidence_id `ev_6e8133bc7f7954636fbd0a57da8f904f6adb4d5a4f0a5c77975e42cfd85ddd65`)
+- Confidence: high
+- Notes: item-6 case of `Tank::BuyItem` (`FUN_00549380`, EV-0046): alloc 0x1B0
+  (`FUN_00564345`) -> ctor `FUN_004EC080(rand%0x208 + 0x14)` (x = 20..539; type 8, vtable
+  0x596EE4 = `Sexy::Penta` per EV-0041); writes y double `+0x160 = 0x4050400000000000` (= 65.0)
+  and packed int `+0x34 = 0x41` (65); activates live `FUN_00542EE0(obj, 1)`; list-add via
+  `[Tank+0x10]` vtable +0xC; refreshes high-water `Tank+0x494` from list `+0xD0` size;
+  `FUN_00544800(obj)`; UI `FUN_0053AA40()`. Same family as the id-8 corpse successor
+  `FUN_00545360` (EV-0053), so store-bought and successor Pentas share the type. Display name
+  "Starcatcher" is wiki-ref (EV-0060); the binary proves only id-6 spawn = Penta.
+
+### EV-0060 - P2.5 wiki-ref: internal <-> display bindings, mode names, money denominations, store prices
+- Date: 2026-10-16
+- Type: wiki-ref (secondary source)
+- Source: `https://insaniquarium.fandom.com/wiki/<Page>?action=raw` (clean wikitext), all
+  fetched 2026-10-16: Main Page, Sylvester, Balrog, Bilaterus, Aliens, Guppycruncher,
+  Beetlemuncher, Starcatcher, Ball Fish, Minisylvester, Bilaterus Head, Money, Virtual Tank
+  Mode, Time Trial Mode, Challenge Mode, Adventure Mode, Sandbox Mode. Index:
+  `docs\analysis\notes\wiki-refs.md`. No wiki text saved locally (URLs are the record).
+- Confidence: medium (naming/context only)
+- Notes: (1) Display-name bindings - `Sexy::Grubber` = Guppycruncher and `Sexy::Gekko` =
+  Beetlemuncher (wiki trivia: their art files are named "Grubber"/"gekko"), matching store
+  items 7/8 (EV-0056); `Sexy::Penta` = Starcatcher (store item 6, EV-0059); `Sexy::Oscar` =
+  Carnivore, `Sexy::Ultra` = Ultravore (items 4/9, EV-0046); `Sexy::SylvesterFish` =
+  Minisylvester, `Sexy::BallFish` = Ball Fish, `Sexy::BiFish` = Bilaterus Head - all three are
+  the Virtual Tank prize fish (roster spawner `FUN_0051B260` + VT populate, EV-0056; Bi
+  `+0x230 = rand&1` fits the wiki's two head variants), NOT the hostile aliens. Hostile
+  Sylvester/Balrog/Gus/Destructor/Ulysses/Psychosquid have no matching RTTI classes -> Q-0011.
+  (2) Money (Money page) matches `Coin::Value` (EV-0047): 15 Silver Coin, 35 Gold Coin,
+  40 Star, 200 Diamond, 500 Pearl, 2000 Treasure Chest, 150 Beetle, 250 Niko's Pearl; virtual
+  multipliers x1/x2/x3/x5/x10/x20 = Silver Coin/Gold Coin/Star/Blue shell/Spiral shell/Bag o'
+  shells; kind 0x10 has no value in the binary - open. (3) Mode cross-refs: mode 1's random-pet
+  price doubling (`2*B[11]`, EV-0057) matches the wiki Time Trial Mode table (100 -> 200 ->
+  ... -> 51200 -> 99999); mode 4's inflation/reset/tank-unlock matches Challenge Mode; mode 5 =
+  Virtual Tank/screensaver; modes 0/3 = Adventure intro/level lifecycle (store rebuild +
+  "end level" + `FUN_00552230`); mode 2 unobserved (wiki Sandbox is a secret mode:
+  Up Up Down Down Left Right Left Right B A, $999,999 start, egg piece returns to menu) -
+  naming stays P2.11. (4) Wiki store prices to verify against the initial A/C/D arrays in P2.6:
+  guppy $100, food quality $200, food quantity $300, starcatcher $750, guppycruncher $750,
+  beetlemuncher $2000; egg pieces $99,999 (tanks 4-5). (5) Discrepancies recorded: VT beetle
+  value (binary virtual multiplier x5 for kind 0x11 vs an unresolved wiki "7 shells" figure);
+  Minisylvester growth (binary init stage 1 -> grows once to 160x160 stage 2, EV-0056; wiki
+  describes two mini stages + adult); alien HP values (Sylvester 10, Balrog 22, Bilaterus 17
+  per head - wiki only, verify P2.8). None of this changes any binary-derived value.

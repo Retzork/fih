@@ -78,6 +78,20 @@
   The install stays read-only (D-0004); the carved copy is derived, local, personal use (Q-0006)
   and lives in a gitignored directory.
 
+### D-0010 - Game wiki as a secondary source for names and mechanics context (user instruction)
+- Date: 2026-10-16
+- Decision: The Insaniquarium Wiki (`https://insaniquarium.fandom.com/wiki/`, raw pages via
+  `?action=raw`) is the project's secondary source for display terminology and mechanics
+  context (mode names, money items, store prices, creature behavior). It is used for naming and
+  hypothesis framing only: behavior and constants still require a binary observation, and
+  wiki-only claims enter as `wiki-ref` EVIDENCE entries plus rows in
+  `docs\analysis\notes\wiki-refs.md`. Internal class names remain the technical identifiers,
+  and every internal <-> display binding is documented with its binding evidence. Wiki-vs-binary
+  conflicts are recorded as open items, never silently resolved.
+- Why: user directive (2026-10-16): do not guess mechanics - understand them from the wiki and
+  document each finding clearly. Earlier name-shaped guesses (BallFish/SylvesterFish/BiFish =
+  hostile aliens) were wrong - they are the Virtual Tank prize fish (EV-0060).
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15
@@ -125,3 +139,11 @@
   the target's corpse-spawn routine for Penta (`+0xD0`), Grubber-region (`+0xC4`) and
   Breeder-family (`+0xC0`) lists (same routines as their starvation deaths). Whether this is
   collect/kill/eat behavior cannot be decided statically; verify in-game during P2.6/P2.8/P5.
+
+### Q-0011 - Where are the hostile alien classes in the game module?
+- OPEN (2026-10-16, EV-0060). The RTTI class map (`docs\evidence\p2.2-module-rtti-classes.txt`)
+  exposes `Alien::Sexy` plus only `Bilaterus`/`BilaterusHead`/`BilaterusBone` (and `DeadAlien`,
+  `Missle`, `Larva`); no Sylvester/Balrog/Gus/Destructor/Ulysses/Psychosquid classes. The
+  hostile aliens are plausibly `Alien` instances selected by type id/data (or classes without
+  RTTI), but nothing is confirmed. Resolve in P2.8 by tracing the alien spawn waves and the
+  `Alien` ctor callers; do not guess class names for the remake until then.

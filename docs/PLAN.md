@@ -9,12 +9,15 @@ collection/spawn (EV-0047); click-feed, hunger counter, eating/growth pipeline, 
 LIVE successors (EV-0052/0053); death entry points + types 0xA-0xC = `Sexy::Breeder`
 (EV-0054); coin-hit dispatch mapped per list (EV-0055); per-species closure - init helpers,
 eat bodies, roster + store spawn paths, stage-size switch, coin pacing (EV-0056); credit =
-uncollected coins, price arrays A/B/C/D, egg/level handler + `SetStorePrice` xrefs (EV-0057).
+uncollected coins, price arrays A/B/C/D, egg/level handler + `SetStorePrice` xrefs (EV-0057);
+money label `"%d"` (EV-0058); fourth pass: store item 6 spawn = Penta = Starcatcher (EV-0059);
+wiki cross-reference pass for names/modes/money/prices + wiki policy D-0010 (EV-0060).
 Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final), `p2.4-growth-death.md` (complete),
-`p2.5-economy.md`.)
-Next: P2.5 remaining opens (initial A/C/D price values - bounded search negative, level data
-hand-off to P2.6; mode enum naming -> P2.11; coin-hit gameplay intent Q-0010 -> runtime
-verify); then P2.6 progression. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
+`p2.5-economy.md`, `wiki-refs.md`.)
+Next: P2.5 remaining opens (initial A/C/D price values - level data hand-off to P2.6; mode enum
+naming -> P2.11 with wiki cross-refs; coin-hit gameplay intent Q-0010 -> runtime verify; VT
+beetle value discrepancy); then P2.6 progression. Phase 2 closes with P2.18 `docs\SPECS.md`
+per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -138,9 +141,15 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   doubling `2*B[11]`; mode-4 reset to C); egg/level handler `FUN_00545960` full flow
   (24 pet slots `Tank+0x144`, `+0x43C` egg pieces, profile unlock `+0x77+tank` for tanks
   1-4, stats slot `tank*5-6+level`); `Tank::SpawnCoin` `FUN_00544430` body.
-  Money label format `DAT_005adec0` = `"%d"` (EV-0058). Open: initial A/C/D values (bounded
-  search negative - level data, hand-off to P2.6); mode enum naming (0/1/3/4/5 observed
-  conditions only -> P2.11); coin-hit trio gameplay intent (Q-0010).)
+  Money label format `DAT_005adec0` = `"%d"` (EV-0058).
+  Fourth pass (2026-10-16): EV-0059 (store item 6 "buy starcatcher" spawns `Sexy::Penta`:
+  alloc 0x1B0, ctor `FUN_004EC080`, y = 65); EV-0060 wiki cross-reference pass (display-name
+  bindings incl. Grubber = Guppycruncher / Gekko = Beetlemuncher / Penta = Starcatcher, money
+  denominations, mode names incl. Time Trial / Challenge / Virtual Tank, store prices,
+  discrepancies) + D-0010 wiki policy; note `docs\analysis\notes\wiki-refs.md`. Open: initial
+  A/C/D values (bounded search negative - level data, hand-off to P2.6); mode enum naming
+  (0/1/3/4/5 observed conditions only -> P2.11); coin-hit trio gameplay intent (Q-0010); VT
+  beetle value (binary x5 vs wiki).)
 - [ ] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
 - [ ] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
   per pass; each pet gets its own EV entries)
