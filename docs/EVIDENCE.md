@@ -644,3 +644,93 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   frames at `(x + w/2 - 20, y - 50)` via `FUN_005444e0` (started by `FUN_00540cc0(this[0x8c],
   this[0x124])`). `FUN_004da780` = predicate "container at `this+0xB8` or `this+0xF4` non-empty"
   (begin/end pointer pairs, 4-byte elements; 18 in-module callers) - not a hunger check.
+
+### EV-0044 - P2.2/P2.4: object factory by type id, spawn recipe, Tank save/load serializer
+- Date: 2026-10-16
+- Type: observation (pseudocode/bytes); inference (type names via RTTI vtables)
+- Source: REA dossiers `docs/evidence/p2.3-site-5375CD.json` (factory), `p2.4-ctor-*.json`,
+  `p2.4-ctorxy-*.json`, `p2.4-site-537B1E.json` (object reader), `p2.4-site-546332.json`
+  (Tank serialize/unserialize), `p2.4-tankserialize-xrefs.json`, `p2.4-site-546B73.json`
+  (load path), `p2.4-spawn-546D70.json`, `p2.4-spawn-544C00.json`, `p2.3-food-*` ; note section
+  `docs/analysis/notes/p2.2-tank-sim.md` §9
+- Confidence: high for addresses/tables; medium for some role names
+- Notes: `FUN_00537570` = object factory (switch id -> `new(size)` + ctor): 0=Fish/Guppy,
+  5=Oscar, 6=Ultra, 7=Gekko, 0x15=FishTypePet (all sizes/vtables confirmed), 0x1C=Food,
+  0x22=SylvesterFish, 0x23=BallFish, 0x24=BiFish, plus pending ids 8,9,0xA,0x14,0x16,0x17,
+  0x19,0x1A,0x1B,0x1D-0x21 (ctors captured). Every ctor writes its **game type id to
+  object+0x8C ([0x23])** - this is also the field tested as `== 6` (Ultra) in Fish::Update.
+  Gameplay spawns do NOT use the factory: they run (x,y) ctors (`FUN_004EEF00` Fish/Guppy,
+  `FUN_004EFDA0` Oscar, base init + `FUN_004DE370(x,y)` + `[0x68] = 0`), then
+  `FUN_00542EE0(obj,1)`, list-add via `[Tank+0x10]` vtable slot 3 (0xC), `FUN_00544800(obj)`
+  (updates high-water counters `Tank+0x46C` carnivores / `+0x48C` guppies), `FUN_0053AA40()`
+  (UI). Object `Serialize` = vtable slot 0x140 (80). `FUN_00537B00` = read one object from
+  stream (id -> factory -> slot 0x140; throws `Sexy::DataReaderException`). `FUN_00546240` =
+  Tank serialize/unserialize (write skips type 0x1F; read routes `+0xF4==0` to pending list
+  else activates; dumps Tank fields incl. `+0x3F0` money, `+0x314..+0x3D0` 4x12-int arrays,
+  and globals `DAT_005e89d0/4/8/c0/c4/c8/cc/dc`). `FUN_00546990` = SaveGame (version dword
+  0x36 + Time64). `FUN_00546AA0` = LoadGame (rejects version `<= 0x34`; mode `[manager+0x87C]
+  == 5`: reject saves older than ~121 s; seeds `DAT_005df590` (rand 5000..50000) when
+  `thunk_FUN_00479FC0()`). Globals `DAT_005e89d0/4/8` are serialized Tank fields;
+  `DAT_005e89cc` is cleared when `Tank+0x164 == 0`; `DAT_005e89d0` kept only while the
+  container at `Tank+0xB8`/`+0xF4` is non-empty.
+
+### EV-0045 - P2.3: Food entity, Food::Update physics, Tank::DropFood, food level globals
+- Date: 2026-10-16
+- Type: observation (pseudocode); inference (field roles)
+- Source: REA dossiers `docs/evidence/p2.3-foodctorxy.json` (`FUN_004EF840`),
+  `p2.3-food-4F8AA0.json` (Update), `p2.3-dropfood.json` (`FUN_00543280`),
+  `p2.3-foodxy-xrefs.json`, `p2.3-foodvt-xrefs.json`; note
+  `docs/analysis/notes/p2.3-feeding.md`
+- Confidence: high for logic/constants; medium for the few ambiguous gates
+- Notes: `Food` = type 0x1C, size 0x1A0. Play ctor `FUN_004EF840(x, y, kind, flag, variant)`
+  sets x/y at `+0x158/+0x160`, vx `+0x168` = +/-2.0 by kind, vy `+0x170` = -2.0, 40x40 size
+  (`+0x38/0x3C`), quality/type `+0x188`, drift kind `+0x18C`, landed flag `+0x190`, variant
+  `+0x194`, lifetime `+0x180` (0 from ctor; dropper sets), countdown `+0x198` = 20, flags
+  `+0x184/+0x185` = 0. `Food::Update` `FUN_004F8AA0`: pause gate via tank
+  `[manager+0x730]+0x94`; `FUN_004F22C0()` shared per-tick; lifetime countdown -> remove
+  (`FUN_004D9570`); fall `y += 1.5` or homing `(550, 30)` at /7 steps when `+0x185`
+  (remove + `FUN_0053C1E0` when int x < 40); landed bob cycle 120..150 (staged -0.5..-8 by
+  depth); drift decay (+/-0.05 steps); x clamp [20, 550]; death at y > 410 (400 for type 3):
+  type 3 = sound 0x11D + 2..4 particles (`FUN_005436F0`) + remove; variant 2 = silent remove;
+  else `y = FUN_004D62D0()` (open). `Tank::DropFood` `FUN_00543280(x, y, kind, flag, param5,
+  type_override)`: manual drops (kind 0) gated by pellet cap tied to `DAT_005df58c` (exact
+  formula ambiguous - listed as open), sets `Food+0x188 = DAT_005e89dc` (quality level),
+  star potion path (`Tank+0x440` armed -> type 3 + clear), `param5 -> +0x198`, override ->
+  `+0x188`; then activate/list-add/UI. Callers `0x543441`, `0x54352E`, `0x5435F2` (Tank input
+  cluster; click vs auto-feed unresolved). Globals: `DAT_005e89dc` = food quality (max 2),
+  `DAT_005df58c` = food quantity (max 9). Hunger: anchors only so far (`"Quite Hungry"`
+  0x596658, `"Fish are about to die of hunger! Click on aquarium!"` 0x598D14, `IMAGE_HUNGRY*`
+  0x59C870; string xrefs 0x501BBD/0x5099EE); the fish hunger counter/tint path NOT yet
+  identified; `DAT_005e89ce` is zombie mode (NOT hunger).
+
+### EV-0046 - P2.5: money variable, SpendMoney+loan, store item enum, BuyItem hub, spawn map
+- Date: 2026-10-16
+- Type: observation (pseudocode); inference (prices table semantics)
+- Source: REA dossiers `docs/evidence/p2.5-site-540C10.json` (`FUN_00540B30`),
+  `p2.5-loan-xrefs.json`, `p2.5-spend-xrefs.json`, `p2.4-site-538116.json` (`FUN_00538100`),
+  `p2.5-store-5493E7.json` (`FUN_00549380`), `p2.5-money-xrefs.json`,
+  `p2.5-showmoney-xrefs.json` (`FUN_0054E2D0` options), `p2.4-site-54058D.json` (cheat
+  toggles); note `docs/analysis/notes/p2.5-economy.md`
+- Confidence: high for flow/addresses; medium for trial-mode roles
+- Notes: **money = `Tank+0x3F0`** (serialized). `Tank::SpendMoney` `FUN_00540B30(amount)`:
+  mode `[manager+0x87C]==5` exempt; demo floor 5 (`[manager+0x880]`); affordability =
+  `money + FUN_0053A0B0()` (loan/credit; `"OUT OF MONEY! ... float you a loan"` @0x5A8300,
+  `MoneyDialog` class); refusal: sound 0x112 (cooldown `Tank+0x450` = 70), zero-money hint
+  `FUN_00537B80` + dialog `FUN_0054B5B0(0x13,1,...,3)`; success: subtract + `FUN_0053A360`
+  (money UI). `DAT_005df590` = separate demo money (rand-seeded 5000..50000 in LoadGame;
+  compared in `FUN_004D70B0` vs `Tank+0x400` in mode 5). Store items `FUN_00538100`: 0 guppy,
+  1 breeder, 2 food quality, 3 food quantity, 4 carnivore, 5 star potion, 6 starcatcher,
+  7 guppycruncher, 8 beetlemuncher, 9 ultravore, 10 weapon, 11 egg piece/random pet/end level
+  (by `[manager+0x87C]` 1/3). `Tank::BuyItem` `FUN_00549380`: selected item+price from
+  `FUN_00538090`; **price table = `Tank+0x314[idx]` (12 ints)**; spend first; cases ->
+  spawn/upgrade calls (guppy `FUN_00546D70`, breeder `FUN_005470A0`, carnivore `FUN_00544C00`,
+  ultravore `FUN_00544E60`, guppycruncher `FUN_00545430`, beetlemuncher `FUN_00545080`,
+  starcatcher `FUN_00545260`; food upgrades bump `DAT_005e89dc` (max 2) / `DAT_005df58c`
+  (max 9) via `FUN_005406A0`; weapon `Tank+0x3E4` max 0xB; star potion arms `Tank+0x440`;
+  egg `FUN_00545960`). Tutorial/hint infrastructure: `Tank+0x3C8/+0x3CC` step counters,
+  `+0x3A7`, `FUN_005409B0` advance, `FUN_0041D8B0` hint text, `FUN_0053E950`. Spawn geometry:
+  guppy x=rand%0x208+20 y=30 dv=rand%5+18 dart=rand%10+45; carnivore dv=rand%5+23 y=40
+  (high-water counters `Tank+0x48C`/`+0x46C`). `"ShowMoney"` option -> `TankScreen+0x83C`
+  (options `+0x839..0x83E`, loader `FUN_0054E2D0`). Cheat toggles `FUN_005404A0`: Wavy/Prego
+  sounds/Void/Space/Zombie modes (`DAT_005e89ce` = zombie; cross-ref P2.17). Coins: factory
+  ids 0x19/0x1A/0x1B pending; `FUN_004F5050` dossier fetched, not analyzed.

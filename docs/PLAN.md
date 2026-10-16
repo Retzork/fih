@@ -1,10 +1,11 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-16 (P2.2 in progress: game logic found in an embedded module inside the exe
-- carved + RTTI-mapped; `Fish::Update` (swim AI + food approach) and hover/facing slot located;
-EV-0037..EV-0042; note `docs\analysis\notes\p2.2-tank-sim.md`).
-Next: finish P2.2 (mode/slot semantics, species field, tank bounds) - then P2.3 feeding.
-Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
+Last updated: 2026-10-16 (P2.2 closed and P2.3/P2.5 started in one pass: object factory + type
+ids, spawn recipe, Tank save/load serializer (EV-0044); Food entity + physics + drop flow
+(EV-0045); money/`SpendMoney`+loan, store item enum, BuyItem hub, spawn map (EV-0046); notes
+`p2.2-tank-sim.md` (§9), `p2.3-feeding.md`, `p2.5-economy.md`).
+Next: P2.3 hunger timer/tint + eat states; P2.4 growth/death (coin value by stage); P2.5 coin
+value/pickup (dossier fetched). Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -71,14 +72,26 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   (100 Hz), max 10 updates/message, catch-up Sleep, `timeGetTime` clock; ctor defaults
   (640x480, 0.85 multiplier); FPS overlay `0x49fdf1` (1000 ms window). -> EV-0034, EV-0035,
   EV-0036; notes `docs\analysis\notes\p2.1-frameloop.md` (2026-10-15)
-- [~] **P2.2** Tank simulation: fish swim/turn motion, tank bounds, direction/facing logic.
+- [x] **P2.2** Tank simulation: fish swim/turn motion, tank bounds, direction/facing logic.
   (2026-10-16: game module carved from exe + RTTI map (EV-0039..EV-0041); `Fish::Update`
   0x4F6970 + full vtable map (91 slots), slot 26 = draw entry, slot 83 = sprite draw (EV-0042/
-  EV-0043); note `docs\analysis\notes\p2.2-tank-sim.md`.
-  Open: mode/slot semantics, species field, module tick-rate re-check.)
-- [ ] **P2.3** Feeding: food drop physics, hunger/satiety timers, eating states, coin spawn rules
-- [ ] **P2.4** Fish growth & death: guppy -> carnivore -> ultravore stages, starvation, drops
-- [ ] **P2.5** Economy: coin values/denominations, pickup logic, money display, store prices
+  EV-0043); object factory/type ids/spawn recipe/save serializer (EV-0044); note
+  `docs\analysis\notes\p2.2-tank-sim.md`.
+  Open (tracked in note §7 + backlog): slots 54/56/70/71/82/89 semantics, `FUN_004d6ae0`/
+  `FUN_004e1400`, 0xAE/0xB5/0xB8 draw bases, module tick-rate re-check, periodic-effect spawn.)
+- [~] **P2.3** Feeding: food drop physics, hunger/satiety timers, eating states, coin spawn rules
+  (2026-10-16: Food entity + ctor + `Food::Update` physics + `Tank::DropFood` + quality/quantity
+  globals -> EV-0045, note `docs\analysis\notes\p2.3-feeding.md`. Open: fish hunger counter/tint,
+  eat states, pellet cap formula, coin spawn (dossier `p2.3-coin-4F5050.json` fetched).)
+- [~] **P2.4** Fish growth & death: guppy -> carnivore -> ultravore stages, starvation, drops
+  (2026-10-16: spawn map + type ids (Guppy=0/Oscar=5/Ultra=6/Gekko=7/FishTypePet=0x15/
+  SylvesterFish=0x22/BallFish=0x23/BiFish=0x24) + high-water counters -> EV-0044/EV-0046.
+  Open: growth/stage transitions, starvation, coin value by stage.)
+- [~] **P2.5** Economy: coin values/denominations, pickup logic, money display, store prices
+  (2026-10-16: money = `Tank+0x3F0`, `Tank::SpendMoney` + loan, store enum/`BuyItem` hub/
+  price table `Tank+0x314[12]`, spawn map, demo money global, ShowMoney option -> EV-0046,
+  note `docs\analysis\notes\p2.5-economy.md`. Open: price values, coin classes 0x19-0x1B,
+  coin update/pickup, loan semantics.)
 - [ ] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
 - [ ] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
   per pass; each pet gets its own EV entries)
@@ -92,6 +105,9 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
 - [ ] **P2.15** Resource system: `properties\resources.xml` semantics (image/animation/sound tables)
 - [ ] **P2.16** Screensaver variants (`Insaniquarium.scr`, `WinFish_Scr.exe`): feature deltas
 - [ ] **P2.17** Cheat codes / debug hooks (string search; document only)
+  (2026-10-16 partial: `FUN_005404A0` mode toggles - Wavy/Original Prego Sound/Original Breeder
+  Sound/Ultra Prego Sound/Void/Space/Zombie (`DAT_005e89ce`) -> EV-0046; `Tank::SetTankIndex`
+  `FUN_00538A10` 1..6.)
 - [ ] **P2.18** Write `docs\SPECS.md`: cross-system implementation contract for P4 (per-system
   specs come from the P2.1-P2.17 notes; format modeled on `docs\PIPELINE.md`). (D-0008)
 
