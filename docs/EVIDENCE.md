@@ -828,3 +828,16 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   updates `Tank+0x46C`.
 - Correction to EV-0049/note: stages are NOT sequential per species (Oscar 5, Ultra 6;
   guppy 0); shared growth machine.
+
+### EV-0051 - P2.4: DeadFish successor-spawn table resolved to play ctors (extends EV-0049)
+- All six spawn wrappers are thin (allocate 0x230 + ctor + activate + list + register + UI):
+  5 -> FUN_00544D80 -> FUN_004EFE00(x,y,facing) (Oscar family), guppy-list counter NOT used,
+  carnivore high-water Tank+0x46C updated;
+  6 -> FUN_00544FE0 -> FUN_004F0310(x,y,facing) (Ultra family);
+  7 -> FUN_005451C0 -> FUN_004EFA10(x,y,facing) (Gekko family);
+  8 -> FUN_00545360 -> FUN_004EC080(x) (type 8), high-water Tank+0x494;
+  9 -> FUN_005454F0 -> FUN_004EA740(x) (type 9);
+  10..12 -> FUN_00547270(x,y,idx,facing) -> FUN_004EE5C0 (types 0xA-0xC);
+  else -> FUN_00546FC0 -> FUN_004EEF90(x,y,stage,facing) (base Fish at stage).
+- Interpretation (ghost/next-tier successor vs live respawn) recorded as OPEN in note §4/§7;
+  the call graph itself is exact.
