@@ -1,13 +1,14 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-16 (P2.2 + P2.3 closed; P2.4/P2.5 in progress. One pass: object factory +
-type ids, spawn recipe, Tank save/load serializer (EV-0044); Food entity + physics + drop flow
-(EV-0045); money/`SpendMoney`+loan, store item enum, BuyItem hub, spawn map (EV-0046);
-coin values/AddMoney/collection/spawn (EV-0047); click-feed, hunger counter, eating/growth
-pipeline, coin scheduler (EV-0048). Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final),
-`p2.5-economy.md`.)
-Next: P2.4 remaining (init helpers/eat values for Gekko/Sylvester/Ultra/Ball/Bi, DeadFish reward
-spawns, FishTypePet); then P2.5 remaining (initial price values, loan semantics); P2.6
+Last updated: 2026-10-16 (P2.2 + P2.3 closed; P2.4/P2.5 in progress. Object factory + type ids,
+spawn recipe, Tank save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045);
+money/`SpendMoney`+loan, store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/
+collection/spawn (EV-0047); click-feed, hunger counter, eating/growth pipeline, coin scheduler
+(EV-0048); species map, ctor tuning, Oscar/Ultravore inits, DeadFish + successor spawns
+(EV-0049/0050/0051). Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final),
+`p2.4-growth-death.md`, `p2.5-economy.md`.)
+Next: P2.4 open items (Gekko/Sylvester/Ball/Bi spawn paths + eat bodies, DeadFish successor
+semantics, FishTypePet); then P2.5 remaining (initial price values, loan semantics); P2.6
 progression. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
@@ -80,8 +81,9 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   0x4F6970 + full vtable map (91 slots), slot 26 = draw entry, slot 83 = sprite draw (EV-0042/
   EV-0043); object factory/type ids/spawn recipe/save serializer (EV-0044); note
   `docs\analysis\notes\p2.2-tank-sim.md`.
-  Open (tracked in note §7 + backlog): slots 54/56/70/71/82/89 semantics, `FUN_004d6ae0`/
-  `FUN_004e1400`, 0xAE/0xB5/0xB8 draw bases, module tick-rate re-check, periodic-effect spawn.)
+  Open (tracked in note §7 + backlog): slots 70/71 semantics, `FUN_004d6ae0`/`FUN_004e1400`,
+  0xAE/0xB5/0xB8 draw bases, module tick-rate re-check, periodic-effect spawn; slots 54/56/82/89
+  were resolved later in P2.3.)
 - [x] **P2.3** Feeding: food drop physics, hunger/satiety timers, eating states, coin spawn rules
   (2026-10-16: Food entity + ctor + `Food::Update` physics + `Tank::DropFood` + quality/quantity
   globals -> EV-0045; second pass -> EV-0048: click-feed virtual (slot 54, pellet price
@@ -93,15 +95,18 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   source, `FUN_0053C280`/`FUN_00538230` roles, species vtable->name mapping.)
 - [~] **P2.4** Fish growth & death: guppy -> carnivore -> ultravore stages, starvation, drops
   (2026-10-16: spawn map + type ids (Guppy=0/Oscar=5/Ultra=6/Gekko=7/FishTypePet=0x15/
-  SylvesterFish=0x22/BallFish=0x23/BiFish=0x24) + high-water counters -> EV-0044/EV-0046;
-  growth/stage/starve-death model -> EV-0048 (section 7 of p2.3 note): stage points, stage 4
-  overshoot, slot 88 die `0x4D5F90`, star potion stage rules;   coin kind->value table in P2.5; EV-0049: species map (Gekko/Oscar/Sylvester/Ultra/Ball/Bi
-  vtables + type ids), common ctor tuning `FUN_004DE370` (80x80, bounds, speed classes 2.0/
-  1.8/1.6, hunger 400-599, growth threshold 4-6 / mode5 12-20), Oscar init (stage 5, hunger
-  600-799), Oscar consume (+900 cap 1300, gore splats, boss speech), DeadFish `FUN_004F64E0`
-  (sound 0x125, spawn-by-id 5/6/7/8/9/10-12 table, corpse drift), note `p2.4-growth-death.md`.
-  Open: init helpers/eat values of the other 5 classes (esp. Ultravore stages 8-9),
-  DeadFish reward spawn fns, FishTypePet (0x15).)
+  SylvesterFish=0x22/BallFish=0x23/BiFish=0x24) + high-water counters -> EV-0044/0046;
+  growth/stage/starve-death model -> EV-0048 (p2.3 note §7): stage points `+0x1A4`/`+0x1A8`,
+  stage-4 overshoot, slot 88 die `0x4D5F90`, star potion rules; coin kinds -> P2.5 note §5.
+  EV-0049/0050/0051 -> note `docs\analysis\notes\p2.4-growth-death.md`: species/vtable map,
+  common ctor tuning `FUN_004DE370` (80x80, bounds, speeds 2.0/1.8/1.6, hunger 400-599,
+  growth threshold 4-6 / mode5 12-20), Oscar (stage 5, hunger 600-799, consume +900 cap 1300,
+  gore splats) and Ultravore (stage 6, 160px, hunger 600-799) inits, DeadFish `FUN_004F64E0`
+  (death sound 0x125, successor spawn table 5/6/7/8/9/10-12, corpse drift), stage-carrying
+  spawner `FUN_004EEF90`.
+  Open: tank-roster spawn paths + eat-nutrition bodies for Gekko/Sylvester/Ball/Bi (`0x4E1950`/
+  `0x4E3720`/`0x4E3C60`/`0x4E3F90`/`0x4E40A0`), DeadFish successor semantics (ghost vs live),
+  FishTypePet (0x15) in P2.7 scope.)
 - [~] **P2.5** Economy: coin values/denominations, pickup logic, money display, store prices
   (2026-10-16: money = `Tank+0x3F0`, `Tank::SpendMoney` + loan, store enum/`BuyItem` hub/
   price table `Tank+0x314[12]`, spawn map, demo money global, ShowMoney option -> EV-0046,
