@@ -795,3 +795,21 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   `[0x18C]!=0 || [0x194]!=0`) => max `quantity` non-special pellets. Open: module tick rate,
   runtime color table values, variant-2 pellet source, `FUN_0053C280`/`FUN_00538230` roles,
   species vtable->name mapping.
+
+### EV-0049 - P2.4: species map, common ctor tuning, carnivore consume, DeadFish
+- Species map resolved from bare-ctor vtable immediates (raw .text bytes) + type ids: 0x597D54
+  Guppy (0), 0x5982C4 Gekko (7), 0x59843C Oscar (5), 0x5985BC SylvesterFish (0x22),
+  0x59872C Ultra (6), 0x5988B4 BallFish (0x23), 0x598A24 BiFish (0x24); full per-species slot
+  table in `docs\analysis\notes\p2.4-growth-death.md` §1 (slots 54/56/68/82/88 shared).
+- Fish common ctor FUN_004DE370(x,y): 80x80 box, bounds x 10..540 y 95..370, vy -0.5,
+  speed class {2.0,1.8,1.6}, hunger = rand%200+400, growth threshold 4-6 (mode5 12-20),
+  coin timer +0x224 = FUN_004D71D0(rand%200+150), 50% initial flip.
+- Oscar init FUN_004D84C0: stage 5, hunger rand%200+600, top bound 105, demo slot-90 call.
+- Oscar consume FUN_004F2B00: [0x9C] += 900 cap 1300; splat particles when prey is not Food
+  and manager+0x882 (gore) on; [0x124]==3 speech "This is my last pizza," / "I swear!".
+- DeadFish::Update FUN_004F64E0: death sound FUN_00538230(0x125,3,1.0); spawn-by-id table
+  5/6/7 -> FUN_00544D80/FE0/51C0, 8/9 -> FUN_00545360/54F0, 10-12 -> FUN_00547270, else
+  FUN_00546FC0; corpse drift/clamps; pet corpse frames by ids 0x65-0x69.
+- Spawn fns are physics-only (FUN_00546D70 guppy: y=30, vy=rand%5+18, dart rand%10+45,
+  high-water Tank+0x48C; FUN_00544C00 carnivore: y=40, vy=rand%5+23, Tank+0x46C).
+- Note `docs\analysis\notes\p2.4-growth-death.md` written (status COMPLETE; open items in §7).
