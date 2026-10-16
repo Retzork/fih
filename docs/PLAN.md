@@ -138,9 +138,9 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   doubling `2*B[11]`; mode-4 reset to C); egg/level handler `FUN_00545960` full flow
   (24 pet slots `Tank+0x144`, `+0x43C` egg pieces, profile unlock `+0x77+tank` for tanks
   1-4, stats slot `tank*5-6+level`); `Tank::SpawnCoin` `FUN_00544430` body.
-  Open: initial A/C/D values (bounded search negative - level data, hand-off to P2.6);
-  mode enum naming (0/1/3/4/5 observed conditions only -> P2.11); coin-hit trio gameplay
-  intent (Q-0010); money format `DAT_005adec0`.)
+  Money label format `DAT_005adec0` = `"%d"` (EV-0058). Open: initial A/C/D values (bounded
+  search negative - level data, hand-off to P2.6); mode enum naming (0/1/3/4/5 observed
+  conditions only -> P2.11); coin-hit trio gameplay intent (Q-0010).)
 - [ ] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
 - [ ] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
   per pass; each pet gets its own EV entries)

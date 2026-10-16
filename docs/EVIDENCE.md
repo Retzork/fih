@@ -1052,3 +1052,15 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
 - Corrections/extends: EV-0046 "loan" -> uncollected-coin credit (correction); EV-0046 price
   table `+0x314` -> four-array model A/B/C/D; p2.5 note §3.1 new; `FUN_00534450` = item-11
   refresh when random-pet candidates <= 1 (role recorded, purpose open).
+
+### EV-0058 - P2.5: money label format `DAT_005adec0` = `"%d"` (closes an EV-0047 open item)
+- Date: 2026-10-16
+- Type: observation (decompile + raw byte read)
+- Source: `docs/evidence/p2.5c-moneydisplay-53A360.json`; byte read of
+  `docs\analysis\snapshots\insaniquarium-game-module.exe` at VA 0x5ADEC0 (file offset 0x1ADEC0)
+- Confidence: high
+- Notes: `FUN_0053A360` (money label refresh, label object `Tank+0x438`) formats
+  `mode5 ? [profile+0x8B8]+0x48 : Tank+0x3F0` with `FUN_004120c0(buf, &DAT_005adec0, value)`.
+  Raw bytes at VA 0x5ADEC0: `25 64 00 00` = `"%d"` (immediately followed by
+  "Content-Length: " at 0x5ADEC4); the string dump missed it (2-char string). The shell icon
+  is drawn separately; the label is the bare integer.
