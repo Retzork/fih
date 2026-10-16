@@ -734,3 +734,31 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   (options `+0x839..0x83E`, loader `FUN_0054E2D0`). Cheat toggles `FUN_005404A0`: Wavy/Prego
   sounds/Void/Space/Zombie modes (`DAT_005e89ce` = zombie; cross-ref P2.17). Coins: factory
   ids 0x19/0x1A/0x1B pending; `FUN_004F5050` dossier fetched, not analyzed.
+
+### EV-0047 - P2.5: Coin kind values, AddMoney paths, coin physics/collection, spawn API
+- Date: 2026-10-16
+- Type: observation (pseudocode/constants); inference (list ownership)
+- Source: temp pseudocode `docs/evidence/p2.3-coin-4F5050.json` (Coin::Update, 607 lines),
+  `p2.5-coinhelper-*.json` (`FUN_004D5360/5390/54E0/5510`, `FUN_004DD5D0`, `FUN_0053A360`),
+  `p2.5-coinhelper2-*.json` (`FUN_0053C1E0`, `FUN_004D53A0`), `p2.5-coinspawn.json`; note
+  `docs/analysis/notes/p2.5-economy.md` §5
+- Confidence: high for values/constants/add-paths; medium for collector list ownership
+- Notes: `Coin::Value` `FUN_004D53A0` by kind `+0x194`: {1,8,0x12}=15, {2,9}=35, {3,0xA}=40,
+  {4,0xB,5,0xC}=200, {6,0xD}=500, {7,0xE}=2000, 0x11=150, 0xF=250, 0x10 unhandled/0; in
+  virtual/mode-5 (`FUN_004D5360()` = `[manager+0x87C]==5 || Tank+0x2A5 != 0`) value =
+  `coin+0x1C0` x {1,2,3,5,10,20,5,10}. `Tank::AddMoney` `FUN_0053C1E0(n)`: mode 5 ->
+  `Tank+0x400 += n`; virtual -> `Tank+0x3F4 += n`; normal -> `Tank+0x3F0 += n`
+  (clamp 9,999,999) + `Tank+0x460 += n` (level total), then `FUN_0053A360` (money label at
+  `Tank+0x438`, format `DAT_005adec0`; mode-5 source `[manager+0x8B8]+0x48`). `Coin::Update`
+  physics: fall +1.5 (mode tweaks), land **y=370**, bob 120..150, x clamp, expiry thresholds
+  (20/108/150/200 by demo/hint/`Tank+0x16C`; kind 0xF = 217 ticks; kind 0x10 special target
+  y=50/-50), fade via `FUN_004D5390` (+0x178=5), removal `FUN_004D5510`. Virtual mode: homing
+  to (550,30) then HUD-target flight (`FUN_00538CD0`, squared-dist gate 0x57E5) ending in
+  `FUN_004D54E0` = `Tank+0x4EE=1` + `FUN_0053C1E0(FUN_004D53A0())`. Normal collection:
+  hit-test coin center (x+36,y+36) vs 60x60 boxes of objects with `obj+0xAC < 0` in Tank
+  lists `+0xC0/+0xC4/+0xCC/+0xD0/+0xD4`; on hit: vtable slot 0x160(1) / `FUN_004DD5D0(1)` /
+  `FUN_004F3C60(1)` / `FUN_004F2890(1)`, then remove + particle burst (rand%3+3); kind 0x11
+  removal (when `+0x198`==0): sound 0x11D + particles. Coin spawn: `Tank::SpawnCoin`
+  `FUN_00544430(args)` = new + `FUN_004EEAD0(x,y,kind,...,extra)` + `coin+0x28 = extra` +
+  activate + list-add + UI; fish slot 81 caller confirmed. `FUN_004D5510` removal = manager
+  object-mgr slot 4 + `[manager+0x88]()` notify + `FUN_00541D90(coin,0)`.
