@@ -762,3 +762,36 @@ searched. Static analysis never proves runtime behavior; mark runtime-dependent 
   `FUN_00544430(args)` = new + `FUN_004EEAD0(x,y,kind,...,extra)` + `coin+0x28 = extra` +
   activate + list-add + UI; fish slot 81 caller confirmed. `FUN_004D5510` removal = manager
   object-mgr slot 4 + `[manager+0x88]()` notify + `FUN_00541D90(coin,0)`.
+
+### EV-0048 - P2.3 complete: click-feed, hunger counter, eating pipeline, growth, coin scheduler
+- Date: 2026-10-16
+- Type: observation (pseudocode/constants/vtable bytes); inference (species order, tick-rate hint)
+- Source: `docs\evidence\p2.3-eat-*.json` (slots 54/56 click+release, slot 82 hunger, slot 84
+  approach, slot 77 consume, `FUN_004D5F20`, `FUN_004D7100`, `FUN_004D6BD0`, `FUN_004D6EF0`,
+  `FUN_004D69D0`, `FUN_004D6C50`), `p2.3-eatfn-*.json` (slot 85/86 Guppy), `p2.3-consumeguupy.json`,
+  `p2.3-colorize-*.json`, `p2.3-feed-*.json`, `p2.3-clickslot-refs.json`,
+  `p2.3-releaseslot-refs.json`, `p2.3-fishslot82.json`; note `docs/analysis/notes/p2.3-feeding.md`
+- Confidence: high for numbers/flow; medium for open semantics items (§9 of note)
+- Notes: (1) Fish click virtual slot 54 `0x4E4C10` (in all 7 species vtables
+  `0x597D54/0x5982C4/0x59843C/0x5985BC/0x59872C/0x5988B4/0x598A24`): click in water
+  (30..587 x, 60..400 y) when `Tank+0xB8/+0xF4/+0xDC` empty and `fish+0x229` ->
+  `SpendMoney(Tank+0x4AC)` -> `DropFood(round click, 0, 0, offset, -1)` + `Tank+0x4EC=1` +
+  `Tank+0x3C0` timestamp; `Tank+0x4AC` = pellet price; slot 56 `0x4D5300` clears
+  `Tank+0x4EC/+0x4ED`. `FUN_00539F30` = click-vs-falling-pellet pop test (variant-2 food,
+  `FUN_004D6290`). (2) Hunger: `Fish+0x9C` decrements 1/tick via `FUN_004D6EF0` (paused when
+  `+0x11C != -1`), clamp -1000; thresholds -1/-200/-400 (hint strings confirmed) and < -499 ->
+  slot 88 (shared die `0x4D5F90`); pet starvation `FUN_004D69D0` (demo -2159; types 7/8/9
+  -4319; non-demo `[0x9C] < 1`). (3) Eating: Update -> slot 82 -> slot 84 `0x4D5B20` (approach,
+  2 accel profiles by `[0x9C] < 301`) -> slot 85 `0x4EF050` (nearest-food by `FUN_004D5F20`
+  distance; food-near timers) -> slot 86 `0x4EF1B0` (eat windows ~35 px; mouth-open `[0x1C8]`)
+  -> slot 77 `0x4F1BA0` (nutrition: quality 0/1/3 -> `[0x9C]` +500/+700/+1100-1400 caps
+  800/1000/1400; food points `+0x1A4` vs threshold `+0x1A8`; growth stage `+0x1A0` <2 stage++;
+  overshoot (mode5?8:15)x -> stage 4; star potion: stage<=1 dies, stage 2 -> stage 3;
+  variant-2 pellet -> spawn guppy `FUN_00546D70`). (4) Coin scheduler slot 81 (Guppy `0x4F1400`):
+  `[0x220]++` vs threshold via `FUN_004D7100` (mode-5 pacing with `[0x14C]` and `DAT_005df590`),
+  gate `FUN_004D6BD0` (demo: no coins when `[0x9C] < 1`), special `[0x124]==5` needs stage>=2 ->
+  `Tank::SpawnCoin` `FUN_00544430`; tutorial hint `"Click on coins for extra money!"`.
+  (5) Food cap in DropFood: refuse when `DAT_005df58c + specials <= total` (specials =
+  `[0x18C]!=0 || [0x194]!=0`) => max `quantity` non-special pellets. Open: module tick rate,
+  runtime color table values, variant-2 pellet source, `FUN_0053C280`/`FUN_00538230` roles,
+  species vtable->name mapping.
