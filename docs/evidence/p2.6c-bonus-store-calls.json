@@ -1,0 +1,45 @@
+{
+  "schema": "rea-evidence-extract/v1",
+  "generated": "2026-10-20",
+  "target": {
+    "name": "insaniquarium-game-module.exe",
+    "local_path": "C:\\Users\\Fauzi\\Documents\\project\\fih\\fih\\docs\\analysis\\snapshots\\insaniquarium-game-module.exe",
+    "format": "pe",
+    "architecture": "x86",
+    "sha256": "33f34bae5eeee213c2a3819a13a4515c99a357f4247d42e5314da20621efe2c4"
+  },
+  "provider": {
+    "id": "ghidra",
+    "name": "Ghidra",
+    "version": "12.1.4"
+  },
+  "purpose": "P2.6 second pass: verify the BonusScreen spawner's pre-screen Shells/save call and inspect the StoreScreen constructor's eight item slots. Extracted from the live REA MCP session; full records remain in the session snapshot.",
+  "observations": [
+    {
+      "evidence_id": "ev_07f341fba430307725ab2ceb3c3cf09410f4777be121fac3c1e4819ae449eb89",
+      "operation": "procedure_pseudo_code",
+      "parameters": {
+        "procedure": "0x54BF60"
+      },
+      "procedure": {
+        "address": "0x54bf60",
+        "name": "FUN_0054bf60"
+      },
+      "excerpt": "FUN_0054b4c0(...); *(undefined1 *)(in_ECX + 0x884) = 1; if (*(int *)(in_ECX + 0x730) != 0) { *(undefined1 *)(*(int *)(in_ECX + 0x730) + 0x4ee) = 0; } FUN_0054ae30(); if (*(int *)(in_ECX + 0x8b8) != 0) { FUN_00514b00(); } iVar1 = FUN_00564345(0x18c); ... piVar2 = (int *)FUN_0052dad0(in_ECX); *(int **)(in_ECX + 0x818) = piVar2; ... FUN_0054afd0(); FUN_0054bc30(); FUN_0054b020(); FUN_0054b1a0(2,0x36,0);",
+      "notes": "BonusScreen spawner. Sets manager+0x884 = 1, clears Tank+0x4EE when a tank exists, calls FUN_0054AE30, then calls FUN_00514B00() when a profile exists before allocating 0x18C bytes and calling the BonusScreen ctor FUN_0052DAD0. Stores the screen at manager+0x818 and finalizes overlay/event state. This proves the save/Shells helper runs on every BonusScreen opening, not only on StoreScreen."
+    },
+    {
+      "evidence_id": "ev_a48d9e2a7db04b51a8e2b7a0d6d2f67bbc49f094c6b3c52504329562ac361bc8",
+      "operation": "procedure_pseudo_code",
+      "parameters": {
+        "procedure": "0x52B2D0"
+      },
+      "procedure": {
+        "address": "0x52b2d0",
+        "name": "FUN_0052b2d0"
+      },
+      "excerpt": "in_ECX[0x22] = Sexy::ButtonListener::vftable; *in_ECX = Sexy::StoreScreen::vftable; in_ECX[0x22] = Sexy::StoreScreen::vftable; ... in_ECX[0x23] = param_1; in_ECX[4] = *(undefined4 *)((int)param_1 + 800); ... 8x { iVar4 = FUN_00564345(); ... piVar5 = (int *)FUN_005331a0(); *param_1 = piVar5; ... } ... iVar9 = FUN_00534600(); in_ECX[0x30] = iVar9; ... _sprintf((char *)(in_ECX + 0x31),\"%d\"); ... FUN_0054b020(); FUN_0054b1a0(); ... StoreScreenOverlay::vftable ... puVar6[0xe] = 0x280; puVar6[0xf] = 0x1e0;",
+      "notes": "Full constructor read: Sexy::StoreScreen + ButtonListener vtables, manager at this+0x8C, cached manager+0x320, eight child item objects via FUN_005331A0 (slot array starts at this+0x9C), a FUN_00534600 Shell counter formatted with \"%d\", FUN_0054B020/FUN_0054B1A0 overlay reset, and a 640x480 StoreScreenOverlay. The constructor does not itself read profile+0xB0; item population/price display happens in the child/screen update code (not decompiled here)."
+    }
+  ]
+}

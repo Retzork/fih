@@ -1252,3 +1252,358 @@ behavior or specs; follow up with a binary observation entry.
   bounded `search-bytes` `C7 ?? 20 01 00 00 00` in `.text` -> 5 hits (`FUN_004B2010` 0x4B242E,
   `FUN_00501530` 0x501541, `FUN_0051A500` 0x51A5BF = stack local, 2x CRT); first two unexamined
   -> Q-0012.
+
+### EV-0066 - P2.6 second pass: tank/level advance writer `FUN_00501370`, profile reset, pet/Shell accessors (Q-0012 ANSWERED)
+- Date: 2026-10-20
+- Type: observation (decompile + xrefs)
+- Source: `docs/evidence/p2.6b-advance-profile.json` (`ev_40de37a5` `FUN_00501370`,
+  `ev_0766ab6...` `FUN_00501530`, `ev_8d0a8d8...` `FUN_00501200`, `ev_19ddeeb...` `FUN_00501410`,
+  `ev_a022616...` `FUN_00501420`, `ev_c328e99...` `FUN_005014D0`, `ev_c146e83...` xrefs)
+- Confidence: high for bodies and call sites; field naming (`+0x50`, `+0x58`, `+0x59`) is
+  inference from use
+- Notes: `FUN_00501370` (ECX = `profile`) is the tank/level advance writer Q-0012 asked for:
+  (1) `profile+0x20++` (level++);
+  (2) if `tank+0x1C == 4 && level+0x20 == 6` -> tank = 5, level = 1 (normal tank-4 completion);
+  (3) if `tank == 5 && level > 1` -> `profile+0x50++` and `profile+0x59 = 1`;
+  (4) if `level > 6 || (profile+0x59 != 0 && level > 5)` -> tank++, level = 1;
+  (5) always `profile+0x58 = 1`.
+  Call sites: 0x545D41 and 0x545D88 inside `FUN_00545960` (egg handler), and 0x547B31 inside
+  `FUN_00547610` (tank update / bonus transition). `+0x50` therefore increments on **every**
+  tank-5 level completion past L1, not demonstrably once per run; `+0x59` is the Bonus Adventure
+  flag (EV-0063/EV-0073) and is set by the first tank-5 L1 completion. `+0x58` is written but
+  its reader was not located (Q-0015).
+  `FUN_00501530` (ECX = `profile`) is the new-profile reset: tank = level = 1; owned-pet count
+  `+0x18 = 0`; `+0x4C/+0x50/+0x54 = 0`; `+0xB4 = 3`; `+0x84 = 0` + `FUN_005014D0(1,1)` (bit 1 of
+  `+0x84`); `+0x98/+0x88 = FUN_0040F9E0()`; clears `+0x78..+0x80`; clears the 24 owned-pet bytes
+  `+0x00..0x17` and the 24 selected-pet bytes `+0x5A..0x71`; `+0x72 = 0`, word `+0x76 = 0`,
+  `+0xA0/+0xA4 = 0`, then `+0x72 = 1`; `+0xA8/+0xAC/+0xB0 = 0`; Shells `+0x48 = 200`; the 29-int
+  score/story table `+0xB8..+0x128` = -1; `+0x59 = +0x58 = 0`. Callers: 0x50374A ->
+  `FUN_00503730`, 0x504E3B -> `FUN_00504E00`, 0x51471A -> `Catch@00514717`.
+  Accessors: `FUN_00501410(i)` returns raw owned-pet byte `profile+i`; `FUN_00501420(i,v)` writes
+  it and adjusts `profile+0x18` only when the value changes (`v == 0` decrements, non-zero
+  increments); `FUN_00501200(n)` adds `n` to Shells `profile+0x48` clamped to 0..9,999,999;
+  `FUN_005014D0(bit,val)` sets/clears bit `1 << (bit & 0x1F)` in `profile+0x84`.
+
+### EV-0067 - P2.6 second pass: egg-completion branches, pet index/name table, tank-4 L5 no-pet rule, Presto + 5000 Shells
+- Date: 2026-10-20
+- Type: observation (decompile + assembly re-check)
+- Source: `docs/evidence/p2.6b-egg-unlock.json` (`ev_345b0cc...` `FUN_00545960`,
+  `ev_66190be...` instructions, `ev_a7d6f38...` `FUN_0054BE80`, `ev_cb90483...` `FUN_00538040`);
+  `docs/evidence/p2.6b-transition-verify.json` (`ev_8d57342...` `FUN_0051F770`)
+- Confidence: high
+- Notes: `FUN_00545960` (egg-purchase handler) increments `Tank+0x43C`; at `>= 4` it records
+  `Tank+0x3FC = FUN_00538040()` seconds, clears `Tank+0x4EE`, collects coins `FUN_0053C2D0`, then
+  branches:
+  - **Mode 4 (Challenge):** `profile+0x77+tank = 1` for tanks 1-4; `FUN_005144C0(tank, profile,
+    Tank+0x3FC)`; `FUN_0054BF60` (BonusScreen). No level advance.
+  - **`profile+0x59 != 0` (Bonus Adventure):** tank 5 + level 1 -> `FUN_00501370()` then
+    `FUN_0054BF60`; every other level -> `FUN_0053DC10()` (finalizer/fast path, EV-0068).
+  - **Normal Adventure:** `FUN_00501370()` first, then pet grant from the **post-advance** tank/
+    level fields `Tank+0x3C8/+0x3CC`: tank 5 -> index 19; tank 4 + level 5 -> `EDI = 0x3E7`
+    (999) and jump straight to `FUN_0054BE80(999)` with **no** `FUN_00501420` grant; otherwise
+    `index = tank*5 - 6 + level`. `FUN_00501420(index,1)` grants the pet; index 19 also adds
+    5000 Shells (`PUSH 0x1388` -> `FUN_00501200`); then `FUN_0054BE80(index)` (HatchScreen).
+  `FUN_00514510(tank, level, profile, score)` receives `score` = `Tank+0x3FC` level time for
+  non-tank-5 completions, but for tank 5 the assembly replaces it with the count of empty pet
+  slots `Tank+0x144+i` (excluding index 0x12) plus the combined lengths of lists `Tank+0xB0`/
+  `+0xB4`; the empty-slot indices are also copied to `DAT_005e8fe0` and their count to
+  `DAT_005e9080` (used by the credits pet-loss jokes). ECX = `manager+0x8AC`; the record is at
+  `manager+0x8AC+100+FUN_00500DD0(tank,level)*12`. `FUN_005144C0(tank, profile, time)` uses
+  Challenge records at `+0x34+(tank-1)*12`.
+  Pet index -> display name, proven by the switch in `FUN_0051F770`:
+  0 STINKY, 1 NIKO, 2 ITCHY, 3 PREGO, 4 ZORF, 5 CLYDE, 6 VERT, 7 RUFUS, 8 MERYL, 9 WADSWORTH,
+  0xA SEYMOUR, 0xB SHRAPNEL, 0xC GUMBO, 0xD BLIP, 0xE RHUBARB, 0xF NIMBUS, 0x10 AMP, 0x11 GASH,
+  0x12 ANGIE, 0x13 PRESTO, 0x14 BRINKLEY, 0x15 NOSTRADAMUS, 0x16 STANLEY, 0x17 WALTER; 999 =
+  "Evil Alien Mastermind". Index 19 also displays "You have been awarded 5000 shells for
+  defeating the Final Boss!". **Correction to the first-pass note:** tank-4 L5 does not grant a
+  pet; it shows the 999 "Evil Alien Mastermind" hatch card and then starts tank 5.
+
+### EV-0068 - P2.6 second pass: level-6 sentinel, finalizer, bonus timing, two-stage transition, tank-complete event
+- Date: 2026-10-20
+- Type: observation (decompile + xrefs + assembly re-check)
+- Source: `docs/evidence/p2.6b-level6-finalizer.json` (`ev_dda5ffe...` `FUN_0054CBF0`,
+  `ev_e124fca...` `FUN_0054B2A0`, `ev_bb1b689...` `FUN_0054B2D0`, `ev_c70dd18...` `FUN_00537E20`,
+  `ev_55772c8...` `FUN_0054B020`), `docs/evidence/p2.6b-transition-verify.json`
+  (`ev_2468562...` `FUN_00537F40`, `ev_500f653...` `FUN_00547610`), `p2.6-levelcomplete-53DC10.json`
+- Confidence: high for bodies; the exact meaning of the 160-frame wait is inferred from the
+  threshold `0xA0`
+- Notes: `FUN_0054B2A0` is the tank-complete sentinel: true when mode 0 and `profile+0x20 == 6`,
+  or when the live tank's `+0x2A5` is set. `FUN_0054CBF0` branches on it: `FUN_0054C540` (new
+  tank) -> `FUN_00541A20` -> sentinel true -> `FUN_00537E20` + `FUN_0054B2D0` (no session init);
+  mode 5 -> `FUN_0053C3F0` + `FUN_0054B2D0`; else `FUN_005498B0` + `FUN_0054B2D0`.
+  `FUN_00537E20` (Tank finalizer): clears `[Tank+0x118]+0xD0`; `+0x2A8 = +0x444`;
+  `+0x2BC = 0`; `+0x94 = 0`; `+0x2A5 = 1`; `+0x2A4 = 0`; clears globals `DAT_005e89dc`,
+  `DAT_005e89cc`, `DAT_005e89d0`, `DAT_005e89c0` and sets `DAT_005df58c = 1`; clears
+  `+0x440/+0x450/+0x454/+0x45C/+0x458`; sets bonus timer `+0x3BC` = base by tank (default/tank1/
+  tank5 10, tank2 15, tank3 20, tank4 25) + clamp(level,1,6) - 1; `+0x3F4 = +0x3F8 = 0`;
+  `+0x2AC = -1`; `+0x2B0 = 0`; `+0x3B4 = +0x3B8 = now`.
+  `FUN_00537F40` (bonus starter): if `level != 6` calls `FUN_0054B2D0` (tank-complete event);
+  sets `+0x2A4 = 1`, resets `+0x3B4/+0x3B8`, `+0x3B0 = 0`, `+0x2A8 = +0x444`.
+  `FUN_00547610` (tank update) runs the two-stage transition: if `+0x2A5 != 0 && +0x2A4 == 0`
+  and `+0x444-+0x2A8 > 0x9F`, call `FUN_00537F40`; when `+0x2A4 != 0` and the bonus timer
+  `+0x3BC-(now-+0x3B8)/1000 < 0`, then require coin list `Tank+0xA8` empty and the **old**
+  `+0x3F8 > 100` (increment happens in the condition), then `FUN_00501370()`, call
+  `FUN_00514510(tank,level,profile,Tank+0x3FC)` **only if post-advance level < 6**, then
+  `FUN_0054BF60()` (BonusScreen). `FUN_0053DC10` = Bonus Adventure fast path: `+0x4EE = 1`,
+  `FUN_0053C480([Tank+0x10])`, `FUN_0054B020`, event `FUN_0054B1A0(2,0x36,0)`, `FUN_00537E20`.
+  `FUN_0054B020` clears overlay slots 0-4 on `manager+0x374` and sets `manager+0x88C/+0x890 = -1`.
+  `FUN_0054B2D0` maps the tank-complete event (mode 5 skipped): level-6 sentinel ->
+  `FUN_0054B1A0(0,0xD,0)`; current tank 1 -> `(0,0x16)`, tank 2 -> `(0,0)`, tank 3 ->
+  `(2,0x20)`, tank 4 -> `(2,0x2D)`, tank 5 -> none.
+
+### EV-0069 - P2.6 second pass: BonusScreen payout, HUD, Shells/save helpers, `scr%d.dat` persistence
+- Date: 2026-10-20
+- Type: observation; explicit unknown (file format, `+0x50` run semantics)
+- Source: `docs/evidence/p2.6b-bonus-payout.json` (`ev_975b1af...` `FUN_0051C8E0`,
+  `ev_4d29cc8...` `FUN_0053EAF0`, `ev_86c6f02...` `FUN_00514B00`, `ev_59c3f98...` `FUN_005148C0`,
+  `ev_ac8770a...` `FUN_00515910`), `docs/evidence/p2.6c-bonus-store-calls.json`
+  (`ev_07f341fb...` `FUN_0054BF60`), `docs/evidence/p2.6b-victory-ui.json` (`ev_ce804cb...`
+  `FUN_0052DAD0`)
+- Confidence: high for the switch/formula; medium for the save-file semantics
+- Notes: `FUN_0051C8E0` (BonusScreen ctor helper) sets the reward `this+0xBC` and always ends at
+  `FUN_00501200(reward)` (adds to `profile+0x48`):
+  - mode 0, tank != 5: reward = `Tank+0x3F4`; labels "Level Time"/"Your Best Time".
+  - mode 0, tank 5: reward = `max(1, profile+0x50-1)*5000` capped at 25000; labels "Surviving
+    Pets"/"Your Score"/"Your Best Score". (First completion `+0x50 == 1` -> 5000; because
+    `FUN_00501370` increments `+0x50` on every tank-5 level >1 completion, the exact
+    "completed-run" meaning is open -> Q-0015.)
+  - mode 1: reward = `Tank+0x3F0*5/100`, text "%d%% Bonus Award".
+  - mode 4: tank 1/2/3/4 -> 2000/5000/10000/20000, labels "Level Time"/"Your Best Time".
+  - other modes: no explicit reward branch (constructor-initialized `this+0xBC` is still added).
+  If no tank exists (`manager+0x730 == 0`) it only fills placeholder "Level Info"/"Bonus
+  Reward" records and returns without paying.
+  `FUN_0053EAF0` renders "BONUS ROUND", "Collect as many shells as you can!", `Tank+0x3F4`, and
+  `"Time Remaining: %d:%02d"` from `Tank+0x3BC - Tank+0x3B0` (when `+0x2A4`); `+0x3F8` controls
+  the blinking counter.
+  `FUN_0054BF60` sets `manager+0x884 = 1`, clears `Tank+0x4EE`, calls `FUN_0054AE30`, calls
+  `FUN_00514B00()` when a profile exists, spawns BonusScreen 0x18C (`FUN_0052DAD0`) at
+  `manager+0x818`, then `FUN_0054AFD0`/`FUN_0054BC30`/`FUN_0054B020`/`FUN_0054B1A0(2,0x36,0)`.
+  `FUN_0052DAD0` also disables "Click Here To Continue" when `profile+0x1C == 5 &&
+  profile+0x20 == 2` (tank-5/L2 interlude gate), and adds "Click for Story Time" in mode 4.
+  `FUN_00514B00` reads `FUN_005148C0(1)`, ignores values <1, clamps >= 100001 to 100000, calls
+  `FUN_00501200(value)`, stores now at `this+0x88`, and saves via `FUN_00514730`.
+  `FUN_005148C0` formats `userdata/scr%d.dat` with `this+0x44`, deserializes it (`FUN_0047F5D0`),
+  reads a stored integer, compares it with `this+0x88` (the bonus timestamp), and on a match
+  consumes 50 filler ints + 1 + 50 filler ints. `FUN_00515910(param)` writes
+  `FUN_005148C0(0)+param` to the same file surrounded by 50 `rand()%20000` ints
+  (caller 0x546A5E). The serializer/return path and whether the file is encrypted/obfuscated are
+  not established -> Q-0019.
+
+### EV-0070 - P2.6 second pass: normal per-level alien types, demo-only selector, wave spawner/countdown
+- Date: 2026-10-20
+- Type: observation (decompile + assembly + bounded searches)
+- Source: `docs/evidence/p2.6b-selector-waves.json` (`ev_2442c61...`/`ev_d080674...`
+  `FUN_00537C20`, `ev_bff19b4...` `FUN_00545620`, `ev_c863438...` xrefs, `ev_016dd23...` etc.
+  byte reads)
+- Confidence: high
+- Notes: `FUN_00537C20` writes `Tank+0x2BC` from a pool by **tank** (no level): tank1 {2,3},
+  tank2 {2,3,4,5}, tank3 {3,4,5,7,6}, tank4 {3,4,5,7,6,8}; no tank-5 case. Its only xrefs are
+  0x5412E4 (inside the `manager+0x880 != 0` demo branch of `FUN_00541200`) and 0x548BB6 (inside
+  the `manager+0x880 != 0` demo branch of the wave block in `FUN_00547610`) - i.e. the selector
+  is demo-only; the normal path uses fixed per-level types assigned by `FUN_00541200`:
+  tank1 L1 0, L2 1 (+`Tank+0x2C0 = 0x6D6` = 1750), L3 2, L4/L5 3; tank2 L1 2, L2 3,
+  L3 4, L4 5, L5 4|5; tank3 L1 3, L2 4|5, L3 7, L4 6, L5 6|7; tank4 L1 3, L2 8, L3 4,
+  L4 8, L5 8; tank5 0x15 (Cyrax). The wave block then re-rolls variants at L5: tank2 picks
+  4/5, tank3 6/7, and tank4 stays 8; it also maps tank4 L3 to 10/11, L4 to 11/12, L5 to
+  8/10/(11 or 12) by `rand()` (mode 4 substitutes 0xC after 4 waves).
+  `FUN_00545620` spawns composite waves: 9 = 1 + 3, 10 = 7 + 3, 11 = 5 + 6, 12 = 3 + 8;
+  boss type 0x15 sets `Tank+0x4EE = 1`, stores the alien at `Tank+0x110`, sets `+0x3E4 = 10`.
+  Arrival countdown `Tank+0x2C0` starts at 3000 after each wave: at 276 a message/tutorial
+  block, at 33 a sound, at 30 `FUN_00543F40` warning, at 1 an event; it resets to 3000.
+  Bounded `search_bytes BC 02 00 00` and `C0 02 00 00` in `.text` 0x401000-0x5B0000 returned 84
+  and 30 hits dominated by unrelated immediates, so absence of other writers is not proven.
+
+### EV-0071 - P2.6 second pass: victory gate, Interlude, pre-bonus StoreScreen, bonus-card/trophy correction, credits open
+- Date: 2026-10-20
+- Type: observation; explicit unknown (credits trigger)
+- Source: `docs/evidence/p2.6b-victory-ui.json` (`ev_5ffcf03...` `FUN_0054BD80`,
+  `ev_93af8ee...` `FUN_00517C70`, `ev_9331bc7...` `FUN_0051E060`, `ev_a710c49...`
+  `FUN_0051CF30`, `ev_5e26860...` `FUN_0051E280`, `ev_2b70879...` `FUN_005256E0`,
+  `ev_cd09cb4...` resolve 0x51D1D6), `docs/evidence/p2.6c-store-interlude.json`
+  (`ev_9b3921d3...` `FUN_0054BCA0`, `ev_c46b6b1e...` `FUN_0052B2D0`, `ev_48e61dcf...` handler),
+  `docs/evidence/p2.6c-bonus-store-calls.json` (`ev_a48d9e2a...` ctor re-read)
+- Confidence: high for spawners/gates; medium for the role of the tank-5/L2 state
+- Notes: tank-5 victory gate: `FUN_00517C70` (param 99 = confirm, 100 = back) and
+  `FUN_0051E060` (param 0/2) both test `profile+0x1C == 5 && profile+0x20 == 2` and call
+  `FUN_0054BD80`, which allocates object 0xB8, ctor `FUN_005256E0` (`Sexy::InterludeScreen`) at
+  `manager+0x81C`; the ctor creates the "Back To Main Menu" button. Xrefs to `FUN_0054BD80` are
+  0x517CE5 and 0x51E10E. The tank-5 L1 completion advances the profile to tank 5/level 2
+  (EV-0066) and grants Presto + 5000 Shells (EV-0067); level 2 is therefore a victory-gate
+  state, not a second played boss level (wiki, EV-0074).
+  `FUN_0054BCA0` is the pre-bonus-pet StoreScreen spawner (not the Interlude): it optionally
+  calls `FUN_0053DB80(1)`, calls `FUN_00514B00()` when a profile exists, allocates 0xBB0, ctor
+  `FUN_0052B2D0` (`Sexy::StoreScreen`) at `manager+0x810`, positions it, and adds it to the list
+  at `manager+0x320`. It is case 10 of UI handler `FUN_0054A370` (jump/data table 0x5A83E4;
+  call site 0x54A3BE); xref to 0x54BCA0 is only 0x54A3BE; xref to 0x52B2D0 is 0x54BD10.
+  `FUN_0052B2D0` sets `Sexy::StoreScreen` + `Sexy::ButtonListener` vtables, manager at
+  `this+0x8C`, caches `manager+0x320`, creates 8 child item objects via `FUN_005331A0` (slot
+  array at `this+0x9C`), builds a Shell counter via `FUN_00534600` + "%d", calls
+  `FUN_0054B020`/`FUN_0054B1A0`, and attaches a 640x480 `StoreScreenOverlay`. It does **not**
+  read `profile+0xB0`; item population/price display lives in the child/update code
+  (not decompiled) -> Q-0018.
+  Bonus-pet/upgrade card correction: the second `"Congratulations!"` at 0x51D1D6 resolves to
+  `FUN_0051CF30`, which is the **bonus-pet/upgrade purchase card**, keyed on `profile+0xB0`:
+  1-4 -> Brinkley/Nostradamus/Stanley/Walter (with "You Have Bought" and per-pet joke text);
+  5 -> "FOUR pets?!!! That's INSANE!"; 6 -> "SEVEN pets at the same time!" (plus the Virtual
+  Tank disclaimer). It is not a victory screen. `FUN_0051E280` title tooltip cases 5/6 are
+  "Wow!  Nice trophy!" and the solid-gold-trophy text; the only xrefs to those strings are
+  0x51E3DF/0x51E3D8 inside `FUN_0051E280`, i.e. title-menu tooltips, not the victory flow.
+  Credits sequence `FUN_00525A60` still has only the data xref 0x5A0E4C; its trigger is not
+  located -> Q-0016.
+
+### EV-0072 - P2.6 second pass: corrected store tables, Shells routing, level-start/tank creation counters
+- Date: 2026-10-20
+- Type: observation; correction of EV-0062
+- Source: `docs/evidence/p2.6b-shells-routing.json` (`ev_e0dd8c8...` `FUN_0053C1E0`,
+  `ev_c124896...` `FUN_00541200`), `docs/evidence/p2.6b-flow-verify.json` (`ev_27b0f9d...`
+  `FUN_00541A20`, `ev_8a3244b...` `FUN_0054C540`, `ev_62a6342...` `FUN_00542150`),
+  `docs/evidence/p2.6b-advance-profile.json` (`ev_40de37a5` etc.)
+- Confidence: high
+- Notes: `FUN_0053C1E0(n)` routes Shells: mode 5 -> add to `profile+0x48` (unless
+  `thunk_FUN_00479FC0()` is true) and add to `Tank+0x400`; tank complete (`Tank+0x2A5`) ->
+  `Tank+0x3F4`; otherwise `Tank+0x3F0` + `Tank+0x460`, capped 9,999,999.
+  `FUN_00541200` normal-mode store tables (A[item] = slot, B[item] = price; egg price by level):
+  - tank1: items 0->0 (100), 2->1 (200), 3->2 (300), 4->3 (1000), 10->5 (1000), 11->6
+    (150/500/2000/3000/5000). L1 hides 2,3,4,10; L2 hides 4,10; L3-L5 show all.
+  - tank2: items 0->0 (100), 2->1 (200), 3->2 (300), 5->3 (250), 6->4 (750), 10->5 (1000),
+    11->6 (750/3000/5000/7500/10000). L1 hides **6 and 10 only**; L2-L5 show all.
+  - tank3: items 0->0 (100), 2->1 (200), 3->2 (300), 7->3 (750), 8->4 (2000), 10->5 (2000),
+    11->6 (1000/5000/7500/10000/15000). L1 hides 8,10.
+  - tank4: items 1->0 (200), 2->1 (200), 3->2 (300), 4->3 (1000), 9->4 (10000), 10->5 (5000),
+    11->6 (3000/25000/50000/75000/99999). L1 hides 9,10.
+  - tank5: item 11->6, price 0, `Tank+0x43C = 3`, `Tank+0x2BC = 0x15`.
+  Mode 4 overrides egg price to 5000 (tank2), 15000 (tank3), 25000 (tank4); mode 1 sets egg
+  price 100. The demo branch (`manager+0x880 != 0`) builds a fuller store and is the only path
+  that runs the 12x `FUN_005409B0` + `FUN_00537C20` block. **Corrections to EV-0062:** tank2 L1
+  hides items 6+10 only (the earlier "L1-2 hide weapon" is wrong); tank4 item 9 is Ultravore at
+  store slot 4 for 10000 (not Beetlemuncher). Normal store-item object ownership remains open
+  (xrefs 0x4F18xx tutorial loop, 0x54782A tank update) -> Q-0018.
+  `FUN_00541A20` (Tank level start): mode 0 -> `Tank+0x3C8/+0x3CC = profile+0x1C/+0x20`; other
+  modes -> tank = `manager+0x888`, level = 5; money 999999 (mode 3) else 200; `+0x4AC = 5`;
+  `+0x2C0 = 3000`; `+0x2A4 = +0x2C8 = +0x2A8 = 0`; `+0x43C = 1`; `+0x3E4 = 2`; `+0x2BC = 2`
+  (overwritten by the store init); demo -> `+0x3E4 = 8`, money 200. `FUN_0054C540` allocates
+  0x504 bytes, ctor `FUN_00542150`, stores at `manager+0x730`, adds to the list at
+  `manager+0x320`, and increments `profile+0x4C` (sessions started); the ctor clears
+  `+0x2A5`/`+0x4EE`, so a fresh tank cannot re-finalize a previous tank.
+
+### EV-0073 - P2.6 second pass: session init corrections and the normal vs Bonus Adventure lifecycle
+- Date: 2026-10-20
+- Type: observation; inference (tank-5 "L2 as gate" role; `+0x50` semantics)
+- Source: `docs/evidence/p2.6b-flow-verify.json` (`ev_514e04a...` `FUN_005498B0`),
+  `docs/evidence/p2.6b-egg-unlock.json`, `docs/evidence/p2.6b-transition-verify.json`,
+  `docs/evidence/p2.6b-level6-finalizer.json`
+- Confidence: high for conditions/banners/timers; medium for lifecycle role labels
+- Notes: session init `FUN_005498B0` pet branch is exactly
+  `(profile+0x59 == 0 || (mode != 1 && mode != 4)) && profile+0x18 < 4` -> loop i 0..0x12 and
+  create every **owned** pet byte set by `FUN_00501410(i)`; otherwise loop i 0..0x17 and create
+  pet i when `profile+0x5A+i != 0` (selected pets). Tank 5 additionally sets `Tank+0x2C0 = 300`
+  and unconditionally creates pets 0..0x11 (18: Stinky..Gash, excluding Angie 0x12 and Presto
+  0x13 and bonus pets). Tank 4 uses decoration `FUN_005471E0` once; other tanks use
+  `FUN_00546EF0` twice; tank1 L1 marks two objects `+0x228 = 1`; demo uses only `FUN_00546EF0`
+  twice. Banners: tank1 L1 mode 0 + `+0x59 == 0` -> "Welcome to the Insaniquarium!"; +`0x59 != 0`
+  and `+0x50 == 1` -> "Welcome to the Bonus Adventure!"; tank1 L2 -> "Welcome to the next
+  level!"; tank2 L1 -> "Welcome to the second tank! Now things get tricky!"; mode 4 ->
+  "Welcome to Challenge mode!"; mode 3 -> "You've discovered the top-secret SANDBOX mode!";
+  mode 1 -> "Welcome to Time Trial mode!" with `+0x3BC` 300 (tank1) / 600 (tanks2-4) and
+  `+0x3BC/0x3C` minutes; mode 5 -> none. End: clears `+0x444/+0x450/+0x454/+0x45C/+0x458`,
+  `+0x3B4 = +0x3B8 = now`, `+0x4E8 = 0`, `+0x4E6 = 0`.
+  Lifecycle now closed: normal L1-L4 -> advance + pet + HatchScreen -> pet selection -> next
+  level; L5 -> advance to level 6 + last pet + Hatch; after pet selection, `FUN_0054CBF0`
+  sees `profile+0x20 == 6`, runs `FUN_00537E20` + `FUN_0054B2D0` (tank-complete event), then
+  `FUN_00547610` waits >= 0xA0 frames, starts the bonus (15/20/25 s for tanks 2/3/4), waits for
+  the timer + empty coin list + `+0x3F8 > 100`, advances to the next tank L1, and opens
+  BonusScreen. Tank4 L5 skips the pet grant (EV-0067) and starts tank5 L1 directly; tank5 L1
+  -> L2 + Presto + 5000 Shells -> Hatch -> interlude gate (EV-0071). Bonus Adventure
+  (`profile+0x59 != 0`) uses the fast path on **every** level: `FUN_0053DC10` -> finalizer ->
+  bonus 10/15/20/25 + level-1 seconds -> advance -> BonusScreen; tank5 L1 -> L2 + BonusScreen
+  with no Presto/Hatch. This matches the wiki's "bonus after each tank except 4 and 5; every
+  stage in Bonus Adventure" (EV-0074). `+0x58` is set by every advance but its reader is
+  still open (Q-0015).
+
+### EV-0074 - P2.6 wiki-ref second pass: Bonus Round, Tank 5, Challenge, Pets, Time Trial (access 2026-10-20)
+- Date: 2026-10-20
+- Type: wiki-ref (D-0010; secondary source)
+- Source: `https://insaniquarium.fandom.com/wiki/Bonus_Round?action=raw` (fetched 2026-10-20),
+  `https://insaniquarium.fandom.com/wiki/Tank_5?action=raw` (fetched 2026-10-20); the following
+  were fetched successfully earlier in the same pass and retried unsuccessfully on 2026-10-20
+  (HTTP 403): `Pets`, `Challenge_Mode`, `Time_Trial_Mode`
+- Confidence: wiki claims only; binary bindings cited in EV-0066..EV-0073
+- Notes: Bonus Round page: bonus after each tank **except Tanks 4 and 5** in Adventure, after
+  **each individual stage** in Bonus Adventure; shells collected go to the player's Shell
+  balance for Virtual Tank purchases; "3, 2, 1" countdown, bucket, timer, shell lineup; shell
+  values Silver 1, Gold 2, Blue Conch 5, Silver Spiral 10, Bag O' Shells 20; time increases
+  slightly each round; combos multiply by combo length (max 10) and max at 500/250/125 etc.
+  Tank 5 page: only one level, the Cyrax boss battle; egg piece costs no money; no food/laser/
+  fish/food-chain upgrades; 18 pets available (Stinky..Gash); Presto unlocked (delayed from
+  Tank 4-5); after defeating Cyrax with at least one pet, the player earns 5000 shells and a
+  credits scene (Angie revives dead pets, then cast/staff roll); completing Adventure unlocks
+  Bonus Adventure, which has bonus rounds after every level. The page also lists the six
+  "pets survived" messages (8-12 ... 18) used by the credits.
+  Challenge Mode page (earlier fetch): 32 stories plus a 33rd gold-trophy ending. Pets page
+  (earlier fetch): unlock order per tank/level (Stinky 1-1 ... Presto 5-1); bonus pets after
+  Bonus Round/Time Trial; four bonus pets -> 4-pet upgrade -> 7-pet VT -> 11 with Sandbox.
+  Time Trial page (earlier fetch): timer 5%/10% and 5% of money converted to shells.
+  Conflicts/nuances kept open: (1) Tank 5 says one level while the binary gate is tank5/L2
+  (EV-0071); the L2 state is read as the victory marker, not a second played level.
+  (2) Tank 5 says 5000 shells + credits after defeating Cyrax; the binary grants the 5000 at
+  the Presto HatchScreen (index 19) and the credits trigger is still unfound (Q-0016).
+  (3) "Bonus after tanks 1-3 only" matches binary normal Adventure, but Bonus Adventure gets
+  one after every level including tank4 L5 (EV-0073). (4) The Pets page's "4 pets -> 7 -> 11"
+  capacity is not yet bound to `profile+0xB0` (which is 1-6 for bonus cards) or `profile+0xB4`
+  (reset 3; Sandbox raises to 11) -> Q-0013. (5) Time Trial's 5%/10% timer wording is not yet
+  matched to the binary 300/600 s and 5% money award (EV-0069) -> P2.11.
+
+### EV-0075 - P2.6 second pass: explicit unknowns and bounded negative searches
+- Date: 2026-10-20
+- Type: explicit unknowns
+- Source: current pass (EV-0066..EV-0074); `docs/evidence/p2.6b-selector-waves.json`
+  (`ev_a602464...`/`ev_d33309f...` `search_bytes`), `p2.6b-victory-ui.json`
+  (`ev_aaf22c4...` xrefs 0x525A60), `p2.6b-bonus-payout.json`
+- Confidence: high that these are unresolved
+- Notes:
+  - Credits trigger: `FUN_00525A60` has only the data xref 0x5A0E4C; no code xref. Q-0016.
+  - Trophy/story award: `profile+0xB4` is reset to 3 and Sandbox raises it to 11;
+    `profile+0xB0` is the bonus-pet/upgrade card index (1-6). No writer/reader was found that
+    maps Challenge stories 1-32 or the 33rd gold trophy onto these fields. Q-0013.
+  - Mode 2: still unobserved; do not assign a name/behavior (P2.11). Q-0014.
+  - `profile+0x58`: set to 1 by every `FUN_00501370` call, reader not located. Q-0015.
+  - Tank 6: `FUN_00501370` can increment to tank 6 if `profile+0x59 != 0` and level > 5, but
+    `FUN_0054B2A0` checks only `profile+0x20 == 6`, `FUN_00541200` has no tank-6 case, and
+    `FUN_0054B2D0` has no tank-6 event. Q-0017.
+  - StoreScreen item population/price display is not in `FUN_0052B2D0`; the normal store-item
+    object owner is also unresolved (xrefs 0x4F18xx tutorial loop, 0x54782A tank update).
+    Q-0018.
+  - `userdata/scr%d.dat`: serializer/obfuscation, return path of `FUN_005148C0`, and exact
+    meaning of the stored timestamp/value pair are unresolved. Q-0019.
+  - `profile+0x50`: increments on every tank-5 level >1 completion; whether it counts runs,
+    boss wins, or tank-5 levels is not proven (payout first win 5000 is consistent either way).
+  - Bounded `search_bytes` for immediates `BC 02 00 00` / `C0 02 00 00` in `.text`
+    0x401000-0x5B0000 (84 / 30 hits) is too noisy to prove the set of `Tank+0x2BC`/`+0x2C0`
+    writers; the writers cited in EV-0070 are those actually decompiled.
+  - The hostile alien classes remain absent from RTTI (Q-0011); type ids 9-12/0x15 are observed
+    spawn selections only, not class identities (P2.8).
+
+### EV-0076 - P2.6 second pass: corrections - pet reward uses the completed session's level; normal bonus duration table
+- Date: 2026-10-20
+- Type: correction of EV-0067 and EV-0073
+- Source: `docs/evidence/p2.6b-egg-unlock.json` (`ev_345b0cc...` `FUN_00545960`),
+  `docs/evidence/p2.6b-advance-profile.json` (`ev_40de37a0...` `FUN_00501370`),
+  `docs/evidence/p2.6b-level6-finalizer.json` (`ev_c70dd18...` `FUN_00537E20`)
+- Confidence: high (both corrections are directly in the cited bodies)
+- Notes:
+  (1) EV-0067 described the pet grant as reading "post-advance" `Tank+0x3C8/+0x3CC`. That is
+  wrong: `FUN_00501370` writes only `profile+0x1C/+0x20`, and `FUN_00545960` reads the Tank's
+  level-start copies `Tank+0x3C8/+0x3CC`, which still hold the **completed** level. Therefore
+  `index = tank*5 - 6 + level` uses the level just completed: tank1 L1 -> 0 Stinky, L2 -> 1
+  Niko, L3 -> 2 Itchy, L4 -> 3 Prego, L5 -> 4 Zorf; tank2 L1 -> 5 Clyde ... L5 -> 9 Wadsworth;
+  tank3 L1 -> 10 Seymour ... L5 -> 14 Rhubarb; tank4 L1 -> 15 Nimbus, L2 -> 16 Amp, L3 -> 17
+  Gash, L4 -> 18 Angie, L5 -> special-cased 999 (no grant, because the formula would yield 19 =
+  Presto); tank5 L1 -> 19 Presto + 5000. The tank4-L5 special case tests the same
+  `Tank+0x3C8 == 4 && Tank+0x3CC == 5`. This matches the wiki unlock order "Stinky 1-1 ...
+  Presto 5-1" (EV-0074).
+  (2) EV-0073's parenthetical "bonus (15/20/25 s for tanks 2/3/4)" is wrong. `FUN_00537E20` sets
+  `Tank+0x3BC = base(tank) + clamp(level,1,6) - 1` with base default/tank1/tank5 = 10, tank2 =
+  15, tank3 = 20, tank4 = 25. The normal tank-complete path runs at profile level 6 (sentinel),
+  so tanks 1/2/3 get 15/20/25 s. Tank 4 never reaches the sentinel (its L5 advances straight to
+  tank5 L1, EV-0067), and tank 5 uses the per-level fast path (10 + level - 1 s). All other
+  statements in EV-0067/EV-0073 stand.

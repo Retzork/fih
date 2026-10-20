@@ -1,0 +1,189 @@
+{
+  "schema": "rea-evidence-extract/v1",
+  "generated": "2026-10-20",
+  "target": {
+    "name": "insaniquarium-game-module.exe",
+    "local_path": "C:\\Users\\Fauzi\\Documents\\project\\fih\\fih\\docs\\analysis\\snapshots\\insaniquarium-game-module.exe",
+    "format": "pe",
+    "architecture": "x86",
+    "sha256": "33f34bae5eeee213c2a3819a13a4515c99a357f4247d42e5314da20621efe2c4"
+  },
+  "provider": {
+    "id": "ghidra",
+    "name": "Ghidra",
+    "version": "12.1.4"
+  },
+  "purpose": "P2.6 second pass: identify the UI event handler that opens Sexy::StoreScreen before the bonus-pet purchase and the screen's constructor/call site. Extracted from the live REA MCP session; full records remain in the session snapshot.",
+  "observations": [
+    {
+      "evidence_id": "ev_9b3921d3d04c92fd46eeab784def7e708a011fbd47da818177aa63a8cc8306bf",
+      "operation": "procedure_pseudo_code",
+      "parameters": {
+        "procedure": "0x54BCA0"
+      },
+      "procedure": {
+        "address": "0x54bca0",
+        "name": "FUN_0054bca0",
+        "body_range": [
+          "0x54bca0",
+          "0x54bd7b"
+        ]
+      },
+      "excerpt": [
+        "FUN_0054b4c0(DAT_005e39d8 ^ (uint)&stack0xfffffffc);",
+        "FUN_0054ad10();",
+        "if (*(int *)(in_ECX + 0x730) != 0) { FUN_0053db80(1); }",
+        "if (*(int *)(in_ECX + 0x8b8) != 0) { FUN_00514b00(); }",
+        "iVar1 = FUN_00564345(0xbb0);",
+        "if (iVar1 == 0) { piVar2 = (int *)0x0; }",
+        "else { piVar2 = (int *)FUN_0052b2d0(in_ECX); }",
+        "*(int **)(in_ECX + 0x810) = piVar2;",
+        "(**(code **)(*piVar2 + 0xa0))(0,0,*(undefined4 *)(in_ECX + 0xc0),*(undefined4 *)(in_ECX + 0xc4));",
+        "(**(code **)(**(int **)(in_ECX + 800) + 0xc))(*(undefined4 *)(in_ECX + 0x810));",
+        "(**(code **)(**(int **)(in_ECX + 800) + 0x20))(*(undefined4 *)(in_ECX + 0x810));"
+      ],
+      "notes": "Spawns a 0xBB0-byte screen via ctor FUN_0052B2D0, stores it at manager+0x810, positions it to the manager's 0xC0 x 0xC4 client area, and adds it to the list at manager+0x320 (800 decimal) through vtable slots +0xC and +0x20. If manager+0x730 is set, FUN_0053DB80(1) runs first; if the profile at manager+0x8B8 exists, FUN_00514B00() runs first."
+    },
+    {
+      "evidence_id": "ev_c46b6b1e01e0c7ff1dc14bdaeca2863f5511d829e512680dc292c6f6c1f16b0f",
+      "operation": "procedure_pseudo_code",
+      "parameters": {
+        "procedure": "0x52B2D0"
+      },
+      "procedure": {
+        "address": "0x52b2d0",
+        "name": "FUN_0052b2d0",
+        "body_ranges": [
+          [
+            "0x52b2d0",
+            "0x52b3d7"
+          ],
+          [
+            "0x52b3db",
+            "0x52b7f3"
+          ]
+        ]
+      },
+      "excerpt": [
+        "FUN_0046dca0();",
+        "in_ECX[0x22] = Sexy::ButtonListener::vftable;",
+        "*in_ECX = Sexy::StoreScreen::vftable;",
+        "in_ECX[0x22] = Sexy::StoreScreen::vftable;",
+        "FUN_0040ae20();",
+        "in_ECX[0x23] = param_1;",
+        "in_ECX[4] = *(undefined4 *)((int)param_1 + 800);",
+        "in_ECX[0x71] = 0xc0;",
+        "in_ECX[0x72] = 0x6f;",
+        "in_ECX[0xe] = *(undefined4 *)((int)param_1 + 0xc0);",
+        "in_ECX[0xf] = *(undefined4 *)((int)param_1 + 0xc4);",
+        "... 8x FUN_005331A0 child objects ...",
+        "iVar9 = FUN_00534600();",
+        "*(undefined4 *)(iVar9 + 0xb4) = 2;",
+        "_sprintf((char *)(in_ECX + 0x31),\"%d\");",
+        "FUN_0054b020();",
+        "FUN_0054b1a0();",
+        "FUN_0046dca0();",
+        "*puVar6 = StoreScreenOverlay::vftable;",
+        "puVar6[0x22] = in_ECX;",
+        "puVar6[0xe] = 0x280;",
+        "puVar6[0xf] = 0x1e0;"
+      ],
+      "notes": "Constructor of Sexy::StoreScreen (RTTI vftable names present in the decompilation). Binds the manager at this+0x8C, caches manager+0x320, uses the manager's 0xC0/0xC4 dimensions, creates 8 store rows/buttons via FUN_005331A0, creates the shell counter text object via FUN_00534600 formatted with \"%d\", clears overlay slots with FUN_0054B020/FUN_0054B1A0, and attaches a 640x480 StoreScreenOverlay."
+    },
+    {
+      "evidence_id": "ev_48e61dcf20b8f53ecd9497e07a8ba07bb84c0d63c68b24aed8106ce7489c7ed3",
+      "operation": "procedure_pseudo_code",
+      "parameters": {
+        "procedure": "0x54A370"
+      },
+      "procedure": {
+        "address": "0x54a370",
+        "name": "FUN_0054a370",
+        "body_range": [
+          "0x54a370",
+          "0x54a408"
+        ]
+      },
+      "excerpt": [
+        "(**(code **)(**(int **)(in_ECX + 4) + 0xd8))(DAT_005e8c40);",
+        "if ((*(int *)(*(int *)(in_ECX + 4) + 0x87c) != 5) && (param_1 < 0xc)) {",
+        "  FUN_00549380(param_1);",
+        "  return;",
+        "}",
+        "switch(param_1) {",
+        "case 10: FUN_0054bca0(); return;",
+        "case 0xb: FUN_0054c060(); return;",
+        "case 0xc: FUN_0054c2d0(); return;",
+        "case 0xd: FUN_00551c90(); return;",
+        "case 0xe: cVar1 = FUN_0054b4b0(); if (cVar1 == '\\0') { FUN_005492b0(); return; } break;",
+        "case 0xf: FUN_00552230();",
+        "}"
+      ],
+      "notes": "UI event/button dispatcher. In non-Virtual-Tank modes (manager+0x87C != 5) an event id below 0xC is routed to the store purchase handler FUN_00549380(item id); the remaining ids are screen commands: 10 StoreScreen (FUN_0054BCA0), 0xB FUN_0054C060, 0xC PetsScreen spawn (FUN_0054C2D0), 0xD FUN_00551C90, 0xE conditional FUN_0054B4B0/FUN_005492B0, 0xF FUN_00552230. The switch targets form the jump/data table at 0x5A83E4."
+    },
+    {
+      "evidence_id": "ev_16a729a13e3f309f51cc249897a25b23b69b6a969bb3f668af61d24df934a16e",
+      "operation": "xrefs",
+      "parameters": {
+        "address": "0x54BCA0"
+      },
+      "result": [
+        "0x54a3be"
+      ],
+      "notes": "Single incoming reference = the case-10 call instruction inside FUN_0054A370. Confirms the StoreScreen spawn has one static caller."
+    },
+    {
+      "evidence_id": "ev_db2a55b3345aa62c8fbb932cb3a73c809abd29f6def7bf3178d139ee0c081e30",
+      "operation": "xrefs",
+      "parameters": {
+        "address": "0x52B2D0"
+      },
+      "result": [
+        "0x54bd10"
+      ],
+      "notes": "Single incoming reference = the constructor call inside FUN_0054BCA0."
+    },
+    {
+      "evidence_id": "ev_e187abc207c3762c3a6fed97a1a5f497cff2b43cc94d3c34b3ac39066ca38b70",
+      "operation": "procedure_pseudo_code",
+      "parameters": {
+        "procedure": "0x514B00"
+      },
+      "excerpt": [
+        "iVar1 = FUN_005148c0(1);",
+        "if (iVar1 < 0x186a1) { if (iVar1 < 1) { return; } } else { iVar1 = 100000; }",
+        "FUN_00501200(iVar1);",
+        "uVar2 = FUN_0040f9e0();",
+        "*(undefined4 *)(in_ECX + 0x88) = uVar2;",
+        "FUN_00514730();"
+      ],
+      "notes": "Called by FUN_0054BCA0 before opening StoreScreen when the profile exists. Reads an integer from FUN_005148C0(1), ignores values below 1, clamps to 100000, adds the amount to Shells via FUN_00501200, stores the current time at this+0x88 via FUN_0040F9E0, and saves via FUN_00514730."
+    },
+    {
+      "evidence_id": "ev_c31b0d15612e05f48d4437366bc5fff8ecc4422006f0f1f61d885a78a0930682",
+      "operation": "procedure_pseudo_code",
+      "parameters": {
+        "procedure": "0x5148C0"
+      },
+      "strings": [
+        {
+          "address": "0x59d60c",
+          "value": "userdata/scr%d.dat",
+          "source_address": "0x5148fd"
+        }
+      ],
+      "excerpt": [
+        "uVar2 = FUN_004120c0(local_a4,\"userdata/scr%d.dat\",*(undefined4 *)(in_ECX + 0x44));",
+        "cVar1 = FUN_0047f5d0(local_34,local_6c,0);",
+        "if (cVar1 != '\\0') {",
+        "  if (param_1 != '\\0') { FUN_0047fbc0(local_34); }",
+        "  FUN_005001d0();",
+        "  ... FUN_00500340() read loop ...",
+        "  if (iVar4 == *(int *)(in_ECX + 0x88)) { ... FUN_005120e0(); FUN_00502fb0(); ... return; }",
+        "  FUN_005120e0(); FUN_00502fb0();",
+        "}"
+      ],
+      "notes": "Formats userdata/scr<this+0x44>.dat, opens/parses it, and compares a stored value against this+0x88 (the timestamp written by FUN_00514B00); on mismatch it rewrites/saves. The exact encrypted/obfuscated file layout and the meaning of the value returned to FUN_00514B00 remain open (Q-0019) - only the filename, the clamp, the Shells credit, and the timestamp/save loop are proven."
+    }
+  ]
+}

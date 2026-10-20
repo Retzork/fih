@@ -148,12 +148,52 @@
   RTTI), but nothing is confirmed. Resolve in P2.8 by tracing the alien spawn waves and the
   `Alien` ctor callers; do not guess class names for the remake until then.
 
-### Q-0012 - Who writes the tank/level advance (`profile+0x1C`/`profile+0x20`)?
-- OPEN (2026-10-16, EV-0061/EV-0065). Adventure reads current tank/level from `profile+0x1C`
-  and `profile+0x20` at level start (`FUN_00541A20`), and the remake needs the writer to get
-  level-5 -> tank++ and the tank-5 victory transition right. First pass did not locate it:
-  bounded `search-bytes` `C7 ?? 20 01 00 00 00` in `.text` (0x401000-0x595900) returned only
-  `FUN_004B2010` (0x4B242E), `FUN_00501530` (0x501541), `FUN_0051A500` (0x51A5BF = stack local)
-  and 2x CRT (`p2.6-lvlreset-search.json`). Next: decompile `FUN_004B2010`/`FUN_00501530`,
-  the second `"Congratulations!"` xref (0x51D1D6, trophy screen region) and the HatchScreen
-  OK handler; do not guess the increment order (level++ vs tank++) until then.
+### Q-0012 - Who writes the tank/level advance (`profile+0x1C`/`profile+0x20`)? - ANSWERED 2026-10-20
+- `FUN_00501370` (ECX = `profile`) is the advance writer (EV-0066): level++; tank 4 + level 6
+  -> tank 5 + level 1; tank 5 + level > 1 -> `profile+0x50++` and `profile+0x59 = 1`;
+  level > 6 or (`profile+0x59 != 0` and level > 5) -> tank++, level 1; always
+  `profile+0x58 = 1`. Callers: 0x545D41/0x545D88 in `FUN_00545960` and 0x547B31 in
+  `FUN_00547610`. `FUN_00501530` is the new-profile reset, not the advance. Pet awards use the
+  completed level copies `Tank+0x3C8/+0x3CC`, not the post-advance profile (EV-0076).
+
+### Q-0013 - Trophy/story award gate (`profile+0xB4`, `profile+0xB0`)
+- OPEN (2026-10-20, EV-0071/EV-0074/EV-0075). `profile+0xB4` is reset to 3 and Sandbox raises
+  it to 11; `profile+0xB0` is the bonus-pet/upgrade card index 1-6 (Brinkley..Walter, 4-pet and
+  7-pet cards). No writer/reader was found that maps the wiki's 32 Challenge stories or the
+  33rd gold-trophy ending onto these fields. Revisit in P2.11/P2.12; do not invent a trophy
+  trigger in the remake.
+
+### Q-0014 - Mode 2 role
+- OPEN (2026-10-20, EV-0075). No observed condition or name for `manager+0x87C == 2`. Do not
+  assign it a name/behavior; resolve with the other mode bindings in P2.11. (Modes 0 Adventure,
+  1 Time Trial, 3 Sandbox, 4 Challenge, 5 Virtual Tank are observed.)
+
+### Q-0015 - `profile+0x58` reader and `profile+0x50` semantics
+- OPEN (2026-10-20, EV-0066/EV-0069/EV-0075). `profile+0x58` is set to 1 by every
+  `FUN_00501370` call, but no reader was located. `profile+0x50` increments on every tank-5
+  level > 1 completion and feeds the tank-5 BonusScreen payout `max(1,+0x50-1)*5000` (cap
+  25000); whether it counts completed runs, boss wins, or tank-5 levels is not proven.
+
+### Q-0016 - Credits trigger
+- OPEN (2026-10-20, EV-0071/EV-0075). `FUN_00525A60` (credits sequence) has only the data xref
+  0x5A0E4C; no code caller was found. The tank-5 score helper prepares the empty-pet-slot data
+  used by the pet-loss jokes (EV-0067), but the screen trigger is unknown. Resolve in P2.12.
+
+### Q-0017 - Tank 6 path
+- OPEN (2026-10-20, EV-0075). `FUN_00501370` can increment to tank 6 when `profile+0x59 != 0`
+  and level > 5, but `FUN_0054B2A0` tests only `profile+0x20 == 6`, `FUN_00541200` has no
+  tank-6 store case, and `FUN_0054B2D0` has no tank-6 event. Do not implement tank 6 until the
+  intended Bonus Adventure end state is confirmed.
+
+### Q-0018 - StoreScreen item population / normal store-item owner
+- OPEN (2026-10-20, EV-0071/EV-0072/EV-0075). `FUN_0052B2D0` creates 8 child item objects and
+  a Shell counter but does not read `profile+0xB0` or set prices; population/price display lives
+  in the child/update code, which was not decompiled. The normal (non-mode-4) store-item object
+  owner is also open (xrefs 0x4F18xx tutorial loop, 0x54782A tank update). Resolve in P2.12.
+
+### Q-0019 - `userdata/scr%d.dat` format and Shells persistence
+- OPEN (2026-10-20, EV-0069/EV-0075). `FUN_005148C0` formats `userdata/scr%d.dat` from
+  `this+0x44`, deserializes it (`FUN_0047F5D0`), compares a stored integer with `this+0x88`, and
+  on a match consumes 50 filler ints + 1 + 50 filler ints; `FUN_00515910(param)` writes
+  `FUN_005148C0(0)+param` surrounded by 50 `rand()%20000` ints. Serializer/return path,
+  obfuscation, and the exact timestamp/value meaning are unresolved. Resolve in P2.13.

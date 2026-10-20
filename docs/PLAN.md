@@ -1,26 +1,29 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-16 (P2.4 closed; P2.5 done except P2.11-linked naming; P2.6 in progress. Object factory + type ids,
-spawn recipe, Tank save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045);
-money/`SpendMoney`+loan, store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/
-collection/spawn (EV-0047); click-feed, hunger counter, eating/growth pipeline, coin scheduler
-(EV-0048); species map, ctor tuning, Oscar/Ultravore inits, DeadFish + successor spawns
-(EV-0049/0050/0051); corpse spawner + DeadFish identity (type 0x1B) + full Update replay with
-LIVE successors (EV-0052/0053); death entry points + types 0xA-0xC = `Sexy::Breeder`
-(EV-0054); coin-hit dispatch mapped per list (EV-0055); per-species closure - init helpers,
-eat bodies, roster + store spawn paths, stage-size switch, coin pacing (EV-0056); credit =
-uncollected coins, price arrays A/B/C/D, egg/level handler + `SetStorePrice` xrefs (EV-0057);
-money label `"%d"` (EV-0058); fourth pass: store item 6 spawn = Penta = Starcatcher (EV-0059);
-wiki cross-reference pass for names/modes/money/prices + wiki policy D-0010 (EV-0060);
-P2.6 first pass - level-start pair `FUN_0054CBF0`/`FUN_00541A20`, per-tank/level store tables
-`FUN_00541200`, session init `FUN_005498B0`, completion/overlays/tutorial, screen flow + credits
-(EV-0061-0065).
+Last updated: 2026-10-20 (P2.4 closed; P2.5 done except P2.11-linked naming; P2.6 second pass
+complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
+store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
+click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
+tuning, Oscar/Ultravore inits, DeadFish + successor spawns (EV-0049/0050/0051); corpse spawner +
+DeadFish identity (type 0x1B) + full Update replay with LIVE successors (EV-0052/0053); death
+entry points + types 0xA-0xC = `Sexy::Breeder` (EV-0054); coin-hit dispatch mapped per list
+(EV-0055); per-species closure (EV-0056); credit = uncollected coins, price arrays A/B/C/D,
+egg/level handler + `SetStorePrice` xrefs (EV-0057); money label `"%d"` (EV-0058); fourth pass:
+store item 6 spawn = Penta = Starcatcher (EV-0059); wiki cross-reference pass + D-0010
+(EV-0060); P2.6 first pass (EV-0061-0065). P2.6 second pass (2026-10-20): advance writer/profile
+reset/accessors (EV-0066), egg branches/pet table/tank4 L5 (EV-0067), level-6 sentinel/finalizer/
+transition/events (EV-0068), bonus payout/HUD/save (EV-0069), alien types/waves (EV-0070),
+victory gate/Interlude/StoreScreen + trophy correction (EV-0071), corrected store tables/Shells
+routing (EV-0072), session init + normal vs Bonus Adventure lifecycle (EV-0073), wiki second
+pass (EV-0074), explicit unknowns (EV-0075), pet-index/bonus-duration corrections (EV-0076).
 Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final), `p2.4-growth-death.md` (complete),
-`p2.5-economy.md`, `p2.6-progression.md` (first pass), `wiki-refs.md`.)
-Next: P2.6 continues - tank/level advance writer (Q-0012), trophy screen (2nd "Congratulations!"
-xref 0x51D1D6), `FUN_00537C20`/`+0x2C0` roles; then P2.7 pets. P2.5 leftovers: mode enum naming
--> P2.11; coin-hit intent Q-0010 -> runtime; VT beetle value. Phase 2 closes with P2.18
-`docs\SPECS.md` per D-0008.
+`p2.5-economy.md`, `p2.6-progression.md` (second pass), `wiki-refs.md`.)
+Next: P2.6 remains open on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50`
+semantics), Q-0016 (credits trigger), Q-0017 (tank 6), Q-0018 (StoreScreen/store-item
+population), Q-0019 (`scr%d.dat`). Then P2.7 pets. P2.5 leftovers: mode enum naming -> P2.11;
+coin-hit intent Q-0010 -> runtime; VT beetle value. Phase 2 closes with P2.18 `docs\SPECS.md`
+per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -155,20 +158,28 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   beetle value (binary x5 vs wiki).)
 - [~] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
   (2026-10-16, first pass -> EV-0061: level-start orchestrator `FUN_0054CBF0` + tank init
-  `FUN_00541A20` (tank/level = `profile+0x1C/+0x20`, money 200/999999, `+0x43C = 1` egg pieces,
-  `+0x3E4 = 2` pet slots, C = B, D = B/100, `+0x2DC` visible items); EV-0062: store initializer
-  `FUN_00541200` per tank/level (A/B tables, carnivore/starcatcher/guppycruncher/beetlemuncher/
-  ultravore availability, egg prices 150..99999, mode-4 overrides 5000/15000/25000, mode-1
-  egg = 100) - closes the EV-0057 initial-value hand-off; EV-0063: session init `FUN_005498B0`
-  (mode names: 0 Adventure / 1 Time Trial (+0x3BC 300/600 s) / 3 Sandbox / 4 Challenge / 5 VT;
-  welcome banners; pets from `profile+0x5A`; level clock base `+0x3B4/+0x3B8`); EV-0064:
-  completion (`+0x43C >= 4` = 3 purchases; tank 5 starts 3; `Tank+0x3FC` = elapsed seconds
-  via `FUN_00538040`; overlay spawners `FUN_0054BE80` 0xB8 / `FUN_0054BF60` 0x18C; tutorial
-  `FUN_004F1840` `+0x4D8` flag); EV-0065: screen flow (PetsScreen `FUN_005289F0` writes
-  `profile+0x5A`, 3-pet dialogs; next-screen spawns; event dispatcher `FUN_005527C0`; sandbox
-  entry `FUN_005177E0`; credits `FUN_00525A60`). Open: tank/level advance writer Q-0012; trophy
-  screen xref 0x51D1D6; `FUN_00537C20`; `+0x2C0`; mode 2 role. Note
-  `docs\analysis\notes\p2.6-progression.md`.)
+  `FUN_00541A20`; EV-0062: store initializer `FUN_00541200`; EV-0063: session init
+  `FUN_005498B0`; EV-0064: completion/overlays/tutorial; EV-0065: screen flow + credits.
+  2026-10-20, second pass -> EV-0066: `FUN_00501370` is the tank/level advance writer (Q-0012
+  answered): level++, tank4+L6 -> tank5+L1, tank5 L>1 -> `+0x50++` + `+0x59=1`, >6 -> tank++,
+  always `+0x58=1`; profile reset `FUN_00501530`; pet/Shells accessors `FUN_00501410/00501420/
+  00501200`. EV-0067: egg-completion branches, pet index table 0-19 + 999, tank4 L5 = 999 card
+  with **no grant**, tank5 L1 Presto + 5000 Shells, score helpers. EV-0076 correction: the pet
+  index uses the completed level copies `Tank+0x3C8/+0x3CC` (Stinky 1-1 ... Presto 5-1), not
+  post-advance fields; normal bonus duration is 15/20/25 s for tanks 1/2/3. EV-0068: level-6
+  sentinel `FUN_0054B2A0`, finalizer `FUN_00537E20`, 160-frame wait + bonus starter, two-stage
+  transition, tank-complete events `FUN_0054B2D0`. EV-0069: BonusScreen payout (mode 0/1/4,
+  tank5 `max(1,+0x50-1)*5000` cap 25000), HUD `FUN_0053EAF0`, `scr%d.dat` persistence (Q-0019).
+  EV-0070: normal per-level alien types, demo-only `FUN_00537C20`, composite waves 9-12, wave
+  countdown. EV-0071: tank5/L2 victory gate -> InterludeScreen `FUN_0054BD80`/`FUN_005256E0`,
+  pre-bonus StoreScreen `FUN_0054BCA0`/`FUN_0052B2D0`, trophy/bonus-card correction
+  (`FUN_0051CF30`), credits open Q-0016. EV-0072: corrected store tables (tank2 L1 hides 6+10;
+  tank4 item 9 = Ultravore s4 10000), Shells routing `FUN_0053C1E0`, tank create/session
+  counters. EV-0073: session-init branch, tank5 pets 0..0x11, banners, normal vs Bonus
+  Adventure lifecycle. EV-0074: wiki second pass; EV-0075: unknowns + bounded searches. Note
+  `docs\analysis\notes\p2.6-progression.md` (second pass). Open: Q-0013 trophy/story gate;
+  Q-0014 mode 2; Q-0015 `+0x58`/`+0x50`; Q-0016 credits trigger; Q-0017 tank 6; Q-0018
+  StoreScreen/store-item population; Q-0019 `scr%d.dat`; Q-0011 alien classes.)
 - [ ] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
   per pass; each pet gets its own EV entries)
 - [ ] **P2.8** Aliens: per-tank alien types, spawn waves, attack patterns, hitpoints
