@@ -205,6 +205,9 @@ The 4/7/11 mapping is not yet bound to either field -> Q-0013.
   they are title-menu tooltips, **not** the victory screen (EV-0071).
 - The wiki Challenge page describes 32 stories plus a 33rd gold-trophy ending (EV-0074). No
   binary writer/reader mapping those stories onto `profile+0xB0/+0xB4` was found -> Q-0013.
+  EV-0109 adds a candidate pair: the GameBanana profile sets `profile+0x7C = 0xFFFFFFFF` and
+  `profile+0x80 = 1`, matching a 32-bit story mask plus a gold-trophy flag; the reader/writer is
+  still unlocated, so this is a lead only.
 
 ## 9. Bonus Round references (wiki, EV-0074; binary EV-0068/0069/0076)
 

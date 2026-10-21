@@ -23,7 +23,7 @@ of truth for progress.
 | --- | --- |
 | P0 environment / tooling | Complete (13/13) |
 | P1 target identity | Complete (10/10) |
-| P2 reverse engineering | In progress (5/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7 `[x]`; P2.8+ pending |
+| P2 reverse engineering | In progress (5/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7 `[x]`; P2.13 `[~]`; P2.8+ pending |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
 | P4 Godot implementation | Not started (0/14) |
 | P5 validation / polish | Not started (0/5) |
@@ -42,8 +42,16 @@ of truth for progress.
   EV-0061..EV-0076; the note ends with an "Implementation spec for P4" section (D-0008).
 - **P2.6 still open:** Q-0013 trophy/story gate, Q-0014 mode 2, Q-0015 `+0x58`/`+0x50`
   semantics, Q-0016 credits trigger, Q-0017 tank 6, Q-0018 StoreScreen/store-item population,
-  Q-0019 `scr%d.dat` (real save sample now saved; parse pending, EV-0108). Do not guess these
-  in the remake.
+  Q-0019 `scr%d.dat` (real saves now available; `scr` itself still absent, EV-0108/EV-0109).
+  Do not guess these in the remake.
+- **P2.13 saves (2026-10-21, partial):** live folder
+  `C:\ProgramData\Steam\Insaniquarium\userdata`; real early and GameBanana samples are copied
+  under `analysis/inputs/`. `users.dat` and the full 232-byte `user%d.dat` field order are
+  mapped through `FUN_00513850`, `FUN_005145A0`/`FUN_00514730`, and `FUN_00503730`
+  (EV-0108/EV-0109). The GameBanana profile has `+0x7C = 0xFFFFFFFF` and `+0x80 = 1`, a strong
+  candidate for a 32-story mask + gold trophy, but the reader is not located; Q-0013 stays
+  open. `adv`/`sim` body semantics and `scr%d.dat` remain open. Note:
+  `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming -> P2.11; coin-hit gameplay intent (Q-0010) -> runtime;
   VT beetle value. See `PLAN.md`.
 - **Next planned task:** P2.8 aliens (per-tank types, waves, attack patterns, hitpoints).
@@ -120,11 +128,11 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0108). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0109). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6 opens. |
-| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.7-pets.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
+| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.7-pets.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
 | `analysis/` | Inventories (`resources.json`, `extraction.json`, ...), snapshots (gitignored), evidence maps. |
 | `evidence/` | Raw REA evidence JSON exports cited by EV IDs. |
 

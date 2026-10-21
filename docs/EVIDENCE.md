@@ -2139,3 +2139,50 @@ behavior or specs; follow up with a binary observation entry.
   the separate Shells-persistence file (`FUN_005148C0`/`FUN_00515910`). This sample
   is early-game and does not contain a completed Challenge/trophy/tank-5 state.
   Hashes and layout notes: the folder README.
+
+### EV-0109 - GameBanana 100% profile sample; full `user%d.dat` serializer map
+- Date: 2026-10-21
+- Type: observation + code trace (user-provided save files + module decompilation)
+- Source: `C:\Users\Fauzi\Downloads\userdata_b3b31\userdata` copied to
+  `docs/analysis/inputs/p2.13-saves-gamebanana-100/` (`users.dat` 21 B,
+  `user1.dat` 232 B, `sim1.dat` 11800 B); no executable in the pack. Code:
+  `FUN_00513850` (`users.dat` serializer), `FUN_005145A0` / `FUN_00514730`
+  (profile load/save), `FUN_00503730` (profile field serializer),
+  `FUN_00503010` (dword field), `FUN_00503070` (byte field),
+  `FUN_005014D0` (profile bitmask at `+0x84`), `FUN_00546990` /
+  `FUN_00546240` (tank SaveGame/body).
+- Confidence: high for file structure, field order, and observed bytes; medium for
+  the candidate story/trophy labels; no claim of legitimate 100% completion
+- Notes: the copied `users.dat` is `0E 00 00 00 | 01 00 | 05 00 | "Roman" |
+  04 00 00 00 | 01 00 00 00`; the trailing dwords remain unresolved. The
+  GameBanana `user1.dat` is exactly 232 bytes and matches the writer order of
+  `FUN_00503730`: marker `0x80000000`, money `+0x48`, `+0x1C`, `+0x20`, bytes
+  `+0x59`/`+0x58`, dwords `+0x90,+0x94,+0x8C,+0x4C,+0x50,+0x54,+0xA0,+0x98,
+  +0xB0,+0xB4`, 24 owned-pet bytes `+0x00..+0x17`, six bytes `+0x72..+0x77`,
+  eight bytes `+0xA8..+0xAF`, four records `(byte +0x78+i, dword +0x11C+4i,
+  dword +0x10C+4i)`, dwords `+0x7C,+0x80,+0x84`, 21 dwords `+0xB8..+0x10B`,
+  trailing dword `+0x88`. The file offsets are money `0x04`, owned pets
+  `0x3A..0x51`, six-byte block `0x52..0x57`, eight-byte block `0x58..0x5F`,
+  records `0x60..0x83`, `+0x7C` at `0x84`, `+0x80` at `0x88`, `+0x84` at
+  `0x8C`, 21-dword block `0x90..0xE3`, `+0x88` at `0xE4`. Observed 100%
+  values: money 9,999,999; `+0x1C/+0x20 = 1/1`; `+0x59 = 1`; `+0x90/+0x94 =
+  1/1`; `+0x4C/+0x50/+0x54 = 54/100/0`; `+0xA0 = 20253`; `+0x98 =
+  0x51459CDC`; `+0xB0/+0xB4 = 6/24`; all 24 pet bytes `1`; six-byte block
+  all `1`; eight-byte block all `0`; record bytes `1,1,1,0`; record dwords all
+  `0xFFFFFFFF` except record 3's first dword (`+0x128`) `0xFFFF01FF`; `+0x7C =
+  0xFFFFFFFF`, `+0x80 = 1`, `+0x84 = 2`; 21-dword block all `-1` except
+  `+0x108 = 18`; trailing `+0x88 = 0x56BD6F1A`. The early local sample has
+  money 200, all pet bytes `0`, six-byte block `01 00 00 00 00 00`, `+0x7C =
+  0`, `+0x80 = 0`, `+0xB4 = 3`, 21-dword block all `-1`, and `+0x88 =
+  0x44945926`. CRC32 of the body did not match the trailing dword, so `+0x88`
+  is not a plain CRC32. `FUN_00503730` has a legacy branch: a loaded marker
+  `< 0x7fffffff` reads each record byte as a 4-byte boolean and skips
+  `+0x7C/+0x80/+0x84`; the current marker path writes them. The 100% profile's
+  `+0x7C = 0xFFFFFFFF` and `+0x80 = 1` are a strong numerical match for a
+  32-bit story mask plus a 33rd gold-trophy flag, but no reader/writer for
+  those fields was located; Q-0013 stays open. The pack contains no
+  `adv1.dat`/`scr1.dat`; its `sim1.dat` starts with version 54 and tank/level
+  `1,5`, in the `FUN_00546990`/`FUN_00546240` tank-save family, but `sim`
+  prefix semantics remain unproven. Hashes and per-field notes:
+  `docs/analysis/inputs/p2.13-saves-gamebanana-100/README.md`; analysis:
+  `docs/analysis/notes/p2.13-saves.md`.

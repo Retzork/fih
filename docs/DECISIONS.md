@@ -129,10 +129,11 @@
   session ends for diffable agent handoffs.
 
 ### Q-0009 - Who sets the corpse revive phase (`DeadFish+0x190 <= 10`)?
-- OPEN (2026-10-16, EV-0052/0053). Natural death ends with silent corpse removal (`stage < 1`,
-  slot 0x144); the successor (revive) branch at `phase < 1` requires an external writer we have
-  not found yet (candidates: a pet ability in P2.7, zombie mode `DAT_005e89ce`). Revisit when
-  P2.6/P2.7 are analyzed; do not guess a trigger in the remake.
+- RESOLVED (2026-10-21, EV-0099; originally OPEN 2026-10-16, EV-0052/0053). Angie (pet 0x12)
+  is the external writer: `FUN_004FE740` calls `FUN_004D5630`, which changes a corpse's
+  `+0x190` from 100 to 10 when it is exactly 100. The corpse then follows the normal revive
+  path. Revive sound/animation and the `+0x1A0` timer details remain P2.4 work, not this
+  question. Do not treat natural death as the revive trigger.
 
 ### Q-0010 - Gameplay intent of the coin-vs-creature hit dispatch
 - OPEN (2026-10-16, EV-0055). A falling coin hit-tests `+0xAC < 0` objects per list and runs
@@ -162,6 +163,13 @@
   7-pet cards). No writer/reader was found that maps the wiki's 32 Challenge stories or the
   33rd gold-trophy ending onto these fields. Revisit in P2.11/P2.12; do not invent a trophy
   trigger in the remake.
+- 2026-10-21 update (EV-0109): the GameBanana profile sets `profile+0x7C = 0xFFFFFFFF` and
+  `profile+0x80 = 1`, with `+0x84 = 2`, while the early profile has `0/0/2`. This is a strong
+  numerical match for a 32-bit story mask plus a 33rd gold-trophy flag, and `FUN_00501530`
+  clears `+0x7C/+0x80` alongside the four Challenge record bytes. However, no instruction-level
+  reader/writer for `+0x7C` or `+0x80` was located, and the sample's four record bytes are
+  `1,1,1,0` rather than a clean four-tank set. Keep Q-0013 **OPEN**; the labels are a lead, not
+  a proven trophy trigger.
 
 ### Q-0014 - Mode 2 role
 - OPEN (2026-10-20, EV-0075). No observed condition or name for `manager+0x87C == 2`. Do not
@@ -205,3 +213,8 @@
   `users.dat` layout is readable (profile name `okokok`); `user%d.dat` and `adv%d.dat` field
   order still need the P2.13 parse. The sample is early-game, so trophy/credits states are not
   covered.
+- 2026-10-21 update (EV-0109): a second sample from GameBanana
+  (`docs\analysis\inputs\p2.13-saves-gamebanana-100\`) has `users.dat`, `user1.dat`, and
+  `sim1.dat`, but still no `scr%d.dat`. The 232-byte `user%d.dat` field order is now mapped
+  end-to-end through `FUN_00503730` (see P2.13 note). The `scr%d.dat` serializer, its
+  obfuscation, and the exact timestamp/value meaning remain **OPEN**.
