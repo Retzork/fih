@@ -1,0 +1,163 @@
+{
+  "subject": {
+    "architecture": "x86",
+    "digest": {
+      "sha256": "33f34bae5eeee213c2a3819a13a4515c99a357f4247d42e5314da20621efe2c4"
+    },
+    "format": "pe",
+    "local_path": "C:\\Users\\Fauzi\\Documents\\project\\fih\\fih\\docs\\analysis\\snapshots\\insaniquarium-game-module.exe",
+    "name": "insaniquarium-game-module.exe"
+  },
+  "provider": {
+    "id": "rea-workflow",
+    "name": "REA composed investigation workflow",
+    "version": "1"
+  },
+  "analysis_profile": {
+    "digest": "d4471786e332c0336f066a85a651a368051028dfaa0c1d7a5ac78db2f422f47e",
+    "parameters": {
+      "upstream_analysis_profile": {
+        "digest": "3c06738e45e144d5f073edbd3244c6bff46222f389525fe659bc92dca2ccdece",
+        "parameters": {
+          "analyzer_preset": "ghidra-default",
+          "annotation_policy": "atomic-function-entry-metadata-v1",
+          "architecture": "x86",
+          "available_architectures": [
+            "x86"
+          ],
+          "call_relationship_coverage": "function-body-call-coverage-v5",
+          "compiler_spec_id": "auto-default",
+          "decompiler_jump_loads": true,
+          "executable_role": "application",
+          "function_body_evidence": "complete-inclusive-ranges-v1",
+          "function_boundary_observations": "ghidra-function-boundary-limitations-v3",
+          "function_dossier_coverage": "observed-facets-and-call-relationships-v1",
+          "function_references": "complete-body-and-entry-reference-manager-v2",
+          "import_mode": "ephemeral-source-immutable",
+          "instruction_flow_evidence": "decoded-return-pcode-v1",
+          "instruction_references": "exact-address-incoming-v1",
+          "jump_table_evidence": "typed-case-default-blocks-v1",
+          "language_id": "auto-from-header",
+          "load_image_observations": "source-mappings-entry-context-v2",
+          "loader": "auto-from-header",
+          "location_resolution": "explicit-address-exact-entry-symbol-first-v3",
+          "managed": false,
+          "native_aot_metadata": {
+            "contract_revision": "rtr-9.1-x64-pe-read-only-v3",
+            "report_bytes": 4194304,
+            "source_bytes": 134217728,
+            "work_units": 67108864,
+            "working_memory_bytes": 67108864
+          },
+          "no_return_repair": "disabled-windows-p0",
+          "pdb_observations": "program-info-v1",
+          "procedure_file_offset_resolution": "address-first-unique-target-source-mapping-v2",
+          "process_launch": "official-headless-script-v1",
+          "string_inventory_evidence": "defined-data-coverage-v1",
+          "target_format": "pe",
+          "target_kind": "executable"
+        },
+        "provider": {
+          "id": "ghidra",
+          "name": "Ghidra",
+          "version": "12.1.4"
+        }
+      },
+      "workflow_revision": 2
+    },
+    "provider": {
+      "id": "rea-workflow",
+      "name": "REA composed investigation workflow",
+      "version": "1"
+    }
+  },
+  "predicate_type": "rea.analysis",
+  "authority": "shipped-artifact",
+  "confidence": "derived",
+  "environment": null,
+  "limitations": [
+    "Derived by an REA composed workflow.",
+    "Cancelling an active Ghidra request terminates its ephemeral database and discards session annotations. The selected target remains open; the next provider query imports the original artifact again.",
+    "Default-space addresses use lowercase 0x-prefixed hexadecimal; other address spaces use <percent-encoded-space>:0x<hex>.",
+    "External functions and functions without an analyzable body return null; other decompiler failures remain explicit.",
+    "External functions and local thunks are distinct; procedure metadata identifies both and preserves a thunk target when Ghidra resolves one.",
+    "Pseudocode is Ghidra decompiler output, not original source and not text-equivalent to Hopper output.",
+    "The Windows bridge uses authenticated IPv4 loopback because Node path-based IPC does not expose Java AF_UNIX sockets; the endpoint file contains no bearer token.",
+    "The imported Program and temporary project are ephemeral and deleted on close. Annotation operations edit session database metadata; original executable bytes are never written.",
+    "The session serves operations only after Ghidra reports default auto-analysis complete; incomplete analysis does not expose partial results.",
+    "The target references PDB WinFish.pdb (GUID d8e97b31-8c47-4561-8453-b02c38f95fc5, age (hex) 1, signature unknown, version RSDS); Ghidra reports load state unknown. Original names and types may be missing; an empty name search does not prove a procedure is absent. Use list_procedures and address-based analysis to inspect recovered functions. REA does not admit a caller-selected PDB companion.",
+    "Windows Ghidra P0 accepts native x86 and x86-64 PE applications and DLLs, and explicitly selected raw 6502 images; managed, hostile, sensitive, and mutable-path targets are unsupported.",
+    "Windows sessions require the matching packaged Windows x64 native addon, local NTFS targets and runtimes, and Windows 10 or later. Native handles enforce path admission, private DACLs, and Job Object ownership automatically."
+  ],
+  "note": "P2.7 Angie revive and pet cleanup evidence (verbatim batch items)",
+  "batch_evidence_id": "ev_9cbadb725fa040dfbbad3a51bb179267754b72bf8d2b17e61c9f7d6f552e831d",
+  "batch_file": "docs/evidence/p2.7-walter-angie-batch.json",
+  "operation": "batch_decompile",
+  "parameters": {
+    "addresses": [
+      "0x4D5630",
+      "0x4D6250",
+      "0x4D62F0",
+      "0x4D70B0",
+      "0x4D7040"
+    ]
+  },
+  "normalized_result": {
+    "items": [
+      {
+        "address": "0x4D62F0",
+        "procedure": {
+          "address": "0x4d62f0",
+          "name": "FUN_004d62f0",
+          "status": "resolved"
+        },
+        "pseudocode": "\r\nvoid FUN_004d62f0(int param_1,int param_2,int param_3)\r\n\r\n{\r\n  int in_ECX;\r\n  \r\n  if ((-1 < param_3) && (*(int *)(in_ECX + 0x194) == 2)) {\r\n    FUN_004d6290();\r\n    return;\r\n  }\r\n  FUN_0053bfb0(*(int *)(in_ECX + 0x30) + param_1,*(int *)(in_ECX + 0x34) + param_2);\r\n  return;\r\n}\r\n\r\n",
+        "status": "ok"
+      },
+      {
+        "address": "0x4D5630",
+        "procedure": {
+          "address": "0x4d5630",
+          "name": "FUN_004d5630",
+          "status": "resolved"
+        },
+        "pseudocode": "\r\nvoid FUN_004d5630(void)\r\n\r\n{\r\n  int in_ECX;\r\n  \r\n  if (*(int *)(in_ECX + 400) == 100) {\r\n    *(undefined4 *)(in_ECX + 400) = 10;\r\n  }\r\n  return;\r\n}\r\n\r\n",
+        "status": "ok"
+      },
+      {
+        "address": "0x4D6250",
+        "procedure": {
+          "address": "0x4d6250",
+          "name": "FUN_004d6250",
+          "status": "resolved"
+        },
+        "pseudocode": "\r\nvoid FUN_004d6250(void)\r\n\r\n{\r\n  int in_ECX;\r\n  \r\n  if ((*(int *)(in_ECX + 0x234) == 9) && (*(char *)(in_ECX + 0x250) != '\\0')) {\r\n    *(undefined1 *)(in_ECX + 0x250) = 0;\r\n    DAT_005e89d0 = DAT_005e89d0 + -1;\r\n    if (DAT_005e89d0 < 0) {\r\n      DAT_005e89d0 = 0;\r\n    }\r\n  }\r\n  if (*(int *)(in_ECX + 0x234) == 8) {\r\n    DAT_005e89cc = 0;\r\n  }\r\n  return;\r\n}\r\n\r\n",
+        "status": "ok"
+      },
+      {
+        "address": "0x4D70B0",
+        "procedure": {
+          "address": "0x4d70b0",
+          "name": "FUN_004d70b0",
+          "status": "resolved"
+        },
+        "pseudocode": "\r\nundefined4 FUN_004d70b0(void)\r\n\r\n{\r\n  char cVar1;\r\n  int in_ECX;\r\n  \r\n  if (*(int *)(*(int *)(in_ECX + 0x88) + 0x87c) != 5) {\r\n    return 1;\r\n  }\r\n  if (*(char *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 0x500) != '\\0') {\r\n    cVar1 = thunk_FUN_00479fc0();\r\n    if (cVar1 == '\\0') {\r\n      return 1;\r\n    }\r\n    if (*(int *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 0x400) <= DAT_005df590) {\r\n      return 1;\r\n    }\r\n  }\r\n  return 0;\r\n}\r\n\r\n",
+        "status": "ok"
+      },
+      {
+        "address": "0x4D7040",
+        "procedure": {
+          "address": "0x4d7040",
+          "name": "FUN_004d7040",
+          "status": "resolved"
+        },
+        "pseudocode": "\r\nvoid FUN_004d7040(undefined4 param_1,undefined4 param_2,undefined4 param_3)\r\n\r\n{\r\n  int in_ECX;\r\n  \r\n  FUN_004558c0(1);\r\n  FUN_00456950(DAT_005e8e1c,param_2,param_3,\r\n               (int)(*(int *)(in_ECX + 0x90) + (*(int *)(in_ECX + 0x90) >> 0x1f & 3U)) >> 2);\r\n  FUN_004558c0(0);\r\n  return;\r\n}\r\n\r\n",
+        "status": "ok"
+      }
+    ],
+    "total": 5,
+    "succeeded": 5,
+    "failed": 0
+  },
+  "extraction_note": "Items are copied verbatim from normalized_result.items of the batch record; no per-function evidence IDs are assigned by batch_decompile."
+}

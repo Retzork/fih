@@ -1,7 +1,7 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-20 (P2.4 closed; P2.5 done except P2.11-linked naming; P2.6 second pass
-complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+Last updated: 2026-10-21 (P2.7 pets complete; P2.4 closed; P2.5 done except P2.11-linked
+naming; P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
 click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
@@ -18,12 +18,17 @@ victory gate/Interlude/StoreScreen + trophy correction (EV-0071), corrected stor
 routing (EV-0072), session init + normal vs Bonus Adventure lifecycle (EV-0073), wiki second
 pass (EV-0074), explicit unknowns (EV-0075), pet-index/bonus-duration corrections (EV-0076).
 Notes `p2.2-tank-sim.md` (§9), `p2.3-feeding.md` (final), `p2.4-growth-death.md` (complete),
-`p2.5-economy.md`, `p2.6-progression.md` (second pass), `wiki-refs.md`.)
-Next: P2.6 remains open on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50`
-semantics), Q-0016 (credits trigger), Q-0017 (tank 6), Q-0018 (StoreScreen/store-item
-population), Q-0019 (`scr%d.dat`). Then P2.7 pets. P2.5 leftovers: mode enum naming -> P2.11;
-coin-hit intent Q-0010 -> runtime; VT beetle value. Phase 2 closes with P2.18 `docs\SPECS.md`
-per D-0008.
+`p2.5-economy.md`, `p2.6-progression.md` (second pass), `p2.7-pets.md` (complete),
+`wiki-refs.md`.)
+P2.7 third pass (2026-10-21): 24-pet roster + 999 display card (EV-0077), entity model/
+vtables/field map (EV-0078), spawn/session/ctor tuning (EV-0079), shared AI gates + 36 Hz
+tick (EV-0080), per-pet behavior entries (EV-0081-EV-0104), wiki pass/discrepancies
+(EV-0105), explicit unknowns (EV-0106), corrections to earlier notes (EV-0107).
+Next: P2.8 aliens next (per-tank types, waves, attack patterns, hitpoints). P2.6 remains open
+on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
+(credits trigger), Q-0017 (tank 6), Q-0018 (StoreScreen/store-item population), Q-0019
+(`scr%d.dat`). P2.5 leftovers: mode enum naming -> P2.11; coin-hit intent Q-0010 -> runtime;
+VT beetle value. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -33,7 +38,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 4 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 5 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -180,8 +185,14 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   `docs\analysis\notes\p2.6-progression.md` (second pass). Open: Q-0013 trophy/story gate;
   Q-0014 mode 2; Q-0015 `+0x58`/`+0x50`; Q-0016 credits trigger; Q-0017 tank 6; Q-0018
   StoreScreen/store-item population; Q-0019 `scr%d.dat`; Q-0011 alien classes.)
-- [ ] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
-  per pass; each pet gets its own EV entries)
+- [x] **P2.7** Pets: enumerate roster from binary, then per-pet behavior notes (batch: 3-5 pets
+  per pass; each pet gets its own EV entries). (2026-10-21 complete: 24 pets + 999 card,
+  EV-0077-EV-0107; note `docs\analysis\notes\p2.7-pets.md`. Per-pet timings/mechanics are in
+  the note and the individual EV entries; Presto transform/picker and Walter glove/Angie
+  revive evidence are in the `p2.7-walter-*`/`p2.7-angie-*`/`p2.7-presto-*` JSON files.
+  Open items: Gumbo fish lure, Blip overlays, Seymour writer, Amp click/electrocute,
+  Nostradamus sneeze/clones, Wadsworth challenge sleep, Brinkley 15/45/135 vs wiki 12/36/108,
+  Stinky cooldown/red cosmetic, Niko perch, Walter click/5-punch counter, VT 3-minute sleep.)
 - [ ] **P2.8** Aliens: per-tank alien types, spawn waves, attack patterns, hitpoints
 - [ ] **P2.9** Bosses: final-level boss per tank, phases, damage/weak points
 - [ ] **P2.10** Weapons & projectiles: laser upgrades, missiles/perks, collision and damage math

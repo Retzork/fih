@@ -1607,3 +1607,512 @@ behavior or specs; follow up with a binary observation entry.
   so tanks 1/2/3 get 15/20/25 s. Tank 4 never reaches the sentinel (its L5 advances straight to
   tank5 L1, EV-0067), and tank 5 uses the per-level fast path (10 + level - 1 s). All other
   statements in EV-0067/EV-0073 stand.
+
+### EV-0077 - P2.7 roster: 24 gameplay pets plus the 999 display card
+- Date: 2026-10-21
+- Type: observation (roster)
+- Source: `docs/evidence/p2.7-51F770.json` (`ev_8d57342a...` `FUN_0051F770`),
+  `docs/evidence/p2.7-petspawn-decompile.json` (`ev_20a52188...` `FUN_00544A90`),
+  EV-0067/EV-0076 (pet grant table)
+- Confidence: high
+- Notes: the gameplay roster is 24 entries, indexes 0x00..0x17:
+  0 Stinky, 1 Niko, 2 Itchy, 3 Prego, 4 Zorf, 5 Clyde, 6 Vert, 7 Rufus,
+  8 Meryl, 9 Wadsworth, 0xA Seymour, 0xB Shrapnel, 0xC Gumbo, 0xD Blip,
+  0xE Rhubarb, 0xF Nimbus, 0x10 Amp, 0x11 Gash, 0x12 Angie, 0x13 Presto,
+  0x14 Brinkley, 0x15 Nostradamus, 0x16 Stanley, 0x17 Walter. Index 999
+  ("Evil Alien Mastermind") is produced only by the tank4-L5 card branch in
+  `FUN_00545960`; it is not a spawnable pet and grants no profile slot
+  (EV-0067/EV-0076). The spawn helper `FUN_00544A90` switches on the 24-entry
+  index range; 999 has no case. Display-name bindings are in
+  `docs/analysis/notes/wiki-refs.md` section 7.
+
+### EV-0078 - P2.7 entity model: OtherTypePet vs FishTypePet, vtables and fields
+- Date: 2026-10-21
+- Type: observation (class layout)
+- Source: `docs/evidence/p2.7-4EB5C0.json` (`ev_7b934c66...`),
+  `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...`),
+  `docs/evidence/p2.7-othertypepet-vt-xrefs.json` (`ev_6cf3eee8...`)
+- Confidence: high (ctor writes and vtable dumps)
+- Notes: two classes implement all pets. `Sexy::OtherTypePet` (vtable
+  `0x596D74`) covers `{0,1,5,7,0xE}` and its vtable ends at slot 80
+  (`0x4D8AD0`, destructor); it has no 81+ overrides. `Sexy::FishTypePet`
+  (vtable `0x597EC4`) covers every other pet and overrides slots 81
+  `0x4E5900`, 82 `0x4E9790`, 83 `0x4F8610` (render), 84 `0x4E02D0`
+  (steering), 85 `0x4E5FC0` (targeting), 86 `0x4FE740` (contact/attack),
+  87 `0x4DF0B0`, 88 `0x4D5F90`, 89 `0x4DFC50`. OtherTypePet keeps the pet
+  index at `+0x1C4`; FishTypePet keeps it at `+0x234`. Field tables and the
+  cross-class offset traps are in `p2.7-pets.md` section 2.1.
+
+### EV-0079 - P2.7 pet spawn helper, session pet loading, constructor tuning
+- Date: 2026-10-21
+- Type: observation (spawn/ctor)
+- Source: `docs/evidence/p2.7-544A90.json` (`ev_a40eb69d...`),
+  `docs/evidence/p2.7-5498B0.json` (`ev_514e04a3...`),
+  `docs/evidence/p2.7-4EB5C0.json` (`ev_7b934c66...`),
+  `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-4EB7C0.json` (`ev_b2e4642a...`)
+- Confidence: high
+- Notes: `FUN_00544A90(index,x,y,transformed,?)` is the only pet factory; it
+  selects OtherTypePet for `{0,1,5,7,0xE}` and FishTypePet otherwise. With
+  `x == -1` it randomizes x in 105..369 and y in 20..539. Mode 5 writes
+  `obj+0xAC = 1000 + (transformed ? 0x13 : index)`; index 0x13 forces the
+  Presto flag. `FUN_005498B0` spawns pets by two branches: (A) owned flags
+  `FUN_00501410(i)` for i=0..0x12; (B) selected `profile+0x5A+i` for
+  i=0..0x17; branch choice depends on `profile+0x18 < 4` and mode/
+  `profile+0x59` (exact `profile+0x18` semantics open). Ctor constants:
+  Stinky y 370/speed 1.2; Clyde 1.5; Rufus y 365; Rhubarb y 355; Prego
+  `+0x224=930`, `+0x190=360`; Zorf 65/3.0/270; Vert 216 (1080..1279 VT);
+  Meryl 1400 (4320 VT); Wadsworth 120/4.0; Nimbus 0.5/320; Amp
+  0.5/3000/460; Gash 1570/1520; Shrapnel 633..652 (1080..1279 VT);
+  Nostradamus 300..599 (1080..1279 VT); Stanley 100; Walter flags
+  `+0x55=1`, `+0x7C=1`, `+0x70=10`, `+0x78=15`. See `p2.7-pets.md` 2.2.
+
+### EV-0080 - P2.7 shared pet AI: update chains, gates, slots, 36 Hz tick
+- Date: 2026-10-21
+- Type: observation (framework)
+- Source: `docs/evidence/p2.7-4F2E80.json` (`ev_e96f85ec...`),
+  `docs/evidence/p2.7-4F7AD0.json` (`ev_434fb0aa...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...`),
+  `docs/evidence/p2.7-pet-helpers-batch.json` (`ev_0ae4497a...`),
+  `docs/evidence/p2.7-tank-update-batch.json` (`ev_69faeda7...`)
+- Confidence: high for the dispatch/gates; derived for 36 Hz
+- Notes: `FUN_004F2E80` updates OtherTypePet, `FUN_004F7AD0` updates
+  FishTypePet. Common gates: `Tank+0x94 != 0` pauses actions; tank index
+  `Tank+0x3C8 == 5` skips the slot-81 action tick; slot 81 is skipped while
+  hostiles are present except for Stanley (0x16). `FUN_004E9790` is the
+  slot-82 action gate. `FUN_004E5900` is the per-pet timer/action switch and
+  is the authoritative source for Prego/Zorf/Vert/Meryl/Shrapnel/Amp/Gash/
+  Nostradamus/Stanley timers. `FUN_004E02D0` steers, `FUN_004E5FC0` selects
+  targets, `FUN_004FE740` resolves contact, `FUN_004F8610` renders. Pet timers
+  are raw 36 Hz ticks: the independent anchors are Blip's `200`/`720`
+  thresholds for the wiki's 5 s/20 s (EV-0094), Prego 930 ticks ~= 26 s, and
+  Shrapnel 633..652 ~= 18 s. This is a derived rate, not a constant read from a
+  clock. Keep all periods as integer ticks.
+
+### EV-0081 - P2.7 Stinky (0x00): bottom-lane coin collector, hide counter
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EB5C0.json` (`ev_7b934c66...`),
+  `docs/evidence/p2.7-4EB7C0.json` (`ev_b2e4642a...`),
+  `docs/evidence/p2.7-behavior-batch.json` (`ev_2303a828...` `0x4EBC80`,
+  `ev_2ddc8596...` `0x4E7C30`, `ev_07ea6bf6...` `0x4E2A20`)
+- Confidence: high
+- Notes: OtherTypePet; ctor forces `y = 370.0` and speed 1.2, so he is a
+  fixed bottom lane with vx-only steering (not a hard bottom clamp).
+  `FUN_004EBC80`/`FUN_004E7270` chase the nearest coin. Excluded kinds:
+  3 and 10 while the Penta list `Tank+0xD0` is non-empty; 0x11 (bomb);
+  0x12 (snot); coins with the claimed flag `+0x198` set. `FUN_004E2A20`
+  index 0 increments the hide counter `+0x1B4` up to 9 while `Tank+0xB8` or
+  `Tank+0xF4` is non-empty and zeroes `+0x1BC`; it decrements to 0 when both
+  lists are empty. Hidden Stinky does not collect. The wiki's "random target"
+  is contradicted by the nearest-coin code; the exact collection cooldown and
+  the Nimbus red cosmetic were not isolated (EV-0106).
+
+### EV-0082 - P2.7 Niko (0x01): pearl timer, pearl kind 0xF, render
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-behavior-batch.json` (`ev_07ea6bf6...`
+  `0x4E2A20`; `ev_504ee005...` `0x4E2BD0`), `docs/evidence/p2.7-4EB5C0.json`
+- Confidence: high
+- Notes: OtherTypePet. No fixed perch: spawn is the generic random x/y and the
+  update is the generic wander (wiki "stationary" is an open discrepancy).
+  `FUN_004E2A20` index 1 runs only when `Tank+0x3C8 != 5`. Timer `+0x1B4`:
+  0x4C8 (1224) sound 0x129; 0x4D1 (1233) spawn pearl kind `0xF` at
+  `(x+1,y-2)`, clear `+0x1C0`, sparkle at `(x+0xB,y+5)` and `(x+7,y+3)`;
+  0x5A0 (1440) sound 0x12A; 0x5AA (1450) close and reset to `rand % 0x32`.
+  `FUN_004E2BD0` selects the open/closed/empty frame from `+0x1B4` and
+  `+0x1C0`. 1224/1440 ticks = 34/40 s at 36 Hz, matching the wiki.
+
+### EV-0083 - P2.7 Itchy (0x02): nearest-alien melee, 1.0 damage
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-melee-damage.json` (`ev_d796abf4...`
+  `FUN_004FB5B0`), `docs/evidence/p2.7-pet-vtable-batch.json`
+  (`ev_6946bb69...` `0x4E5FC0`/`0x4FE740`)
+- Confidence: high for damage/target; unknown for cadence
+- Notes: FishTypePet. `FUN_004E5FC0` selects the nearest hostile in
+  `Tank+0xF4`/`Tank+0xB8`. `FUN_004FE740` -> `FUN_004FB5B0` index 2 subtracts
+  1.0 from `+0x1F0` (0.25 against alien class `+0x1EC` 4 or 5) and plays
+  sound 0xB. No projectile interception. The wiki's 0.25 s attack rate was
+  not isolated in slot 86; keep it as a tuning parameter until P2.8.
+
+### EV-0084 - P2.7 Prego (0x03): 930/1230/2000 birth thresholds
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`),
+  `docs/evidence/p2.7-pet-helpers-batch.json` (`ev_0ae4497a...` `0x4DA710`)
+- Confidence: high
+- Notes: FishTypePet; ctor `+0x224=0x3A2` (930), `+0x190=360`. Slot 81
+  increments `+0x220`; in VT at `threshold-0xD2` it samples fish counts and
+  rewinds the timer by 300 if the population condition fails. At the
+  threshold it resets the timer, spawns a guppy with
+  `FUN_00546EF0(x+7,y+25)`, sets the VT guppy field `+0x120=0x28`, plays
+  sound 0, then sets the next threshold: fish count >10 -> 2000; otherwise
+  930 + (rand > 5 ? 300 : 0), i.e. 930 or 1230. Slot-81 skip during aliens
+  explains the wiki's paused birth timer. The exact VT population test and
+  the belly-swell frames remain open.
+
+### EV-0085 - P2.7 Zorf (0x04): 65-tick level-2 food dropper
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`)
+- Confidence: high for timer/food kind; medium for `Tank+0x194`
+- Notes: FishTypePet; ctor `+0x224=65`, speed 3.0, `+0x190=270`. Slot 81
+  acts when `Tank+0x194 == 0` only if a fish with `+0x9C < 300` and
+  `+0xF0 == 0` exists; when `Tank+0x194 != 0` it increments `+0x240` and
+  acts every 2 ticks normal / 4 ticks VT even without a hungry fish. On act
+  it sets `+0x220=-10` and spawns food kind 1 or 2 at `(x+15,y+10)` with
+  `FUN_00543280`, chosen by vx sign. `Tank+0x194` is an unidentified cached
+  tank value; it is **not** proven to be a Brinkley count (EV-0107).
+
+### EV-0086 - P2.7 Clyde (0x05): 2D coin collector, speed 1.5
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EB5C0.json` (`ev_7b934c66...`),
+  `docs/evidence/p2.7-4EB7C0.json` (`ev_b2e4642a...`),
+  `docs/evidence/p2.7-behavior-batch.json` (`ev_2303a828...`)
+- Confidence: high
+- Notes: OtherTypePet; speed 1.5, no fixed y. `FUN_004EB7C0` index 5 advances
+  the direction animation every 0x13 (19) frames; `FUN_004E02D0` steers with
+  target vx +/-1.0. He collects the same coin set as Stinky (3/10 only while
+  Penta exists; excludes 0x11/0x12/claimed) plus the `FUN_004E4F90` check.
+  He has no hide branch and remains active during alien attacks. The wiki's
+  "slides when a coin is stolen" is consistent with the steering state but was
+  not separately traced.
+
+### EV-0087 - P2.7 Vert (0x06): 216-tick gold-coin drop
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`),
+  `docs/evidence/p2.7-walter-angie-batch.json` (`ev_9cbadb72...` `0x4D70B0`)
+- Confidence: high
+- Notes: FishTypePet; ctor `+0x224=216` normal, `1080..1279` VT. Slot 81
+  increments `+0x220`; at the threshold it calls `FUN_004D70B0` and, if
+  allowed, spawns coin kind 2 at `(x+15,y+10)`. No food required. 216 ticks =
+  6.0 s, matching the wiki. `FUN_004D70B0` is the mode-5 spawn gate (returns 1
+  outside mode 5; in mode 5 it checks avatar-screen state and a global count).
+
+### EV-0088 - P2.7 Rufus (0x07): bottom lane, 2.0 melee
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EB5C0.json` (`ev_7b934c66...`),
+  `docs/evidence/p2.7-4EB7C0.json` (`ev_b2e4642a...`),
+  `docs/evidence/p2.7-melee-damage.json` (`ev_d796abf4...`)
+- Confidence: high for constants/damage; unknown for the bottom trigger
+- Notes: OtherTypePet; ctor forces `y=365.0`; steering caps x at 560 and uses
+  speed 1.8. `FUN_004E5FC0` selects the nearest hostile in
+  `Tank+0xF4`/`Tank+0xB8`; `FUN_004FE740` deals 2.0 (0.5 against alien class
+  4/5/6). The exact y threshold that counts as "lured to the bottom" was not
+  isolated; expose it as a parameter for P2.8.
+
+### EV-0089 - P2.7 Meryl (0x08): 1400/4320 song timer, kind-0x10 marker
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`)
+- Confidence: high for timer/marker; inferred for the guppy reaction
+- Notes: FishTypePet; ctor `+0x224=1400` normal, `4320` VT. Slot 81 increments
+  `+0x220`; at `threshold-100` (1300) it sets `DAT_005e89cc=1`, spawns coin
+  kind 0x10 at `(x+15,y-5)`, and plays sound 0x137; at the threshold it clears
+  `DAT_005e89cc=0` and resets the timer. Kind 0x10 has value 0 (P2.5), so it is
+  a song/note marker; the actual three-coin guppy drop is the fish reaction to
+  the song (inference, body not decompiled here). 1400/4320 ticks = 38.9/120 s,
+  matching the wiki's 40 s/2 min.
+
+### EV-0090 - P2.7 Wadsworth (0x09): hide flag, global count, mouth position
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-walter-angie-batch.json` (`ev_9cbadb72...` `0x4D6250`),
+  `docs/evidence/p2.7-behavior-batch.json` (`ev_453fbe78...` 0x4F22C0 etc.)
+- Confidence: high for flags/cleanup; unknown for the size filter
+- Notes: FishTypePet; ctor `+0x224=120`, speed 4.0. Hidden state is `+0x250`;
+  a hidden Wadsworth increments `DAT_005e89d0` and stores the mouth position
+  in `DAT_005e89D4/+0xD8`. `FUN_004E7010`, `FUN_004E7130`, `FUN_004E3EA0`
+  are the eligibility predicates; `FUN_004E9790` gates the action during
+  aliens. `FUN_004D6250` decrements `DAT_005e89d0` on removal (clamped at 0).
+  The wiki's small/medium size filter and Challenge-Mode sleep were not
+  isolated (EV-0106).
+
+### EV-0091 - P2.7 Seymour (0x0A): only the `Tank+0x16C` coin-slow effect
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-behavior-batch.json` (`ev_453fbe78...`
+  `0x4F5050` coin update), `docs/evidence/p2.7-tank-update-batch.json`
+- Confidence: medium (effect observed; writer unknown)
+- Notes: FishTypePet; no ctor branch. While `Tank+0x16C` is set, coin fall
+  speed is 1.5 -> 0.8 and coin expiry 0x14 -> 0x82. No writer of
+  `Tank+0x16C` was found in the analyzed pet/tank functions; the aura radius,
+  stacking rule, and whether Seymour is the only writer remain explicit
+  unknowns (EV-0106). Do not implement a radius until the writer is found.
+
+### EV-0092 - P2.7 Shrapnel (0x0B): 633..652-tick bomb drop
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`)
+- Confidence: high for timer/kind; unknown for explosion
+- Notes: FishTypePet; ctor `+0x224 = rand % 0x14 + 0x279` (633..652) normal,
+  `1080..1279` VT. Slot 81 spawns coin kind 0x11 at `(x+15,y+10)` and plays
+  sound 0x143. `+0x258` is the white-flash timer (0 -> 1 -> -1). 648 ticks =
+  18 s, matching the wiki. The bomb's explosion/damage path is
+  `FUN_004D6040`/the coin path, not this slot; radius and fish damage remain
+  P2.3/P2.8 work.
+
+### EV-0093 - P2.7 Gumbo (0x0C): opposite-corner movement, no fish-redirect code
+- Date: 2026-10-21
+- Type: observation (pet behavior) + bounded negative
+- Source: `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...`
+  `0x4E02D0`, `0x4E5FC0`), `docs/evidence/p2.7-4EF420.json`
+- Confidence: high for movement/glow; high that no fish-redirect body was found
+- Notes: FishTypePet; no ctor branch. `FUN_004E5FC0` selects the nearest
+  hostile in `Tank+0xF4`/`Tank+0xB8`. `FUN_004E02D0` steers to the corner
+  opposite the alien: x thresholds 0x123/0x14A (291/330), y thresholds
+  0x105/300. `+0x258` drives the lure glow while aliens exist. No code was
+  found that moves guppies/breeders toward Gumbo; the wiki's lure mechanic is
+  unproven and must stay disabled until a guppy target branch is found.
+
+### EV-0094 - P2.7 Blip (0x0D): instant store unlock at 200/720 ticks
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4F7AD0.json` (`ev_434fb0aa...`),
+  `docs/evidence/p2.7-behavior-batch.json` (`ev_453fbe78...` `0x5409B0`)
+- Confidence: high for the unlock; bounded negative for the overlays
+- Notes: FishTypePet; no ctor branch. The unlock branch triggers when
+  `Tank+0x2E0 < Tank+0x2DC` and either level age `+0x444 > 200` or, for a
+  transformed Presto, `+0x28 > 0x2D0` (720). It calls `FUN_005409B0(i,1)` for
+  i=0..0xB, which spawns/unlocks every store item. 200/720 ticks = 5.5/20 s,
+  matching the wiki's 5 s/20 s and anchoring the 36 Hz rate. Hunger arrows,
+  alien entrance radar, and alien HP meters were not found in Blip's
+  update/render (EV-0106).
+
+### EV-0095 - P2.7 Rhubarb (0x0E): bottom repeller, 260/250 targeting
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EB5C0.json` (`ev_7b934c66...`),
+  `docs/evidence/p2.7-4EB7C0.json` (`ev_b2e4642a...`),
+  `docs/evidence/p2.7-behavior-batch.json` (`ev_2ddc8596...` `0x4E7C30`)
+- Confidence: high
+- Notes: OtherTypePet; ctor `y=355.0`; steering speed 1.8. Targets fish with
+  y > 260 normally and y > 250 during aliens; snaps at y=270 normal or 250
+  aliens. On a snap he sets the fish's `+0x208=50`, vy -20 (normal) or -30
+  (aliens), and `+0x1B4=0x14` (20). He continues during alien attacks. The
+  exact exempt-species filter was not fully enumerated; keep it data-driven.
+
+### EV-0096 - P2.7 Nimbus (0x0F): coin kind<8 -> +7, sleep divisor
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-4F7AD0.json` (`ev_434fb0aa...`)
+- Confidence: high for coin rule; medium for speed split
+- Notes: FishTypePet; ctor speed 0.5, `+0x198=320`. Coin handling maps kind
+  <8 to kind+7 (toss-up) and excludes 0x11, 3, 10, 0x12. Movement uses 0.5
+  normally and 1.8 while tossing; `+0x245` is the sleep flag and divides
+  movement by 5. The wiki's "does not toss stars" matches the 3/10 exclusion;
+  the exact upward velocity and the food branch were not isolated.
+
+### EV-0097 - P2.7 Amp (0x10): 3000-tick charge, click path unresolved
+- Date: 2026-10-21
+- Type: observation (pet behavior) + explicit unknown
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`)
+- Confidence: high for charge; high that the click path was not found
+- Notes: FishTypePet; ctor speed 0.5, `+0x224=3000`, size 0xA0x50,
+  `+0x19C=460`, `+0x220=300`. Slot 81 increments `+0x220`; at 3000 ticks
+  (83.3 s) it plays sound 0x11A, sets byte `+0x55=1` and `+0x7C=1` (charged),
+  and the render flashes via `+0x258`. The wiki says 75 s, a recorded
+  discrepancy. The click -> electrocute -> guppy-to-diamond path, the
+  three-click counter, and the free-baby-guppy rescue were not found
+  (EV-0106). Do not implement the electrocution from the wiki alone.
+
+### EV-0098 - P2.7 Gash (0x11): 3.0 melee, hungry-guppy bite
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-melee-damage.json` (`ev_d796abf4...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`)
+- Confidence: high
+- Notes: FishTypePet; ctor `+0x224=0x622` (1570) normal, 0x5F0 (1520) when
+  transformed. Slot 81 only increments `+0x220`; the attack is in
+  `FUN_004FE740`: subtract 3.0 (0.5 against alien class 4/5), play sound 9.
+  A hungry-guppy bite resets `+0x220=0`; `+0x1C8=10` is the attack debounce;
+  the bite cooldown is 20 ticks. The exact hungry-guppy selection and the
+  "last guppy" loss edge are P2.4/P2.8 interactions.
+
+### EV-0099 - P2.7 Angie (0x12): corpse target and `+0x190` 100 -> 10
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...`
+  `0x4E5FC0`, `0x4FE740`), `docs/evidence/p2.7-walter-angie-batch.json`
+  (`ev_9cbadb72...` `0x4D5630`)
+- Confidence: high
+- Notes: FishTypePet; no ctor branch. `FUN_004E5FC0` targets corpses in
+  `Tank+0x98` with `+0x1A0 > 0x5F`; contact range 30 px (60 px when
+  `+0x1A4 == 6`). `FUN_004FE740` calls `FUN_004D5630`, which rewrites the
+  corpse's `+0x190` from 100 to 10 if it is exactly 100. The corpse then
+  follows the normal revive path (P2.4). Revive sound/animation and the
+  `+0x1A0` timer semantics remain P2.4 work.
+
+### EV-0100 - P2.7 Presto (0x13): transform, recharge, picker, cleanup
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...`
+  `0x4F89A0`), `docs/evidence/p2.7-behavior-batch.json` (`ev_453fbe78...`
+  `0x4F2650`, `0x54C6F0`), `docs/evidence/p2.7-walter-angie-batch.json`
+  (`ev_9cbadb72...` `0x4D6250`),
+  `docs/evidence/p2.7-presto-picker-54C6F0.json` (`ev_f671ea07...`)
+- Confidence: high
+- Notes: FishTypePet; ctor sets `+0x238=360` for a normal pet and 0 for Presto
+  itself/mode 5. `FUN_004F89A0(target)` ignores a same-index target and
+  requires `FUN_004F2650(+0x238)` (timer < 1; otherwise it draws
+  "Recharging..." at `(x+width/2-20,y-10)`). On success it plays sound 0x122,
+  spawns the target at the same x/y with `FUN_00544A90(target,x,y,1,0)`,
+  removes the old object, copies `+0x264/+0x260` when swapping Walter/Presto,
+  and calls `FUN_004D6250`. `FUN_0054C6F0` opens the "PRESTO CHANGE-O"
+  `Sexy::PetDialog` (0x2F8 bytes) and pushes screen 0x1F; it is not a sell
+  path. 360 ticks = 10 s.
+
+### EV-0101 - P2.7 Brinkley (0x14): feed counter and 15/45/135 rewards
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-547610.json` (`ev_500f6536...` tank update),
+  `docs/evidence/p2.7-4F7AD0.json` (`ev_434fb0aa...`),
+  `docs/evidence/p2.7-walter-angie-batch.json` (`ev_9cbadb72...` `0x4D70B0`)
+- Confidence: medium-high (contact/reward path in tank update)
+- Notes: FishTypePet. Feed contact uses the rect x+5..x+35, y..y+35.
+  `+0x240` counts feedings; rewards occur on feeds 3, 15, 45, 135 with coin
+  kinds 0xA, 0xB, 0xD, 0xE (star, diamond, pearl, treasure chest).
+  `+0x23C` is the cooldown: 45 ticks normal / 108 ticks VT (the ctor-style
+  `(-(mode != 5) & 0xFFFFFFC1) + 0x6C`). `FUN_004D70B0` is the VT gate.
+  Wiki says 12/36/108, so 15/45/135 is a recorded discrepancy (EV-0105);
+  do not silently pick either.
+
+### EV-0102 - P2.7 Nostradamus (0x15): 300..599/1080..1279 snot timer
+- Date: 2026-10-21
+- Type: observation (pet behavior) + bounded negative
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`),
+  `docs/evidence/p2.7-pet-helpers-batch.json` (`ev_0ae4497a...` `0x5434E0`)
+- Confidence: high for snot; high that the sneeze was not found
+- Notes: FishTypePet; ctor `+0x224 = rand % 300 + 300` (300..599) normal,
+  `1080..1279` VT. Slot 81 increments `+0x220`; at the threshold it calls
+  `FUN_005434E0(x+15,y+10)`, which spawns snot (coin kind 0x12). The wiki's
+  fixed 15 s is not the binary shape (300..599 ticks = 8.3..16.6 s); 30 s VT
+  is within 1080..1279. The 50% "Sneeze of Power" and clone behavior were not
+  found (EV-0106).
+
+### EV-0103 - P2.7 Stanley (0x16): ball shot and projectile interception
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-4EF420.json` (`ev_f6e71a1f...`),
+  `docs/evidence/p2.7-pet-vtable-batch.json` (`ev_6946bb69...` `0x4E5900`),
+  `docs/evidence/p2.7-behavior-batch.json` (`ev_504ee005...` `0x4E55D0`)
+- Confidence: high
+- Notes: FishTypePet; ctor `+0x224=100`. Slot 81 calls `FUN_004E55D0`
+  (projectile intercept) every tick; when the action timer exceeds 100 it
+  resets, sets `+0x23C=50` if zero, fires a ball at x+40 (facing right) or x
+  (left), plays sound 0x122, and sets `+0x1C8=10`. `FUN_004E55D0` intercepts
+  projectiles in `Tank+0xDC` with alien class `+0x1EC` 5/6/4; its cooldown is
+  90 or 30 ticks. The per-alien ball damage table is wiki-only (P2.8).
+
+### EV-0104 - P2.7 Walter (0x17): boxing glove entity, hit scan, effect fields
+- Date: 2026-10-21
+- Type: observation (pet behavior)
+- Source: `docs/evidence/p2.7-walter-glove.json` / `p2.7-walter-angie-batch.json`
+  (`ev_9cbadb72...` `0x4EF7C0`, `0x4E1000`, `0x4E9A60`, `0x4E0ED0`)
+- Confidence: high for glove/hit/effect; unknown for input/5-punch counter
+- Notes: FishTypePet; ctor sets byte `+0x55=1`, `+0x7C=1`, `+0x70=10`,
+  `+0x78=15`. `FUN_004EF7C0` creates `Sexy::BoxingGlove` (0x168 bytes): life
+  `+0x15C=30`, direction `+0x160`, shot cooldown `+0x164=5`. `FUN_004E1000`
+  renders it (frame from `|life-15|`, 0xA0x50). `FUN_004E9A60` positions the
+  glove at the target x-60 (left) or x-20 (right), y = target y; while life >
+  12 it scans `Tank+0x108` and calls `FUN_004E0ED0(dir,type)` for fish types
+  0/5/6/7/0x22/0x23/0x24 (type 5), pet indexes 6/0xB/0x10 (type 5), and
+  Nostradamus 0x15 (type 10). `FUN_004E0ED0` sets target `+0x20C=50`,
+  `+0x210=0xB4`, `+0x220=+0x224-type`, and knockback `+0x218=dir*15` or
+  `dir*10`; a hit plays sound 3 and sets `+0x164=5`. The click binding, the
+  five-punch counter writer, and the 10 s sleep were not found (EV-0106).
+
+### EV-0105 - P2.7 wiki pass: 24 pet pages, bindings, and discrepancies
+- Date: 2026-10-21
+- Type: wiki-ref (D-0010)
+- Source: `https://insaniquarium.fandom.com/wiki/<Pet>?action=raw` for all 24
+  display names, fetched 2026-10-21; `docs/analysis/notes/wiki-refs.md` section 7
+- Confidence: wiki claims only; binary bindings cited above
+- Notes: confirmed roles/timings: Stinky bottom collector; Niko 34 s first
+  pearl then 40 s, $250; Itchy 0.25 s melee; Prego ~26 s; Zorf 2 s level-2
+  food; Clyde 2D collector; Vert 6 s; Rufus bottom melee; Meryl 40 s (2 min
+  VT); Wadsworth shelter; Seymour slow money; Shrapnel 18 s bomb; Gumbo lure;
+  Blip info + 5 s/20 s unlock; Rhubarb bottom snap; Nimbus toss; Amp 75 s +
+  3 clicks; Gash heavy melee; Angie revive; Presto right-click/10 s; Brinkley
+  12/36/108; Nostradamus 15 s/30 s + 50% sneeze; Stanley balls; Walter 5
+  punches/10 s. Discrepancies kept open: Niko perch, Brinkley 12/36/108 vs
+  15/45/135, Stinky random vs nearest, Gumbo fish lure, Blip overlays, Seymour
+  writer, Amp click path, Nostradamus sneeze/clones, Wadsworth challenge
+  sleep, Amp 75 s vs 3000 ticks. See `p2.7-pets.md` section 6.
+
+### EV-0106 - P2.7 explicit unknowns and bounded negative searches
+- Date: 2026-10-21
+- Type: explicit unknowns
+- Source: current pass (EV-0077..EV-0105); `p2.7-search-1c4.json`
+  (`ev_3d0780f0...`), `p2.7-search-234.json` (`ev_ecb4b7a5...`)
+- Confidence: high that these are unresolved
+- Notes:
+  - Gumbo's guppy/breeder redirection: only his own opposite-corner movement
+    and `+0x258` glow were found; no fish target branch. EV-0093.
+  - Blip hunger arrows, alien entrance radar, alien HP meters: not found in
+    `FUN_004F7AD0`/`FUN_004F8610`; only the store unlock is proven. EV-0094.
+  - Seymour `Tank+0x16C` writer: not found; the effect fields are observed.
+    EV-0091.
+  - Amp click -> electrocute -> guppy-to-diamond, three-click counter, free
+    baby guppy: not found. EV-0097.
+  - Nostradamus 50% sneeze and clones: not found. EV-0102.
+  - Wadsworth small/medium filter and Challenge sleep: not found. EV-0090.
+  - Brinkley 15/45/135 vs wiki 12/36/108: unresolved conflict. EV-0101.
+  - Stinky collection cooldown and Nimbus red cosmetic: not isolated. EV-0081.
+  - Niko stationary perch: not in spawn/update. EV-0082.
+  - `Tank+0x194`: unidentified cached value; not a proven Brinkley count.
+    EV-0085.
+  - Walter click binding, five-punch counter writer, and 10 s sleep: not
+    found. EV-0104.
+  - VT "3 minutes" sleep: only the generic `FUN_004D6B70` test
+    (`Tank+0x28 - Tank+0xF0 < 0x1950` with a `%0x3C` branch) is known; do not
+    hard-code 180 s. EV-0081/EV-0086.
+  - `FUN_004D6280` referenced in the first pass resolves to `FUN_004D6250`;
+    cite the canonical entry. EV-0107.
+  - Bounded immediate searches `C4 01 00 00` and `34 02 00 00` in `.text`
+    0x401000..0x595900 (300-hit limits) were used to find pet-index
+    comparisons; they are not exhaustive and do not prove absence.
+
+### EV-0107 - P2.7 corrections to earlier notes and field semantics
+- Date: 2026-10-21
+- Type: correction (EV-0044/EV-0052/EV-0076 era claims)
+- Source: EV-0078..EV-0104
+- Confidence: high
+- Notes:
+  (1) The tank-relative list map used here is `Tank+0xA0` fish, `+0xA8` coins,
+  `+0xAC` food, `+0xB8` hostile aliens, `+0xF4` type-0x17 invaders, `+0x98`
+  corpses/revive, `+0x108` Walter glove hit list, `+0xD0` Penta/Starcatcher.
+  Earlier P2.2 wording that treated `Tank+0xB8`/`+0xF4` as generic "child
+  lists" is narrowed to hostile presence lists; the entity `+0x98` shadow flag
+  is unrelated to the Tank corpse list.
+  (2) `FishTypePet+0x230` and `OtherTypePet+0x1C8` are the Presto-transformed
+  flags; `FishTypePet+0x1C8` is an attack/target debounce, not a Presto flag.
+  `FishTypePet+0x1B0` is a steering cadence counter; `OtherTypePet+0x1B0` is a
+  sleep/idle movement divisor. Do not share one field table across classes.
+  (3) Rhubarb targets at y > 260 normal / 250 aliens and snaps at 270/250;
+  the earlier "270/260 snap" pairing was wrong. EV-0095.
+  (4) Brinkley's binary reward feeds are 15/45/135, not the wiki 12/36/108;
+  the cooldown is 45 ticks normal / 108 VT. EV-0101.
+  (5) Stinky's bottom behavior is a fixed y=370 lane with vx steering, not a
+  hard bottom clamp. EV-0081.
+  (6) Niko has no fixed perch in the spawn/update path; the pearl timer and
+  render are the only special code. EV-0082.
+  (7) 999 is a display/card index only; it is never spawned and grants no pet
+  slot. EV-0077/EV-0105.
+  (8) `FUN_004D6280` resolves to `FUN_004D6250`; use the canonical address.
+  EV-0106.

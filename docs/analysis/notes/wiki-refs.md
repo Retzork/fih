@@ -1,10 +1,10 @@
 # Wiki cross-reference - internal names <-> display names
 
-Status: living index (created 2026-10-16; second pass 2026-10-20). Policy: D-0010. Backing
-evidence: EV-0060 (first wiki pass) and EV-0074 (second pass), plus the binary-binding EVs cited
-per row. The wiki is a **secondary source**: behavior/constants still require binary evidence;
-wiki-vs-binary conflicts are listed in §11 and stay open until resolved. All addresses are
-game-module VAs (D-0009).
+Status: living index (created 2026-10-16; second pass 2026-10-20; pet pass 2026-10-21).
+Policy: D-0010. Backing evidence: EV-0060 (first wiki pass), EV-0074 (second pass) and EV-0105
+(24 pet pages), plus the binary-binding EVs cited per row. The wiki is a **secondary source**:
+behavior/constants still require binary evidence; wiki-vs-binary conflicts are listed in §11 and
+stay open until resolved. All addresses are game-module VAs (D-0009).
 
 Fetch method: raw wikitext via `https://insaniquarium.fandom.com/wiki/<Page>?action=raw` (the
 normal HTML page adds nav chrome). Pages consulted 2026-10-16: Main Page, Sylvester, Balrog,
@@ -12,7 +12,8 @@ Bilaterus, Aliens, Guppycruncher, Beetlemuncher, Starcatcher, Ball Fish, Minisyl
 Bilaterus Head, Money, Virtual Tank Mode, Time Trial Mode, Challenge Mode, Adventure Mode,
 Sandbox Mode. Second pass 2026-10-20: Bonus_Round and Tank_5 fetched successfully; Pets,
 Challenge_Mode and Time_Trial_Mode returned HTTP 403 on retry but had been fetched earlier in
-the same pass. No wiki text is saved locally (the URLs above are the record).
+the same pass. Third pass 2026-10-21: all 24 pet pages fetched via `?action=raw` (Stinky ...
+Walter); no wiki text is saved locally (the URLs above are the record).
 
 Naming policy: use the wiki display names in prose (notes, PLAN, specs); internal class/type
 names stay the technical identifiers. Add every new binding here with its binding evidence.
@@ -155,6 +156,40 @@ the **completed** level (`Tank+0x3C8/+0x3CC`), `index = tank*5 - 6 + level` (EV-
 | 23 | Walter | bonus pet card | bonus pet |
 | 999 | Evil Alien Mastermind | tank4 L5 card (no grant) | - |
 
+### 7.1 Per-pet binary behavior anchors (P2.7, EV-0077..EV-0104)
+
+Class split from `FUN_00544A90`: `OtherTypePet` = 0 Stinky, 1 Niko, 5 Clyde, 7 Rufus,
+0xE Rhubarb; every other pet is `FishTypePet`. Timer fields are raw 36 Hz ticks (EV-0080).
+"Open" means the wiki ability has no binary body yet (see §11).
+
+| Idx | Pet | Binary anchor | EV |
+| --- | --- | --- | --- |
+| 0 | Stinky | nearest coin (`FUN_004EBC80`/`FUN_004E7270`); hide counter `+0x1B4` (`FUN_004E2A20`) | EV-0081 |
+| 1 | Niko | pearl timer `+0x1B4` at 1224/1440; pearl kind 0xF (`FUN_004E2A20` idx 1) | EV-0082 |
+| 2 | Itchy | target `FUN_004E5FC0`; 1.0 melee (`FUN_004FE740`), sound 0xB | EV-0083 |
+| 3 | Prego | birth timer `+0x224` 930/1230/2000; guppy spawn `FUN_00546EF0` | EV-0084 |
+| 4 | Zorf | food timer `+0x224`=65; food kinds 1/2 (`FUN_00543280`) | EV-0085 |
+| 5 | Clyde | coin collect (`FUN_004EB7C0`/`FUN_004E02D0`); no hide | EV-0086 |
+| 6 | Vert | coin timer `+0x224`=216; coin kind 2 | EV-0087 |
+| 7 | Rufus | bottom y=365; 2.0 melee (`FUN_004FE740`) | EV-0088 |
+| 8 | Meryl | song timer `+0x224`=1400; marker `+0x220`=1300, kind 0x10, `DAT_005e89cc` | EV-0089 |
+| 9 | Wadsworth | hide flag `+0x250`; hidden count `DAT_005e89d0`; `FUN_004D6250` cleanup | EV-0090 |
+| 0xA | Seymour | `Tank+0x16C`: coin fall 1.5->0.8, expiry 0x14->0x82; **writer open** | EV-0091 |
+| 0xB | Shrapnel | bomb timer `+0x224`=633..652; kind 0x11; flash `+0x258` | EV-0092 |
+| 0xC | Gumbo | target `FUN_004E5FC0`; opposite-corner steering `FUN_004E02D0`; glow `+0x258`; **fish lure not found** | EV-0093 |
+| 0xD | Blip | unlock branch `FUN_004F7AD0` (200/720) -> `FUN_005409B0(i,1)`; **overlays not found** | EV-0094 |
+| 0xE | Rhubarb | bottom snap y 270 normal / 250 aliens; fish `+0x208`=50, vy -20/-30 | EV-0095 |
+| 0xF | Nimbus | coin kind <8 -> +7; toss speed 1.8; sleep `+0x245` | EV-0096 |
+| 0x10 | Amp | charge timer `+0x224`=3000; flags `+0x55`/`+0x7C`; **click path not found** | EV-0097 |
+| 0x11 | Gash | 3.0 melee (`FUN_004FE740`); `+0x224`=1570/1520; guppy bite resets `+0x220` | EV-0098 |
+| 0x12 | Angie | corpse target `Tank+0x98`; `FUN_004D5630` sets corpse `+0x190` 100->10 | EV-0099 |
+| 0x13 | Presto | recharge `+0x238`=360; transform `FUN_004F89A0`; picker `FUN_0054C6F0` | EV-0100 |
+| 0x14 | Brinkley | feed count `+0x240`; rewards at 15/45/135; cooldown `+0x23C` 45/108 | EV-0101 |
+| 0x15 | Nostradamus | snot timer `+0x224`=300..599; kind 0x12 (`FUN_005434E0`); **sneeze not found** | EV-0102 |
+| 0x16 | Stanley | shot timer `+0x224`=100; interception `FUN_004E55D0`; cooldown `+0x23C` 90/30 | EV-0103 |
+| 0x17 | Walter | glove `FUN_004EF7C0`, update `FUN_004E9A60`, effect `FUN_004E0ED0`; **click/5-punch open** | EV-0104 |
+| 999 | Evil Alien Mastermind | display card only; no spawn/grant (`FUN_0051F770`) | EV-0077/EV-0105 |
+
 Pet capacity/upgrade chain: wiki says 4 pets -> 7 (Virtual Tank) -> 11 (Sandbox). Binary
 `profile+0xB0` is the bonus-pet/upgrade card index (1-4 = Brinkley..Walter, 5 = "FOUR pets?!!!",
 6 = "SEVEN pets at the same time!"); `profile+0xB4` is reset to 3 and Sandbox raises it to 11.
@@ -218,3 +253,29 @@ The 4/7/11 mapping is not yet bound to either field -> Q-0013.
 - Hostile alien classes absent from RTTI (Q-0011); alien HP values are wiki-only (P2.8).
 - Egg piece commerce resolved: tank4 L5 $99,999 matches; tank5 price 0 (EV-0072). The first-pass
   discrepancy (store rebuild B[11] = 0) was mode-specific, not a conflict.
+- **Niko perch:** wiki says he stays on a fixed pillar; binary spawn is generic random x/y and
+  the update is the common wander (EV-0082/EV-0105). No perch field or clamp found - open.
+- **Stinky target choice:** wiki says random; binary proves nearest collectible (EV-0081). The
+  wiki "red after 20 s with Nimbus" cosmetic and the exact collection cooldown are also
+  unresolved (EV-0106).
+- **Brinkley rewards:** binary feeds 15/45/135 (star/diamond/pearl/chest) vs wiki 12/36/108
+  (EV-0101). The star cadence is every 3rd feed in both; the numbers stay open.
+- **Amp charge time:** binary 3000 ticks = 83.3 s vs wiki 75 s (EV-0097). Do not round to the
+  wiki value; the click/electrocute body is unfound (EV-0106).
+- **Nostradamus snot:** binary random 300..599 ticks (8.3..16.6 s) vs wiki fixed 15 s; the 50%
+  invasion-warning sneeze and the clones have no binary body (EV-0102/EV-0106).
+- **Gumbo lure:** only Gumbo's own alien targeting, opposite-corner movement and glow are proven;
+  no guppy/breeder redirection exists in the traced code (EV-0093/EV-0106).
+- **Blip overlays:** the instant-unlock branch is proven (200/720 ticks); hunger arrows, alien
+  radar and HP meters were not found (EV-0094/EV-0106).
+- **Seymour aura:** only the `Tank+0x16C` coin-effect read is proven; the writer/trigger is
+  unfound, so no aura radius or stacking rule may be assumed (EV-0091/EV-0106).
+- **Wadsworth shelter:** hide flag/count/position are proven; the fish size filter and the
+  Challenge-Mode sleep are not (EV-0090/EV-0106).
+- **Walter glove:** the glove entity, hit scan and effect fields are proven; click binding,
+  five-punch counter, 10 s sleep and the untouchable-pet table remain open (EV-0104/EV-0106).
+- **Virtual Tank sleep:** `FUN_004D6B70` is a generic `Tank+0x28 - Tank+0xF0 < 0x1950` test with
+  a `%0x3C` random branch; the wiki "3 minutes" is not proven for Stinky specifically (EV-0106).
+- **Meryl song:** the timer, note marker (kind 0x10) and `DAT_005e89cc` flag are proven; the
+  guppy "three coins" reaction is inferred from the fish side and remains P2.3 follow-up
+  (EV-0089).
