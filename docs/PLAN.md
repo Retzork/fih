@@ -24,6 +24,8 @@ P2.7 third pass (2026-10-21): 24-pet roster + 999 display card (EV-0077), entity
 vtables/field map (EV-0078), spawn/session/ctor tuning (EV-0079), shared AI gates + 36 Hz
 tick (EV-0080), per-pet behavior entries (EV-0081-EV-0104), wiki pass/discrepancies
 (EV-0105), explicit unknowns (EV-0106), corrections to earlier notes (EV-0107).
+P2.13 save sample (2026-10-21): live folder `C:\ProgramData\Steam\Insaniquarium\userdata`;
+`users.dat`/`user1.dat`/`adv1.dat` copied with hashes and layout notes (EV-0108).
 Next: P2.8 aliens next (per-tank types, waves, attack patterns, hitpoints). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
 (credits trigger), Q-0017 (tank 6), Q-0018 (StoreScreen/store-item population), Q-0019
@@ -199,6 +201,11 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
 - [ ] **P2.11** Game modes: Adventure, Challenge, Time Trial, Virtual Tank (screensaver ecosystem)
 - [ ] **P2.12** Menus & UI flow: title/profile/options/help/store screens, dialog structure
 - [ ] **P2.13** Save/profile format: writer/reader functions, file location, versioning, Steam paths
+  (2026-10-21: live folder found at `C:\ProgramData\Steam\Insaniquarium\userdata`; sample
+  `users.dat`/`user1.dat`/`adv1.dat` copied to `docs\analysis\inputs\p2.13-saves-2026-10-21`
+  with hashes/layout notes, EV-0108. `adv%d.dat` is the Adventure tank save (version `0x36`);
+  `scr%d.dat` is the separate Shells file. Q-0019 remains open for the `user%d.dat`/`adv%d.dat`
+  field order.)
 - [ ] **P2.14** Audio system: BASS usage, mo3 music playback, channel/mixing behavior
 - [ ] **P2.15** Resource system: `properties\resources.xml` semantics (image/animation/sound tables)
 - [ ] **P2.16** Screensaver variants (`Insaniquarium.scr`, `WinFish_Scr.exe`): feature deltas

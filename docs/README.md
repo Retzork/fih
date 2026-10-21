@@ -42,7 +42,8 @@ of truth for progress.
   EV-0061..EV-0076; the note ends with an "Implementation spec for P4" section (D-0008).
 - **P2.6 still open:** Q-0013 trophy/story gate, Q-0014 mode 2, Q-0015 `+0x58`/`+0x50`
   semantics, Q-0016 credits trigger, Q-0017 tank 6, Q-0018 StoreScreen/store-item population,
-  Q-0019 `scr%d.dat`. Do not guess these in the remake.
+  Q-0019 `scr%d.dat` (real save sample now saved; parse pending, EV-0108). Do not guess these
+  in the remake.
 - **P2.5 leftovers:** mode-enum naming -> P2.11; coin-hit gameplay intent (Q-0010) -> runtime;
   VT beetle value. See `PLAN.md`.
 - **Next planned task:** P2.8 aliens (per-tank types, waves, attack patterns, hitpoints).
@@ -119,7 +120,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0107). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0108). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6 opens. |

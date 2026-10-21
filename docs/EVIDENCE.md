@@ -2116,3 +2116,26 @@ behavior or specs; follow up with a binary observation entry.
   slot. EV-0077/EV-0105.
   (8) `FUN_004D6280` resolves to `FUN_004D6250`; use the canonical address.
   EV-0106.
+
+### EV-0108 - Real save files located: `ProgramData\Steam\Insaniquarium\userdata`
+- Date: 2026-10-21
+- Type: observation (local save files + module strings)
+- Source: user-provided files copied to
+  `docs/analysis/inputs/p2.13-saves-2026-10-21/` (`users.dat`, `user1.dat`,
+  `adv1.dat`); module strings `userdata/users.dat`, `userdata/user%d.dat`,
+  `userdata/scr%d.dat`, `userdata/%s%d.dat`, `userdata/highscores.dat`
+- Confidence: high for paths/files/hashes; medium for the first-field reading
+- Notes: the live save folder is `C:\ProgramData\Steam\Insaniquarium\userdata`, not
+  the game install. `users.dat` (22 B) stores one profile: version/header
+  `0E 00 00 00`, count `01 00`, name length `06 00`, ASCII `okokok`, then two
+  dwords `01 00 00 00`; `HKCU\Software\PopCap\Insaniquarium\CurUser` also reads
+  `okokok`. The profile name is 6 characters; a search for `okokokok` cannot match.
+  `adv1.dat` (1081 B) begins with dword `0x36` (54), matching the SaveGame version
+  written by `FUN_00546990`; the next dwords are `1, 1`, consistent with tank 1 /
+  level 1, and the tank-1 tutorial string "Here are your first fish! Take good care
+  of them!" sits at `0x184`. `user1.dat` (232 B) has dword 200 at offset 4,
+  consistent with the profile reset's starting money `+0x48 = 200`. No `scr%d.dat`
+  exists for this profile. The Adventure save is `adv%d.dat`; `scr%d.dat` remains
+  the separate Shells-persistence file (`FUN_005148C0`/`FUN_00515910`). This sample
+  is early-game and does not contain a completed Challenge/trophy/tank-5 state.
+  Hashes and layout notes: the folder README.

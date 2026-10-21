@@ -197,3 +197,11 @@
   on a match consumes 50 filler ints + 1 + 50 filler ints; `FUN_00515910(param)` writes
   `FUN_005148C0(0)+param` surrounded by 50 `rand()%20000` ints. Serializer/return path,
   obfuscation, and the exact timestamp/value meaning are unresolved. Resolve in P2.13.
+- 2026-10-21 update (EV-0108): the live folder is
+  `C:\ProgramData\Steam\Insaniquarium\userdata`, and a real sample is copied to
+  `docs\analysis\inputs\p2.13-saves-2026-10-21\` (`users.dat`, `user1.dat`, `adv1.dat`).
+  The Adventure save is `adv%d.dat` (version dword `0x36`), not `scr%d.dat`; `scr%d.dat`
+  remains the separate Shells file and is absent because this profile has no Shells. The
+  `users.dat` layout is readable (profile name `okokok`); `user%d.dat` and `adv%d.dat` field
+  order still need the P2.13 parse. The sample is early-game, so trophy/credits states are not
+  covered.
