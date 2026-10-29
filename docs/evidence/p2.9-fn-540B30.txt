@@ -1,0 +1,65 @@
+
+undefined4 FUN_00540b30(int param_1,char param_2)
+
+{
+  char cVar1;
+  uint uVar2;
+  int iVar3;
+  int iVar4;
+  int in_ECX;
+  undefined1 local_64 [28];
+  undefined1 local_48 [28];
+  undefined1 local_2c [28];
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00589fe8;
+  local_10 = ExceptionList;
+  uVar2 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  if (*(int *)(*(int *)(in_ECX + 0x8c) + 0x87c) != 5) {
+    if ((*(char *)(*(int *)(in_ECX + 0x8c) + 0x880) != '\0') && (*(int *)(in_ECX + 0x3f0) < 5)) {
+      *(undefined4 *)(in_ECX + 0x3f0) = 5;
+    }
+    iVar4 = *(int *)(in_ECX + 0x3f0);
+    if (iVar4 < param_1) {
+      iVar3 = FUN_0053a0b0(uVar2);
+      if (iVar3 + iVar4 < param_1) {
+        if (param_2 == '\0') {
+          if (*(int *)(in_ECX + 0x450) != 0) goto LAB_00540bdb;
+        }
+        else {
+          FUN_00538230(0x112,3,0x3ff0000000000000);
+        }
+        *(undefined4 *)(in_ECX + 0x450) = 0x46;
+LAB_00540bdb:
+        if ((*(int *)(in_ECX + 0x3f0) == 0) && (cVar1 = FUN_00537b80(), cVar1 != '\0')) {
+          FUN_0041d8b0();
+          local_8 = 0;
+          FUN_0041d8b0();
+          local_8._0_1_ = 1;
+          FUN_0041d8b0();
+          local_8 = CONCAT31(local_8._1_3_,2);
+          FUN_0054b5b0(0x13,1,local_2c,local_48,local_64,3);
+          FUN_0041d8f0();
+          FUN_0041d8f0();
+          FUN_0041d8f0();
+        }
+        ExceptionList = local_10;
+        return 0;
+      }
+    }
+    iVar4 = iVar4 - param_1;
+    *(int *)(in_ECX + 0x3f0) = iVar4;
+    if (((*(char *)(*(int *)(in_ECX + 0x8c) + 0x880) != '\0') && (iVar4 < 5)) && (-1 < iVar4)) {
+      *(undefined4 *)(in_ECX + 0x3f0) = 5;
+    }
+    FUN_0053a360();
+  }
+  ExceptionList = local_10;
+  return 1;
+}
+
+

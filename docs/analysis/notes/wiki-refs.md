@@ -66,8 +66,11 @@ corpse object and `Missle`/`Larva` are projectiles.
 | 0x15 | Cyrax | image `DAT_005e8cb8`, hp 2500-5000 |
 
 Wiki HP figures now agree numerically: Sylvester 10 hits (50 hp), Balrog 22 hits (130 hp),
-Bilaterus 17 hits per head (100 hp) all imply ~5-6 damage per laser hit (P2.10 confirms the
-damage table). Kinds 1 and 2 share one image and differ only in speed/HP; the wiki has no second
+Bilaterus 17 hits per head (100 hp) match the P2.9 damage model `hp -= 3 * Tank+0x3E4`
+(EV-0120) evaluated at the level-start pet capacity `Tank+0x3E4 = 2`, i.e. **6 damage per laser
+hit** (50/6 = 9, 130/6 = 22, 100/6 = 17) (EV-0121). The shared use of that field (pet capacity + shot
+damage) is the P2.10 item; during the boss fight it is forced to 10, so a hit does 30.
+Kinds 1 and 2 share one image and differ only in speed/HP; the wiki has no second
 Sylvester, so kind 2's story identity stays open (Q-0020). Per-level type selections and the
 type re-roll are in the P2.6 note §8 (EV-0070) and `p2.8-aliens.md` §5.
 
@@ -77,6 +80,14 @@ gameplay question (Q-0020) - the wiki text on Gus could not be re-read on 2026-1
 
 Minisylvester exists twice in the binary: the hostile summon (kind 0x14, `Sexy::Alien`) and the
 Virtual Tank prize fish (`Sexy::SylvesterFish`, type 0x22, §1). Do not merge them.
+
+**P2.9 boss rows (binary-only - the wiki `Cyrax` page returned HTTP 403 on 2026-10-29, as in
+P2.8).** Kind 0x15 is the only boss object in the binary, and only tank 5 selects it
+(`Tank+0x2BC = 0x15`); tanks 1-4 level 5 are ordinary re-rolling wave sets, so "a boss per tank"
+has no binary counterpart (EV-0117). The fight is two spawn clocks (75-tick Minisylvester at the
+boss, 300-tick random type 4-9 wave while the field is clear), the sprite is a single image, and
+no code compares hp against a fraction - "phases" and "fireballs" are not in the binary. See
+`p2.9-bosses.md` §9 for the claim-by-claim table.
 
 ## 3. Money denominations (`Coin::Value` `FUN_004D53A0`, EV-0047)
 
@@ -259,6 +270,12 @@ The 4/7/11 mapping is not yet bound to either field -> Q-0013.
   unresolved (Q-0016); the 5000 is granted at the Presto hatch, not at a separate Cyrax screen.
 - Wiki lists six "pets survived" messages (8-12 ... 18); the tank-5 score helper prepares the
   empty-slot indices/count used by those jokes (EV-0067).
+- P2.9 (2026-10-29, EV-0117..EV-0120): the boss mechanics the wiki describes are not in the
+  binary - no fireball projectile (the 300-tick action spawns a random alien type 4-9), no hp
+  phases, one sprite. The egg piece is likewise **not** boss-gated in the purchase handler
+  (`FUN_00545960` checks only the store object and `Tank::SpendMoney`); whether the store UI greys
+  it out is Q-0021. Wiki display name "Cyrax" is kept for kind 0x15 on the strength of the boss
+  page's context only - the page itself could not be re-read (HTTP 403).
 
 ## 11. Discrepancies / open items
 
@@ -276,7 +293,8 @@ The 4/7/11 mapping is not yet bound to either field -> Q-0013.
 - VT beetle value: binary virtual multiplier is x5 for kind 0x11; an unresolved wiki "7 shells"
   figure was noted in the first pass - re-check in P2.11.
 - Kind 0x10: binary value 0 ("not handled"); no wiki item identified.
-- Hostile alien classes absent from RTTI (Q-0011); alien HP values are wiki-only (P2.8).
+- Hostile alien classes absent from RTTI (Q-0011); alien HP values are now binary (EV-0111), the
+  wiki figures were only a cross-check.
 - Egg piece commerce resolved: tank4 L5 $99,999 matches; tank5 price 0 (EV-0072). The first-pass
   discrepancy (store rebuild B[11] = 0) was mode-specific, not a conflict.
 - **Niko perch:** wiki says he stays on a fixed pillar; binary spawn is generic random x/y and

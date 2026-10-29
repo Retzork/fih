@@ -1,9 +1,9 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
 **Handover status: Phase 2 in progress (2026-10-29).** Phase 0, Phase 1 and Phase 3 are
-complete; Phase 2 is 6/18 done. P2.1-P2.4, P2.7 and P2.8 are closed, P2.5 and P2.6 are
-substantially complete with tracked open questions, and **P2.9 (bosses) is the next planned
-system**. Phase 4 (Godot gameplay implementation) has not started: the repository currently
+complete; Phase 2 is 7/18 done. P2.1-P2.4, P2.7, P2.8 and P2.9 are closed, P2.5 and P2.6 are
+substantially complete with tracked open questions, and **P2.10 (weapons & projectiles) is the next
+planned system**. Phase 4 (Godot gameplay implementation) has not started: the repository currently
 contains the Godot project shell plus the imported sprite resources. `PLAN.md` is the source
 of truth for progress.
 
@@ -11,8 +11,8 @@ of truth for progress.
 
 1. **New agent session:** read `../AGENTS.md` first, then `PLAN.md` (mandatory). Follow the
    session-end checklist in `AGENTS.md`.
-2. **Want the current state quickly?** Read the `P2.8` entry in `PLAN.md`, then
-   `analysis/notes/p2.8-aliens.md` (alien kinds, waves, attacks, EV-0110..EV-0116).
+2. **Want the current state quickly?** Read the `P2.9` entry in `PLAN.md`, then
+   `analysis/notes/p2.9-bosses.md` (the Cyrax fight, damage model, EV-0117..EV-0121).
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -23,11 +23,22 @@ of truth for progress.
 | --- | --- |
 | P0 environment / tooling | Complete (13/13) |
 | P1 target identity | Complete (10/10) |
-| P2 reverse engineering | In progress (6/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7 `[x]`; P2.8 `[x]`; P2.13 `[~]`; P2.9+ pending |
+| P2 reverse engineering | In progress (7/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7 `[x]`; P2.8 `[x]`; P2.9 `[x]`; P2.13 `[~]`; P2.10+ pending |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
 | P4 Godot implementation | Not started (0/14) |
 | P5 validation / polish | Not started (0/5) |
 
+- **P2.9 bosses (2026-10-29)** settled the boss question: only kind 0x15 (Cyrax) is a boss, the
+  tank-5 fight is two spawn clocks (75-tick Minisylvester at the boss, 300-tick random alien type
+  4-9 while the field is clear), there is no projectile and no hp-threshold phase, and the shot hit
+  handler `FUN_004FA6F0` gives the damage model (`3*Tank+0x3E4`, one hit per 10 ticks, knockback),
+  i.e. 30 per hit at the boss-forced 10 and 6 at the base weapon level 2.
+  It also recovered the HP-bar geometry, the boss-only defeat cleanup and the egg-piece gates.
+  Evidence is EV-0117..EV-0121; the note (`analysis/notes/p2.9-bosses.md`) ends with an
+  "Implementation spec for P4" section (D-0008).
+- **P2.9 still open (Q-0021/Q-0022):** the egg purchase is not boss-gated at handler level (store
+  UI unverified), `profile+0x54` naming/trigger, and the `from_shot` argument at the shot kill.
+  Do not guess these.
 - **P2.8 aliens (2026-10-29)** answered Q-0011 (every hostile alien except Bilaterus is one
   `Sexy::Alien` class discriminated by kind) and mapped the ctor tuning, the 3000-tick wave clock
   with its one-wave-at-a-time pause, the per-tank type re-roll, the Destructor/Ulysses/
@@ -63,7 +74,8 @@ of truth for progress.
   `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming -> P2.11; coin-hit gameplay intent (Q-0010) -> runtime;
   VT beetle value. See `PLAN.md`.
-- **Next planned task:** P2.9 bosses (final-level boss per tank, phases, damage/weak points).
+- **Next planned task:** P2.10 weapons & projectiles (laser/click pipeline that calls
+  `FUN_004FA6F0`, the weapon-upgrade item vs `Tank+0x3E4`, Destructor/Ulysses projectile bodies).
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
 ## What is in the repository
@@ -137,19 +149,20 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0116). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0121). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
-| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6 and P2.8 opens. |
-| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.7-pets.md`, `p2.8-aliens.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
+| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8 and P2.9 opens. |
+| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.8-aliens.md`, `p2.9-bosses.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
 | `analysis/` | Inventories (`resources.json`, `extraction.json`, ...), snapshots (gitignored), evidence maps. |
 | `evidence/` | Raw REA evidence JSON exports cited by EV IDs. |
 
 ## Handover checklist
 
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
-- [ ] Read the latest EVIDENCE entries and the current system note (`p2.8-aliens.md` now).
-- [ ] Pick the next task from `PLAN.md` (`P2.9` bosses next); check its open questions first.
+- [ ] Read the latest EVIDENCE entries and the current system note (`p2.9-bosses.md` now).
+- [ ] Pick the next task from `PLAN.md` (`P2.10` weapons & projectiles next); check its open questions
+  first.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended
   `EVIDENCE.md`, `DECISIONS.md` questions, note's P4 spec, saved raw output, and a commit.

@@ -2399,3 +2399,136 @@ behavior or specs; follow up with a binary observation entry.
   dossiers maps them for `Alien`).
   (4) This entry closes the "`FUN_004E8F70` still open" item of EV-0115 and the
   "`FUN_005392A0` not decompiled" items of EV-0113/EV-0114; it does not alter their other claims.
+
+### EV-0117 - P2.9 Cyrax's two spawn timers decoded (corrects EV-0114)
+- Date: 2026-10-29
+- Type: code trace (module decompilation), **corrects EV-0114**
+- Source: `docs/evidence/p2.8-fn-4F03D0.txt` (kind 0x15 branch, re-read),
+  `docs/evidence/p2.9-fn-545580.json` / `.txt` (`FUN_00545580`),
+  `docs/evidence/p2.9-fn-5475B0.json` / `.txt` (`FUN_005475B0`), `docs/evidence/p2.8-alien-ctor-4ECFA0.txt`
+- Confidence: high for both bodies and for the timer wiring; the runtime *rate* depends on the
+  36 Hz tick assumption (EV-0080)
+- Notes: EV-0114 §8.4 read the two Cyrax actions the wrong way round ("`FUN_00545580` spawns a boss
+  projectile", "`FUN_005475B0(count,1)` summons 4-9 Minisylvesters"). The bodies prove the reverse:
+  (1) **`FUN_00545580(x, y)` spawns a Minisylvester.** It allocates 0x208 bytes (`FUN_00564345`),
+  calls `FUN_004ECFA0(x + 0x28, y + 0x28, 0x14)` - i.e. kind **0x14** (Minisylvester) offset by
+  40,40 from the caller's point - registers it with `FUN_00542EE0(obj, 1)`, appends it through the
+  manager list vtable (`[manager+0x10]` slot +0xC), then `FUN_00544800()` and `FUN_0053AA40()`
+  (UI/score refresh). Called from the kind-0x15 branch with `(+0x30, +0x34)` = the boss's own
+  anchor, every `+0x1E8 = 75` ticks.
+  (2) **`FUN_005475B0(type, play_sound)` is the generic wave spawner wrapper.** Two
+  `FUN_0040AEB0()` rolls and `FUN_00545620(type, rand%0x1C2 + 0x14, rand%0xC3 + 0x69,
+  play_sound)` - the same `(20..469, 105..299)` spawn rectangle as the wave block (EV-0114).
+  (3) The kind-0x15 branch therefore runs two independent clocks: `+0x1E0` against `+0x1E8 = 75`
+  (unconditional, respawns a 1-hp Minisylvester at the boss), and `+0x1DC` against `+0x1E4 = 300`
+  gated on **both** `Tank+0xB8` (aliens) and `Tank+0xF4` (enemy projectiles) being empty, which sets
+  `Tank+0x700 = rand()%6 + 4` and calls `FUN_005475B0(Tank+700, 1)`. The rolled value is an alien
+  **type** in 4..9 (Gus, Destructor, Ulysses, Psychosquid, Bilaterus, Sylvester+Balrog), not a
+  count. `Tank+0x700` lies outside the 0x504-byte Tank allocation and is read back by the same
+  call - a scratch slot, not a field.
+  (4) Bounded negative: no projectile spawner exists anywhere in the kind-0x15 branch, and no body
+  compares `Alien+0x1F0` against a fraction of `+0x1F8`, so "Cyrax shoots fireballs" and "Cyrax has
+  phases" have no binary counterpart. The only escalation is the `profile+0x54` hp scaling of
+  EV-0111.
+
+### EV-0118 - P2.9 boss defeat cleanup, HP-bar geometry, and `FUN_00564160` = CRT `ftol`
+- Date: 2026-10-29
+- Type: code trace (module decompilation), **corrects EV-0113 §9**
+- Source: `docs/evidence/p2.9-fn-4F9950.json` / `.txt`, `docs/evidence/p2.9-fn-4DAE20-dossier.json`
+  (`rea function 0x4DAE20`, assembly + native value flow, block `0x4DB131-0x4DB1B6`),
+  `docs/evidence/p2.9-fn-564160.json` / `.txt`, `docs/evidence/p2.8-alien-sprite-4DAE20.txt`
+- Confidence: high for the cleanup and the arithmetic; the `+0x178` flag's writer is still unknown
+- Notes: (1) **`FUN_004F9950` is boss-only.** Its body is wrapped in
+  `if (Alien+0x1EC == 0x15)`: clear `Tank+0x110` (boss slot), set `Tank+0x4F4 = 1`, loop
+  `Tank+0xBC` calling `FUN_005420E0(&obj)`, then collect `Tank+0xB8` (aliens) and `Tank+0xDC`
+  (enemy projectiles) into one vector and call `FUN_004D6830(1)` on each. Because the wave clock
+  needs `Tank+0x4F4 == 0` (EV-0114), killing Cyrax also permanently freezes wave spawning for the
+  level. Every other kind takes the unconditional unregister path only.
+  (2) **HP-bar geometry, from the assembly.** The bar block is entered when
+  `Alien+0x1EC == 0x15 || (Tank+0x178 != 0 && Tank+0x3C8 != 5)`. `tube_w =
+  [DAT_005e8e3c + 0x24]`, `tube_h = [DAT_005e8e3c + 0x28]`, `y = [Alien+0x3C] - 3` (box height
+  160 - 3), `w = clamp(ftol(tube_w * [Alien+0x1F0] / [Alien+0x1F8]), 0, tube_w)` via
+  `FILD [EBP+0xc]; FMUL [EDI+0x1f0]; FDIV [EDI+0x1f8]; CALL 0x564160`, then
+  `FUN_00455E40(DAT_005e8e3c, 10, y, &CRect(0, 0, w, tube_h))` and `FUN_00455D20(DAT_005e8eb8, 10, y)`.
+  The two globals are `IMAGE_HEALTHBARTUBE` (0x59CD64) and `IMAGE_HEALTHBAR` (0x59CD78).
+  (3) **`FUN_00564160` is the CRT float->int helper**, not a resource lookup: its body is
+  `ROUND(in_ST0)` (`_ftol`-style; it reads the x87 stack top and takes no stack arguments). This
+  corrects EV-0113 §9, where `FUN_005442C0(FUN_00564160(...), FUN_00564160(...), frame, kind,
+  facing)` was read as "a pair of resource lookups"; the first two arguments of `FUN_005442C0` stay
+  unexplained and are re-opened in Q-0020. The same helper supplies `local_2c` in the intro-scale
+  path of `FUN_004DAE20`, so it is a plain conversion there too.
+
+### EV-0119 - P2.9 egg-piece purchase gates, `Tank::SpendMoney`, and the `profile+0x54` increment
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.5c-eggpiece-fn-545960.txt` (extracted from
+  `p2.5c-eggpiece-fn-545960.json`), `docs/evidence/p2.9-fn-540B30.json` / `.txt`
+  (`Tank::SpendMoney`), `docs/evidence/p2.9-fn-538090.json` / `.txt` (`FUN_00538090`),
+  `docs/evidence/p2.9-xrefs-599188.json`, `docs/evidence/p2.8-wave-block-547610.txt`
+- Confidence: high for the call graph and constants; the store UI was not decompiled (Q-0021)
+- Notes: (1) **`FUN_00545960` (egg piece) has exactly two gates**: `FUN_00538090(0xB)` and
+  `FUN_00540B30(price, quiet)`. `FUN_00538090(i)` is a store-object getter - `slot = Tank+0x2E4 +
+  i*4`, negative -> 0, else `Tank+0x404 + slot*4`. `FUN_00540B30` is `Tank::SpendMoney`: mode 5 is
+  exempt and returns 1 immediately; it returns 1 after `Tank+0x3F0 -= amount`; otherwise it plays
+  sound `0x112`, sets `Tank+0x450 = 70` and returns 0. **Neither gate reads `Tank+0x110`**, so the
+  binary does not require Cyrax to be dead before the free egg piece can be bought.
+  (2) On success the handler increments `Tank+0x43C`, records `Tank+0x3FC`, clears `Tank+0x4EE`
+  and completes at `Tank+0x43C >= 4` (P2.5c, EV-0067/EV-0115).
+  (3) **`profile+0x54` increment, exact.** In `FUN_00547610`, inside the `Tank+0x2A5 == 0 &&
+  mode != 5` block, the tank-5 branch (`Tank+0x3C8 == 5`) runs when the containers `Tank+0xB4` and
+  `Tank+0xB0` are both empty: `FUN_0053DB80(); Tank+0x4EE = 0;` then
+  `if ((boss = Tank+0x110) != 0 && boss->[0x1F8] - boss->[0x1F0] > 1000.0) (*(int*)(profile+0x54))++;`
+  followed by dialog events 0x11/0x12/0x13 through `FUN_0054B5B0`. Its sibling (non-tank-5) branch
+  is the "no fish left" loss handler, so the tank-5 branch reads as the loss/retry counter that
+  feeds the hp scaling of EV-0111. Recorded as a naming question only (Q-0022).
+  (4) `docs/evidence/p2.9-xrefs-599188.json`: the string `"Stop shooting! Alien regains health!"`
+  (0x599188) has exactly one reference, `0x4FA7C6` (EV-0120).
+
+### EV-0120 - P2.9 `FUN_004FA6F0` is the shot hit handler: damage, cooldown, knockback, Psychosquid heal
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.9-fn-4FA7C6.json` / `.txt` (`FUN_004FA6F0`), reached from the single
+  xref of the hint string (`docs/evidence/p2.9-xrefs-599188.json`); `docs/evidence/p2.7-melee-damage.json`
+  for the melee path
+- Confidence: high for the branch structure, formulas and constants; the `from_shot` argument at the
+  kill call site is not visible (Q-0022)
+- Notes: (1) **Hit box.** The point must satisfy `+0x160 < x < +0x160 + 160` and
+  `+0x168 < y < +0x168 + 160`; otherwise return 0. Single test for every kind - no sub-region, no
+  direction requirement, so Cyrax has no weak point.
+  (2) **Cooldown.** `if (0 < +0x200) return 0;` at entry and `+0x200 = 10` before every successful
+  return, i.e. at most one hit per 10 ticks per alien (~0.28 s at 36 Hz).
+  (3) **Damage.** Kinds 5/6 (`Destructor`/`Ulysses`): `hp -= Tank+0x3E4 * 2 + 2`. Every other kind
+  including 0x15: `hp -= Tank+0x3E4 * 3`. `Tank+0x3E4` is the field used as pet capacity at level
+  start (2), in demo (8) and forced to **10** when the boss spawns (EV-0113), and as the store's
+  weapon-upgrade counter up to 12 (EV-0057). At the boss-forced value a Cyrax hit removes **30** hp,
+  so 5000 hp = 167 hits (1670 ticks / 46.4 s of continuous shooting) and 2500 hp = 84 hits (23.3 s).
+  The field's double role (capacity + shot damage) is a P2.10 item.
+  (4) **Psychosquid special case** (kind 7, not boss-related): while resting (`+0x204 != 0`) and with
+  no boss alive (`Tank+0x110 == 0`) a shot *heals* `Tank+0x3E4 * 3` and calls `FUN_0041D8B0` with
+  `"Stop shooting! Alien regains health!"`; a shot that takes it below 100 hp forces sleep again
+  (`+0x204 = 1`, `+0x19C = 1`, `+0x1AC = 10`, `+0x194 = rand()%100`), outside demo.
+  (5) **Knockback** after the damage step: the click point is compared against the inner 60x60 and
+  100x100 sub-boxes and `+0x170`/`+0x178` are set to `+0x1B8 * (+-2.5 / +-3.0 / +-3.5 / +-4.0)`
+  (full quadrant table in the raw listing). Kinds 5/6 skip it while `+0x1AC != 0`.
+  (6) **Death.** `if (+0x1F0 <= 0.0) { FUN_004F9C70(); return 1; }` - the shot kill enters the
+  P2.8 §9 path. The argument is not materialised at this call site; the melee path passes 1
+  explicitly, so the diamond drop for shot kills is taken as 1 per EV-0115 and kept as a small open
+  detail (Q-0022).
+  (7) Bounded negative: no shield, regeneration or invulnerability branch exists for kind 0x15 in
+  this body; the boss can only be worn down.
+
+### EV-0121 - P2.9 laser damage cross-check: `Tank+0x3E4` is the weapon level, 6 damage per hit at base
+- Date: 2026-10-29
+- Type: inference (from EV-0057, EV-0063, EV-0120 and the wiki hit counts of EV-0060/EV-0074)
+- Source: EV-0057 (store item 10 "weapon" bumps `Tank+0x3E4`, max 0xB), EV-0063 (`+0x3E4 = 2` at
+  session init, 8 in demo), EV-0113 (`Tank+0x3E4 = 10` when the boss spawns), EV-0120 (damage =
+  `3 * Tank+0x3E4`), `wiki-refs.md` §2 (wiki hit counts)
+- Confidence: high for the arithmetic; medium for the "weapon level" label (the field's two uses are
+  proven, the name comes from one store case)
+- Notes: evaluated at the level-start value `Tank+0x3E4 = 2`, the formula of EV-0120 gives **6 damage
+  per laser hit**, which reproduces the wiki's hit counts exactly - Sylvester 50 hp / 10 hits (9.0
+  needed), Balrog 130 hp / 22 hits (21.7), Bilaterus 100 hp per head / 17 hits (16.7) - and the
+  field's own store item is the **weapon upgrade** (item 10, cap 11, so the ceiling would be 33 per
+  hit). This supports the "one field, two uses" reading (pet capacity + shot damage) and removes
+  EV-0120's open worry about a missing damage source; P2.10 still owns the click/laser pipeline and
+  the store item's write. It does not establish what the wiki counted for other kinds.

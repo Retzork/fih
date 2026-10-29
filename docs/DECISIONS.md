@@ -251,6 +251,10 @@
   over (frame `+0x1C0`, kind `+0x1EC`, facing) plus those three values; candidate corpse or
   explosion object. Not decompiled (EV-0115). It is *not* the money drop - that is settled
   (`Tank::SpawnCoin` kind 4 = Diamond, 200).
+- 2026-10-29 update (EV-0118): the "two resource lookups" are two calls to `FUN_00564160`, which is
+  the CRT float->int helper (`ROUND(in_ST0)`), not a table lookup. The frame/kind/facing arguments
+  of `FUN_005442C0` are still unbound, so the "corpse or explosion" reading now rests on those three
+  arguments alone; the previous derivation is withdrawn.
 - **Tank flag writers.** `Tank+0x178` (HP-bar enable), `Tank+0x4F4` (wave-clock hold),
   `Tank+0x4FE` (warning sound enable), `Tank+0x4DE` (tank3 L4 / composite marker): only readers
   are proven.
@@ -262,3 +266,33 @@
 - **Kind 0.** Tank1 L1 selects type 0 and no early-out exists, so `FUN_00545620` builds an
   `Alien` with no stat branch, no draw case and no hp init. Do not spawn a kind-0 alien; treat
   tank1 L1 as alien-free (see `p2.8-aliens.md` §10).
+
+### Q-0021 - Tank-5 victory gate: is the egg piece locked behind the boss?
+- OPEN (2026-10-29, EV-0119). The tank-5 egg-piece handler `FUN_00545960` has exactly two gates,
+  `FUN_00538090(0xB)` (store object exists) and `Tank::SpendMoney`, and **neither reads
+  `Tank+0x110`** - so at handler level a free egg piece can be bought while Cyrax is still alive,
+  and `Tank+0x43C` 3 -> 4 completes the level. Two readings stay possible:
+  (a) the fight is not gated at all and "beat the boss" is only a soft story expectation;
+  (b) the store UI greys the item out (the `FUN_0052B2D0` child/update code was never decompiled -
+  Q-0018), so the handler is never reached with a live boss.
+  Bounded negative: no `Tank+0x110` test exists in any decompiled tank-5 completion path
+  (`FUN_00545960`, `FUN_00501370`, `FUN_00517C70`). Resolve in P2.12 (store UI) or by a runtime
+  check. Until then the remake gates the purchase on the boss being dead and records the divergence
+  (see `p2.9-bosses.md` §10.9).
+
+### Q-0022 - `profile+0x54` semantics, and `from_shot` at the shot-kill call site
+- OPEN (2026-10-29, EV-0119/EV-0120). Two small loose ends from P2.9:
+- **`profile+0x54` counter.** It is read by the `Alien` ctor as the Cyrax hp offset
+  (`5000 - 125*clamp(+0x54-1,0,20)`, EV-0111) and incremented in exactly one place (EV-0119):
+  inside `FUN_00547610`'s tank-5 branch, when `Tank+0xB4` and `Tank+0xB0` are empty and a live boss
+  has already lost more than 1000 hp. That branch sits where the "no fish left" loss handler sits
+  for other tanks, but it can fire while the boss is still alive, so it is neither a clean "loss"
+  nor a clean "defeat" counter. The numbers are proven; only the name and the triggering moment
+  (retry vs. partial-damage snapshot) are open. Model it as `cyrax_offset` and keep the increment
+  site parameterised until a runtime check shows when it actually moves.
+- **`from_shot` at the shot kill.** `FUN_004FA6F0` calls `FUN_004F9C70()` with no visible argument
+  (the melee path passes 1 explicitly, EV-0115), and the diamond drop is gated on `from_shot != 0`.
+  Static reading says the shot kill still drops the diamond, but the argument is not materialised at
+  this call site, so a shot kill producing no coin is not excluded. Not player-visible for Cyrax
+  (`Tank+0x110 == 0` is required for the drop and is set only after the unregister), so it only
+  affects ordinary aliens.

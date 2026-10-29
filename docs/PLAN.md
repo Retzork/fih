@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-29 (P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done except P2.11-linked
+Last updated: 2026-10-29 (P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done except P2.11-linked
 naming; P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
@@ -42,8 +42,24 @@ bite) and the death drop is a kind-independent Diamond worth 200 rather than the
 assumed call (EV-0115); the bite (`FUN_004E8F70`: per-type reach boxes, consume/get-eaten
 virtuals, Gus pellet cost) and the attack-gate body (`FUN_005392A0`) closed (EV-0116). Note
 `docs\analysis\notes\p2.8-aliens.md`.
-Next: P2.9 bosses next (final-level boss per tank, phases, damage/weak points); P2.10 weapons must
-supply the laser damage per hit that P2.8's hp values imply (~5-6). P2.8 residuals are tracked as
+P2.9 bosses (2026-10-29): only kind 0x15 (Cyrax) is a boss - tanks 1-4 level 5 are ordinary re-rolling
+wave sets, so "boss per tank" is corrected at the binary (EV-0117); the kind-0x15 AI is two clocks -
+a 1-hp Minisylvester at the boss every 75 ticks (`FUN_00545580` -> kind 0x14) plus a random alien
+**type** 4-9 every 300 ticks while `Tank+0xB8`/`+0xF4` are empty (`FUN_005475B0`), correcting EV-0114's
+inverted wording; no projectile, no fireballs, no hp-threshold phase, single sprite (EV-0117); HP bar
+geometry recovered from the assembly of `FUN_004DAE20` (tube/fill images, x 10, y box_h-3, width
+`clamp(tube_w*hp/hp0)`), the boss-only defeat cleanup `FUN_004F9950` (`+0x110=0`, `+0x4F4=1`, wipe
+aliens+projectiles) and `FUN_00564160` = CRT `ftol` (EV-0118); egg-piece gates = store object +
+`SpendMoney` with **no** boss check, and the exact `profile+0x54` increment condition (EV-0119); the
+shot hit handler `FUN_004FA6F0` gives the damage model - inside-box test only, 10-tick cooldown,
+`hp -= 3*Tank+0x3E4` (30 at the boss-forced 10), knockback, Psychosquid heal + sub-100 forced sleep,
+death call (EV-0120); the same formula at the base weapon level 2 gives the 6 damage per hit that the
+wiki's hit counts imply (EV-0121). Note `docs\analysis\notes\p2.9-bosses.md`. New open items: Q-0021 (egg purchase
+not boss-gated at handler level) and Q-0022 (`profile+0x54` naming, `from_shot` at the shot kill).
+Next: P2.10 weapons & projectiles. P2.9 supplies the damage contract it must not duplicate
+(`FUN_004FA6F0` already owns shot damage: `3*Tank+0x3E4`, one hit per 10 ticks), so P2.10 should map
+the laser/click pipeline that calls it, the weapon-upgrade item's effect on `Tank+0x3E4`, the
+Destructor/Ulysses projectile bodies and collision. P2.8 residuals stay in
 Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the Gus pellet hp cost,
 `FUN_005442C0` death animation, tank flag writers). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
@@ -59,7 +75,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 6 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 7 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -223,7 +239,14 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   kind-independent Diamond worth 200, correcting EV-0113 (EV-0115); the bite's per-type reach
   boxes + consume/get-eaten virtuals and the attack-gate body (EV-0116). Residuals -> Q-0020; note
   `docs\analysis\notes\p2.8-aliens.md`.)
-- [ ] **P2.9** Bosses: final-level boss per tank, phases, damage/weak points
+- [x] **P2.9** Bosses: final-level boss per tank, phases, damage/weak points
+  (2026-10-29 complete: only kind 0x15 = Cyrax is a boss; tanks 1-4 L5 are ordinary waves. Two-clock
+  AI (75-tick Minisylvester spawn at the boss, 300-tick random type 4-9 wave while the field is
+  clear) correcting EV-0114 (EV-0117); HP bar geometry + boss-only defeat cleanup + `ftol` helper
+  (EV-0118); egg gates, `SpendMoney`, `profile+0x54` increment (EV-0119); shot hit handler
+  `FUN_004FA6F0`: box test, 10-tick cooldown, `3*Tank+0x3E4` damage, knockback, Psychosquid heal,
+  death (EV-0120), plus the 6-per-hit cross-check at the base weapon level (EV-0121). Note
+  `docs\analysis\notes\p2.9-bosses.md`. Open: Q-0021, Q-0022.)
 - [ ] **P2.10** Weapons & projectiles: laser upgrades, missiles/perks, collision and damage math
 - [ ] **P2.11** Game modes: Adventure, Challenge, Time Trial, Virtual Tank (screensaver ecosystem)
 - [ ] **P2.12** Menus & UI flow: title/profile/options/help/store screens, dialog structure
