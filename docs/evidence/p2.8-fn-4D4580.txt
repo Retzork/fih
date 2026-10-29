@@ -1,0 +1,15 @@
+﻿
+undefined4 FUN_004d4580(void)
+
+{
+  undefined4 uVar1;
+  int in_ECX;
+  
+  if (*(int *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 0x110) == 0) {
+    uVar1 = FUN_005392a0();
+    return uVar1;
+  }
+  return CONCAT31((int3)((uint)*(int *)(in_ECX + 0x88) >> 8),1);
+}
+
+

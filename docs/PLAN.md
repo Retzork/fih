@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-21 (P2.7 pets complete; P2.4 closed; P2.5 done except P2.11-linked
+Last updated: 2026-10-29 (P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done except P2.11-linked
 naming; P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
@@ -29,7 +29,23 @@ P2.13 save sample (2026-10-21): live folder `C:\ProgramData\Steam\Insaniquarium\
 GameBanana sample (`users.dat`/`user1.dat`/`sim1.dat`) is in
 `docs\analysis\inputs\p2.13-saves-gamebanana-100\`; the 232-byte `user%d.dat` field order is
 now mapped through `FUN_00503730` (EV-0109, `docs\analysis\notes\p2.13-saves.md`).
-Next: P2.8 aliens next (per-tank types, waves, attack patterns, hitpoints). P2.6 remains open
+P2.8 aliens (2026-10-29): Q-0011 answered - every hostile alien except Bilaterus is one
+`Sexy::Alien` class whose kind (`Alien+0x1EC`) selects stats/sprite/attack code; kind table
+1/2 Sylvester, 3 Balrog, 4 Gus, 5 Destructor, 6 Ulysses, 7 Psychosquid, 8 Bilaterus, 9-0xC
+composites, 0x14 Minisylvester, 0x15 Cyrax (EV-0110); ctor tuning/hp/speed/field map and the
+Cyrax hp-scaling counter (EV-0111); Bilaterus two heads x 100 hp + 6 bones + head swap (EV-0112);
+`Alien::Update` gates, movement bands, Destructor/Ulysses/Psychosquid/Cyrax attacks, eat target
+split and death/drop path (EV-0113); wave clock 3000 ticks with the "one wave at a time" pause,
+276/275/33/30/1/0 milestones, per-tank type re-roll, wiki comparison, unknowns + bounded
+negatives (EV-0114); late returns folded in: alien eating is a chase (approach steering, not a
+bite) and the death drop is a kind-independent Diamond worth 200 rather than the previously
+assumed call (EV-0115); the bite (`FUN_004E8F70`: per-type reach boxes, consume/get-eaten
+virtuals, Gus pellet cost) and the attack-gate body (`FUN_005392A0`) closed (EV-0116). Note
+`docs\analysis\notes\p2.8-aliens.md`.
+Next: P2.9 bosses next (final-level boss per tank, phases, damage/weak points); P2.10 weapons must
+supply the laser damage per hit that P2.8's hp values imply (~5-6). P2.8 residuals are tracked as
+Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the Gus pellet hp cost,
+`FUN_005442C0` death animation, tank flag writers). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
 (credits trigger), Q-0017 (tank 6), Q-0018 (StoreScreen/store-item population), Q-0019
 (`scr%d.dat`). P2.5 leftovers: mode enum naming -> P2.11; coin-hit intent Q-0010 -> runtime;
@@ -43,7 +59,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 5 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 6 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -198,7 +214,15 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   Open items: Gumbo fish lure, Blip overlays, Seymour writer, Amp click/electrocute,
   Nostradamus sneeze/clones, Wadsworth challenge sleep, Brinkley 15/45/135 vs wiki 12/36/108,
   Stinky cooldown/red cosmetic, Niko perch, Walter click/5-punch counter, VT 3-minute sleep.)
-- [ ] **P2.8** Aliens: per-tank alien types, spawn waves, attack patterns, hitpoints
+- [x] **P2.8** Aliens: per-tank alien types, spawn waves, attack patterns, hitpoints.
+  (2026-10-29: one `Sexy::Alien` class + kind table, Q-0011 answered (EV-0110); per-kind
+  hp/speed/box + demo override (EV-0111); Bilaterus heads/bones (EV-0112); `Alien::Update`
+  gates, 3-missile Destructor, 2-ball Ulysses, Psychosquid rest cycle, Cyrax summons, eat target
+  split, death/drop path (EV-0113); wave clock 3000 ticks, pause contract, milestones, type
+  re-roll, wiki comparison, bounded negatives (EV-0114); eating is a chase and the death drop is a
+  kind-independent Diamond worth 200, correcting EV-0113 (EV-0115); the bite's per-type reach
+  boxes + consume/get-eaten virtuals and the attack-gate body (EV-0116). Residuals -> Q-0020; note
+  `docs\analysis\notes\p2.8-aliens.md`.)
 - [ ] **P2.9** Bosses: final-level boss per tank, phases, damage/weak points
 - [ ] **P2.10** Weapons & projectiles: laser upgrades, missiles/perks, collision and damage math
 - [ ] **P2.11** Game modes: Adventure, Challenge, Time Trial, Virtual Tank (screensaver ecosystem)

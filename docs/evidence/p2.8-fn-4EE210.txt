@@ -1,0 +1,68 @@
+﻿
+void FUN_004ee210(undefined4 param_1,int param_2,int param_3,undefined1 param_4)
+
+{
+  undefined4 uVar1;
+  uint uVar2;
+  undefined4 *in_ECX;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00584608;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_004e9cb0(DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+  *(double *)(in_ECX + 0x5a) = (double)param_2;
+  local_8 = 0;
+  *in_ECX = Sexy::BilaterusHead::vftable;
+  *(undefined1 *)((int)in_ECX + 0x41) = 0;
+  *(double *)(in_ECX + 0x5c) = (double)param_3;
+  in_ECX[0x56] = param_1;
+  *(undefined1 *)((int)in_ECX + 0x15e) = param_4;
+  uVar1 = FUN_00564160();
+  in_ECX[0xc] = uVar1;
+  uVar1 = FUN_00564160();
+  *(undefined8 *)(in_ECX + 0x5e) = 0;
+  in_ECX[0xd] = uVar1;
+  *(undefined8 *)(in_ECX + 0x60) = 0xbfe0000000000000;
+  in_ECX[0xe] = 0x50;
+  *(undefined8 *)(in_ECX + 0x68) = 0x3ff0000000000000;
+  in_ECX[0xf] = 0x50;
+  uVar2 = FUN_0040aeb0();
+  if ((uVar2 & 1) == 0) {
+    *(undefined8 *)(in_ECX + 0x5e) = 0xbfb999999999999a;
+    *(undefined8 *)(in_ECX + 0x68) = 0xbff0000000000000;
+  }
+  *(undefined8 *)(in_ECX + 0x62) = 0;
+  in_ECX[0x6a] = 0x172;
+  *(undefined8 *)(in_ECX + 100) = 0;
+  in_ECX[0x6c] = 0x5f;
+  in_ECX[0x6b] = 10;
+  *(undefined8 *)(in_ECX + 0x66) = 0x3fe999999999999a;
+  in_ECX[0x6d] = 0x21c;
+  uVar2 = FUN_0040aeb0();
+  *(undefined8 *)(in_ECX + 0x76) = 0x4059000000000000;
+  *(undefined8 *)(in_ECX + 0x78) = 0;
+  *(undefined8 *)(in_ECX + 0x7a) = 0;
+  *(undefined8 *)(in_ECX + 0x7c) = 0;
+  *(undefined8 *)(in_ECX + 0x7e) = 0;
+  in_ECX[0x6f] = 0x28;
+  in_ECX[0x70] = 0;
+  in_ECX[0x71] = 0;
+  in_ECX[0x72] = 0;
+  in_ECX[0x73] = 0;
+  *(undefined1 *)((int)in_ECX + 0x55) = 0;
+  in_ECX[0x80] = 0xc;
+  in_ECX[0x75] = 100;
+  in_ECX[0x74] = 0;
+  *(undefined1 *)(in_ECX + 0x57) = 0;
+  *(undefined1 *)((int)in_ECX + 0x15d) = 0;
+  in_ECX[0x6e] = uVar2 % 10;
+  in_ECX[0x58] = (uint)(*(char *)((int)in_ECX + 0x15e) == '\0');
+  ExceptionList = local_10;
+  return;
+}
+
+

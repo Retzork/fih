@@ -1,0 +1,62 @@
+﻿
+undefined4 FUN_004f03d0(void)
+
+{
+  int iVar1;
+  int iVar2;
+  char cVar3;
+  int iVar4;
+  uint uVar5;
+  int in_ECX;
+  
+  cVar3 = FUN_004d4580();
+  if (cVar3 == '\0') {
+    iVar4 = *(int *)(in_ECX + 0x1ec);
+    if (iVar4 == 4) {
+      iVar1 = *(int *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 0xac);
+      iVar2 = *(int *)(iVar1 + 4);
+      if ((iVar2 != 0) && (*(int *)(iVar1 + 8) - iVar2 >> 2 != 0)) goto LAB_004f0423;
+    }
+    if (*(int *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 0x110) != 0) goto LAB_004f0423;
+  }
+  else {
+LAB_004f0423:
+    iVar4 = *(int *)(in_ECX + 0x1ec);
+    if (iVar4 == 0x15) goto LAB_004f0467;
+    if (((iVar4 != 5) && (iVar4 != 6)) && (*(char *)(in_ECX + 0x204) == '\0')) {
+      iVar4 = FUN_004e8b60();
+      if (iVar4 == 0) {
+        return 0;
+      }
+      FUN_004ed460();
+      return 1;
+    }
+  }
+  if (iVar4 != 0x15) {
+    return 0;
+  }
+LAB_004f0467:
+  iVar4 = *(int *)(*(int *)(in_ECX + 0x88) + 0x730);
+  iVar1 = *(int *)(iVar4 + 0xb8);
+  iVar2 = *(int *)(iVar1 + 4);
+  if ((iVar2 == 0) || (*(int *)(iVar1 + 8) - iVar2 >> 2 == 0)) {
+    iVar4 = *(int *)(iVar4 + 0xf4);
+    iVar1 = *(int *)(iVar4 + 4);
+    if (((iVar1 == 0) || (*(int *)(iVar4 + 8) - iVar1 >> 2 == 0)) &&
+       (*(int *)(in_ECX + 0x1dc) = *(int *)(in_ECX + 0x1dc) + 1,
+       *(int *)(in_ECX + 0x1e4) <= *(int *)(in_ECX + 0x1dc))) {
+      *(undefined4 *)(in_ECX + 0x1dc) = 0;
+      uVar5 = FUN_0040aeb0();
+      *(uint *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 700) = uVar5 % 6 + 4;
+      FUN_005475b0(*(undefined4 *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 700),1);
+    }
+  }
+  *(int *)(in_ECX + 0x1e0) = *(int *)(in_ECX + 0x1e0) + 1;
+  if (*(int *)(in_ECX + 0x1e8) <= *(int *)(in_ECX + 0x1e0)) {
+    *(undefined4 *)(in_ECX + 0x1e0) = 0;
+    FUN_00545580(*(undefined4 *)(in_ECX + 0x30),*(undefined4 *)(in_ECX + 0x34));
+  }
+  return 0;
+}
+
+

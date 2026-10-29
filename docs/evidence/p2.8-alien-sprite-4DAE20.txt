@@ -1,0 +1,150 @@
+
+void FUN_004dae20(undefined4 param_1,undefined1 param_2)
+
+{
+  char cVar1;
+  undefined4 uVar2;
+  int in_ECX;
+  undefined4 uVar3;
+  int iVar4;
+  int iVar5;
+  int local_30;
+  int local_2c;
+  int local_28;
+  int local_24;
+  int local_20;
+  int local_1c;
+  int local_18;
+  int local_14;
+  int local_10;
+  undefined4 local_c;
+  undefined4 local_8;
+  
+  local_10 = *(int *)(in_ECX + 0x1c0);
+  local_8 = CONCAT31(local_8._1_3_,param_2);
+  iVar5 = 0xa0;
+  local_1c = 0;
+  local_c = 0xa0;
+  if ((*(int *)(in_ECX + 0x1ac) == 0) ||
+     ((iVar4 = *(int *)(in_ECX + 0x1ec), iVar4 != 7 && (iVar4 != 6)))) {
+    if (*(int *)(in_ECX + 0x1b4) != 0) {
+      local_1c = 1;
+      local_8 = CONCAT31(local_8._1_3_,0 < *(int *)(in_ECX + 0x1b4));
+    }
+  }
+  else {
+    local_1c = (uint)(iVar4 == 7) * 2 + 2;
+  }
+  local_20 = local_10;
+  switch(*(undefined4 *)(in_ECX + 0x1ec)) {
+  case 1:
+  case 2:
+    uVar3 = DAT_005e8ebc;
+    break;
+  case 3:
+    uVar3 = DAT_005e8cec;
+    break;
+  case 4:
+    uVar3 = DAT_005e8ae4;
+    if ((0 < *(int *)(in_ECX + 0x200)) &&
+       (*(int *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 0x110) == 0)) {
+      local_8 = CONCAT31(local_8._1_3_,param_2);
+      local_1c = 2;
+      local_20 = *(int *)(in_ECX + 0x200);
+    }
+    break;
+  case 5:
+    uVar3 = DAT_005e8ec8;
+    break;
+  case 6:
+    uVar3 = DAT_005e8e58;
+    break;
+  case 7:
+    uVar3 = DAT_005e8c4c;
+    if ((*(int *)(in_ECX + 0x1ac) == 0) && (*(char *)(in_ECX + 0x204) != '\0')) {
+      local_1c = (*(int *)(in_ECX + 0x1b4) != 0) + 2;
+    }
+    break;
+  default:
+    goto switchD_004dae9a_caseD_8;
+  case 0x14:
+    iVar5 = 0x50;
+    local_c = 0x50;
+    uVar3 = DAT_005e8c0c;
+    break;
+  case 0x15:
+    uVar3 = DAT_005e8cb8;
+  }
+  local_1c = local_1c * iVar5;
+  local_20 = local_20 * iVar5;
+  iVar4 = *(int *)(in_ECX + 0x158);
+  local_18 = iVar5;
+  local_14 = iVar5;
+  if (0 < iVar4) {
+    if (9 < iVar4) {
+      return;
+    }
+    if ((float)iVar4 / 10.0 <= 0.0) {
+      return;
+    }
+    local_2c = FUN_00564160();
+    local_30 = local_2c / 2;
+    local_28 = iVar5 - local_2c;
+    local_24 = iVar5 - local_2c;
+    local_2c = local_2c / 2;
+    cVar1 = FUN_00489a20();
+    FUN_00455900(cVar1 == '\0');
+    FUN_004561c0(uVar3,&local_30,&local_20,local_8);
+    return;
+  }
+  FUN_004560a0(uVar3,0,0,&local_20,local_8);
+  if ((((*(int *)(in_ECX + 0x200) < 1) || (*(int *)(in_ECX + 0x1ec) == 0x14)) ||
+      ((*(int *)(in_ECX + 0x1ec) == 4 &&
+       (*(int *)(*(int *)(*(int *)(in_ECX + 0x88) + 0x730) + 0x110) == 0)))) ||
+     (*(char *)(in_ECX + 0x204) != '\0')) {
+    if (((0 < *(int *)(in_ECX + 0x1ac)) && (*(int *)(in_ECX + 0x1ac) < 10)) &&
+       (*(int *)(in_ECX + 0x1ec) == 5)) {
+      FUN_004558c0(1);
+      FUN_004558e0(1);
+      iVar5 = *(int *)(in_ECX + 0x1ac);
+      if (5 < iVar5) {
+        iVar5 = 10 - iVar5;
+      }
+      uVar2 = CRect::CRect((CRect *)&local_30,0xff,0xff,0xff,(iVar5 * 0xff) / 5);
+      FUN_00455890(uVar2);
+      goto LAB_004db104;
+    }
+  }
+  else {
+    FUN_004558c0(1);
+    FUN_004558e0(1);
+    uVar2 = CRect::CRect((CRect *)&local_30,0xff,0xff,0xff,*(int *)(in_ECX + 0x200) * 0x19);
+    FUN_00455890(uVar2);
+LAB_004db104:
+    FUN_004560a0(uVar3,0,0,&local_20,local_8);
+    FUN_004558c0(0);
+    FUN_004558e0(0);
+  }
+  if ((*(int *)(in_ECX + 0x1ec) == 0x15) ||
+     ((iVar5 = *(int *)(*(int *)(in_ECX + 0x88) + 0x730), *(int *)(iVar5 + 0x178) != 0 &&
+      (*(int *)(iVar5 + 0x3c8) != 5)))) {
+    iVar5 = *(int *)(DAT_005e8e3c + 0x24);
+    iVar4 = *(int *)(in_ECX + 0x3c) + -3;
+    local_28 = FUN_00564160();
+    if (local_28 < 0) {
+      local_28 = 0;
+    }
+    else if (iVar5 < local_28) {
+      local_28 = iVar5;
+    }
+    local_24 = *(undefined4 *)(DAT_005e8e3c + 0x28);
+    local_30 = 0;
+    local_2c = 0;
+    FUN_00455e40(DAT_005e8e3c,10,iVar4,&local_30);
+    FUN_00455d20(DAT_005e8eb8,10,iVar4);
+    return;
+  }
+switchD_004dae9a_caseD_8:
+  return;
+}
+

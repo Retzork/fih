@@ -1,0 +1,107 @@
+﻿
+void FUN_004fe000(undefined4 param_1,undefined4 param_2)
+
+{
+  int iVar1;
+  int *piVar2;
+  uint uVar3;
+  undefined4 uVar4;
+  int iVar5;
+  uint uVar6;
+  undefined4 *in_ECX;
+  undefined1 local_24 [12];
+  int local_18;
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00584964;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_004e9cb0(DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+  local_8 = 0;
+  *in_ECX = Sexy::Bilaterus::vftable;
+  in_ECX[0x23] = 0x17;
+  in_ECX[0x5a] = 8;
+  local_18 = FUN_00564345(0x208);
+  local_8._0_1_ = 1;
+  if (local_18 == 0) {
+    uVar4 = 0;
+  }
+  else {
+    uVar4 = FUN_004ee210(in_ECX,param_1,param_2,1);
+  }
+  in_ECX[0x56] = uVar4;
+  local_8._0_1_ = 0;
+  (**(code **)(**(int **)(in_ECX[0x22] + 800) + 0xc))(uVar4);
+  local_18 = FUN_00564345(0x208);
+  local_8._0_1_ = 2;
+  if (local_18 == 0) {
+    uVar4 = 0;
+  }
+  else {
+    uVar4 = FUN_004ee210(in_ECX,param_1,param_2,0);
+  }
+  in_ECX[0x57] = uVar4;
+  local_8 = (uint)local_8._1_3_ << 8;
+  (**(code **)(**(int **)(in_ECX[0x22] + 800) + 0xc))(uVar4);
+  iVar5 = FUN_00564345();
+  if (iVar5 == 0) {
+    local_8 = (uint)local_8._1_3_ << 8;
+    in_ECX[0x58] = 0;
+    local_14 = 0;
+  }
+  else {
+    *(undefined4 *)(iVar5 + 4) = 0;
+    *(undefined4 *)(iVar5 + 8) = 0;
+    *(undefined4 *)(iVar5 + 0xc) = 0;
+    local_8 = (uint)local_8._1_3_ << 8;
+    in_ECX[0x58] = iVar5;
+    local_14 = 0;
+  }
+  do {
+    iVar5 = 0;
+    local_18 = FUN_00564345();
+    local_8._0_1_ = 4;
+    if (local_18 != 0) {
+      iVar5 = FUN_004edd30(in_ECX,param_1,param_2,local_14);
+    }
+    local_8 = (uint)local_8._1_3_ << 8;
+    local_18 = iVar5;
+    (**(code **)(**(int **)(in_ECX[0x22] + 800) + 0xc))();
+    iVar1 = in_ECX[0x58];
+    uVar6 = *(uint *)(iVar1 + 4);
+    if ((uVar6 == 0) ||
+       ((uint)((int)(*(int *)(iVar1 + 0xc) - uVar6) >> 2) <=
+        (uint)((int)(*(int *)(iVar1 + 8) - uVar6) >> 2))) {
+      uVar3 = *(uint *)(iVar1 + 8);
+      if (uVar3 < uVar6) {
+        FUN_00564335();
+      }
+      FUN_00541950(local_24,iVar1,uVar3,&local_18);
+    }
+    else {
+      piVar2 = *(int **)(iVar1 + 8);
+      *piVar2 = iVar5;
+      *(int **)(iVar1 + 8) = piVar2 + 1;
+    }
+    local_14 = local_14 + 1;
+  } while (local_14 < 6);
+  *(undefined1 *)(in_ECX + 0x59) = 0;
+  *(undefined1 *)((int)in_ECX + 0x55) = 0;
+  in_ECX[0x5c] = 0;
+  in_ECX[0x5b] = 0xf;
+  uVar6 = FUN_0040aeb0();
+  if ((uVar6 & 1) == 0) {
+    FUN_004fb1c0();
+  }
+  else {
+    FUN_00538230(0x131,3,0x3ff0000000000000);
+  }
+  ExceptionList = local_10;
+  return;
+}
+
+

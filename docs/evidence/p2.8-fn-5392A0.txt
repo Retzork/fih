@@ -1,0 +1,34 @@
+﻿
+undefined4 FUN_005392a0(void)
+
+{
+  int iVar1;
+  char cVar2;
+  int in_ECX;
+  
+  iVar1 = *(int *)(*(int *)(in_ECX + 0xa0) + 4);
+  if ((iVar1 == 0) || (*(int *)(*(int *)(in_ECX + 0xa0) + 8) - iVar1 >> 2 == 0)) {
+    iVar1 = *(int *)(*(int *)(in_ECX + 0xa4) + 4);
+    if ((iVar1 == 0) || (*(int *)(*(int *)(in_ECX + 0xa4) + 8) - iVar1 >> 2 == 0)) {
+      iVar1 = *(int *)(*(int *)(in_ECX + 0xd0) + 4);
+      if ((iVar1 == 0) || (*(int *)(*(int *)(in_ECX + 0xd0) + 8) - iVar1 >> 2 == 0)) {
+        cVar2 = FUN_004e3ed0();
+        if (cVar2 == '\0') {
+          cVar2 = FUN_004e3f00();
+          if (cVar2 == '\0') {
+            cVar2 = FUN_004e3f30();
+            if (cVar2 == '\0') {
+              cVar2 = FUN_004e3f60();
+              if (cVar2 == '\0') {
+                return 0;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return 1;
+}
+
+

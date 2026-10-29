@@ -148,6 +148,15 @@
   hostile aliens are plausibly `Alien` instances selected by type id/data (or classes without
   RTTI), but nothing is confirmed. Resolve in P2.8 by tracing the alien spawn waves and the
   `Alien` ctor callers; do not guess class names for the remake until then.
+- RESOLVED (2026-10-29, EV-0110/EV-0111). There are no per-species classes: every hostile alien
+  except Bilaterus is a `Sexy::Alien` instance whose kind (`Alien+0x1EC`, copied from the spawn
+  selection `Tank+0x2BC`) selects stats, sprite, warning sound and attack code.
+  `Sexy::Bilaterus`/`BilaterusHead`/`BilaterusBone` are the only other hostile classes;
+  `DeadAlien` is a corpse and `Missle`/`Larva` are projectiles. Kind binding: 1/2 Sylvester,
+  3 Balrog, 4 Gus, 5 Destructor, 6 Ulysses, 7 Psychosquid, 8 Bilaterus, 9-0xC composite spawn
+  selections, 0x14 Minisylvester, 0x15 Cyrax. The remake therefore uses one `Alien` entity plus a
+  kind resource table, not one class per species (see `docs/analysis/notes/p2.8-aliens.md`
+  §1/§11). The residual identity question (kind 1 vs kind 2) is tracked as Q-0020.
 
 ### Q-0012 - Who writes the tank/level advance (`profile+0x1C`/`profile+0x20`)? - ANSWERED 2026-10-20
 - `FUN_00501370` (ECX = `profile`) is the advance writer (EV-0066): level++; tank 4 + level 6
@@ -218,3 +227,38 @@
   `sim1.dat`, but still no `scr%d.dat`. The 232-byte `user%d.dat` field order is now mapped
   end-to-end through `FUN_00503730` (see P2.13 note). The `scr%d.dat` serializer, its
   obfuscation, and the exact timestamp/value meaning remain **OPEN**.
+
+### Q-0020 - P2.8 residual alien questions
+- OPEN (2026-10-29, EV-0110-EV-0116). Items that survived the P2.8 pass; none blocks P2.9/P2.10
+  and none may be guessed in the remake:
+- **Kind 1 vs kind 2.** Both are Sylvesters (`aliens draw` case 1 and 2 share `DAT_005e8ebc`),
+  kind 1 has hp 50 / speed 2.0, kind 2 hp 60 / speed 1.6. The binary carries no second name and
+  the wiki has no second Sylvester. Model kind 2 as a stronger Sylvester until the story/asset
+  side (P2.12/P3) proves a distinct identity.
+- **`FUN_005392A0` sub-predicates.** The predicate itself is decoded (EV-0116): it is true when
+  `Tank+0xA0` (fish), `Tank+0xA4` or `Tank+0xD0` (Penta) is non-empty, or when any of
+  `FUN_004E3ED0`/`FUN_004E3F00`/`FUN_004E3F30`/`FUN_004E3F60` is true. Those four remain
+  undecoded, so the exact "level still in progress" reading is still bounded; keep it behind one
+  config flag.
+- **Bite handshake virtuals.** `FUN_004E8F70` is decoded (EV-0116): reach boxes per target type,
+  then alien vtable slot 77 (`consume`) and the victim's slot 75. The class-map dump stops at 64
+  entries, so neither address is bound; the fish side of the same two slots is P2.3/P2.4 material.
+- **Gus pellet cost.** Feeding Gus a pellet removes it and subtracts 4-30 from `+0x1F0`, the same
+  pool pet melee drains and `Update` kills at `<= 0` (EV-0116). Whether the design intends "food
+  damages Gus" or a shared fullness/hp pool is not decidable statically - do not ship the number
+  without a runtime check or wiki confirmation (the wiki was unavailable on 2026-10-29, HTTP 403).
+- **`FUN_005442C0` death animation.** The default-branch death call takes two resource lookups
+  over (frame `+0x1C0`, kind `+0x1EC`, facing) plus those three values; candidate corpse or
+  explosion object. Not decompiled (EV-0115). It is *not* the money drop - that is settled
+  (`Tank::SpawnCoin` kind 4 = Diamond, 200).
+- **Tank flag writers.** `Tank+0x178` (HP-bar enable), `Tank+0x4F4` (wave-clock hold),
+  `Tank+0x4FE` (warning sound enable), `Tank+0x4DE` (tank3 L4 / composite marker): only readers
+  are proven.
+- **`FUN_004FB1C0` / `FUN_004DAA00`.** Head swap effects and the post-update animation/cleanup
+  are named by call site only; `Alien` slot 0xA4's two random arguments are likewise unbound.
+- **Base `+0x28` age field.** The VT warp-out compares it with `0x10E0` (4320); its writer is in
+  the shared object base and was not traced, so the "aliens retreat after 120 s in Virtual
+  Tank" reading stays bounded.
+- **Kind 0.** Tank1 L1 selects type 0 and no early-out exists, so `FUN_00545620` builds an
+  `Alien` with no stat branch, no draw case and no hp init. Do not spawn a kind-0 alien; treat
+  tank1 L1 as alien-free (see `p2.8-aliens.md` §10).

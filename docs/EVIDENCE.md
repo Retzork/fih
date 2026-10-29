@@ -2186,3 +2186,216 @@ behavior or specs; follow up with a binary observation entry.
   prefix semantics remain unproven. Hashes and per-field notes:
   `docs/analysis/inputs/p2.13-saves-gamebanana-100/README.md`; analysis:
   `docs/analysis/notes/p2.13-saves.md`.
+
+### EV-0110 - P2.8 alien identity: one `Sexy::Alien` class plus a kind table (Q-0011 answered)
+- Date: 2026-10-29
+- Type: code trace (module decompilation) + wiki cross-check
+- Source: `docs/evidence/p2.8-alien-draw-4DB210.json` (`ev_` in file),
+  `docs/evidence/p2.8-fn-4DAE20.json` (`FUN_004DAE20`), `docs/evidence/p2.8-fn-4ECFA0.json`
+  (`FUN_004ECFA0`), `docs/evidence/p2.6b-selector-waves.json` (`FUN_00545620`),
+  `docs/evidence/p2.2-module-rtti-classes.txt`, `docs/analysis/inputs` wiki text
+- Confidence: high for the class/kind split and the image binding; medium for kind 1 vs 2
+- Notes: every hostile alien except Bilaterus is a `Sexy::Alien` (vtable `0x59740C`, type id
+  `+0x8C = 0x16`, alloc `0x208`) whose kind (`Alien+0x1EC`, copied from the spawn selection
+  `Tank+0x2BC`) drives stats, sprite, sound and attack code. There are no Sylvester/Balrog/
+  Gus/Destructor/Ulysses/Psychosquid/Cyrax RTTI classes; Q-0011 is answered. The kind -> species
+  binding is triple-sourced and agrees: (a) per-level types and the demo pools per tank,
+  (b) composite spawn pairs 9=1+3, 0xA=7+3, 0xB=5+6, 0xC=3+8, (c) one image pointer per kind in
+  the sprite switch (`1/2` -> `DAT_005e8ebc`, `3` -> `DAT_005e8cec`, `4` -> `DAT_005e8ae4`,
+  `5` -> `DAT_005e8ec8`, `6` -> `DAT_005e8e58`, `7` -> `DAT_005e8c4c`, `0x14` -> `DAT_005e8c0c`,
+  `0x15` -> `DAT_005e8cb8`, `8` -> no case because Bilaterus draws itself). Result: 1/2 Sylvester,
+  3 Balrog, 4 Gus, 5 Destructor, 6 Ulysses, 7 Psychosquid, 8 Bilaterus, 9-0xC composite
+  selections, 0x14 Minisylvester, 0x15 Cyrax. Kinds 1 and 2 share one image and differ only in
+  speed/HP (2.0/50 vs 1.6/60); the binary has no second Sylvester name (Q-0020). Kind 0 is the
+  tank1-L1 selection and has no stat branch, sprite case or hp init - see EV-0114 bounded note.
+
+### EV-0111 - P2.8 `Alien` ctor: per-kind hp/speed/box, field map, demo override, Cyrax scaling
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.8-alien-ctor-4ECFA0.json` / `.txt` (`FUN_004ECFA0`, base
+  `FUN_004E9CB0`, `Sexy::Alien::vftable`)
+- Confidence: high
+- Notes: ctor `(x, y, kind)` sets `+0x8C = 0x16`, x/y ints via ftol plus doubles at
+  `+0x160/+0x168`, box `+0x38/+0x3C = 160` (mini 80), intro timer `+0x158 = 15`, vx `+-3.0`,
+  facing `+0x1C8 = +-1.0`, `+0x1C0 = 1`, `+0x1A0 = 100` (mini 40), `+0x1A4 = 0`,
+  `+0x1A8 = 75` (demo 144), `+0x1AC = 0`, `+0x1DC/0x1E0 = 0`, `+0x1E4 = 300`, `+0x1E8 = 75`,
+  `+0x1D4 = 40`, `+0x1D8 = 20`, `+0x1D0 = rand()%10`, `+0x158 = 15`, hp copy `+0x1F8 = +0x1F0`.
+  Per kind (`+0x1B8` speed divisor / `+0x1F0` hp): 1 -> 2.0/50, 2 -> 1.6/60, 3 -> 1.2/130,
+  4 -> 1.6/100, 5 -> 1.2/150, 6 -> 3.5/220, 7 -> 0.5/260 (+cycle 200/400), 0x14 ->
+  `(rand%5)/10+0.8` / 1.0, 0x15 -> 2.0 / `5000 - 125*clamp(profile+0x54-1,0,20)`. Kinds 5 and 6
+  are forced to y 290 (int y 280) unless game mode is 5. Demo (`manager+0x880 != 0`) overwrites hp
+  with `rand%100+150` (kind 4: `rand%50+70`) and `+0x1A8 = 144`. `profile+0x54` is the Cyrax
+  defeat counter: the wave block increments it when the boss lost more than 1000 hp in the level
+  (EV-0113), so each cleared boss lowers the next Cyrax by 125 hp (5000 down to 2500).
+
+### EV-0112 - P2.8 Bilaterus: body, two heads (100 hp each), six bones, head swap
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.8-bilaterus-ctor-4FE000.json` / `.txt` (`FUN_004FE000`),
+  `docs/evidence/p2.8-bilaterus-update-4FE250.json` / `.txt` (`FUN_004FE250`),
+  `docs/evidence/p2.8-fn-4EE210.json` / `.txt` (`FUN_004EE210`),
+  `docs/evidence/p2.7-melee-damage.json` (`FUN_004FB4C0`)
+- Confidence: high for layout/hp/swap triggers; medium for `FUN_004FB1C0` semantics
+- Notes: `Sexy::Bilaterus` (`+0x8C = 0x17`, alloc `0x178`) owns head A `+0x158`, head B `+0x15C`,
+  a 6-entry bone list `+0x160`, byte `+0x164` (head lost), int `+0x168 = 8`, countdown
+  `+0x16C = 15`, swap counter `+0x170`; 50% of spawns call `FUN_004FB1C0()` (start on the other
+  head), otherwise sound `0x131`. Heads (`FUN_004EE210(parent,x,y,side)`, alloc `0x208`, vtable
+  `Sexy::BilaterusHead::vftable`) are 80x80, store the parent at `+0x158`, side at `+0x15E`,
+  `+0x160 = (side == 0)` and **hp `+0x1D8 = 100.0`**; other constants `+0x1A8 = 370`,
+  `+0x1AC = 10`, `+0x1B0 = 95`, `+0x1B4 = 540`, `+0x1BC = 40`, `+0x1D4 = 100`, `+0x200 = 12`.
+  Update order: VT warp-out (mode 5, base `+0x28 > 0x10E0`) with warp holes for both heads, sound
+  `0x136`, `FUN_004D6830`; `+0x16C` setup countdown; while `+0x164 == 0` every 1000 ticks swap the
+  active head and reset `+0x170`; head A update `FUN_004F0EA0`, 6 bones `FUN_004EDEA0`, head B
+  update; if head A `+0x1D8 <= 0` -> `FUN_004FB4C0` (destroy/swap, sets `+0x164 = 1`, clears
+  `+0x15C`, effects 4/5, sounds `0x11D`/`0x11E`). 100 hp per head with ~6 damage per laser hit is
+  the wiki's "17 hits per head".
+
+### EV-0113 - P2.8 `Alien::Update`: gates, movement, Destructor/Ulysses/Psychosquid/Cyrax attacks, death
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.8-alien-update-4FD560.json` / `.txt` (`FUN_004FD560`),
+  `docs/evidence/p2.8-fn-4F03D0.json` / `.txt` (`FUN_004F03D0`),
+  `docs/evidence/p2.8-fn-4E8B60.json` / `.txt` (`FUN_004E8B60`),
+  `docs/evidence/p2.8-fn-4E8DF0.json` / `.txt` (`FUN_004E8DF0`),
+  `docs/evidence/p2.8-fn-4F9C70.json` / `.txt` (`FUN_004F9C70`),
+  `docs/evidence/p2.8-fn-4D4580.json` / `.txt` (`FUN_004D4580`),
+  `docs/evidence/p2.7-melee-damage.json`
+- Confidence: high for the call order, constants and attack geometry; medium for the attack gate
+- Notes: `Update` bails on a missing tank or `Tank+0x94` (pause), runs `FUN_004F22C0`, applies the
+  mode-5 vertical ramp for kinds 5/6, the `+-3` intro drift while `+0x158 > 8`, the
+  `FUN_004F03D0` action gate, wander steering (quadrant `+0x1D0`, targets `+0x180/+0x188`,
+  0.1 steps, re-roll every 20 ticks at 10%), the Psychosquid cycle, bounds, integration,
+  `slot 0xA4(rand, rand)` + `FUN_004DAA00`, then the death check. Bounds: x -10..490 and
+  y 85..290 (mini 10..540 / 95..370), snapped not wrapped. The action gate is
+  `Tank+0x110 != 0 ? 1 : FUN_005392A0()`; when closed the alien may still act if it is Gus with
+  pellets in `Tank+0xAC` or a boss alien is alive. With the gate open, kinds 1/2/3/4/7/8/0x14 eat
+  (`FUN_004E8B60` nearest-target scan over `Tank+0xAC` for Gus and `Tank+0x108` otherwise, then
+  `FUN_004ED460`), kinds 5/6 shoot, a resting Psychosquid (`+0x204 != 0`) does nothing. Destructor:
+  `+0x1A4` -> `+0x1A8` (75) then up to 3 missiles `FUN_004E8DF0(1)` + `FUN_00544130(x+90/105/120,
+  y-35/-30/-25, target, 0)` (mirrored when facing left), sound `0x128`, next delay `rand%50+150`
+  (300 demo), `+0x1AC = 10`. Ulysses: one projectile 15 ticks early, two at the deadline at
+  `x+-0x46/+-0x4E, y-0x18/-0x10`, sound `0x143`, same delay. Psychosquid: `+0x194` -> `+0x198`
+  (400) flips `+0x204`, sets `+0x1AC = 10`, re-seeds `+0x194 = rand%100`, speed 0.5/2.0, sound
+  `0x135` + `FUN_00537F90(-1)` on rest. Cyrax: `FUN_00545580(x,y)` every `+0x1E8` (75), and while
+  `Tank+0xB8`/`Tank+0xF4` stay empty `+0x1DC` -> `+0x1E4` (300) then `Tank+0x700 = rand%6+4` and
+  `FUN_005475B0(count,1)` summons 4-9 Minisylvesters. Death (`FUN_004F9C70(from_shot)`): detach
+  `+0x98`, optional `FUN_00544430(x+0x19,y+0x19,4,0,0,-1.0,0)` when no boss is alive and
+  `FUN_004D70B0()` passes, base cleanup, then per-kind debris (Gus 2-3 + 4-6 pairs, mini smaller,
+  default 0-1 / 0-2), sounds `0x11D`/`0x11E` (`0x11F` mini), and a money drop through
+  `FUN_005442C0` carrying kind and facing for all kinds except Gus/mini; `FUN_004F9950`
+  unregisters. `FUN_004E8DF0` is the projectile target picker: it keeps the *farthest* eligible
+  object from `Tank+0x108` (types 5-0xA, type 0 via `FUN_00500FF0`, 0x14/0x15 only with a live
+  boss) and returns 0 when none exists. HP feedback: kind 4 flashes only with no boss, kind 5
+  flashes during `+0x1AC` 1..9, kind 7 uses rest rows while `+0x204`; the HP bar draws for Cyrax
+  and for regular aliens when `Tank+0x178 != 0` and tank index != 5.
+
+### EV-0114 - P2.8 wave clock, type re-roll, wiki comparison, explicit unknowns
+- Date: 2026-10-29
+- Type: code trace (module decompilation) + observation (wiki text) + bounded negatives
+- Source: `docs/evidence/p2.8-wave-block-547610.txt` (extracted from `p2.7-547610.json`,
+  `FUN_00547610`), `docs/evidence/p2.6b-selector-waves.json` (`FUN_00545620`),
+  `docs/evidence/p2.8-fn-4E8B60.json`, `docs/evidence/p2.8-fn-4D4580.json`
+- Confidence: high for the clock/milestones/re-roll expressions; medium for the timer meaning of
+  `FUN_005392A0`
+- Notes: the alien countdown `Tank+0x2C0` starts at 3000 and only decrements while
+  `Tank+0x2BC != 0`, `Tank+0x110 == 0` (no boss), `Tank+0x4F4 == 0`, and the lists `Tank+0xB8`,
+  `Tank+0xDC`, `Tank+0xF4` are all empty - the "one wave at a time" contract. Milestones: 276
+  tutorial message, 275 warp-hole prep + spawn-coordinate roll (`x = rand%450+20`,
+  `y = rand%195+105`), 33 sound when `Tank+0x4FE != 0`, 30 `FUN_00543F40` warning when
+  `Tank+0x198 != 0` and tank != 5, 1 `FUN_0054B1A0` event, 0 spawn + mode-4 extra spawns +
+  type re-roll + `Tank+0x45C++` + reset to 3000 (also sets `Tank+0x2C4 = 0x23`, clears `+0x4ED`).
+  Re-roll: tank1 L5 -> 3 or 9; tank2 L5 -> 4/5 toggle (10%) or 9 (5%); tank3 L2 -> 4/5 toggle
+  (10%), L5 -> 6 or 7; tank4 L3 -> 4 or 10 (50/50), L4 -> 8 or 11 (50/50), L5 -> 10 (40%), 11
+  (40%), 8 (20%), with an 8 becoming 0xC in mode 4 after wave 4. Mode 4 also adds
+  `wave / divisor` extra spawns (divisor 4/5/5/6 by tank, one less for type 0xC) and shows the
+  warp hole at countdown 2999; mode 5 delegates to `FUN_005394E0`/`FUN_00539330`; demo
+  (`manager+0x880 != 0`) delegates to `FUN_00537C20`. Wiki comparison: composite pairs match the
+  multi-alien levels, Destructor 3 homing missiles, Ulysses 2 balls, Psychosquid rest phase, Gus
+  fed not shot, Bilaterus 2 x 17 hits, Cyrax summons, ~7.7 s warning (276 ticks at 36 Hz) all
+  agree with the wiki. Explicit unknowns (Q-0020): kind 1 vs kind 2 identity; the exact condition
+  inside `FUN_005392A0` (used as the attack gate and as the wave block's level-complete test);
+  `FUN_004ED460` eat effects (the decompile did not return in this session); writers of
+  `Tank+0x178/0x4F4/0x4FE/0x4DE`; `FUN_004FB1C0` and `FUN_004DAA00` semantics; the base `+0x28`
+  tick that bounds the 4320-tick VT retreat. Bounded negatives: no `Tank+0x2BC == 0` early-out
+  exists in the wave block, so tank1 L1's type 0 does reach `FUN_00545620`, which builds a kind-0
+  `Alien` with no stat branch, no draw case and no `+0x1F0` init - do not model a kind-0 alien;
+  no hostile-alien subclasses exist beyond `Alien`/`Bilaterus*` (EV-0110).
+
+### EV-0115 - P2.8 corrections: eat approach decoded, death/drop rebuilt
+- Date: 2026-10-29
+- Type: code trace (module decompilation), **corrects EV-0113 and EV-0114**
+- Source: `docs/evidence/p2.8-fn-4ED460.json` / `.txt` (`FUN_004ED460`, returned late in the
+  session after the EV-0113 entry was written), re-read of `docs/evidence/p2.8-fn-4F9C70.txt`
+  (`FUN_004F9C70`), `docs/evidence/p2.7-pet-helpers-batch.json` (`FUN_00544430` body), EV-0047
+  (coin kinds/values), EV-0077 (`FUN_004D70B0` mode-5 spawn gate)
+- Confidence: high for the call graph, constants and gating
+- Notes: two statements in EV-0113 are wrong and are replaced here - `FUN_004ED460` is not the
+  eat operation and `FUN_005442C0` is not the money drop.
+  (1) **`FUN_004ED460()` is the approach step.** It re-runs `FUN_004E8B60()` for the nearest
+  eligible target, then steers `+0x170` (vx) / `+0x178` (vy) toward it: the alien point is its
+  box centre `(+0x160,+0x168)+80` (Minisylvester `+40`); the target point is the target's int
+  `(+0x30,+0x34)` + `0x14` for a Gus pellet (`+0x190 != 0`) and + `0x28` for everything else; vx
+  steps 0.1 while `|vx| < 1.8`; vy steps 0.1 (Gus-on-pellet 0.3, ceiling 3.0) while `|vy| < 1.8`.
+  It ends with `if (((+0x1A0 < 1) || (kind == 4)) && target != 0) FUN_004E8F70();` and returns
+  `target != 0`, which is what makes `FUN_004F03D0` skip the wander step. Eating is therefore a
+  *chase*: the bite/contact test lives in `FUN_004E8F70()` (still open, Q-0020). A flashing
+  non-Gus alien approaches but never bites.
+  (2) **The death drop is a Diamond, not `FUN_005442C0`.** Step 2 of `FUN_004F9C70` calls
+  `FUN_00544430(x+0x19, y+0x19, 4, 0, -1.0, 0)` = `Tank::SpawnCoin` with coin kind 4 =
+  **Diamond, base value 200** (EV-0047), gated only on `Tank+0x110 == 0`, `from_shot != 0` and
+  `FUN_004D70B0()`. The branch is **not** kind-gated, so Gus and Minisylvester drop it too;
+  `FUN_004D70B0` returns 1 outside mode 5 (EV-0077), so this is normal-play behavior. When
+  `from_shot == 0` the function only detaches `+0x98`, runs `FUN_004DB250()`/`FUN_00539C90()` and
+  unregisters - no coin, no debris, no animation call.
+  (3) **Debris counts, exact.** Gus: `(rand&1)+2` iterations of two `FUN_00538AC0` particles at
+  `(rand%0x46+0x1E, rand%0x46+0x1E)` and `(rand%0x32+0x32, rand%0x32+0x32)`; then `rand%3+4`
+  iterations of two `FUN_005436F0(x, y, size)` chunks with `size = rand%3+3` at
+  `(rand%0x32+0x14, …)` / `(rand%0x1E+0x28, …)`; then `(rand&1)+2` iterations of two chunks with
+  `size = (rand&1)+6`; sounds `0x11D` + `0x11E`; unregister and return. Minisylvester: the same
+  three loops with `rand%0x23`, `rand%0x19+10` and `rand%0xF+10`, one sound `0x11F`; return.
+  Default kinds: `rand&1` (0-1) particle iterations, `rand%3` (0-2) iterations of size 3-5, 0-1
+  iterations of size 6-7, sounds `0x11D` + `0x11E`, then
+  `FUN_005442C0(lookup2, lookup1, +0x1C0, +0x1EC, 0.0 < +0x170)` where
+  `lookup1 = FUN_00564160(+0x1C0, +0x1EC, facing)` and `lookup2 = FUN_00564160(lookup1)` - a pair
+  of resource lookups over (animation frame, kind, facing), i.e. a death animation or corpse, not
+  money. `FUN_004F9950` unregisters on every path.
+  (4) Consequence for the remake: the alien death reward is a flat 200-value coin per killed
+  alien in every mode and for every kind, independent of the debris/animation branch.
+
+### EV-0116 - P2.8: the bite (`FUN_004E8F70`) and the attack gate (`FUN_005392A0`)
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.8-fn-4E8F70.json` / `.txt`, `docs/evidence/p2.8-fn-5392A0.json` /
+  `.txt`, `docs/evidence/p2.2-module-rtti-classes.txt` (Alien vtable), `p2.3-feeding.md` §4/§7
+  (food field map, slot 77 consume), `docs/evidence/p2.7-melee-damage.json` (`+0x1F0` is hp)
+- Confidence: high for both bodies; the *intent* of the Gus pellet effect stays an open question
+- Notes: (1) **`FUN_005392A0()` is a Tank predicate** (ECX = Tank) returning 1 when any of three
+  list containers is non-empty - `Tank+0xA0` (the fish list; P2.7 reads its count), `Tank+0xA4`
+  and `Tank+0xD0` (the Penta list, P2.4/P2.5) - or when any of `FUN_004E3ED0()`, `FUN_004E3F00()`,
+  `FUN_004E3F30()`, `FUN_004E3F60()` returns non-zero; otherwise 0. Each list test is the usual
+  begin/end count (`end - begin >> 2 == 0` = empty). The four sub-predicates were not decompiled.
+  The alien attack gate `FUN_004D4580` therefore opens while a boss is alive or while the tank is
+  still "active" in this sense, and the wave block reuses the same predicate as its
+  level-complete test.
+  (2) **`FUN_004E8F70()` is the bite/consume step** that `FUN_004ED460` calls every tick while a
+  target is held. For Gus (kind 4) it scans the food list `Tank+0xAC`: a pellet is in reach when
+  Gus's centre (`+0x160`/`+0x168` + 80) lies inside `pellet.x - 0x19 .. pellet.x + 0x41` (and the
+  same in y), with `pellet+0x198 == 0` (edible) and this alien's `+0x200 < 6`. On a bite it
+  removes the pellet through `FUN_004D9570()` (the helper the fish consume also uses), sets
+  `+0x200 = 10`, calls `FUN_005384C0()`, and **subtracts from `+0x1F0`**: 30 / 25 / 20 for pellet
+  variants 3 / 5 / 4, `quality*2 + 4` for every other variant via `FUN_004E3E00()`, 20 for a
+  star-potion pellet (`pellet+0x188 == 3`, which also plays sound `0x11D` and spawns 1-3 debris
+  pairs), and 8 in demo. `+0x1F0` is the pool pet melee drains and `Update` kills at `<= 0`, so in
+  binary terms eating a pellet costs Gus health; the gameplay intent is recorded as open (Q-0020).
+  For every other kind the branch is gated by `FUN_00503580()` and, for non-Gus aliens, by
+  `+0x1A0 < 1`; it scans the creature list `Tank+0x108`, skipping objects with `+0xAC >= 0` or
+  `+0x120 > 0`, then applies a centre-to-centre reach test - `+-0x2D` x / `+-0x41` y for aliens
+  (`+-0x1E`/`+-0x1E` for Minisylvester), `+-0x46`/`+-0x55` for target type 6 - and on a hit calls
+  the alien's vtable slot `0x134/4 = 77` (the index Fish uses for `consume`) plus the target's
+  slot `0x12C/4 = 75`, then returns. Target eligibility: types 5-0xA unconditional, type 0 only
+  when `FUN_00500FF0()` returns 0, types 0x14/0x15 only while a boss alien is alive.
+  (3) The Alien vtable dump in `p2.2-module-rtti-classes.txt` is capped at 64 entries, so the
+  addresses behind slots 77 and 75 are not bound yet (bounded negative: nothing in the existing
+  dossiers maps them for `Alien`).
+  (4) This entry closes the "`FUN_004E8F70` still open" item of EV-0115 and the
+  "`FUN_005392A0` not decompiled" items of EV-0113/EV-0114; it does not alter their other claims.

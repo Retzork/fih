@@ -42,18 +42,41 @@ EV-0056) - **not** hostile aliens:
 Internal-only: `Sexy::DeadFish` (type 0x1B) = corpse with successor spawn (EV-0052/0053);
 `FishTypePet` (type 0x15) = pet-carried fish type, P2.7.
 
-## 2. Hostile aliens (open)
+## 2. Hostile aliens (bound in P2.8)
 
 Wiki entity roster (matches `resources.xml`, EV-0022): Sylvester (SYLV/MINISYLV), Balrog, Gus,
-Destructor, Ulysses, Psychosquid, Bilaterus, Boss. The module RTTI map
-(`docs\evidence\p2.2-module-rtti-classes.txt`) has **no** matching subclasses - only
-`Alien::Sexy` plus `Bilaterus`/`BilaterusHead`/`BilaterusBone` and the helper classes `DeadAlien`,
-`Missle` (Destructor missiles), `Larva`. Where the hostile alien types live is open (Q-0011);
-resolve in P2.8 by tracing the spawn waves and `Alien` ctor callers. Wiki HP figures (Sylvester
-10 hits, Balrog 22 hits, Bilaterus 17 per head) are wiki-only until P2.8 verifies them.
+Destructor, Ulysses, Psychosquid, Bilaterus, Boss. Q-0011 is answered (EV-0110): every hostile
+alien except Bilaterus is a `Sexy::Alien` instance whose **kind** (`Alien+0x1EC`, copied from the
+spawn selection `Tank+0x2BC`) selects stats, sprite and attack code. `Sexy::Bilaterus` + its
+`BilaterusHead`/`BilaterusBone` children are the only separate hostile classes; `DeadAlien` is a
+corpse object and `Missle`/`Larva` are projectiles.
 
-Per-level type selections observed in the binary are listed in the P2.6 note §8 (EV-0070);
-`0x15` is the tank-5 Cyrax boss selection, not a proven class identity.
+| Kind | Wiki species | Binary anchor |
+| --- | --- | --- |
+| 1 | Sylvester | image `DAT_005e8ebc`, hp 50, speed 2.0 |
+| 2 | Sylvester (variant) | same image, hp 60, speed 1.6 |
+| 3 | Balrog | image `DAT_005e8cec`, hp 130 |
+| 4 | Gus | image `DAT_005e8ae4`, hp 100, eats pellets |
+| 5 | Destructor | image `DAT_005e8ec8`, hp 150, 3 homing missiles |
+| 6 | Ulysses | image `DAT_005e8e58`, hp 220, 2 energy balls |
+| 7 | Psychosquid | image `DAT_005e8c4c`, hp 260, rest cycle |
+| 8 | Bilaterus | `FUN_004FE000`, 2 heads x 100 hp |
+| 9/0xA/0xB/0xC | composites | 1+3, 7+3, 5+6, 3+8 spawn recipes |
+| 0x14 | Minisylvester | image `DAT_005e8c0c`, hp 1 |
+| 0x15 | Cyrax | image `DAT_005e8cb8`, hp 2500-5000 |
+
+Wiki HP figures now agree numerically: Sylvester 10 hits (50 hp), Balrog 22 hits (130 hp),
+Bilaterus 17 hits per head (100 hp) all imply ~5-6 damage per laser hit (P2.10 confirms the
+damage table). Kinds 1 and 2 share one image and differ only in speed/HP; the wiki has no second
+Sylvester, so kind 2's story identity stays open (Q-0020). Per-level type selections and the
+type re-roll are in the P2.6 note §8 (EV-0070) and `p2.8-aliens.md` §5.
+
+"Gus eats pellets" is literal but not free: the bite removes the pellet and subtracts 4-30 from
+Gus' hp (`Alien+0x1F0`), the same pool pet melee drains (EV-0116). Treat the hp cost as an open
+gameplay question (Q-0020) - the wiki text on Gus could not be re-read on 2026-10-29 (HTTP 403).
+
+Minisylvester exists twice in the binary: the hostile summon (kind 0x14, `Sexy::Alien`) and the
+Virtual Tank prize fish (`Sexy::SylvesterFish`, type 0x22, §1). Do not merge them.
 
 ## 3. Money denominations (`Coin::Value` `FUN_004D53A0`, EV-0047)
 
