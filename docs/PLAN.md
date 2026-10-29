@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-29 (P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+Last updated: 2026-10-29 (P2.12 menus first pass landed - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
 click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
@@ -80,18 +80,20 @@ tank update, not the click handler (EV-0129); and `FUN_004D80C0` is an object-ki
 unreachable and every earlier "demo" reading of that predicate is withdrawn (EV-0130). Note
 `docs\analysis\notes\p2.11-modes.md`. New open item: Q-0024 (mode writer, `+0x19C` receiver,
 `Tank+0x4FE` writer, `+0x2DC`/`+0x2E0`, VT helpers).
-Next: P2.12 menus & UI flow. It is where three open items land: the **mode writer** (Q-0024 - nothing
-in the decompiled corpus writes `[manager+0x87C]`), the **StoreScreen population** (Q-0018 - the
-store item objects, the price display and the grey-out rules), and the **egg-purchase gating**
-(Q-0021 - the handler has no boss check, so only the UI can gate it). The mode texts and store
-banners are already indexed in `p2.2-game-module-strings.txt` (0x5A3C94-0x5A44F0, 0x5A26C0/0x5A26D4),
-and `FUN_0052B2D0`/`FUN_0054BCA0` are the known StoreScreen entries (P2.6). P2.8 residuals stay in
-Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the Gus pellet hp cost,
-`FUN_005442C0` death animation, tank flag writers). P2.6 remains open
+Next: finish P2.12. The mode writer (Q-0024) is answered and the store screen is mapped, so what is
+left is Q-0018's price/label/grey-out logic - five `StoreButtonWidget` overrides
+(0x531A30, 0x531A60, 0x531C30, 0x5319B0, 0x531A00) plus the Shell text refresh `FUN_005346D0` - and the
+remaining screen ctors, which the `xrefs`-the-vtable recipe reaches in two calls each (`HelpScreen`
+0x5A0A20/0x5A0A44, `HighScoreScreen` 0x5A0B60/0x5A0B84, `PetsScreen` 0x5A1020/0x5A1044,
+`HatchScreen` 0x5A08E0/0x5A0904, `SimFishScreen` 0x5A1280/0x5A12A4, `SimSetupScreen`
+0x5A13C8/0x5A13F0, `StoryScreen` 0x5A1770/0x5A1794, `InterludeScreen` 0x5A0DC0/0x5A0DE4, the three
+dialogs). Q-0025 holds the three loose ends (`manager+0x738`, the `profile+0x5A` clear, `profile+0x18`).
+P2.8 residuals stay in Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the
+Gus pellet hp cost, `FUN_005442C0` death animation, tank flag writers). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
 (credits trigger), Q-0017 (tank 6), Q-0018 (StoreScreen/store-item population), Q-0019
 (`scr%d.dat`). P2.5 leftovers: mode enum naming is **answered** (EV-0126); coin-hit intent Q-0010 ->
-runtime; VT beetle value. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
+runtime; VT beetle value. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008. 
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -289,7 +291,17 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   (EV-0128); Rapid Fire loop, answering Q-0023 (EV-0129); `FUN_004D80C0` decoded as an object-kind
   predicate and the "demo" label withdrawn (EV-0130). Note `docs\analysis\notes\p2.11-modes.md`.
   Open: Q-0024.)
-- [ ] **P2.12** Menus & UI flow: title/profile/options/help/store screens, dialog structure
+- [~] **P2.12** Menus & UI flow: title/profile/options/help/store screens, dialog structure
+  (2026-10-29 first pass: screen inventory + the two-vtable `ButtonListener` convention and the
+  vtable-xref recipe that finds any screen's constructor, `TitleScreen` and `GameSelector` ctors and
+  the eight-button main menu (EV-0131); the **mode writer** `FUN_0051F160` - ids 1/2/8/9 -> modes
+  0/5/1/4, the Time Trial and Challenge profile gates, the "Not Yet!" box and the demo-flag clear
+  (EV-0132, resolves Q-0024); `StoreScreen` field map + item rects, the store action dispatcher with
+  the mode-5 `BuyItem` bypass and the 0xF egg entry, and the dialog create/measure/push template
+  (EV-0133); the level-start dispatcher `FUN_00552380` and the `manager+0x738` teardown (EV-0134).
+  Note `docs\analysis\notes\p2.12-menus.md`. Open: Q-0018's item population/grey-out
+  (the five `StoreButtonWidget` overrides), the Shell text refresh `FUN_005346D0`, the remaining
+  screen ctors, Q-0025 (`manager+0x738` owner, the `profile+0x5A` clear, `profile+0x18`).)
 - [~] **P2.13** Save/profile format: writer/reader functions, file location, versioning, Steam paths
   (2026-10-21: live folder found at `C:\ProgramData\Steam\Insaniquarium\userdata`; sample
   `users.dat`/`user1.dat`/`adv1.dat` copied to `docs\analysis\inputs\p2.13-saves-2026-10-21`

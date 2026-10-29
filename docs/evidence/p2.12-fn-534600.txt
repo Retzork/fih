@@ -1,0 +1,35 @@
+
+void FUN_00534600(void)
+
+{
+  undefined4 *puVar1;
+  undefined4 *in_ECX;
+  CRect local_24 [20];
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00588aa6;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_0046dca0(DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+  *in_ECX = Sexy::MyLabelWidget::vftable;
+  in_ECX[0x28] = 0xf;
+  in_ECX[0x27] = 0;
+  *(undefined1 *)(in_ECX + 0x23) = 0;
+  local_8 = 1;
+  FUN_00433300();
+  FUN_00426be0(&DAT_005ad7a6,0);
+  in_ECX[0x2d] = 0;
+  puVar1 = (undefined4 *)CRect::CRect(local_24,0x6e,0xfa,0x6e,0xff);
+  in_ECX[0x29] = *puVar1;
+  in_ECX[0x2a] = puVar1[1];
+  in_ECX[0x2b] = puVar1[2];
+  in_ECX[0x2c] = puVar1[3];
+  in_ECX[0x2e] = DAT_005e8cd0;
+  ExceptionList = local_10;
+  return;
+}
+
+

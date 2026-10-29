@@ -138,6 +138,15 @@ mode-specific work is inside the tank update `FUN_00547610`, and the four first-
 match the wiki's mode names one-to-one, which is the strongest naming evidence we have for the
 codes 0/1/3/4/5. Details: `p2.11-modes.md` (EV-0126..EV-0130).
 
+P2.12 then found the writer and the entry gates: the GameSelector click callback `FUN_0051F160`
+sets mode 0 ("Adventure"/main button), 5 ("Virtual Tank"), 1 ("Time Trial") and 4 ("Challenge") and
+refuses two of them with the dialog texts "You'll need to complete a tank in Adventure Mode before
+this option becomes available." (Time Trial: `profile+0x1C < 2 && profile+0x59 == 0`) and "You'll
+need to beat Adventure Mode before this option becomes available." (Challenge: `profile+0x59 == 0`).
+That confirms the wiki's unlock gating in binary terms and leaves mode 3 (Sandbox) with **no** menu
+entry - its only observed entry condition stays `profile+0xB0 > 5` (EV-0065). Details:
+`p2.12-menus.md` (EV-0131/EV-0132).
+
 ## 5. Store prices (binary, EV-0072; first pass EV-0062 corrected)
 
 | Item id | Display name | Binary slot / price | Notes |

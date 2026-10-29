@@ -2761,3 +2761,139 @@ behavior or specs; follow up with a binary observation entry.
   `FUN_004FF4E0`, and the victim pointer `target+0x98` is always set by the spawner (Q-0024).
   Claims that read `manager+0x880` directly (EV-0111, EV-0115, EV-0120's damage gate) are
   unaffected and stand; only the function's name was wrong.
+
+### EV-0131 - P2.12 screen inventory, the two-vtable convention and the Title/GameSelector ctors
+- Date: 2026-10-29
+- Type: code trace (module decompilation) + RTTI table + literal dump
+- Source: `docs/evidence/p2.2-module-rtti-classes.txt` (rows 44-100),
+  `docs/evidence/p2.12-xrefs-{5A2220,5A2244,5A2104,5A1654}.json` / `.txt`,
+  `docs/evidence/p2.12-fn-at-52E0C1.json` / `.txt` (GameSelector ctor),
+  `docs/evidence/p2.12-fn-at-52EB94.json` / `.txt` (TitleScreen ctor),
+  `docs/evidence/p2.12-fn-at-51C169.json` / `.txt` (TitleScreen dtor),
+  `docs/evidence/p2.12-fn-51C2A0.json` / `.txt`, `docs/evidence/p2.12-fn-51AA30.json` / `.txt`,
+  `docs/analysis/snapshots/insaniquarium-game-module.exe` (vtable + literal bytes)
+- Confidence: high for the field offsets and the button table; the widget/rect binding and the
+  role of `FUN_0050FF90("give")` are unbound
+- Notes: (1) Every screen class is a widget container plus an embedded `Sexy::ButtonListener` at
+  `+0x88`; the object vtable is 64 slots at `+0x00`, the listener vtable is 7 slots (dtor + 6
+  callbacks) and the manager pointer is `in_ECX[0x23]` (= `+0x8C`). ButtonListener callbacks receive
+  `this = object+0x88`, so they read the manager as `[this+4]`. The listener slots a class does not
+  override all point at the shared no-op `0x46C690`. This is why screen code uses `[obj+0x8C]` while
+  the single-vtable gameplay classes use `[obj+0x88]` (P2.8).
+  (2) `xrefs` on a class vtable returns exactly two code writers - the destructor and the
+  constructor: TitleScreen 0x5A2104 -> {0x51C169, 0x52EB94}, GameSelector 0x5A2220 -> {0x51C300,
+  0x52E0C1} and 0x5A2244 -> {0x51C2FA, 0x52E0BB}, StoreScreen 0x5A1654 -> {0x51954B, 0x52B31F}.
+  Decompiling the non-destructor writer gives the constructor, which is how the two ctors below were
+  found.
+  (3) `TitleScreen` ctor `FUN_0052EB50(manager)` stores the manager at `+0xD4`, creates two image
+  widgets at `+0x8C`/`+0x90` (`FUN_004728E0(index, &this[0x22])`), labels the second one "Click Here
+  To Register!" and hides it when `app+0x71C`, `thunk_00479FC0()` or `app+0x71D` is set (else it
+  calls `FUN_0052D2E0`). Its `.text`/`.data`-order vtables are 0x5A20E4 (listener) and 0x5A2104
+  (object). The dtor `FUN_0051C140` sets both vtables, deletes the two children, frees the
+  `std::string` at `+0xA8` (capacity `+0xBC`, length `+0xB8`) and calls `FUN_0046DD50`; `FUN_0051C2A0`
+  is its scalar-deleting wrapper and is slot 0 of 0x5A2104. The listener slots 1 and 2 (`0x51AA30`,
+  `0x51AA50`) both just forward to `(*DAT_005EB6A4)->vtable[0xD8](DAT_005E8C40)` - the title screen
+  holds no menu logic.
+  (4) `GameSelector` ctor `FUN_0052E070(manager)` builds eight buttons with `FUN_00475090(id,
+  &this[0x22])` (image buttons: 1 at (0x165,0x30,0xD9,0x42) with bitmaps `DAT_005e8D80`/`...8CF8`/
+  `...8E00`, 2 "Virtual Tank" at (0x165,0x11F,0xD9,0x42), 9 "Challenge" at (0x167,0xD4,0xD5,0x30),
+  8 "Time Trial" at (0x167,0x8E,0xD5,0x30)) and `FUN_00506820(id, ...)` (text buttons: 3 "Options"
+  at (0x145,0x19C,0x5C,-), 4 at (0x202,0x19C,0x59,-), 6 "Hall of Fame" at (0x191,0x17C,0x7F,-),
+  7 at (0x1A3,0x19C,0x5D,-)); the 4-byte labels at 0x5A5BF4 and 0x5A5BEC are the NUL-terminated
+  strings `Quit` and `Help` in a consecutive literal pool that also holds `give` and `Options.`.
+  Fields: buttons at `+0x90/+0x94/+0x98/+0x9C/+0xA0/+0xA4/+0xA8/+0xAC`, overlay `+0xC4` (640x480),
+  timer `+0xDC = rand()%150+100`, timer `+0xE0 = rand()%500+200`, `FUN_0050FF90("give")` widget
+  `+0xCC`, `FUN_00504D30()` `+0xC8`, resource preloads `FUN_00505BA0(0x25..0x28)` x8 and
+  `FUN_00505BD0(0x61/0x62)`, then the banner trio `FUN_0054B170(2,0)`/`FUN_0054B020()`/
+  `FUN_0054B1A0(2,0,0)` when `manager+0x883 == 0`, and `FUN_005013F0()` when a profile exists.
+
+### EV-0132 - P2.12 the mode writer is the GameSelector button callback (resolves Q-0024)
+- Date: 2026-10-29
+- Type: code trace (module decompilation) + vtable byte dump
+- Source: `docs/evidence/p2.12-fn-at-51F160.json` / `.txt`,
+  `docs/analysis/snapshots/insaniquarium-game-module.exe` (vtable 0x5A2220 bytes),
+  `docs/evidence/p2.12-fn-552380.json` / `.txt`, `docs/evidence/p2.12-fn-54B360.json` / `.txt`
+- Confidence: high
+- Notes: (1) `FUN_0051F160(id)` is slot 2 of GameSelector's 7-slot ButtonListener vtable 0x5A2220
+  (`0x517910, 0x46C690, 0x51F160, 0x46C690 x3, 0x49B300`), so it is the single click callback the
+  menu overrides; `in_ECX` is `selector+0x88` and `[in_ECX+4]` is the manager.
+  (2) Every id first clears the demo flag `[manager+0x880] = 0`. Ids 1 -> `[manager+0x87C] = 0`,
+  2 -> `5`, 8 ("Time Trial") -> `1`, 9 ("Challenge") -> `4`; ids 3/4/6/7 are not mode buttons
+  (`FUN_0054C620(1)` options dialog, `FUN_005517F0()` quit, `FUN_005522D0()` hall of fame,
+  `FUN_0054C220(0)` help); 9999 -> `FUN_0054B5F0()`. The gates: Time Trial needs
+  `profile+0x1C >= 2 || profile+0x59 != 0`, Challenge needs `profile+0x59 != 0`, and a refused
+  press raises the 3-string "Not Yet!" box through `app->vtable[0x120](0xE, 1, ...)`.
+  (3) Paths differ: id 1/2 run `FUN_0054B360()` (remove + destroy the object at `manager+0x738` and
+  clear it) then `FUN_00552380(1,1)`; ids 8/9 run `FUN_0054B360()`, then
+  `if (FUN_0054CB20() == 0) FUN_0054C130();`.
+  (4) Consequence: modes 2 and 3 (Sandbox) have **no** writer anywhere in the corpus, so Q-0014
+  stays open and Sandbox's name rests on the UI text alone; the demo-flag clear confirms EV-0130's
+  reading of `manager+0x880`.
+
+### EV-0133 - P2.12 StoreScreen field map, store action dispatch, dialog template
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.12-fn-52B2D0.json` / `.txt`, `docs/evidence/p2.12-fn-54A370.json` /
+  `.txt`, `docs/evidence/p2.12-fn-54C620.json` / `.txt`, `docs/evidence/p2.12-fn-54B360.json` /
+  `.txt`, `docs/evidence/p2.12-fn-534600.json` / `.txt`, `docs/evidence/p2.12-fn-5517F0.json` /
+  `.txt`
+- Confidence: high for the fields, rects and dispatch table; the item ctor `FUN_005331A0` is a plain
+  field filler, so population/grey-out is not covered
+- Notes: (1) `FUN_0052B2D0(manager)` stores `[manager+0x320]` (render list) at `+0x10`,
+  `+0x1C4 = 0xC0` / `+0x1C8 = 0x6F` (row origin and pitch), the screen x/y from `manager+0xC0/C4`, then
+  builds eight item widgets at `+0x9C..+0xB8` in a loop (`FUN_005331A0` + `vtable[0x9C]` with a rect
+  from an 8-entry stack array), sets `+0x154 = 0x54` on the eighth and `+0x150 = 0` on items 4-7, a
+  Shell counter at `+0xC0` (`FUN_00534600`; `+0xB4 = 2`, `+0x30 = 0xEE`, `+0x34 = 0x1B7`,
+  `+0x38 = 0x50`, rect (250,155,150,255)), an `%d` buffer at `+0xC4`, `+0x1CC = rand()%150+100`, the
+  refresh hooks `FUN_0054B020()`/`FUN_0054B1A0()`, and a 640x480 `StoreScreenOverlay` at `+0x94`. The
+  item rects are (1,5,109,140), (1,143,109,140), (1,282,109,140), (193,38,98,140), (303,38,98,140),
+  (414,38,98,140), (525,38,98,140), (489,339,121,100) in creation order.
+  (2) The store action dispatcher is `FUN_0054A370(action)`: after the click sound it runs
+  `Tank::BuyItem` (`FUN_00549380`) only when `mode != 5 && action < 0xC`; the tail switch handles
+  0xA pet store (`FUN_0054BCA0`), 0xB `FUN_0054C060`, 0xC `FUN_0054C2D0`, 0xD `FUN_00551C90`,
+  0xE `FUN_005492B0` (only when `FUN_0054B4B0() == 0`) and 0xF the egg purchase `FUN_00552230`. So
+  Virtual Tank disables the item economy at the *caller* and the egg entry is reachable in every
+  mode - only a grey-out inside the item widget can gate it on the boss (Q-0018/Q-0021).
+  (3) Dialog creation `FUN_0054C620(flag)`: `FUN_0054B4C0()` (pause/retract), `new` 400-byte
+  `OptionsDialog` via `FUN_005349D0(this, flag)` (vtable 0x5A6040/0x5A6074), size from
+  `vtable[0x124]`, rect (0x8F,0x1A,0x15C,h), then `(*this)[0x12C](1, dlg)` pushes the window. Slots
+  0x120 (message box) and 0x12C (window push) are the two app-level dialog entry points.
+  (4) The Shell counter is a `Sexy::MyLabelWidget` (`FUN_00534600`): empty `std::string` (capacity
+  `+0xA0`), `FUN_00433300()` default colour, a placeholder rect at `+0xA4` and a font at `+0xB8`;
+  StoreScreen rewrites the rect (250,155,150,255) and the font (`DAT_005e8CE4`), and `FUN_005346D0`
+  refreshes the text. The quit button `FUN_005517F0` raises the `0xB` message box with
+  "Stop the insanity?" and a `Quit` button (`DAT_005a5BF4`), the same 0x5A5Bxx literal pool as the
+  menu labels.
+
+### EV-0134 - P2.12 level-start funnel, the `profile+0x5A` clear and the TankScreen builder
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.12-fn-552380.json` / `.txt`, `docs/evidence/p2.12-fn-54C130.json` /
+  `.txt`, `docs/evidence/p2.12-fn-54B170.json` / `.txt`, `docs/evidence/p2.12-fn-5331A0.json` /
+  `.txt`
+- Confidence: high for the control flow; the `profile+0x5A` intent and the `profile+0x18`
+  comparison are unresolved (Q-0025)
+- Notes: (1) `FUN_00552380(start, tutorial)` is the single level-start funnel: an in-flight session
+  wins (`FUN_0054BBB0()` -> `FUN_00552100()`), then `FUN_0054BC30()` (the tank create helper of
+  EV-0128), then the first-Virtual-Tank banner when `mode == 5 && DAT_005e963C == 0` (`DAT_005e8F16
+  = 1`, `DAT_005e963C = 1`, `FUN_005025F0(&LAB_0054B280, 0)`), then `if (start &&
+  FUN_0054CB20()) return;` (resume), then it clears 24 bytes at `profile+0x5A`, then the first-run
+  help (`tutorial && mode == 0 && profile+0x59 == 0 && profile+0x1C == 1 && profile+0x20 < 4 ->
+  FUN_0054C220(1)`), then the between-tanks stop (`FUN_0054B2A0() == 0 && mode != 5 && edx <
+  profile+0x18 && (mode != 0 || profile+0x1C != 5) -> FUN_0054C2D0()`), and only then
+  `FUN_0054CBF0()` (start_level, EV-0126).
+  (2) The 24-byte clear collides with P2.6 §1.5, which reads `profile+0x5A+i` to instantiate pets
+  at level start; `FUN_0054C540`/`FUN_00541A20`/`FUN_005498B0` were not decompiled here, so the
+  refill is unverified - tracked as Q-0025, and the remake must not clear its pet selection yet.
+  `profile+0x18` is compared against the second return word of `FUN_0054B2A0()` (Ghidra
+  `extraout_EDX`); the field is runtime-only (P2.13's `user%d.dat` starts at `+0x1C`).
+  (3) `FUN_0054C130()` (the Time Trial/Challenge follow-up of EV-0132) is the TankScreen builder:
+  `FUN_0054B4C0()`, `FUN_0054AED0()`, `screen = new(200) TankScreen` via `FUN_0052CB40`,
+  `manager+0x82C = screen`, `SetRect(0,0,manager+0xC0,manager+0xC4)`, then the render list
+  `[manager+0x320]` slot 0xC attach plus slot 0x30 (no tank) or 0x38 (with tank).
+  (4) `FUN_0054B170(a, b)` is the banner-already-shown predicate: it returns 1 when
+  `[manager+0x88C] == a && [manager+0x890] == b`. `Sexy::StoreButtonWidget` (vtable 0x5A719C) is the
+  store item class; its ctor `FUN_005331A0(id, listener, data)` chains `FUN_00475090`, stores the app
+  at `+0x120` and the data link at `+0xB0`, derives the three image records from `data+0x24/+0x28`
+  and reads **no** profile or price field, which is why Q-0018 narrows to its five overrides
+  (`0x531A30`, `0x531A60`, `0x531C30`, `0x5319B0`, `0x531A00`).

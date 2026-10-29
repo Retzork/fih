@@ -1,0 +1,46 @@
+
+void FUN_00552380(char param_1,char param_2)
+
+{
+  char cVar1;
+  int iVar2;
+  int in_ECX;
+  int extraout_EDX;
+  
+  cVar1 = FUN_0054bbb0();
+  if (cVar1 != '\0') {
+    FUN_00552100();
+    return;
+  }
+  FUN_0054bc30();
+  if ((*(int *)(in_ECX + 0x87c) == 5) && (DAT_005e963c == '\0')) {
+    DAT_005e8f16 = 1;
+    DAT_005e963c = '\x01';
+    FUN_005025f0(&LAB_0054b280,0);
+  }
+  if ((param_1 != '\0') && (cVar1 = FUN_0054cb20(), cVar1 != '\0')) {
+    return;
+  }
+  iVar2 = 0;
+  do {
+    *(undefined1 *)(iVar2 + 0x5a + *(int *)(in_ECX + 0x8b8)) = 0;
+    iVar2 = iVar2 + 1;
+  } while (iVar2 < 0x18);
+  if ((((param_2 != '\0') && (*(int *)(in_ECX + 0x87c) == 0)) &&
+      (iVar2 = *(int *)(in_ECX + 0x8b8), *(char *)(iVar2 + 0x59) == '\0')) &&
+     ((*(int *)(iVar2 + 0x1c) == 1 && (*(int *)(iVar2 + 0x20) < 4)))) {
+    FUN_0054c220(1);
+    return;
+  }
+  cVar1 = FUN_0054b2a0();
+  if (((cVar1 == '\0') && (*(int *)(in_ECX + 0x87c) != 5)) &&
+     ((extraout_EDX < *(int *)(*(int *)(in_ECX + 0x8b8) + 0x18) &&
+      ((*(int *)(in_ECX + 0x87c) != 0 || (*(int *)(*(int *)(in_ECX + 0x8b8) + 0x1c) != 5)))))) {
+    FUN_0054c2d0();
+    return;
+  }
+  FUN_0054cbf0();
+  return;
+}
+
+

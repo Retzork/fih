@@ -188,6 +188,9 @@
   refresh, the egg handler and the alien/missile code have **no** `mode == 2` branch, no mode-2
   string and no writer for the field at all, so P2.11 could neither name nor refute it. The
   selector and any mode-2 entry belong to the menu layer (P2.12).
+- 2026-10-29 update (P2.12, EV-0131): the menu layer is now mapped and it does not create mode 2
+  either - the GameSelector callback writes only 0, 1, 4 and 5. Mode 2 and mode 3 (Sandbox) both
+  remain writer-less in the corpus, so 3's name rests on the UI text alone and 2 stays unnamed.
 
 ### Q-0015 - `profile+0x58` reader and `profile+0x50` semantics
 - OPEN (2026-10-20, EV-0066/EV-0069/EV-0075). `profile+0x58` is set to 1 by every
@@ -349,10 +352,13 @@
 
 ### Q-0024 - P2.11 residual mode/mode-predicate questions
 - OPEN (2026-10-29, EV-0126-EV-0130). What P2.11 could not bind; none blocks the mode table:
-- **Mode writer.** `[manager+0x87C]` is read by >20 sites and **written by none** of the committed
-  decompiled bodies (bounded negative over `docs/evidence/*.txt`). The selector is menu code and is
-  handed to P2.12 together with the mode-2 value (Q-0014). Do not infer the writer from the UI
-  strings alone.
+- **Mode writer - ANSWERED** (2026-10-29, P2.12, EV-0131). The writer is the GameSelector
+  `ButtonListener` callback `FUN_0051F160(button_id)`: id 1 -> mode 0, id 2 -> mode 5, id 8 ("Time
+  Trial") -> mode 1, id 9 ("Challenge") -> mode 4, id 3 -> options dialog, id 4 ("Quit") -> exit,
+  id 6 -> hall of fame, id 7 ("Help") -> help screen, id 9999 -> `FUN_0054B5F0`. Every entry first
+  clears the demo flag `manager+0x880`, and ids 8/9 are gated on the profile (`+0x1C >= 2` /
+  `+0x59 != 0` for Time Trial, `+0x59 != 0` for Challenge) with a "Not Yet!" dialog below the gate.
+  Modes 2 and 3 still have no writer (Q-0014).
 - **`FUN_004D80C0` receiver.** The body is `dword[this+0x19C] in {3,4,5}` (EV-0130) and it has 11
   call sites across the missile/larva/alien/spawner code; for missiles the offset is the kind, for
   aliens it is a byte flag, so the per-call receiver class is not uniform and not proven. Consequence
@@ -368,3 +374,21 @@
 - **VT session helpers.** `FUN_005394E0` (populate), `FUN_0053A4F0` (store), `FUN_0053AA00` (HUD),
   `FUN_0054BC30` (create) and `FUN_0054B3A0` (load) are named by call site only; the `sim%d.dat`
   payload itself is P2.13.
+
+### Q-0025 - P2.12 residual screen-flow questions
+- OPEN (2026-10-29, EV-0131-EV-0134). Three loose ends from the menu pass; none blocks the flow
+  map:
+- **`manager+0x738` owner.** `FUN_0054B360()` removes the object at `[manager+0x738]` from the
+  render list `[manager+0x320]`, destroys it through manager vtable slot 0x88 and clears the field;
+  it runs before every mode start (EV-0132). No ctor in the corpus writes the field (bounded
+  negative over `docs/evidence/*.txt`), and it is **not** the Tank (`manager+0x730`) nor the tank
+  screen (`manager+0x82C`, EV-0134). Do not bind it to a class in the remake; treat the teardown as
+  "close whatever screen is open".
+- **`profile+0x5A` clear.** The level-start funnel clears 24 bytes at `profile+0x5A` before
+  `start_level` (EV-0134), while P2.6 §1.5 reads the same array to instantiate pets. Until
+  `FUN_0054C540`/`FUN_00541A20`/`FUN_005498B0` are decompiled, the remake must **not** clear the pet
+  selection on level start; the array's role is the open point (selected pets vs a per-run copy).
+- **`profile+0x18`.** Compared against the second return word of `FUN_0054B2A0()` (Ghidra's
+  `extraout_EDX`) in the between-tanks branch (EV-0134). The field is not in `user%d.dat` (the file
+  starts at `+0x1C`), so it is runtime state; "current tank < unlocked tanks" is a reading, not
+  evidence.

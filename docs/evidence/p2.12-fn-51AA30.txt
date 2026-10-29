@@ -1,0 +1,9 @@
+
+void FUN_0051aa30(void)
+
+{
+  (**(code **)(*DAT_005eb6a4 + 0xd8))(DAT_005e8c40);
+  return;
+}
+
+

@@ -1,18 +1,19 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
 **Handover status: Phase 2 in progress (2026-10-29).** Phase 0, Phase 1 and Phase 3 are
-complete; Phase 2 is 9/18 done. P2.1-P2.4, P2.7-P2.11 are closed, P2.5 and P2.6 are
-substantially complete with tracked open questions, and **P2.12 (menus & UI flow) is the next
-planned system**. Phase 4 (Godot gameplay implementation) has not started: the repository currently
-contains the Godot project shell plus the imported sprite resources. `PLAN.md` is the source
-of truth for progress.
+complete; Phase 2 is 9/18 done with **P2.12 (menus & UI flow) in progress**. P2.1-P2.4, P2.7-P2.11
+are closed, P2.5 and P2.6 are substantially complete with tracked open questions, and P2.12 has
+its first pass done (screen map, mode writer, store screen, level-start flow). Phase 4 (Godot
+gameplay implementation) has not started: the repository currently contains the Godot project shell
+plus the imported sprite resources. `PLAN.md` is the source of truth for progress.
 
 ## Start here
 
 1. **New agent session:** read `../AGENTS.md` first, then `PLAN.md` (mandatory). Follow the
    session-end checklist in `AGENTS.md`.
-2. **Want the current state quickly?** Read the `P2.11` entry in `PLAN.md`, then
-   `analysis/notes/p2.11-modes.md` (the four shipped modes, Virtual Tank, EV-0126..EV-0130).
+2. **Want the current state quickly?** Read the `P2.12` entry in `PLAN.md`, then
+   `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen, level-start
+   flow, EV-0131..EV-0134), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -23,11 +24,29 @@ of truth for progress.
 | --- | --- |
 | P0 environment / tooling | Complete (13/13) |
 | P1 target identity | Complete (10/10) |
-| P2 reverse engineering | In progress (9/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.11 `[x]`; P2.13 `[~]`; P2.12+ pending |
+| P2 reverse engineering | In progress (9/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.11 `[x]`; P2.12 `[~]`; P2.13 `[~]`; P2.14+ pending |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
 | P4 Godot implementation | Not started (0/14) |
 | P5 validation / polish | Not started (0/5) |
 
+- **P2.12 menus & UI flow (2026-10-29, first pass):** every screen class is a widget container plus
+  an embedded `Sexy::ButtonListener` at `+0x88` (manager at `+0x8C`, callbacks get `object+0x88`),
+  and `xrefs` on a class vtable returns exactly its destructor and constructor - which is how
+  `TitleScreen` (0x52EB50), `GameSelector` (0x52E070), `StoreScreen` (0x52B2D0) and `TankScreen`
+  (0x52CB40) were located (EV-0131). The main menu has eight buttons; the **mode writer** is its
+  click callback `FUN_0051F160`: id 1 -> 0 Adventure, 2 -> 5 Virtual Tank, 8 "Time Trial" -> 1,
+  9 "Challenge" -> 4, with "Not Yet!" gates on `profile+0x1C`/`+0x59` and the demo flag
+  `manager+0x880` cleared on every press (EV-0132, resolves Q-0024). `StoreScreen`'s field map, its
+  eight item slots and the action dispatcher (Virtual Tank bypasses `BuyItem`, action 0xF is the egg
+  purchase) are mapped, as is the dialog create/measure/push template (EV-0133). The level-start
+  funnel `FUN_00552380` and the `TankScreen` builder `FUN_0054C130` close the loop (EV-0134).
+  Evidence is EV-0131..EV-0134; the note (`analysis/notes/p2.12-menus.md`) ends with an
+  "Implementation spec for P4" section (D-0008).
+- **P2.12 still open (Q-0018, Q-0025):** the store item price/label/grey-out lives in five
+  `StoreButtonWidget` overrides (0x531A30/0x531A60/0x531C30/0x5319B0/0x531A00) that are not
+  decompiled, the Shell label text refresh `FUN_005346D0` is unread, `manager+0x738` has no known
+  owner, the 24-byte `profile+0x5A` clear contradicts the pet-selection reading (Q-0025) and
+  `profile+0x18` is unbound. Do not guess these.
 - **P2.11 game modes (2026-10-29)** mapped all four shipped modes off the single binding
   `mode = [manager+0x87C]`: 0 Adventure, 1 Time Trial, 3 Sandbox, 4 Challenge, 5 Virtual Tank
   (2 is referenced but never observed). `FUN_0054CBF0` is `start_level`, and the per-mode work
@@ -39,10 +58,9 @@ of truth for progress.
   found here too (period `11 - level/2` ticks, ≥100 ms apart, missiles -> larvae -> aliens).
   Evidence is EV-0126..EV-0130; the note (`analysis/notes/p2.11-modes.md`) ends with an
   "Implementation spec for P4" section (D-0008).
-- **P2.11 still open (Q-0024):** nothing in the decompiled corpus writes `manager+0x87C`, so the
-  mode comes from the un-analyzed menu layer (-> P2.12); the receiver class of `FUN_004D80C0`,
-  the `Tank+0x4FE` writer, the `Tank+0x2DC/+0x2E0` pair and the VT session helpers stay open.
-  Do not guess these.
+- **P2.11 still open (Q-0024):** the mode writer is answered by P2.12 (EV-0132); still open are the
+  receiver class of `FUN_004D80C0`, the `Tank+0x4FE` writer, the `Tank+0x2DC/+0x2E0` pair and the VT
+  session helpers. Modes 2 and 3 have no writer, so Q-0014 stays open. Do not guess these.
 - **P2.10 weapons & projectiles (2026-10-29)** proved that a click *is* the shot: the tank handler
   `FUN_00543920` resolves one click through six stages (bonus round, the boss-only `Tank+0xBC` list,
   the boss, `Tank+0xB8` aliens, `Tank+0xDC` larvae, `Tank+0xF4` missiles, feed) and there is no
@@ -103,9 +121,11 @@ of truth for progress.
   `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
   runtime; VT beetle value. See `PLAN.md`.
-- **Next planned task:** P2.12 menus & UI flow. Three open questions land there: the mode writer
-  (Q-0024, nothing writes `[manager+0x87C]` in the gameplay module), the StoreScreen population
-  (Q-0018) and the egg-purchase gating (Q-0021).
+- **Next planned task:** finish P2.12 - decompile the five `StoreButtonWidget` overrides (Q-0018's
+  price/grey-out) and the Shell text refresh, then walk the remaining screen ctors with the vtable-xref
+  recipe (`HelpScreen` 0x5A0A20/0x5A0A44, `HighScoreScreen` 0x5A0B60/0x5A0B84, `PetsScreen`,
+  `HatchScreen`, `SimFishScreen`, `SimSetupScreen`, `StoryScreen`, `InterludeScreen`) and the three
+  dialogs. Q-0025's `profile+0x5A` clear is the one item that needs the session-init functions.
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
 ## What is in the repository
@@ -179,20 +199,20 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0130). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0134). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
-| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10 and P2.11 opens. |
-| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.10-weapons.md`, `p2.11-modes.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
+| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11 and P2.12 opens. |
+| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.11-modes.md`, `p2.12-menus.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
 | `analysis/` | Inventories (`resources.json`, `extraction.json`, ...), snapshots (gitignored), evidence maps. |
 | `evidence/` | Raw REA evidence JSON exports cited by EV IDs. |
 
 ## Handover checklist
 
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
-- [ ] Read the latest EVIDENCE entries and the current system note (`p2.11-modes.md` now).
-- [ ] Pick the next task from `PLAN.md` (`P2.12` menus & UI flow next); check its open questions
-  first.
+- [ ] Read the latest EVIDENCE entries and the current system note (`p2.12-menus.md` now).
+- [ ] Pick the next task from `PLAN.md` (finish `P2.12` menus & UI flow); check its open questions
+  (Q-0018, Q-0025) first.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended
   `EVIDENCE.md`, `DECISIONS.md` questions, note's P4 spec, saved raw output, and a commit.

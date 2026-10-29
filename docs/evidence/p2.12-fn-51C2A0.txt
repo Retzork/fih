@@ -1,0 +1,15 @@
+
+void FUN_0051c2a0(byte param_1)
+
+{
+  void *in_ECX;
+  
+  FUN_0051c140();
+  if ((param_1 & 1) != 0) {
+                    /* WARNING: Subroutine does not return */
+    _free(in_ECX);
+  }
+  return;
+}
+
+
