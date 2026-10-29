@@ -1,0 +1,91 @@
+﻿
+void FUN_004ffb30(void)
+
+{
+  char cVar1;
+  int iVar2;
+  undefined4 uVar3;
+  uint uVar4;
+  uint uVar5;
+  int iVar6;
+  int *in_ECX;
+  int extraout_EDX;
+  
+  if ((*(int *)(in_ECX[0x22] + 0x730) == 0) ||
+     (*(char *)(*(int *)(in_ECX[0x22] + 0x730) + 0x94) != '\0')) {
+    return;
+  }
+  FUN_004f22c0();
+  if ((0 < in_ECX[0x6a]) && (iVar2 = in_ECX[0x6a] + 1, in_ECX[0x6a] = iVar2, in_ECX[0x6b] <= iVar2))
+  {
+    FUN_004d80e0();
+    return;
+  }
+  cVar1 = FUN_004ff4e0();
+  if (cVar1 != '\0') {
+    return;
+  }
+  iVar2 = in_ECX[0x67];
+  if (iVar2 == 0) {
+LAB_004ffc0e:
+    if (550.0 < *(double *)(in_ECX + 0x56)) {
+      in_ECX[0x56] = 0;
+      in_ECX[0x57] = 0x40813000;
+    }
+    if (*(double *)(in_ECX + 0x56) < 10.0) {
+      in_ECX[0x56] = 0;
+      in_ECX[0x57] = 0x40240000;
+    }
+    if (370.0 < *(double *)(in_ECX + 0x58)) {
+      in_ECX[0x58] = 0;
+      in_ECX[0x59] = 0x40772000;
+    }
+    if (*(double *)(in_ECX + 0x58) < 95.0) {
+      in_ECX[0x58] = 0;
+      in_ECX[0x59] = 0x4057c000;
+    }
+  }
+  else {
+    if (iVar2 == 1) {
+      if ((char)in_ECX[100] == '\0') goto LAB_004ffc0e;
+    }
+    else if ((iVar2 != 2) && (cVar1 = FUN_004d80c0(), iVar2 = extraout_EDX, cVar1 == '\0'))
+    goto LAB_004ffc82;
+    if ((((580.0 < *(double *)(in_ECX + 0x56)) || (*(double *)(in_ECX + 0x56) < -20.0)) ||
+        (380.0 < *(double *)(in_ECX + 0x58))) || (*(double *)(in_ECX + 0x58) < 45.0)) {
+      FUN_004d80e0();
+      return;
+    }
+  }
+LAB_004ffc82:
+  if ((iVar2 == 2) && ((char)in_ECX[100] != '\0')) {
+    *(double *)(in_ECX + 0x5c) = *(double *)(in_ECX + 0x5c) + 0.2;
+  }
+  *(double *)(in_ECX + 0x56) =
+       *(double *)(in_ECX + 0x5a) / *(double *)(in_ECX + 0x62) + *(double *)(in_ECX + 0x56);
+  *(double *)(in_ECX + 0x58) =
+       *(double *)(in_ECX + 0x5c) / *(double *)(in_ECX + 0x62) + *(double *)(in_ECX + 0x58);
+  if (0 < in_ECX[0x5f]) {
+    in_ECX[0x5f] = in_ECX[0x5f] + -1;
+  }
+  iVar2 = *in_ECX;
+  uVar3 = FUN_00564160();
+  uVar3 = FUN_00564160(uVar3);
+  (**(code **)(iVar2 + 0xa4))(uVar3);
+  if ((in_ECX[0x67] == 0) && (uVar4 = FUN_0040aeb0(), uVar4 % 3 == 0)) {
+    uVar4 = FUN_0040aeb0();
+    uVar5 = FUN_0040aeb0();
+    uVar3 = 8;
+    iVar2 = FUN_00564160(8);
+    iVar2 = in_ECX[0xd] + iVar2 * -0x10 + 0x11 + uVar5 % 5;
+    iVar6 = FUN_00564160(iVar2);
+    FUN_005436f0(in_ECX[0xc] + iVar6 * -0x14 + 0x11 + uVar4 % 5,iVar2,uVar3);
+  }
+  FUN_004e2170();
+                    /* WARNING: Could not recover jumptable at 0x004ffdbc. Too many branches */
+                    /* WARNING: Treating indirect jump as call */
+  (**(code **)(*in_ECX + 0x44))();
+  return;
+}
+
+

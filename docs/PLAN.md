@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-29 (P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done except P2.11-linked
+Last updated: 2026-10-29 (P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done except P2.11-linked
 naming; P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
@@ -56,10 +56,26 @@ shot hit handler `FUN_004FA6F0` gives the damage model - inside-box test only, 1
 death call (EV-0120); the same formula at the base weapon level 2 gives the 6 damage per hit that the
 wiki's hit counts imply (EV-0121). Note `docs\analysis\notes\p2.9-bosses.md`. New open items: Q-0021 (egg purchase
 not boss-gated at handler level) and Q-0022 (`profile+0x54` naming, `from_shot` at the shot kill).
-Next: P2.10 weapons & projectiles. P2.9 supplies the damage contract it must not duplicate
-(`FUN_004FA6F0` already owns shot damage: `3*Tank+0x3E4`, one hit per 10 ticks), so P2.10 should map
-the laser/click pipeline that calls it, the weapon-upgrade item's effect on `Tank+0x3E4`, the
-Destructor/Ulysses projectile bodies and collision. P2.8 residuals stay in
+P2.10 weapons & projectiles (2026-10-29): a click *is* the shot - `FUN_00543920` resolves one click
+through bonus round -> `Tank+0xBC` (boss-only) -> boss `Tank+0x110` -> `Tank+0xB8` aliens ->
+`Tank+0xDC` `Larva::HitTest` -> `Tank+0xF4` `Missle::HitTest` -> feed, with no player weapon object,
+no weapon cooldown and no player projectile (EV-0122); the upgrade cap is **12**, not 0xB (corrects
+EV-0057), and the 11 -> 12 purchase shows "Hold down mouse button for Rapid Fire!" (EV-0123); the
+projectile class pair `Sexy::Missle`/`Sexy::Larva` is mapped - spawner `FUN_00544130`, ctor field
+table with kinds 0/1/2 (80x80 or 50x50 box, speed divisor 0.8 or 0.4, 15-tick spawn immunity,
+10-tick expiry, victim lock `target+0x98`) (EV-0124); update bounds/gravity/smoke trail, the
+shoot-down and deflect hit tests and the `Larva` fall/shell-payout path (EV-0125). Note
+`docs\analysis\notes\p2.10-weapons.md`. New open item: Q-0023 (laser draw/frame binding,
+`Tank+0xBC` identity, `Larva` role, `FUN_004FF4E0` homing, Rapid Fire implementation).
+Next: P2.11 game modes (Adventure, Challenge, Time Trial, Virtual Tank). It must build on what is
+already bound instead of re-deriving it: the mode enum `[manager+0x87C]` with observed values
+0/1/3/4/5 (Q-0014 leaves mode 2), the `FUN_005404A0` mode toggles (Wavy/Prego/Void/Space/Zombie) and
+`Tank::SetTankIndex` 1..6 (EV-0046), the Time Trial 300/600 s timers and `money*5/100` bonus (P2.6),
+the Virtual-Tank roster spawner `FUN_0051B260` and coin multiplier (P2.5), the demo predicate
+`FUN_004D80C0` that the missile ctor and the boss code branch on, and the `Larva` shells payout
+P2.10 left open (`Tank+0x4A8++` + `FUN_0053C1E0`) - a Bonus Adventure or Virtual-Tank pickup object
+is the leading candidate. P2.5 leftovers that belong there: mode-enum naming and the coin-hit intent
+(Q-0010, runtime). P2.8 residuals stay in
 Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the Gus pellet hp cost,
 `FUN_005442C0` death animation, tank flag writers). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
@@ -75,7 +91,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 7 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 8 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -247,7 +263,15 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   `FUN_004FA6F0`: box test, 10-tick cooldown, `3*Tank+0x3E4` damage, knockback, Psychosquid heal,
   death (EV-0120), plus the 6-per-hit cross-check at the base weapon level (EV-0121). Note
   `docs\analysis\notes\p2.9-bosses.md`. Open: Q-0021, Q-0022.)
-- [ ] **P2.10** Weapons & projectiles: laser upgrades, missiles/perks, collision and damage math
+- [x] **P2.10** Weapons & projectiles: laser upgrades, missiles/perks, collision and damage math
+  (2026-10-29 complete: one click = one shot through `FUN_00543920` with a fixed six-stage order
+  (bonus -> `Tank+0xBC` boss-only -> boss -> `Tank+0xB8` aliens -> `Tank+0xDC` larva -> `Tank+0xF4`
+  missiles -> feed), spark `FUN_00543640(x-0x28, y-0x28)`, tick stamps `Tank+0x4ED`/`+0x4EC`, and
+  no player weapon object or cooldown (EV-0122); weapon cap 12 correcting EV-0057 plus the level-12
+  "Rapid Fire" hint (EV-0123); `Sexy::Missle`/`Sexy::Larva` spawner and ctor field map, kinds
+  0/1/2 with their box/speed/gravity values, victim lock `target+0x98` (EV-0124); update
+  bounds/trail, the shoot-down and deflect hit tests and the `Larva` fall/shell payout (EV-0125).
+  Note `docs\analysis\notes\p2.10-weapons.md`. Open: Q-0023.)
 - [ ] **P2.11** Game modes: Adventure, Challenge, Time Trial, Virtual Tank (screensaver ecosystem)
 - [ ] **P2.12** Menus & UI flow: title/profile/options/help/store screens, dialog structure
 - [~] **P2.13** Save/profile format: writer/reader functions, file location, versioning, Steam paths

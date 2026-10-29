@@ -296,3 +296,38 @@
   this call site, so a shot kill producing no coin is not excluded. Not player-visible for Cyrax
   (`Tank+0x110 == 0` is required for the drop and is set only after the unregister), so it only
   affects ordinary aliens.
+
+### Q-0023 - P2.10 residual weapon/projectile questions
+- OPEN (2026-10-29, EV-0122-EV-0125). Five items the P2.10 pass could not bind; none blocks the P4
+  click handler, and none may be guessed in the remake:
+- **Laser draw and frame selection.** `IMAGE_LASERS` (`lasers.gif`, 6x10 = 60 frames of 80x48) and
+  `IMAGE_LASERUPGRADES` are the only laser art in `resources.xml`, but **no decompiled weapon
+  function references either image** - not the click handler `FUN_00543920`, not `Tank::BuyItem`
+  `FUN_00549380`, not the store refresh `FUN_005406A0`. `FUN_00538AE0` (called at the end of every
+  resolved click) and `FUN_00543640` (the spark spawner) are the likely draw entry, but neither is
+  decoded. The "row = upgrade tier, column = animation" split is an asset-level guess only; keep the
+  sprite/frame choice a parameter until `FUN_00538AE0` is decompiled (P2.11/P4 runtime check).
+- **`Tank+0xBC` list identity.** The click handler walks it *before* the boss and only while
+  `Tank+0x110 != 0`, and it calls `Alien::HitTest` on each element, so the elements are aliens of
+  some kind. `Tank+0xB8` is the ordinary alien list (P2.8 §5). Bounded negative: the only `+0xBC`
+  writes in the committed decompiled corpus (`docs/evidence/p2.8-wave-block-547610.txt` lines 522
+  and 658) copy a `CRect` into a UI object at `in_ECX[0x46]`, not into the tank, so no traced spawn
+  path writes `Tank+0xBC`. It may be a second wave/late-spawn container that is simply empty in
+  normal play; do not populate it in the remake until a writer is found.
+- **`Sexy::Larva` gameplay identity.** Its `Update` has two modes: a fall that despawns at `y < 64`
+  and, more tellingly, a lerp to `(550, 30)` that **pays out shells** (`Tank+0x4A8++` +
+  `FUN_0053C1E0`, P2.6's Shells routing helper). A projectile class paying shells is not something
+  the wiki describes, and the `Larva` vtable is shared with the missiles, so this is likely a
+  bonus-round or Virtual-Tank pickup object. No spawn site for it was found. Model the shells
+  payout behind a flag and resolve in P2.11.
+- **`FUN_004FF4E0` homing body and `FUN_004FE480` missile box test.** Both are referenced by
+  `Missle::Update`/`Missle::HitTest` and neither is decompiled, so the steering curve (turn rate,
+  target offset) and the clickable hitbox of a missile are unproven. `FUN_004FE480` gates on
+  `+0x158 != 0`, i.e. on the double x having been set, which suggests a radius/box helper on the
+  float position - not confirmed.
+- **Rapid Fire implementation.** Level 12 shows `"Hold down mouse button for Rapid Fire!"`
+  (`FUN_005406A0`, item 10, `Tank+0x3E4 > 0xB`), but no auto-repeat loop was found in the tank
+  update, and the click handler `FUN_00543920` is a plain bound handler (one shot per OS click).
+  Either the repeat lives in the platform input layer that feeds `FUN_0046E3A0`, or the flag is
+  read somewhere not yet traced. The remake should implement hold-to-fire keyed on
+  `weapon_level > 11` and record the divergence (see `p2.10-weapons.md` §3/§6).

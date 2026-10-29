@@ -2532,3 +2532,103 @@ behavior or specs; follow up with a binary observation entry.
   hit). This supports the "one field, two uses" reading (pet capacity + shot damage) and removes
   EV-0120's open worry about a missing damage source; P2.10 still owns the click/laser pipeline and
   the store item's write. It does not establish what the wiki counted for other kinds.
+
+### EV-0122 - P2.10 the tank click handler: one click = one shot, resolved in a fixed order
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.10-fn-543A38.json` / `.txt` (`FUN_00543920`, entered from the
+  `Alien::HitTest` xref `0x543A38`), `docs/evidence/p2.10-xrefs-4FA6F0.json`
+- Confidence: high for the branch order, guards and calls; the identity of the `Tank+0xBC` list is
+  still open (Q-0023)
+- Notes: (1) `FUN_00543920(x, y, button)` starts with `FUN_0046E3A0(x, y, button)` and then
+  dispatches in this order, stopping at the first branch that reports a hit:
+  `Tank+0x2A5 != 0` (bonus round) -> `FUN_00537F40` when `button >= 0` / `FUN_0053BFB0(x, y)` when
+  `button < 0` and `y > 40`; then the `Tank+0xBC` list (only while `Tank+0x110 != 0` **and**
+  `y > 40`) calling `Alien::HitTest` `FUN_004FA6F0` per element; then the boss itself
+  (`Tank+0x110`, same call); then the `Tank+0xB8` alien loop (skipped entirely when the first
+  alien is kind 4 with no boss alive); then the `Tank+0xDC` list with `Larva::HitTest`
+  `FUN_004D82A0(x, y)`; then the `Tank+0xF4` list with `Missle::HitTest` `FUN_004FFAE0(x, y)`;
+  finally the feed path.
+  (2) **Any resolved click** ends with `FUN_00538AE0()` (an internal `hit` flag is set by the
+  alien, boss and projectile branches). Those branches draw the laser spark with
+  `FUN_00543640(x - 0x28, y - 0x28)` and the alien/projectile branches stamp
+  `Tank+0x4ED = 1` and `Tank+0x3C4 = FUN_00537B60()`. The feed path instead spends `Tank+0x4AC`
+  through `Tank::SpendMoney(price, 1)`, calls `FUN_00543280(x - 10, y - 10, 0, 0, variant, -1)`
+  and sets `Tank+0x4EC = 1`, `Tank+0x3C0 = FUN_00537B60()`.
+  (3) **Guards.** Alien/boss/projectile branches require `y > 0x28` (40) - the water line. The
+  feed branch requires the click to be inside `x 31..586` and `y 61..399` (the unsigned range
+  tests `x - 0x1F <= 0x22B`, `y - 0x3D <= 0x152`) and no target alive. A click on a Gus with no
+  boss alive takes the `FUN_004D46F0(x, y)` path and drops a variant-`0x14` pellet.
+  (4) There is **no weapon object, cooldown or projectile owned by the player** in this path; the
+  only rate limit is the per-alien `Alien+0x200` cooldown of EV-0120.
+
+### EV-0123 - P2.10 weapon upgrade: cap is 12, and level 12 unlocks Rapid Fire (corrects EV-0057)
+- Date: 2026-10-29
+- Type: code trace (module decompilation), **corrects EV-0057**
+- Source: `docs/evidence/p2.10-fn-549380.json` / `.txt` (`Tank::BuyItem` `FUN_00549380`),
+  `docs/evidence/p2.10-fn-5406A0.json` / `.txt` (store refresh `FUN_005406A0`),
+  `docs/evidence/p2.2-game-module-strings.txt` (0x5A82C8)
+- Confidence: high
+- Notes: (1) `case 10` (store item "weapon") is
+  `if (Tank+0x3E4 < 0xc && Tank::SpendMoney(price, quiet)) { Tank+0x3E4 += 1; FUN_005406A0(); }`,
+  so the cap is **12**; EV-0057's "weapon `Tank+0x3E4` max 0xB" is a misreading of the
+  `case 0xb` label. Damage therefore spans 6 (level 2) to 36 (level 12) per hit (EV-0120/EV-0121).
+  (2) `FUN_005406A0(item, show_hint)` re-targets the selected store object through
+  `FUN_00538090()` and refreshes it; its item-10 branch calls `FUN_00530410()` and, when
+  `Tank+0x3E4 > 0xB` with the hint flag set, shows
+  `"Hold down mouse button for Rapid Fire!"` (0x5A82C8) through `FUN_0041D8B0` +
+  `FUN_0053E950()`, then `FUN_00534450()`. Level 12 is thus a behavioural unlock, not only +3
+  damage. Its implementation (auto-repeat loop) was not found (Q-0023).
+  (3) Same function, item 3 (food quantity) shows `"Hold down mouse button to Auto-Feed!"`
+  (0x5A8AB4) on the first purchase in tank 1 - consistent with P2.3's auto-feed note.
+
+### EV-0124 - P2.10 `Sexy::Missle`/`Sexy::Larva`: spawner `FUN_00544130` and ctor `FUN_004EAE40`
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.10-fn-544130.json` / `.txt`, `docs/evidence/p2.10-fn-4EAE40.json` /
+  `.txt`, `docs/evidence/p2.2-module-rtti-classes.txt` (vtables `0x5DF5D4` Larva, `0x5DF5F0`
+  Missle; update slot 22 = `0x4F2930` / `0x4FFB30`)
+- Confidence: high for the fields and constants; the homing body is not decompiled
+- Notes: (1) `FUN_00544130(x, y, target, kind)` allocates 0x1B8, calls `FUN_004EAE40(x, y, target,
+  kind)`, registers with `FUN_00542EE0(obj, 0)`, then through `[this+0x10]`'s vtable calls slot +0xC
+  with the object and slot +0x2C twice (the second call with `[this+0x100]`), and finally, **outside
+  demo only**, stores the object at `target+0x98` (the victim's "incoming projectile" pointer).
+  (2) The ctor installs `Sexy::Missle::vftable` and sets `+0x158/+0x160` = x/y (doubles),
+  `+0x30/+0x34` = their ftol copies, `+0x19C` = kind, `+0x1A4` = target pointer,
+  `+0x168/+0x170` = vx/vy 0, `+0x38/+0x3C` = 80x80 box (**50x50 for kind 2**), `+0x188` = 0.8
+  speed divisor (**0.4 for kind 2**), `+0x194/+0x198` = 1/1, `+0x1A8/+0x1AC` = 0/10,
+  `+0x17C` = 15, `+0x1A0` = `rand() & 3`, `+0x190` = 0, `+0x8C` = 0x1E. In demo it also seeds
+  vx and vy from `{-6,-5,-4,+4,+5,+6}` (random direction).
+  (3) Call sites: Destructor `FUN_00544130(x, y, target, 0)` (3 missiles, P2.8 §8.1), Ulysses
+  `..., 1` (2 balls, P2.8 §8.2). No decompiled body creates kind 2 yet (Q-0023).
+
+### EV-0125 - P2.10 projectile update, hit tests and the `Larva` fall/shell path
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.10-fn-4FFB30.json` / `.txt` (`Missle::Update`),
+  `docs/evidence/p2.10-fn-4FFAE0.json` / `.txt` (`Missle::HitTest`),
+  `docs/evidence/p2.10-fn-4D82A0.json` / `.txt` (`Larva::HitTest`),
+  `docs/evidence/p2.10-fn-4F2930.json` / `.txt` (`Larva::Update`)
+- Confidence: high for the bounds/flags; the homing target logic (`FUN_004FF4E0`) and the missile
+  box test (`FUN_004FE480`) are not decompiled
+- Notes: (1) `Missle::Update` returns when `Tank == 0` or `Tank+0x94 != 0`, runs `FUN_004F22C0`
+  (base update), expires via `+0x1A8` counting to `+0x1AC` (10) -> `FUN_004D80E0()`, runs the
+  homing step `FUN_004FF4E0()`, then applies kind-specific bounds: kind 0 is **clamped** into
+  `x 10..550`, `y 95..370`; kinds 1/2 call `FUN_004D80E0()` outside `x -20..580`, `y 45..380`
+  (kind 1 only after `+0x190 != 0`). kind 2 with `+0x190` gets `vy += 0.2` per tick (gravity).
+  Movement is `x += vx/speed`, `y += vy/speed`; `+0x17C` counts down; kind 0 emits an 8-px smoke
+  particle through `FUN_005436F0` on `rand() % 3 == 0`.
+  (2) `Missle::HitTest(x, y)`: when `+0x158 != 0`, `FUN_004FE480(x, y)` decides the hit; a hit
+  spawns a 2-px burst at `(x - 0x28, y - 0x28)` and returns 1 - clicking a missile shoots it down.
+  (3) `Larva::HitTest(x, y)`: kind 1 tests `(+0x158+10..+0x158+70)` x `(+0x160+10..+0x160+70)`
+  while `+0x17C < 1` and **deflects** the object: `vx = ((click.x - x0) - 40)/-5`,
+  `vy = ((click.y - y0) - 40)/-5`, each clamped to +-1, then `+0x190 = 1`; kind 0 tests a 60x60
+  box centred on the object and calls `FUN_004D80E0()` (destroy). Both spawn the 2-px burst and
+  return 1; kind 2 returns 0.
+  (4) `Larva::Update` uses the same pause gate, sets `+0x55 = 1` and `+0x7C = 1` once when
+  `+0x58 < 320` and `+0x175 == 0`, then runs one of two modes keyed by `+0x5D`: mode 0 falls
+  (`y -= vy`) and despawns through `FUN_004D9570()` at `y < 64` (x wraps at 530); mode 1 lerps
+  towards `(550, 30)` at 1/7 of the distance per tick and, when the integer y drops below 40,
+  despawns, increments `Tank+0x4A8` and calls `FUN_0053C1E0(...)` (the Shells routing helper of
+  P2.6) - so this object **pays out shells** when it reaches the corner. Its gameplay identity is
+  open (Q-0023).

@@ -68,8 +68,9 @@ corpse object and `Missle`/`Larva` are projectiles.
 Wiki HP figures now agree numerically: Sylvester 10 hits (50 hp), Balrog 22 hits (130 hp),
 Bilaterus 17 hits per head (100 hp) match the P2.9 damage model `hp -= 3 * Tank+0x3E4`
 (EV-0120) evaluated at the level-start pet capacity `Tank+0x3E4 = 2`, i.e. **6 damage per laser
-hit** (50/6 = 9, 130/6 = 22, 100/6 = 17) (EV-0121). The shared use of that field (pet capacity + shot
-damage) is the P2.10 item; during the boss fight it is forced to 10, so a hit does 30.
+hit** (50/6 = 9, 130/6 = 22, 100/6 = 17) (EV-0121). P2.10 confirmed what that field is
+(`Tank+0x3E4` is both the pet capacity and the weapon level): the upgrade item raises it 1..12, so a
+hit does 6..36 (EV-0123), and during the boss fight it is forced to 10, so a hit does 30.
 Kinds 1 and 2 share one image and differ only in speed/HP; the wiki has no second
 Sylvester, so kind 2's story identity stays open (Q-0020). Per-level type selections and the
 type re-roll are in the P2.6 note §8 (EV-0070) and `p2.8-aliens.md` §5.
@@ -88,6 +89,15 @@ has no binary counterpart (EV-0117). The fight is two spawn clocks (75-tick Mini
 boss, 300-tick random type 4-9 wave while the field is clear), the sprite is a single image, and
 no code compares hp against a fraction - "phases" and "fireballs" are not in the binary. See
 `p2.9-bosses.md` §9 for the claim-by-claim table.
+
+**P2.10 weapons (binary-only - no wiki page was re-fetched on 2026-10-29).** The wiki's "laser" is
+not an object: a click runs the tank handler `FUN_00543920`, which damages the first alien/projectile
+it hits and draws a spark (EV-0122). The store's weapon-upgrade row (item 10) raises `Tank+0x3E4` to
+at most **12**, and the 11 -> 12 purchase shows "Hold down mouse button for Rapid Fire!" (EV-0123);
+the auto-repeat loop itself was not found (Q-0023). `IMAGE_LASERS` (`lasers.gif`, 60 frames of 80x48)
+and `IMAGE_LASERUPGRADES` are the only laser art in `resources.xml`, and **no decompiled function
+binds either**, so the per-level beam look cannot be mapped to frames yet (Q-0023). The projectiles
+the wiki calls missiles and energy balls are `Sexy::Missle` kinds 0 and 1 (EV-0124/EV-0125).
 
 ## 3. Money denominations (`Coin::Value` `FUN_004D53A0`, EV-0047)
 
@@ -295,6 +305,8 @@ The 4/7/11 mapping is not yet bound to either field -> Q-0013.
 - Kind 0x10: binary value 0 ("not handled"); no wiki item identified.
 - Hostile alien classes absent from RTTI (Q-0011); alien HP values are now binary (EV-0111), the
   wiki figures were only a cross-check.
+- Weapon upgrade cap: binary 12 (EV-0123). EV-0057's "max 0xB" was a misread `case 0xb` label - do
+  not copy the 11 anywhere. The wiki store table only lists prices, so there is no wiki conflict.
 - Egg piece commerce resolved: tank4 L5 $99,999 matches; tank5 price 0 (EV-0072). The first-pass
   discrepancy (store rebuild B[11] = 0) was mode-specific, not a conflict.
 - **Niko perch:** wiki says he stays on a fixed pillar; binary spawn is generic random x/y and
