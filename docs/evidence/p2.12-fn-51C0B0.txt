@@ -1,0 +1,32 @@
+
+undefined4 FUN_0051c0b0(int param_1)
+
+{
+  int iVar1;
+  int iVar2;
+  int iVar3;
+  int in_ECX;
+  
+  iVar1 = *(int *)(*(int *)(in_ECX + 0x8c) + 0x730);
+  iVar2 = **(int **)(iVar1 + 0x108);
+  while( true ) {
+    iVar3 = *(int *)(iVar1 + 0x108);
+    if (iVar1 == -0x104) {
+      FUN_00564335();
+    }
+    if (iVar2 == iVar3) {
+      return 0;
+    }
+    if (iVar1 == -0x104) {
+      FUN_00564335();
+    }
+    if (iVar2 == *(int *)(iVar1 + 0x108)) {
+      FUN_00564335();
+    }
+    if (*(int *)(*(int *)(iVar2 + 0xc) + 0x124) == param_1) break;
+    FUN_004e3e30();
+  }
+  return 1;
+}
+
+

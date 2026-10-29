@@ -169,6 +169,18 @@ Mode 4 overrides egg price to 5000 (tank 2), 15000 (tank 3), 25000 (tank 4); mod
 $99,999 egg price for tank 4 level 5 matches the binary. Demo (`manager+0x880 != 0`) builds a
 fuller store and runs the demo-only alien selector `FUN_00537C20` (EV-0070/EV-0072).
 
+P2.12 then mapped the *screen* half of this table (EV-0135). The 8 store widgets are the same
+`Sexy::StoreButtonWidget` class and the price you see is `sprintf("%d", price)` drawn under the
+item (`FUN_00536350`), with the coin glyph as a separate sprite; there is no `$` in the string. An
+item that is not for sale shows the literal `SOLD` in its place and is greyed to `#CCCCCC`
+(`FUN_005372F0`, slot 44). Which of the 8 slots is buyable is decided per slot by
+`profile+0xA8+i == 0` (a per-item "already bought" byte) plus the item kind, and the pet slot rolls
+a random pet (`FUN_0051B260`, 76 % ordinary / 24 % weighted) or hands out Cookie once
+(`FUN_0051C0B0`/`FUN_0052B800`); its tooltip text is the pet blurb. The three one-off unlocks
+priced 20000/50000/20000 by `FUN_0052F0D0` (`profile+0x90`, `profile+0x94`, `DAT_005e89dc`) are the
+most likely source of the wiki's "The Bubbulator" / backdrop / alien-attractor prices; their binary
+item ids are still unread (Q-0018).
+
 ## 6. Virtual Tank creature notes (wiki, EV-0060)
 
 - Minisylvester: VT price 15,000 shells; grows from mini to adult; eats carnivores as a baby and

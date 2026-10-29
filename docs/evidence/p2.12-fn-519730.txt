@@ -1,0 +1,71 @@
+
+int FUN_00519730(void)
+
+{
+  int iVar1;
+  int in_ECX;
+  uint uVar2;
+  
+  uVar2 = 100;
+  switch(*(undefined4 *)(in_ECX + 0x8c)) {
+  case 0:
+    if (*(char *)(in_ECX + 0x1d0) == '\0') {
+      uVar2 = 0x19;
+    }
+    else {
+      uVar2 = (-(uint)(*(char *)(in_ECX + 0x1d1) != '\0') & 2000) + 500;
+    }
+    break;
+  case 5:
+    if (*(char *)(in_ECX + 0x1d0) != '\0') {
+      uVar2 = (-(uint)(*(char *)(in_ECX + 0x1d1) != '\0') & 4000) + 1000;
+    }
+    break;
+  case 6:
+  case 0x24:
+    uVar2 = 10000;
+    break;
+  case 7:
+    uVar2 = 0xdac;
+    break;
+  case 8:
+  case 9:
+    uVar2 = 0x9c4;
+    break;
+  case 10:
+    uVar2 = 5000;
+    break;
+  case 0x22:
+    uVar2 = 15000;
+    break;
+  case 0x23:
+    uVar2 = 20000;
+  }
+  iVar1 = FUN_00501060();
+  if (iVar1 != 9) {
+    uVar2 = uVar2 + 5000;
+  }
+  switch(iVar1) {
+  case 0:
+  case 3:
+  case 6:
+    return 30000;
+  case 1:
+  case 2:
+  case 4:
+  case 5:
+    return 25000;
+  case 7:
+    return 40000;
+  case 8:
+    return 50000;
+  default:
+    iVar1 = (uVar2 / 5) * 5;
+    if (iVar1 == 0) {
+      iVar1 = 10;
+    }
+    return iVar1;
+  }
+}
+
+

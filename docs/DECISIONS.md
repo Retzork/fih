@@ -214,6 +214,17 @@
   a Shell counter but does not read `profile+0xB0` or set prices; population/price display lives
   in the child/update code, which was not decompiled. The normal (non-mode-4) store-item object
   owner is also open (xrefs 0x4F18xx tutorial loop, 0x54782A tank update). Resolve in P2.12.
+- 2026-10-29 update (P2.12, EV-0135): **price display and grey-out are ANSWERED**, the owner is not.
+  The item widget is `Sexy::StoreButtonWidget`; its draw/price/select slots are 26 `0x531A60`, 44
+  `0x531C30`, 50 `0x5319B0`, 51 `0x531A00` (slot 22 `0x531A30` forwards to the child at `+0x124`).
+  `FUN_00536350(price)` is `SetPrice` - `[item+0x128] = price` and `sprintf("%d", price)` into the
+  string at `+0x12C` - and the sold-out branch `FUN_005372F0` overwrites that string with the literal
+  `SOLD` (`0x5A7CA4`) and clears the enabled byte `+0x55`, which is exactly what slot 44 greys to
+  `0xCCCCCC`. The stock is rolled by `FUN_0052FEA0` on attach (`FUN_0052F0D0` roller, 8 items gated by
+  `profile+0xA8+i`, pet slots by `profile+0x72+i`, one-off unlocks on `profile+0x90`/`+0x94`).
+  Still open: the call-site owner of the *normal* store-item object (unchanged) and whether the rolled
+  pet is really the receiver of `FUN_00519730()` (the decompiler loses `ECX` there; the fields
+  `+0x8C`/`+0x1D0`/`+0x1D1` fit a pet). Close the owner in P2.13 with the tank update.
 
 ### Q-0019 - `userdata/scr%d.dat` format and Shells persistence
 - OPEN (2026-10-20, EV-0069/EV-0075). `FUN_005148C0` formats `userdata/scr%d.dat` from

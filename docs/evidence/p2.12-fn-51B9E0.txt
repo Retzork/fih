@@ -1,0 +1,28 @@
+
+char * FUN_0051b9e0(int param_1)
+
+{
+  undefined4 uVar1;
+  char *pcVar2;
+  
+  switch(*(undefined4 *)(param_1 + 0x14c)) {
+  case 0:
+    return "Sorry, this is sold out.\nCheck back tomorrow!";
+  case 1:
+    uVar1 = FUN_00531990(0);
+    pcVar2 = (char *)FUN_0051b790(uVar1);
+    return pcVar2;
+  case 2:
+    return "Want to keep more fish\nin your tank?  Buy\nThe Bubbulator!";
+  case 3:
+    return "Keep your fish happy\nwith this beautiful\nnew backdrop!";
+  case 4:
+    return "Need more excitement\nin your tank?  Buy\nthe alien attractor!\nTrust me.  It\'s safe!";
+  case 5:
+    return "Your fish will\ngrow faster with\nthis food upgrade!";
+  default:
+    return (char *)0x0;
+  }
+}
+
+

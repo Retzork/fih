@@ -1,0 +1,25 @@
+
+void FUN_0052ff90(int *param_1)
+
+{
+  int *piVar1;
+  int in_ECX;
+  undefined4 *puVar2;
+  
+  piVar1 = param_1;
+  FUN_0046c090(param_1);
+  FUN_0052fea0(0);
+  puVar2 = (undefined4 *)(in_ECX + 0x9c);
+  param_1 = (int *)0x8;
+  do {
+    (**(code **)(*piVar1 + 0xc))(*puVar2);
+    puVar2 = puVar2 + 1;
+    param_1 = (int *)((int)param_1 + -1);
+  } while (param_1 != (int *)0x0);
+  (**(code **)(*piVar1 + 0xc))(*(undefined4 *)(in_ECX + 0x94));
+  (**(code **)(*piVar1 + 0xc))(*(undefined4 *)(in_ECX + 0x98));
+  (**(code **)(*piVar1 + 0xc))(*(undefined4 *)(in_ECX + 0xc0));
+  return;
+}
+
+

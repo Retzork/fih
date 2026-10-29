@@ -1,0 +1,16 @@
+
+void FUN_00531a00(void)
+
+{
+  int iVar1;
+  int in_ECX;
+  
+  FUN_004759e0();
+  iVar1 = *(int *)(*(int *)(in_ECX + 0x120) + 0x810);
+  if (iVar1 != 0) {
+    *(undefined4 *)(iVar1 + 0xba8) = 0xffffffff;
+  }
+  return;
+}
+
+

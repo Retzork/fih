@@ -1,0 +1,74 @@
+
+/* WARNING: Removing unreachable block (ram,0x0052f218) */
+/* WARNING: Removing unreachable block (ram,0x0052f233) */
+/* WARNING: Removing unreachable block (ram,0x0052f238) */
+/* WARNING: Removing unreachable block (ram,0x0052f20e) */
+/* WARNING: Removing unreachable block (ram,0x0052f297) */
+
+void FUN_0052f0d0(void)
+
+{
+  int iVar1;
+  char cVar2;
+  uint uVar3;
+  uint uVar4;
+  undefined4 uVar5;
+  undefined4 uVar6;
+  int in_ECX;
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00588678;
+  local_10 = ExceptionList;
+  uVar3 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  iVar1 = *(int *)(*(int *)(in_ECX + 0x8c) + 0x8b8);
+  if (*(int *)(iVar1 + 0x90) == 0) {
+    FUN_00537230(2,0,20000);
+  }
+  else if (*(int *)(iVar1 + 0x94) == 0) {
+    FUN_00537230(4,0,50000);
+  }
+  else if (DAT_005e89dc == 0) {
+    FUN_00537230(5,0,20000);
+  }
+  else {
+    cVar2 = FUN_0051c0b0(2);
+    if (cVar2 == '\0') {
+      uVar5 = FUN_0052b800(2);
+    }
+    else {
+      uVar5 = FUN_0051b260(0,0xffffffff,9);
+      uVar4 = FUN_0040aeb0();
+      if ((uVar4 & 1) == 0) {
+        FUN_00519d30(uVar5,0);
+      }
+    }
+    uVar6 = FUN_00519730();
+    FUN_00537290(uVar5,uVar6);
+  }
+  local_8 = 0;
+  local_14 = 0;
+  do {
+    iVar1 = local_14;
+    if ((*(char *)(*(int *)(*(int *)(in_ECX + 0x8c) + 0x8b8) + 0x72 + local_14) == '\0') &&
+       ((local_14 != 5 || (uVar4 = FUN_0040aeb0(uVar3), uVar4 % 5 == 0)))) {
+      FUN_00420260(&local_14);
+    }
+    local_14 = iVar1 + 1;
+  } while (local_14 < 6);
+  uVar5 = FUN_0051b260(1,0xffffffff,9);
+  uVar3 = FUN_0040aeb0();
+  if ((uVar3 & 1) == 0) {
+    FUN_00519d30(uVar5,0);
+  }
+  uVar6 = FUN_00519730();
+  FUN_00537290(uVar5,uVar6);
+  ExceptionList = local_10;
+  return;
+}
+
+

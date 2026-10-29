@@ -1,0 +1,17 @@
+
+void FUN_00531a30(void)
+
+{
+  int in_ECX;
+  
+  thunk_FUN_0046c4f0();
+  if (*(int *)(in_ECX + 0x124) != 0) {
+                    /* WARNING: Could not recover jumptable at 0x00531a50. Too many branches */
+                    /* WARNING: Treating indirect jump as call */
+    (**(code **)(**(int **)(in_ECX + 0x124) + 0x138))();
+    return;
+  }
+  return;
+}
+
+

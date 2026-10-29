@@ -3,7 +3,8 @@
 **Handover status: Phase 2 in progress (2026-10-29).** Phase 0, Phase 1 and Phase 3 are
 complete; Phase 2 is 9/18 done with **P2.12 (menus & UI flow) in progress**. P2.1-P2.4, P2.7-P2.11
 are closed, P2.5 and P2.6 are substantially complete with tracked open questions, and P2.12 has
-its first pass done (screen map, mode writer, store screen, level-start flow). Phase 4 (Godot
+its first pass plus the store pass done (screen map, mode writer, store screen and stock refresh,
+level-start flow). Phase 4 (Godot
 gameplay implementation) has not started: the repository currently contains the Godot project shell
 plus the imported sprite resources. `PLAN.md` is the source of truth for progress.
 
@@ -12,8 +13,9 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 1. **New agent session:** read `../AGENTS.md` first, then `PLAN.md` (mandatory). Follow the
    session-end checklist in `AGENTS.md`.
 2. **Want the current state quickly?** Read the `P2.12` entry in `PLAN.md`, then
-   `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen, level-start
-   flow, EV-0131..EV-0134), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
+   `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen and stock
+   refresh, level-start flow, EV-0131..EV-0135), then `analysis/notes/p2.11-modes.md` for the mode
+   behavior itself.
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -40,11 +42,20 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   eight item slots and the action dispatcher (Virtual Tank bypasses `BuyItem`, action 0xF is the egg
   purchase) are mapped, as is the dialog create/measure/push template (EV-0133). The level-start
   funnel `FUN_00552380` and the `TankScreen` builder `FUN_0054C130` close the loop (EV-0134).
-  Evidence is EV-0131..EV-0134; the note (`analysis/notes/p2.12-menus.md`) ends with an
+  Evidence is EV-0131..EV-0135; the note (`analysis/notes/p2.12-menus.md`) ends with an
   "Implementation spec for P4" section (D-0008).
-- **P2.12 still open (Q-0018, Q-0025):** the store item price/label/grey-out lives in five
-  `StoreButtonWidget` overrides (0x531A30/0x531A60/0x531C30/0x5319B0/0x531A00) that are not
-  decompiled, the Shell label text refresh `FUN_005346D0` is unread, `manager+0x738` has no known
+- **P2.12 store pass (2026-10-29, EV-0135):** the store item widget's five overrides are vtable
+  slots **22/26/44/50/51** - slot 26 draws the item art by the kind at `+0x14C` (0 sold out, 1 pet,
+  2 Bubbulator, 3 backdrop, 4 alien attractor, 5 food), slot 44 draws the price line from `+0x12C`
+  and greys it to `0xCCCCCC` when the enabled byte `+0x55` is 0. The stock is rolled on attach by
+  `FUN_0052FEA0` -> `FUN_0052F0D0` (one-off unlocks on `profile+0x90`/`+0x94`, pet slots on
+  `profile+0x72+i`, Cookie handed out once through `FUN_0051C0B0`/`FUN_0052B800`); each slot then
+  takes `FUN_005363D0` (`SetPrice`, `sprintf("%d")`) or `FUN_005372F0`, which writes the literal
+  **`SOLD`**. The screen's slots (attach/detach/refresh/update/draw/mousemove) and its tooltip
+  (`FUN_0051B9E0` kind-to-text, 16 ticks of hover, "Thanks for shopping at the Fish Emporium!") are
+  mapped too.
+- **P2.12 still open (Q-0018, Q-0025):** the owner of the *normal* store-item object and whether the
+  rolled pet is really the receiver of `FUN_00519730`, `manager+0x738` has no known
   owner, the 24-byte `profile+0x5A` clear contradicts the pet-selection reading (Q-0025) and
   `profile+0x18` is unbound. Do not guess these.
 - **P2.11 game modes (2026-10-29)** mapped all four shipped modes off the single binding
@@ -121,11 +132,12 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
   runtime; VT beetle value. See `PLAN.md`.
-- **Next planned task:** finish P2.12 - decompile the five `StoreButtonWidget` overrides (Q-0018's
-  price/grey-out) and the Shell text refresh, then walk the remaining screen ctors with the vtable-xref
+- **Next planned task:** finish P2.12 - the store price/grey-out is done (EV-0135), so walk the
+  remaining screen ctors with the vtable-xref
   recipe (`HelpScreen` 0x5A0A20/0x5A0A44, `HighScoreScreen` 0x5A0B60/0x5A0B84, `PetsScreen`,
   `HatchScreen`, `SimFishScreen`, `SimSetupScreen`, `StoryScreen`, `InterludeScreen`) and the three
-  dialogs. Q-0025's `profile+0x5A` clear is the one item that needs the session-init functions.
+  dialogs, then close Q-0018's two residuals. Q-0025's `profile+0x5A` clear is the one item that
+  needs the session-init functions.
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
 ## What is in the repository
@@ -199,7 +211,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0134). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0135). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11 and P2.12 opens. |

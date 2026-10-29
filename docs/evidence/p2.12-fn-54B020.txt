@@ -1,0 +1,19 @@
+
+void FUN_0054b020(void)
+
+{
+  int in_ECX;
+  
+  if (*(int **)(in_ECX + 0x374) != (int *)0x0) {
+    (**(code **)(**(int **)(in_ECX + 0x374) + 0xc))(0);
+    (**(code **)(**(int **)(in_ECX + 0x374) + 0xc))(1);
+    (**(code **)(**(int **)(in_ECX + 0x374) + 0xc))(2);
+    (**(code **)(**(int **)(in_ECX + 0x374) + 0xc))(3);
+    (**(code **)(**(int **)(in_ECX + 0x374) + 0xc))(4);
+    *(undefined4 *)(in_ECX + 0x88c) = 0xffffffff;
+    *(undefined4 *)(in_ECX + 0x890) = 0xffffffff;
+  }
+  return;
+}
+
+

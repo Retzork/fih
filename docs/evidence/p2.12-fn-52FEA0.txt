@@ -1,0 +1,45 @@
+
+void FUN_0052fea0(uint param_1)
+
+{
+  int iVar1;
+  int in_ECX;
+  int iVar2;
+  int *piVar3;
+  uint uVar4;
+  int iVar5;
+  int iVar6;
+  bool bVar7;
+  
+  iVar2 = (int)DAT_005e8f1c >> 0x1f;
+  iVar6 = *(int *)(in_ECX + 0x8c);
+  iVar1 = *(int *)(iVar6 + 0x74c);
+  bVar7 = CARRY4(DAT_005e8f1c,*(uint *)(iVar6 + 0x748));
+  uVar4 = DAT_005e8f1c + *(uint *)(iVar6 + 0x748);
+  iVar5 = uVar4 + param_1;
+  *(int *)(in_ECX + 0xb98) = iVar5;
+  *(uint *)(in_ECX + 0xb9c) =
+       iVar1 + iVar2 + (uint)bVar7 + ((int)param_1 >> 0x1f) + (uint)CARRY4(uVar4,param_1);
+  FUN_0040ae50(*(int *)(*(int *)(iVar6 + 0x8b8) + 0x98) + iVar5);
+  FUN_00501490(*(undefined4 *)(in_ECX + 0xb98),*(undefined4 *)(in_ECX + 0xb9c));
+  FUN_00519eb0();
+  FUN_00519f70();
+  FUN_0052fe10();
+  FUN_0052f0d0();
+  iVar6 = 0;
+  piVar3 = (int *)(in_ECX + 0x9c);
+  do {
+    if ((*(char *)(*(int *)(*(int *)(in_ECX + 0x8c) + 0x8b8) + 0xa8 + iVar6) == '\0') &&
+       (*(int *)(*piVar3 + 0x14c) != 0)) {
+      FUN_005363d0();
+    }
+    else {
+      FUN_005372f0();
+    }
+    iVar6 = iVar6 + 1;
+    piVar3 = piVar3 + 1;
+  } while (iVar6 < 8);
+  return;
+}
+
+

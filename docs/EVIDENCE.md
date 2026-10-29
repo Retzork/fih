@@ -2897,3 +2897,67 @@ behavior or specs; follow up with a binary observation entry.
   at `+0x120` and the data link at `+0xB0`, derives the three image records from `data+0x24/+0x28`
   and reads **no** profile or price field, which is why Q-0018 narrows to its five overrides
   (`0x531A30`, `0x531A60`, `0x531C30`, `0x5319B0`, `0x531A00`).
+
+### EV-0135 - P2.12 store UI: widget slots, the stock refresh, `SOLD` and the price formatter
+- Date: 2026-10-29
+- Type: code trace (module decompilation + vtable/literal dumps)
+- Source: `docs/evidence/p2.12-fn-531A00.json` / `.txt`, `p2.12-fn-531A30`, `p2.12-fn-531A60`,
+  `p2.12-fn-5319B0`, `p2.12-fn-531C30`, `p2.12-fn-5346D0`, `p2.12-fn-52FF90`, `p2.12-fn-51A050`,
+  `p2.12-fn-51A1B0`, `p2.12-fn-51A0C0`, `p2.12-fn-51A440`, `p2.12-fn-51A120`, `p2.12-fn-51A260`,
+  `p2.12-fn-52BB50`, `p2.12-fn-51B9E0`, `p2.12-fn-52FEA0`, `p2.12-fn-52F0D0`, `p2.12-fn-5363D0`,
+  `p2.12-fn-5372F0`, `p2.12-fn-536350`, `p2.12-fn-537290`, `p2.12-fn-519730`, `p2.12-fn-519EB0`,
+  `p2.12-fn-519F70`, `p2.12-fn-52FE10`, `p2.12-fn-51B260`, `p2.12-fn-51C0B0`, `p2.12-fn-52B800`,
+  `p2.12-fn-54B020`, `p2.12-fn-54B1A0`
+  (all `.json` + `.txt`), vtable dumps of 0x5A719C and 0x5A1654, literals at 0x5A7CA4 and 0x5ADEC0
+- Confidence: high for the slot maps, the refresh chain and the SOLD/price mechanism; the receiver
+  binding of `FUN_00519730` is inferred from its fields (see note 5)
+- Notes: (1) The five `StoreButtonWidget` overrides are vtable slots **22/26/44/50/51**
+  (`0x531A30`, `0x531A60`, `0x531C30`, `0x5319B0`, `0x531A00`), not 21/26/41/48/49 as first guessed:
+  slot 26 draws the item art by the kind at `+0x14C` (1 forwards to the child at `+0x124`, 2/4 draw
+  the Bubbulator/attractor icons, 3 draws the backdrop scaled by `+0x158`, 5 draws a food-level digit
+  `([+0x28]/4)%10`); slot 44 draws the price line from the string at `+0x12C` (green `0x6E,0xFA,0x6E`
+  plus the `DAT_005e8c3c` icon, grey `0xCCCCCC` when the byte `+0x55` is 0, highlight
+  `0xF0,0xFF,0xC1` plus a badge when `+0x58`/`+0x59`/`+0x148` is set); slots 50/51 only write
+  `store+0xBA8` (`= [this+0x88]`, then `-1`) and clear `store+0xBAC`.
+  (2) The kind-to-text table `FUN_0051B9E0(item+0x14C)` gives the five kinds their names: 0 "Sorry,
+  this is sold out.\nCheck back tomorrow!", 1 `FUN_0051B790(FUN_00531990(0))` (the pet blurb), 2
+  Bubbulator, 3 backdrop, 4 alien attractor, 5 food upgrade.
+  (3) `StoreScreen` (vtable 0x5A1654) overrides slots 20 `FUN_0052FF90` (attach: `FUN_0052FEA0(0)`
+  then 11 children to render-list slot 0xC), 21 `FUN_0051A050` (detach, list slot 0x10), 22
+  `FUN_0051A1B0` (Update), 26/47/48 `FUN_0051A440` (empty), 30 `FUN_0051A0C0` (list slot 0x2C), 44
+  `FUN_0052BB50` (Draw), 50 `FUN_0051A260`, 52 `FUN_0051A120` (MouseMove hit-test through item slot
+  0x110). Update re-rolls the refresh timer `+0x1CC` (`rand%15+15` on a 1-in-7 roll, otherwise
+  `rand%150+100`) and Draw paints the refresh bar `FUN_00456A00(DAT_005e8ad4,0xFF,0x121,+0x1CC)` plus
+  the tooltip (frame at 0x189,0xEB,200,300 in font `DAT_005e8ea8`, text after 16 hover ticks or when
+  `+0xBA0` is set, then "Thanks for shopping at\nthe Fish Emporium!").
+  (4) The stock itself is rolled by `FUN_0052FEA0(extra)`: it seeds the store RNG from
+  `profile+0x98 + DAT_005e8f1c + [manager+0x748] + extra`, runs `FUN_00519EB0`, `FUN_00519F70`,
+  `FUN_0052FE10` and the roller `FUN_0052F0D0`, then for each of the 8 items takes the buyable branch
+  `FUN_005363D0` when `profile[0xA8+i] == 0 && item+0x14C != 0` and the sold-out branch
+  `FUN_005372F0` otherwise. `FUN_0052F0D0` spends the one-off unlocks first (`profile+0x90 == 0` ->
+  `FUN_00537230(2,0,20000)`, `profile+0x94 == 0` -> `FUN_00537230(4,0,50000)`, `DAT_005e89dc == 0` ->
+  `FUN_00537230(5,0,20000)`) and walks `profile+0x72+i` (i = 0..5) for the pet slots.
+  (5) `FUN_00536350(price)` is `SetPrice`: `[item+0x128] = price`, `sprintf(buf, "%d", price)` via
+  `FUN_004120C0` on `DAT_005adec0` (= `"%d"`), then `FUN_00422210` assigns it to the widget's string.
+  `FUN_00537290(child, price)` installs the kind-1 slot (destroys the old child, `+0x124 = child`,
+  `child+0xE0 = price`, `+0x14C = 1`) or, with `child == 0`, sets `+0x14C = 0`. `FUN_005372F0` then
+  overwrites the string with the 4-character literal **`SOLD`** (`0x5A7CA4`) and clears `+0x55`, which
+  is exactly the state slot 44 greys. `FUN_0051B260(flag, id)` is the random pet roll: a 76 % ordinary
+  branch (`FUN_00519E00`) and otherwise a weighted table of 8 pet ids (8/9/7/10/6/0x24/0x23/0x22 with
+  weights 26/25/25/10/5/3/3/3) dispatched to `FUN_004EC0F0`, `FUN_004EA7B0`, `FUN_004EF9A0`,
+  `FUN_004EE530`, `FUN_004F02A0`, `FUN_004F0630`, `FUN_004F0570`, `FUN_004F01E0`. `FUN_00519730()`
+  reads a kind at `+0x8C`, flags `+0x1D0`/`+0x1D1` and the tank from `FUN_00501060()`, returning
+  fixed 25000/30000/40000/50000 for tanks 1-8 and a kind-based price otherwise (10000 for kinds 6 and
+  0x24, 3500 for 7, 2500 for 8/9, 5000 for 10, 15000/20000 for 0x22/0x23); the decompiler loses the
+  `ECX` binding at its four call sites, so the receiver is read as "the rolled pet" from its fields,
+  not proven.
+  (6) `FUN_005346D0(str)` is `MyLabelWidget::SetText` (assign through `FUN_00422210`, then
+  `vtable[0x44]` slot 17 to relayout), so the StoreScreen's `sprintf("%d")` + `FUN_005346D0` is the
+  Shell counter write, not a formatter. `FUN_0054B020()` resets `[manager+0x374]->vtable[0xC](0..4)`
+  and the screen-id pair `manager+0x88C/+0x890` to -1, and `FUN_0054B1A0(a,b)` stamps that pair and
+  calls `[manager+0x374]->vtable[8]`, so 0x88C/0x890 is a **current screen id pair**, not a banner
+  flag - it refines the EV-0134 reading of `FUN_0054B170`. `FUN_0051C0B0(kind)` is the "is that pet
+  already in the tank" test (walks `Tank+0x108`, compares `entity->type->[+0x124]` with `kind`) and
+  `FUN_0052B800(kind)` builds the named pet outright (0 Rocky, 1 Ludwig, 2 Cookie, 3 Johnny V., 4
+  Kilgore; `[pet+0x124] = kind`), so the roller's `FUN_0051C0B0(2) / FUN_0052B800(2)` pair is "hand out
+  Cookie once, roll randomly after that".

@@ -1,0 +1,23 @@
+
+void FUN_0052fe10(void)
+
+{
+  int iVar1;
+  int iVar2;
+  int iVar3;
+  undefined4 uVar4;
+  
+  iVar1 = FUN_0051b260(0,0xffffffff,9);
+  iVar2 = FUN_00519a00(1);
+  if ((iVar2 != 8) || (iVar3 = FUN_0052fb80(), iVar3 == 0)) {
+    iVar3 = FUN_0051b260(1,*(undefined4 *)(iVar1 + 0x8c),iVar2);
+    FUN_00519d30(iVar3,1);
+  }
+  uVar4 = FUN_00519730();
+  FUN_00537290(iVar1,uVar4);
+  uVar4 = FUN_00519730();
+  FUN_00537290(iVar3,uVar4);
+  return;
+}
+
+
