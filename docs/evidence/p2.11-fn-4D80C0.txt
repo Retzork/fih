@@ -1,0 +1,17 @@
+
+int FUN_004d80c0(void)
+
+{
+  int iVar1;
+  uint3 uVar2;
+  int in_ECX;
+  
+  iVar1 = *(int *)(in_ECX + 0x19c);
+  uVar2 = (uint3)((uint)iVar1 >> 8);
+  if (((iVar1 != 3) && (iVar1 != 4)) && (iVar1 != 5)) {
+    return (uint)uVar2 << 8;
+  }
+  return CONCAT31(uVar2,1);
+}
+
+

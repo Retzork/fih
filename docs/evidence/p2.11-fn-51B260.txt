@@ -1,0 +1,158 @@
+
+int FUN_0051b260(undefined4 param_1,int param_2)
+
+{
+  char cVar1;
+  uint uVar2;
+  uint uVar3;
+  int iVar4;
+  int iVar5;
+  int iVar6;
+  undefined4 extraout_EDX;
+  int local_50 [16];
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_005871b3;
+  local_10 = ExceptionList;
+  uVar2 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  if (((char)param_1 != '\0') && (uVar3 = FUN_0040aeb0(uVar2), uVar3 % 100 < 0x4c)) {
+    iVar4 = FUN_00519e00();
+    uVar2 = FUN_0040aeb0(uVar2);
+    if (uVar2 % 100 < 0x4c) {
+      FUN_00519890(iVar4,1);
+    }
+    ExceptionList = local_10;
+    return iVar4;
+  }
+  local_50[2] = 0x19;
+  local_50[4] = 0x19;
+  local_50[6] = 10;
+  local_50[7] = 10;
+  local_50[0] = 0x1a;
+  local_50[1] = 8;
+  local_50[3] = 9;
+  local_50[5] = 7;
+  local_50[8] = 5;
+  local_50[9] = 6;
+  local_50[10] = 3;
+  local_50[0xb] = 0x24;
+  local_50[0xc] = 3;
+  local_50[0xd] = 0x23;
+  local_50[0xe] = 3;
+  local_50[0xf] = 0x22;
+  iVar4 = 0;
+LAB_0051b354:
+  uVar3 = FUN_0040aeb0(uVar2);
+  iVar6 = 0;
+  iVar5 = 0;
+  do {
+    iVar6 = iVar6 + local_50[iVar5 * 2];
+    if ((int)(uVar3 % 100) < iVar6) break;
+    iVar5 = iVar5 + 1;
+  } while (iVar5 < 8);
+  if (iVar5 == 8) {
+    iVar5 = 0;
+  }
+  if ((local_50[iVar5 * 2 + 1] == param_2) || (cVar1 = FUN_005195e0(), cVar1 == '\0'))
+  goto LAB_0051b396;
+  switch(extraout_EDX) {
+  case 6:
+    iVar4 = FUN_00564345(0x230);
+    local_8 = 4;
+    if (iVar4 != 0) {
+      iVar4 = FUN_004f02a0(0,0);
+      ExceptionList = local_10;
+      return iVar4;
+    }
+    break;
+  case 7:
+    iVar4 = FUN_00564345(0x230);
+    local_8 = 2;
+    if (iVar4 != 0) {
+      iVar4 = FUN_004ef9a0(0,0);
+      ExceptionList = local_10;
+      return iVar4;
+    }
+    break;
+  case 8:
+    iVar4 = FUN_00564345(0x1b0);
+    local_8 = 0;
+    goto LAB_0051b3f2;
+  case 9:
+    iVar4 = FUN_00564345(0x1b0);
+    local_8 = 1;
+    if (iVar4 != 0) {
+      iVar4 = FUN_004ea7b0(0,0);
+      ExceptionList = local_10;
+      return iVar4;
+    }
+    break;
+  case 10:
+    iVar4 = FUN_00564345(0x1e0);
+    local_8 = 3;
+    if (iVar4 != 0) {
+      iVar4 = FUN_004ee530(0,0);
+      ExceptionList = local_10;
+      return iVar4;
+    }
+    break;
+  default:
+    iVar4 = FUN_00564345(0x1b0);
+    local_8 = 8;
+LAB_0051b3f2:
+    if (iVar4 != 0) {
+      iVar4 = FUN_004ec0f0(0,0);
+      ExceptionList = local_10;
+      return iVar4;
+    }
+    break;
+  case 0x22:
+    iVar4 = FUN_00564345(0x230);
+    local_8 = 6;
+    if (iVar4 != 0) {
+      iVar4 = FUN_004f01e0(0,0,0);
+      ExceptionList = local_10;
+      return iVar4;
+    }
+    break;
+  case 0x23:
+    iVar4 = FUN_00564345(0x230);
+    local_8 = 5;
+    if (iVar4 != 0) {
+      iVar4 = FUN_004f0570(0,0,0);
+      ExceptionList = local_10;
+      return iVar4;
+    }
+    break;
+  case 0x24:
+    iVar4 = FUN_00564345(0x238);
+    local_8 = 7;
+    if (iVar4 == 0) {
+      iVar4 = 0;
+    }
+    else {
+      iVar4 = FUN_004f0630(0,0,0);
+    }
+    local_8 = 0xffffffff;
+    uVar2 = FUN_0040aeb0();
+    *(uint *)(iVar4 + 0x230) = uVar2 & 1;
+    ExceptionList = local_10;
+    return iVar4;
+  }
+  ExceptionList = local_10;
+  return 0;
+LAB_0051b396:
+  iVar4 = iVar4 + 1;
+  if (99 < iVar4) {
+    iVar4 = FUN_0051b260(param_1,0xffffffff,9);
+    ExceptionList = local_10;
+    return iVar4;
+  }
+  goto LAB_0051b354;
+}
+
+

@@ -1,0 +1,33 @@
+
+void FUN_0054cbf0(void)
+
+{
+  char cVar1;
+  int in_ECX;
+  
+  *(undefined1 *)(in_ECX + 0x883) = 0;
+  if (*(int *)(in_ECX + 0x87c) == 5) {
+    cVar1 = FUN_0054cb20();
+    if (cVar1 != '\0') {
+      return;
+    }
+  }
+  FUN_0054c540();
+  FUN_00541a20();
+  cVar1 = FUN_0054b2a0();
+  if (cVar1 != '\0') {
+    FUN_00537e20();
+    FUN_0054b2d0();
+    return;
+  }
+  if (*(int *)(in_ECX + 0x87c) == 5) {
+    FUN_0053c3f0();
+    FUN_0054b2d0();
+    return;
+  }
+  FUN_005498b0();
+  FUN_0054b2d0();
+  return;
+}
+
+

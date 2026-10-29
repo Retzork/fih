@@ -120,16 +120,23 @@ Open: kind 0x10 (binary value 0) identity; VT beetle value (see §11).
 
 | Mode | Observed binary behavior | Wiki mode | Status |
 | --- | --- | --- | --- |
-| 0 | Adventure banners ("Welcome to the Insaniquarium!" / "Welcome to the next level!" / second-tank banner), tank/level from `profile+0x1C/+0x20`, bonus after tanks 1-3 (EV-0063/0068/0073/0076) | Adventure | high; P2.11 finalizes |
-| 1 | random-pet purchase, price doubling `2*B[11]` (EV-0057); session timer `Tank+0x3BC` = 300 s tank1 / 600 s tanks 2-4; "%d%% Bonus Award" = `money*5/100` (EV-0069/0073) | Time Trial | high; wiki's 5%/10% timer wording open -> §11 |
-| 2 | not observed | unknown | open; Q-0014, P2.11 |
-| 3 | "You've discovered the top-secret SANDBOX mode!"; money 999999 (EV-0072/0073); egg handler calls `FUN_00552230` and returns (EV-0067) | Sandbox | high; entry condition `profile+0xB0 > 5`, sets `profile+0xB4 = max(+0xB4, 11)` (EV-0065) |
-| 4 | price inflation via D array + reset to C on egg purchase, "Prices have been reset!" (EV-0067/0072); tank-complete unlock `profile+0x77+tank`; bonus 2000/5000/10000/20000 by tank; "Click for Story Time" (EV-0069/0071) | Challenge | high |
-| 5 | economy off (`SpendMoney` exempt), shells `Tank+0x400`, HUD coin flight (EV-0046/0047); no session banner; `FUN_0053C3F0` init; VT pets 0..0x11 on tank 5 (EV-0073) | Virtual Tank / screensaver | high |
+| 0 | Adventure banners ("Welcome to the Insaniquarium!" / "Welcome to the next level!" / second-tank banner), tank/level from `profile+0x1C/+0x20`, bonus after tanks 1-3 (EV-0063/0068/0073/0076) | Adventure | high; confirmed in P2.11 (EV-0126/EV-0127) |
+| 1 | random-pet purchase, price doubling `2*B[11]` (EV-0057); session timer `Tank+0x3BC` = 300 s tank1 / 600 s tanks 2-4; "%d%% Bonus Award" = `money*5/100` (EV-0069/0073). P2.11: the live clock is recomputed into `Tank+0xEC` every tick and the level ends when `Tank+0xEF - Tank+0xEC < 0` (EV-0127) | Time Trial | high; wiki's 5%/10% timer wording open -> §11 |
+| 2 | not observed | unknown | open; Q-0014. P2.11 found no writer for `[manager+0x87C]` anywhere in the gameplay module, so the selector lives in the menu layer (EV-0126) |
+| 3 | "You've discovered the top-secret SANDBOX mode!"; money 999999 (EV-0072/0073); egg handler calls `FUN_00552230` and returns (EV-0067). P2.11: the priced stock is re-rolled every tick (`FUN_005409B0` x12 + `FUN_005380C0`), which is what makes the shop churn (EV-0127) | Sandbox | high; entry condition `profile+0xB0 > 5`, sets `profile+0xB4 = max(+0xB4, 11)` (EV-0065) |
+| 4 | price inflation via D array + reset to C on egg purchase, "Prices have been reset!" (EV-0067/0072); tank-complete unlock `profile+0x77+tank`; bonus 2000/5000/10000/20000 by tank; "Click for Story Time" (EV-0069/0071). P2.11: `price[i] += inc[i]` for all 12 items every 150/150/175/200 ticks by tank, capped 99999, and type 8 becomes 0xC after wave 4 (EV-0127) | Challenge | high |
+| 5 | economy off (`SpendMoney` exempt), shells `Tank+0x400`, HUD coin flight (EV-0046/0047); no session banner; `FUN_0053C3F0` init; VT pets 0..0x11 on tank 5 (EV-0073). P2.11: `start_level` resumes the `sim%d.dat` slot at `profile+0x44`, aliens are skipped, and the fish are 76 % ordinary / weighted prizes (EV-0126/EV-0128) | Virtual Tank / screensaver | high |
 
 Mode 0/1/4 all use `profile+0x59` (Bonus Adventure flag) differently; the session pet branch is
 `(profile+0x59 == 0 || (mode != 1 && mode != 4)) && profile+0x18 < 4` -> owned pets, else selected
 pets (EV-0073).
+
+P2.11 finished this section: the per-mode entry order is `FUN_0054CBF0` (`start_level`), the
+mode-specific work is inside the tank update `FUN_00547610`, and the four first-party help lines
+(mode 1 "How much money can you earn before time runs out?", mode 3 "…GO TO TOWN!!", mode 4
+"Can you fend off the increasingly hungry aliens?", mode 5 "…build your own custom fish tank!")
+match the wiki's mode names one-to-one, which is the strongest naming evidence we have for the
+codes 0/1/3/4/5. Details: `p2.11-modes.md` (EV-0126..EV-0130).
 
 ## 5. Store prices (binary, EV-0072; first pass EV-0062 corrected)
 

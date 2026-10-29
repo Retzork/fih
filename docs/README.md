@@ -1,8 +1,8 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
 **Handover status: Phase 2 in progress (2026-10-29).** Phase 0, Phase 1 and Phase 3 are
-complete; Phase 2 is 8/18 done. P2.1-P2.4, P2.7, P2.8, P2.9 and P2.10 are closed, P2.5 and P2.6 are
-substantially complete with tracked open questions, and **P2.11 (game modes) is the next
+complete; Phase 2 is 9/18 done. P2.1-P2.4, P2.7-P2.11 are closed, P2.5 and P2.6 are
+substantially complete with tracked open questions, and **P2.12 (menus & UI flow) is the next
 planned system**. Phase 4 (Godot gameplay implementation) has not started: the repository currently
 contains the Godot project shell plus the imported sprite resources. `PLAN.md` is the source
 of truth for progress.
@@ -11,8 +11,8 @@ of truth for progress.
 
 1. **New agent session:** read `../AGENTS.md` first, then `PLAN.md` (mandatory). Follow the
    session-end checklist in `AGENTS.md`.
-2. **Want the current state quickly?** Read the `P2.10` entry in `PLAN.md`, then
-   `analysis/notes/p2.10-weapons.md` (the click-to-fire laser, weapon levels, EV-0122..EV-0125).
+2. **Want the current state quickly?** Read the `P2.11` entry in `PLAN.md`, then
+   `analysis/notes/p2.11-modes.md` (the four shipped modes, Virtual Tank, EV-0126..EV-0130).
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -23,11 +23,26 @@ of truth for progress.
 | --- | --- |
 | P0 environment / tooling | Complete (13/13) |
 | P1 target identity | Complete (10/10) |
-| P2 reverse engineering | In progress (8/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7 `[x]`; P2.8 `[x]`; P2.9 `[x]`; P2.10 `[x]`; P2.13 `[~]`; P2.11+ pending |
+| P2 reverse engineering | In progress (9/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.11 `[x]`; P2.13 `[~]`; P2.12+ pending |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
 | P4 Godot implementation | Not started (0/14) |
 | P5 validation / polish | Not started (0/5) |
 
+- **P2.11 game modes (2026-10-29)** mapped all four shipped modes off the single binding
+  `mode = [manager+0x87C]`: 0 Adventure, 1 Time Trial, 3 Sandbox, 4 Challenge, 5 Virtual Tank
+  (2 is referenced but never observed). `FUN_0054CBF0` is `start_level`, and the per-mode work
+  happens inside the tank update `FUN_00547610`: Time Trial recomputes the clock at `Tank+0xEC`
+  and ends the level when it goes negative, Challenge inflates every store price by its per-tank
+  increment every 150/150/175/200 ticks (capped 99999) and swaps type 8 for 0xC on later waves,
+  Sandbox re-rolls the priced stock every tick. Virtual Tank gets its own init block, its
+  `sim%d.dat` slot at `profile+0x44` and a 76 %-ordinary weighted spawn table; Rapid Fire was
+  found here too (period `11 - level/2` ticks, ≥100 ms apart, missiles -> larvae -> aliens).
+  Evidence is EV-0126..EV-0130; the note (`analysis/notes/p2.11-modes.md`) ends with an
+  "Implementation spec for P4" section (D-0008).
+- **P2.11 still open (Q-0024):** nothing in the decompiled corpus writes `manager+0x87C`, so the
+  mode comes from the un-analyzed menu layer (-> P2.12); the receiver class of `FUN_004D80C0`,
+  the `Tank+0x4FE` writer, the `Tank+0x2DC/+0x2E0` pair and the VT session helpers stay open.
+  Do not guess these.
 - **P2.10 weapons & projectiles (2026-10-29)** proved that a click *is* the shot: the tank handler
   `FUN_00543920` resolves one click through six stages (bonus round, the boss-only `Tank+0xBC` list,
   the boss, `Tank+0xB8` aliens, `Tank+0xDC` larvae, `Tank+0xF4` missiles, feed) and there is no
@@ -39,7 +54,9 @@ of truth for progress.
   "Implementation spec for P4" section (D-0008).
 - **P2.10 still open (Q-0023):** no decompiled weapon function binds `IMAGE_LASERS`/
   `IMAGE_LASERUPGRADES` (draw side unbound), the `Tank+0xBC` list identity, the `Larva`'s gameplay
-  role, the `FUN_004FF4E0` homing body and the Rapid Fire loop. Do not guess these.
+  role and the `FUN_004FF4E0` homing body. The Rapid Fire loop is answered (EV-0129); the
+  random-velocity missile branch is unreachable (EV-0130, which withdraws the old "demo flag"
+  reading of `FUN_004D80C0`). Do not guess the rest.
 - **P2.9 bosses (2026-10-29)** settled the boss question: only kind 0x15 (Cyrax) is a boss, the
   tank-5 fight is two spawn clocks (75-tick Minisylvester at the boss, 300-tick random alien type
   4-9 while the field is clear), there is no projectile and no hp-threshold phase, and the shot hit
@@ -84,11 +101,11 @@ of truth for progress.
   candidate for a 32-story mask + gold trophy, but the reader is not located; Q-0013 stays
   open. `adv`/`sim` body semantics and `scr%d.dat` remain open. Note:
   `analysis/notes/p2.13-saves.md`.
-- **P2.5 leftovers:** mode-enum naming -> P2.11; coin-hit gameplay intent (Q-0010) -> runtime;
-  VT beetle value. See `PLAN.md`.
-- **Next planned task:** P2.11 game modes (Adventure, Challenge, Time Trial, Virtual Tank), building
-  on the bound mode enum `[manager+0x87C]`, the `FUN_005404A0` toggles, the Time Trial timers and the
-  Virtual-Tank roster/coin multiplier rather than re-deriving them.
+- **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
+  runtime; VT beetle value. See `PLAN.md`.
+- **Next planned task:** P2.12 menus & UI flow. Three open questions land there: the mode writer
+  (Q-0024, nothing writes `[manager+0x87C]` in the gameplay module), the StoreScreen population
+  (Q-0018) and the egg-purchase gating (Q-0021).
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
 ## What is in the repository
@@ -162,19 +179,19 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0125). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0130). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
-| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9 and P2.10 opens. |
-| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.9-bosses.md`, `p2.10-weapons.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
+| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10 and P2.11 opens. |
+| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.10-weapons.md`, `p2.11-modes.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
 | `analysis/` | Inventories (`resources.json`, `extraction.json`, ...), snapshots (gitignored), evidence maps. |
 | `evidence/` | Raw REA evidence JSON exports cited by EV IDs. |
 
 ## Handover checklist
 
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
-- [ ] Read the latest EVIDENCE entries and the current system note (`p2.10-weapons.md` now).
-- [ ] Pick the next task from `PLAN.md` (`P2.11` game modes next); check its open questions
+- [ ] Read the latest EVIDENCE entries and the current system note (`p2.11-modes.md` now).
+- [ ] Pick the next task from `PLAN.md` (`P2.12` menus & UI flow next); check its open questions
   first.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended

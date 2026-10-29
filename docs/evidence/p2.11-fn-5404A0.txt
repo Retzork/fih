@@ -1,0 +1,82 @@
+
+undefined4 FUN_005404a0(int param_1)
+
+{
+  char cVar1;
+  char *pcVar2;
+  char *pcVar3;
+  
+  cVar1 = FUN_00501500();
+  if (param_1 == 0) {
+    pcVar3 = "Wavy Mode Enabled";
+    if (cVar1 == '\0') {
+      pcVar3 = "Wavy Mode Disabled";
+    }
+    pcVar2 = pcVar3;
+    do {
+      cVar1 = *pcVar2;
+      pcVar2 = pcVar2 + 1;
+    } while (cVar1 != '\0');
+    FUN_00426be0(pcVar3,(int)pcVar2 - (int)(pcVar3 + 1));
+    FUN_0053e950();
+    return 1;
+  }
+  if (param_1 == 1) {
+    pcVar3 = "Original Prego Sound Enabled";
+    if (cVar1 == '\0') {
+      pcVar3 = "Original Prego Sound Disabled";
+    }
+  }
+  else if (param_1 == 5) {
+    pcVar3 = "Original Breeder Sound Enabled";
+    if (cVar1 == '\0') {
+      pcVar3 = "Original Breeder Sound Disabled";
+    }
+  }
+  else if (param_1 == 6) {
+    pcVar3 = "Ultra Prego Sound Enabled";
+    if (cVar1 == '\0') {
+      pcVar3 = "Ultra Prego Sound Disabled";
+    }
+  }
+  else if (param_1 == 2) {
+    FUN_005014d0();
+    FUN_00539fe0();
+    FUN_00537d30();
+    pcVar3 = "Void Mode Enabled";
+    if (cVar1 == '\0') {
+      pcVar3 = "Void Mode Disabled";
+    }
+  }
+  else {
+    if (param_1 == 3) {
+      FUN_005014d0();
+      FUN_00539fe0();
+      FUN_00537d30();
+      pcVar3 = "Space Mode Enabled";
+      if (cVar1 == '\0') {
+        pcVar3 = "Space Mode Disabled";
+      }
+      FUN_0041d8b0(pcVar3);
+      FUN_0053e950();
+      if (cVar1 == '\0') {
+        return 1;
+      }
+      FUN_00511580();
+      return 1;
+    }
+    if (param_1 != 4) {
+      return 1;
+    }
+    pcVar3 = "Zombie Mode Enabled";
+    DAT_005e89ce = cVar1;
+    if (cVar1 == '\0') {
+      pcVar3 = "Zombie Mode Disabled";
+    }
+  }
+  FUN_0041d8b0(pcVar3);
+  FUN_0053e950();
+  return 1;
+}
+
+

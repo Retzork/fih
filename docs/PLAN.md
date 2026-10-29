@@ -1,7 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-29 (P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done except P2.11-linked
-naming; P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+Last updated: 2026-10-29 (P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
 click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
@@ -67,21 +66,32 @@ table with kinds 0/1/2 (80x80 or 50x50 box, speed divisor 0.8 or 0.4, 15-tick sp
 shoot-down and deflect hit tests and the `Larva` fall/shell-payout path (EV-0125). Note
 `docs\analysis\notes\p2.10-weapons.md`. New open item: Q-0023 (laser draw/frame binding,
 `Tank+0xBC` identity, `Larva` role, `FUN_004FF4E0` homing, Rapid Fire implementation).
-Next: P2.11 game modes (Adventure, Challenge, Time Trial, Virtual Tank). It must build on what is
-already bound instead of re-deriving it: the mode enum `[manager+0x87C]` with observed values
-0/1/3/4/5 (Q-0014 leaves mode 2), the `FUN_005404A0` mode toggles (Wavy/Prego/Void/Space/Zombie) and
-`Tank::SetTankIndex` 1..6 (EV-0046), the Time Trial 300/600 s timers and `money*5/100` bonus (P2.6),
-the Virtual-Tank roster spawner `FUN_0051B260` and coin multiplier (P2.5), the demo predicate
-`FUN_004D80C0` that the missile ctor and the boss code branch on, and the `Larva` shells payout
-P2.10 left open (`Tank+0x4A8++` + `FUN_0053C1E0`) - a Bonus Adventure or Virtual-Tank pickup object
-is the leading candidate. P2.5 leftovers that belong there: mode-enum naming and the coin-hit intent
-(Q-0010, runtime). P2.8 residuals stay in
+P2.11 game modes (2026-10-29): the mode is `[manager+0x87C]` = 0 Adventure, 1 Time Trial, 3 Sandbox,
+4 Challenge, 5 Virtual Tank (2 unobserved) and it has **no writer anywhere in the decompiled corpus**,
+so the selector belongs to P2.12 (EV-0126); `start_level` `FUN_0054CBF0` fixes the per-mode entry
+order and mode 5 resumes or creates a Virtual Tank through `FUN_0054CB20` keyed on `profile+0x44`
+(EV-0126); Time Trial runs a 300 s (tank 1) / 600 s clock (`Tank+0x3BC`) that ends the level through
+collect-all + `FUN_0054EB80`, Challenge inflates store prices by `Tank+0x374[i]` every 150/150/175/200
+ticks (tanks 1-4, cap 99999) and swaps a rolled type 8 for 0xC after wave 4, and Sandbox re-rolls
+prices through `SetStorePrice` (EV-0127); Virtual Tank's init block and its 76 % ordinary / 24 %
+weighted prize-fish spawner are mapped (EV-0128); the Rapid Fire loop Q-0023 left open lives in the
+tank update, not the click handler (EV-0129); and `FUN_004D80C0` is an object-kind test
+`dword[+0x19C] in {3,4,5}`, **not** the demo flag, so the random-velocity missile branch is
+unreachable and every earlier "demo" reading of that predicate is withdrawn (EV-0130). Note
+`docs\analysis\notes\p2.11-modes.md`. New open item: Q-0024 (mode writer, `+0x19C` receiver,
+`Tank+0x4FE` writer, `+0x2DC`/`+0x2E0`, VT helpers).
+Next: P2.12 menus & UI flow. It is where three open items land: the **mode writer** (Q-0024 - nothing
+in the decompiled corpus writes `[manager+0x87C]`), the **StoreScreen population** (Q-0018 - the
+store item objects, the price display and the grey-out rules), and the **egg-purchase gating**
+(Q-0021 - the handler has no boss check, so only the UI can gate it). The mode texts and store
+banners are already indexed in `p2.2-game-module-strings.txt` (0x5A3C94-0x5A44F0, 0x5A26C0/0x5A26D4),
+and `FUN_0052B2D0`/`FUN_0054BCA0` are the known StoreScreen entries (P2.6). P2.8 residuals stay in
 Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the Gus pellet hp cost,
 `FUN_005442C0` death animation, tank flag writers). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
 (credits trigger), Q-0017 (tank 6), Q-0018 (StoreScreen/store-item population), Q-0019
-(`scr%d.dat`). P2.5 leftovers: mode enum naming -> P2.11; coin-hit intent Q-0010 -> runtime;
-VT beetle value. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
+(`scr%d.dat`). P2.5 leftovers: mode enum naming is **answered** (EV-0126); coin-hit intent Q-0010 ->
+runtime; VT beetle value. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008.
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -91,7 +101,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 8 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 9 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -212,7 +222,7 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   denominations, mode names incl. Time Trial / Challenge / Virtual Tank, store prices,
   discrepancies) + D-0010 wiki policy; note `docs\analysis\notes\wiki-refs.md`. Open: initial
   A/C/D values (bounded search negative - level data, hand-off to P2.6); mode enum naming
-  (0/1/3/4/5 observed conditions only -> P2.11); coin-hit trio gameplay intent (Q-0010); VT
+  (0/1/3/4/5 - **answered** by P2.11, EV-0126); coin-hit trio gameplay intent (Q-0010); VT
   beetle value (binary x5 vs wiki).)
 - [~] **P2.6** Progression: 5 tanks x 5 levels, egg drops, hatching, pet unlock/trophy flow
   (2026-10-16, first pass -> EV-0061: level-start orchestrator `FUN_0054CBF0` + tank init
@@ -272,7 +282,13 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   0/1/2 with their box/speed/gravity values, victim lock `target+0x98` (EV-0124); update
   bounds/trail, the shoot-down and deflect hit tests and the `Larva` fall/shell payout (EV-0125).
   Note `docs\analysis\notes\p2.10-weapons.md`. Open: Q-0023.)
-- [ ] **P2.11** Game modes: Adventure, Challenge, Time Trial, Virtual Tank (screensaver ecosystem)
+- [x] **P2.11** Game modes: Adventure, Challenge, Time Trial, Virtual Tank (screensaver ecosystem)
+  (2026-10-29 complete: mode table + the no-writer bounded negative, `start_level` order and the VT
+  load-or-create path (EV-0126); Time Trial clock/expiry, Challenge price inflation and type
+  substitution, Sandbox price re-roll (EV-0127); Virtual Tank init block and weighted fish spawner
+  (EV-0128); Rapid Fire loop, answering Q-0023 (EV-0129); `FUN_004D80C0` decoded as an object-kind
+  predicate and the "demo" label withdrawn (EV-0130). Note `docs\analysis\notes\p2.11-modes.md`.
+  Open: Q-0024.)
 - [ ] **P2.12** Menus & UI flow: title/profile/options/help/store screens, dialog structure
 - [~] **P2.13** Save/profile format: writer/reader functions, file location, versioning, Steam paths
   (2026-10-21: live folder found at `C:\ProgramData\Steam\Insaniquarium\userdata`; sample

@@ -1,0 +1,10 @@
+
+byte FUN_0046cce0(void)
+
+{
+  int in_ECX;
+  
+  return *(byte *)(in_ECX + 0xec) & 1;
+}
+
+

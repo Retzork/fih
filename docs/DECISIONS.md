@@ -184,6 +184,10 @@
 - OPEN (2026-10-20, EV-0075). No observed condition or name for `manager+0x87C == 2`. Do not
   assign it a name/behavior; resolve with the other mode bindings in P2.11. (Modes 0 Adventure,
   1 Time Trial, 3 Sandbox, 4 Challenge, 5 Virtual Tank are observed.)
+- 2026-10-29 update (P2.11, EV-0126): still unbound. The tank update, `start_level`, the store
+  refresh, the egg handler and the alien/missile code have **no** `mode == 2` branch, no mode-2
+  string and no writer for the field at all, so P2.11 could neither name nor refute it. The
+  selector and any mode-2 entry belong to the menu layer (P2.12).
 
 ### Q-0015 - `profile+0x58` reader and `profile+0x50` semantics
 - OPEN (2026-10-20, EV-0066/EV-0069/EV-0075). `profile+0x58` is set to 1 by every
@@ -331,3 +335,36 @@
   Either the repeat lives in the platform input layer that feeds `FUN_0046E3A0`, or the flag is
   read somewhere not yet traced. The remake should implement hold-to-fire keyed on
   `weapon_level > 11` and record the divergence (see `p2.10-weapons.md` §3/§6).
+- 2026-10-29 update (EV-0129): **answered.** The repeat is in the tank update, not the click
+  handler: while `Tank+0x4ED` is armed and the mouse bit `Tank+0xEC & 1` is set, the update fires
+  every `11 - Tank+0x3E4/2` ticks (5 at level 12) subject to a 100 ms stamp (`Tank+0x3C4`), testing
+  `Tank+0xF4` -> `Tank+0xDC` -> `Tank+0xB8` (missiles, larvae, aliens) and skipping the boss,
+  `Tank+0xBC`, the bonus round and the feed path. Releasing the mouse clears `Tank+0x4ED`.
+- 2026-10-29 update (P2.11, EV-0126-EV-0130): the mode pass did **not** resolve the `Larva`
+  identity. Bounded negative: apart from the projectile spawner (`FUN_00544130`, the `Missle` ctor)
+  no committed decompiled body constructs that class, and no Virtual-Tank or bonus-round branch
+  refers to it - the `Larva` ctor itself was never identified, so this is a corpus-wide absence,
+  not proof. The shells payout stays behind a flag and the item moves to the P4 runtime list. The
+  laser draw question also stands (`FUN_00538AE0` still not decompiled).
+
+### Q-0024 - P2.11 residual mode/mode-predicate questions
+- OPEN (2026-10-29, EV-0126-EV-0130). What P2.11 could not bind; none blocks the mode table:
+- **Mode writer.** `[manager+0x87C]` is read by >20 sites and **written by none** of the committed
+  decompiled bodies (bounded negative over `docs/evidence/*.txt`). The selector is menu code and is
+  handed to P2.12 together with the mode-2 value (Q-0014). Do not infer the writer from the UI
+  strings alone.
+- **`FUN_004D80C0` receiver.** The body is `dword[this+0x19C] in {3,4,5}` (EV-0130) and it has 11
+  call sites across the missile/larva/alien/spawner code; for missiles the offset is the kind, for
+  aliens it is a byte flag, so the per-call receiver class is not uniform and not proven. Consequence
+  already applied to the remake: missiles start still and the victim lock `target+0x98` is always
+  set; the earlier "demo" label is withdrawn. Re-open if a caller passes a different class
+  explicitly.
+- **`Tank+0x4FE` writer.** In Virtual Tank the byte gates the entire alien/wave clock (mode 5 +
+  `+0x4FE == 0` skips it) and elsewhere it is the warning-sound enable (P2.8). No writer is traced,
+  so "VT can have aliens" is not implementable - keep it a flag defaulting to 0.
+- **`Tank+0x2DC` / `+0x2E0` pair.** Sandbox re-rolls the store while `+0x2E0 < +0x2DC`; both fields
+  are otherwise unbound (P2.6 lists `+0x2DC` only as "item arrays A/B/C/D and +0x2DC"). Do not use
+  them as a counter in the remake.
+- **VT session helpers.** `FUN_005394E0` (populate), `FUN_0053A4F0` (store), `FUN_0053AA00` (HUD),
+  `FUN_0054BC30` (create) and `FUN_0054B3A0` (load) are named by call site only; the `sim%d.dat`
+  payload itself is P2.13.

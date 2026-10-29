@@ -2632,3 +2632,132 @@ behavior or specs; follow up with a binary observation entry.
   despawns, increments `Tank+0x4A8` and calls `FUN_0053C1E0(...)` (the Shells routing helper of
   P2.6) - so this object **pays out shells** when it reaches the corner. Its gameplay identity is
   open (Q-0023).
+
+### EV-0126 - P2.11 the mode field, `start_level` and the per-mode banners
+- Date: 2026-10-29
+- Type: code trace (module decompilation) + string table
+- Source: `docs/evidence/p2.11-fn-54CBF0.json` / `.txt` (`FUN_0054CBF0`), `docs/evidence/p2.11-fn-54CB20.json`
+  / `.txt` (`FUN_0054CB20`), `docs/evidence/p2.11-fn-5498B0.json` / `.txt` (`FUN_005498B0`),
+  `docs/evidence/p2.11-fn-5404A0.json` / `.txt` (`FUN_005404A0`), `docs/evidence/p2.8-wave-block-547610.txt`
+  (tank update, lines 891-918), `docs/evidence/p2.2-game-module-strings.txt`
+- Confidence: high for the branches and banner strings; the mode **writer** is not located
+- Notes: (1) `[manager+0x87C]` is the game mode, read by more than twenty sites; the values bound by
+  behavior are 0 = Adventure, 1 = Time Trial, 3 = Sandbox, 4 = Challenge, 5 = Virtual Tank, and 2 is
+  unobserved (Q-0014). Bounded negative: no write to `[manager+0x87C]` appears in any committed
+  decompiled body (`docs/evidence/*.txt`), so the selector is menu code (P2.12).
+  (2) `FUN_0054CBF0` is `start_level`: clear `manager+0x883`; if mode 5 and `FUN_0054CB20()` is
+  non-zero return (resume a Virtual Tank); `FUN_0054C540()` (fresh tank + session counter),
+  `FUN_00541A20()` (tank init); if `FUN_0054B2A0()` (sentinel) -> `FUN_00537E20` + `FUN_0054B2D0`;
+  if mode 5 -> `FUN_0053C3F0()` + `FUN_0054B2D0`; else `FUN_005498B0()` + `FUN_0054B2D0`.
+  (3) `FUN_0054CB20` is Virtual Tank load-or-create: `FUN_0054C540()`, then
+  `FUN_00505880(path, mode, profile+0x44)`, then `FUN_00546AA0(path)`; when that is false it calls
+  `FUN_0054BC30()`, otherwise it clears `manager+0x883` and, if the mode is not 5, calls
+  `FUN_0054B3A0()`. `profile+0x44` is therefore the VT tank slot; `sim%d.dat` is the file (P2.13).
+  (4) `FUN_005498B0` is the normal session init and is mode-independent: tank 4 spawns through
+  `FUN_005471E0` and sets the first `+0xC0` fish `+0x1A4 = 2`; tank 5 sets `Tank+0x2C0 = 300` and
+  spawns 18 pets (`FUN_00544A90`, indices 0..0x11); other tanks spawn two starters via `FUN_00546EF0`
+  and set the first `+0x1A4 = 2`, plus `+0x228 = 1` on the tank-1 level-1 guppy.
+  (5) Per-mode banners at tick `0x96`, all through `FUN_00426BE0`/`FUN_0053E950`: mode 0 "Here are
+  your first fish! Take good care of them!" (and "On this level you will meet your 1st alien
+  opponent!"), mode 1 "How much money can you earn before time runs out?", mode 4 "Can you fend off
+  the increasingly hungry aliens?", mode 3 "Make sure caps-lock is off and GO TO TOWN!!"; mode 5
+  has no banner.
+  (6) `FUN_005404A0(option)` is **not** a mode selector: it toggles `Wavy Mode`, `Original Prego
+  Sound`, `Original Breeder Sound`, `Ultra Prego Sound`, `Void Mode`, `Space Mode` (also
+  `FUN_00511580`) and `Zombie Mode` (`DAT_005e89ce`), each printing an Enabled/Disabled toast.
+
+### EV-0127 - P2.11 Time Trial timer, Challenge price inflation, Sandbox re-roll
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.8-wave-block-547610.txt` (tank update: lines 181-197 for the clocks,
+  227-291 for the mode-4 store block, 432-440 for mode 3), `docs/evidence/p2.2-game-module-strings.txt`
+  (0x5A26C0, 0x5A26D4)
+- Confidence: high
+- Notes: (1) Mode 1 (Time Trial): every tick `Tank+0x3B0 = (FUN_00537B60() - Tank+0x3B8) / 1000`
+  (integer seconds); when `Tank+0x3BC - Tank+0x3B0 < 0` the tank clears `Tank+0x4EE`, calls
+  `FUN_0053C2D0()` (collect all coins), `FUN_00514470()` and `FUN_0054EB80()` and returns. Mode 4
+  writes the same `Tank+0x3B0` elapsed field. Budgets are 300 s (tank 1) / 600 s (tanks 2-4), and
+  the results screen labels are "TIME TRIAL RESULTS" (0x5A26C0) / "CHALLENGE RESULTS" (0x5A26D4).
+  (2) Mode 4 (Challenge) **price inflation**: while `Tank+0x454 < 1`, `Tank+0x43C < 6` and byte
+  `Tank+0x3A4` or `Tank+0x3A5` is non-zero, every `period` ticks (150/150/175/200 for tanks 1/2/3/4)
+  the loop runs `price[i] = min(price[i] + increment[i], 99999)` over the 12 store items
+  (`Tank+0x314[i] += Tank+0x374[i]`) followed by the refresh helper `FUN_00534380()` per item.
+  (3) Mode 4 alien substitution: when the wave counter `Tank+0x45C > 4` and the rolled type
+  (`Tank+0x2BC`) is 8, it is replaced by 0xC; no hp/speed multiplier exists in a mode-4 branch.
+  (4) Mode 3 (Sandbox): while the tank index is not 5 and `Tank+0x2E0 < Tank+0x2DC`, the update runs
+  twelve `FUN_005409B0()` item refreshes and then `FUN_005380C0()` = `SetStorePrice` (P2.5).
+
+### EV-0128 - P2.11 Virtual Tank: init block and the 76 %/weighted fish spawner
+- Date: 2026-10-29
+- Type: code trace (module decompilation) + string table
+- Source: `docs/evidence/p2.11-fn-53C3F0.json` / `.txt` (`FUN_0053C3F0`),
+  `docs/evidence/p2.11-fn-51B260.json` / `.txt` (`FUN_0051B260`), `docs/evidence/p2.8-wave-block-547610.txt`
+  (line 294 and line 470 for the mode-5 skip, line 813 for the lose check),
+  `docs/evidence/p2.2-game-module-strings.txt` (0x5A3CBC-0x5A44F0)
+- Confidence: high for the fields and weights; the VT store/HUD helpers and `Tank+0x4FE`'s writer are
+  unbound
+- Notes: (1) `FUN_0053C3F0()` resets the tank for a virtual session: `Tank+0x2BC = 0`, `+0x94 = 0`,
+  `+0x4EE = 1`, `+0x440 = 0`, `+0x444 = 0`, `+0x450 = 0`, `+0x454 = 0`, `+0x458 = 0`, `+0x45C = 0`,
+  globals `DAT_005e89dc = 0`, `DAT_005df58c = 1`, `DAT_005e89cc = 0`, `DAT_005e89d0 = 0`,
+  `DAT_005e89c0 = 0`, `Tank+0x3B4 = Tank+0x3B8 = now()` and `Tank+0x4FC = <byte>`; then
+  `FUN_005394E0()` (populate), `FUN_0053A4F0()` (store), `FUN_0053AA00()` (HUD).
+  (2) No aliens in VT: the tank update jumps over the whole wave clock when mode is 5 and
+  `Tank+0x4FE == 0` (the same byte gates the warning sound elsewhere); its writer is unbound
+  (Q-0020). A VT-specific sub-branch also fires `FUN_005409B0()` while `Tank+0x344 == 0`, `+0x340 == 0`
+  and the level-end flags are clear.
+  (3) `FUN_0051B260(flag, excluded_type)`: when `flag != 0` and `rand() % 100 < 76` it spawns an
+  ordinary fish through `FUN_00519E00()` (and with 76 % again upgrades it via `FUN_00519890(obj, 1)`);
+  otherwise it rolls a prize fish from the weighted table below. A roll equal to `excluded_type`, or
+  `FUN_005195E0() == 0`, retries up to 100 times and then recurses with `excluded_type = -1`.
+
+  | weight | type id | alloc | spawn helper |
+  | --- | --- | --- | --- |
+  | 26 | 8 | 0x1B0 | `FUN_004EC0F0` |
+  | 25 | 9 | 0x1B0 | `FUN_004EA7B0` |
+  | 25 | 7 | 0x230 | `FUN_004EF9A0` |
+  | 10 | 10 | 0x1E0 | `FUN_004EE530` |
+  | 5 | 6 | 0x230 | `FUN_004F02A0` |
+  | 3 | 0x24 | 0x238 | `FUN_004F0630` (+ `+0x230 = rand() & 1`) |
+  | 3 | 0x23 | 0x230 | `FUN_004F0570` |
+  | 3 | 0x22 | 0x230 | `FUN_004F01E0` |
+
+  The weights sum to 100 and the test is a strict `<`, so index 8 is unreachable and type 5 shares
+  the type-8 branch. (4) Mode 5 prints "Here you'll be able to build your own custom fish tank!" at
+  tick 150 when `profile+0x48 == 0`. (5) The in-game help text fixes the VT rules: fish cannot die,
+  grow in about a real-world week when fed daily, want three meals a day, the store changes with the
+  real date, and the tank can be set as the screensaver from the Tank screen.
+
+### EV-0129 - P2.11/P2.10 Rapid Fire is implemented in the tank update (resolves Q-0023's item)
+- Date: 2026-10-29
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.8-wave-block-547610.txt` (lines 315-405),
+  `docs/evidence/p2.11-fn-46CCE0.json` / `.txt`
+- Confidence: high
+- Notes: (1) The click handler only arms the repeat: it stamps `Tank+0x4ED = 1` and
+  `Tank+0x3C4 = FUN_00537B60()`. The tank update then runs
+  `if (Tank+0x4ED != 0) { if ((FUN_0046CCE0() == 0)) Tank+0x4ED = 0; else if (Tank+0x3E4 > 0xB &&
+  tick % (0xB - Tank+0x3E4 / 2) == 0 && now() > Tank+0x3C4 + 100 && click_y > 0x28) { ... } }`.
+  (2) `FUN_0046CCE0()` is `return *(byte *)(this + 0xEC) & 1`, i.e. the tank's mouse-button latch bit.
+  (3) The repeated shot tests `Tank+0xF4` (`Missle::HitTest`), then `Tank+0xDC` (`Larva::HitTest`),
+  then `Tank+0xB8` (`Alien::HitTest`), then draws the spark (`FUN_00543640`) and calls
+  `FUN_00538AE0()`. The boss, the `Tank+0xBC` list, the bonus round and the feed path are not
+  repeated. (4) At the cap (level 12) the period is `11 - 6 = 5` ticks, but the 100 ms stamp
+  (`Tank+0x3C4`) is the real limiter at 36 Hz.
+
+### EV-0130 - P2.11 `FUN_004D80C0` is an object-kind test, not the demo flag (corrects P2.8/P2.10 wording)
+- Date: 2026-10-29
+- Type: code trace (module decompilation), **corrects the `demo` label used in EV-0124/EV-0125**
+- Source: `docs/evidence/p2.11-fn-4D80C0.json` / `.txt`, `docs/evidence/p2.11-xrefs-4D80C0.json`
+- Confidence: high for the body and the call sites; the per-call receiver class is unresolved
+- Notes: (1) `FUN_004D80C0` is `v = *(int *)(this + 0x19C); return (v == 3 || v == 4 || v == 5);`.
+  Eleven call sites (0x4D8139, 0x4D8278, 0x4E213D, 0x4E2223, 0x4EAF52, 0x4FD44F, 0x4FFAA1,
+  0x4FFBAD, 0x541F0F, 0x5430B3, 0x5441C4). (2) For `Sexy::Missle`/`Sexy::Larva` the field is the
+  kind (`in_ECX[0x67]`), so the predicate is `kind in {3,4,5}`; the only known spawn sites create
+  kinds 0 and 1, so the missile ctor's random-velocity branch (EV-0124) and the kind-3+ bounds rule
+  (EV-0125) are unreachable in retail play. For `Sexy::Alien` the same offset is a byte flag
+  (Psychosquid's once-only sleep, EV-0120), so the predicate must not be ported to aliens.
+  (3) The retail demo flag is `manager+0x880` (P2.8) - a different field; every "demo" claim that
+  rested on `FUN_004D80C0` is withdrawn. Consequence: missiles always start still, are steered by
+  `FUN_004FF4E0`, and the victim pointer `target+0x98` is always set by the spawner (Q-0024).
+  Claims that read `manager+0x880` directly (EV-0111, EV-0115, EV-0120's damage gate) are
+  unaffected and stand; only the function's name was wrong.
