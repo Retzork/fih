@@ -1,0 +1,106 @@
+
+void FUN_00529dd0(uint param_1)
+
+{
+  uint uVar1;
+  int iVar2;
+  int in_ECX;
+  int *piVar3;
+  undefined1 local_54 [28];
+  undefined4 local_38;
+  int local_34;
+  undefined1 local_30 [28];
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00587fa0;
+  local_10 = ExceptionList;
+  uVar1 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = uVar1;
+  if (param_1 < 0x14) {
+    iVar2 = *(int *)(in_ECX + 0x2c + param_1 * 4);
+    if (iVar2 != 0) {
+      if (*(int *)(in_ECX + 0x7c) != 0) {
+        if (*(uint *)(*(int *)(in_ECX + 0x7c) + 0x88) == param_1) goto LAB_0052a063;
+        FUN_00532c20(0);
+      }
+      *(int *)(in_ECX + 0x7c) = iVar2;
+      FUN_00532c20(1);
+      FUN_00529cc0();
+    }
+  }
+  else if (param_1 == 100) {
+    FUN_0054b020();
+    FUN_0054ae70();
+    if (*(char *)(in_ECX + 0x92) != '\0') {
+      FUN_0054aff0();
+    }
+    if (*(int *)(*(int *)(in_ECX + 4) + 0x730) != 0) {
+      FUN_00538940();
+      FUN_0053db80(0);
+    }
+  }
+  else if (param_1 == 0x67) {
+    if ((*(int *)(in_ECX + 0x7c) != 0) && (*(int *)(*(int *)(in_ECX + 0x7c) + 0x158) != 0)) {
+      *(undefined1 *)(in_ECX + 0x91) = 1;
+      *(undefined1 *)(in_ECX + 0x90) = 1;
+      *(undefined4 *)(in_ECX + 0x8c) = 0;
+      FUN_0041d8b0("Are you sure you want to sell your fish?");
+      iVar2 = *(int *)(*(int *)(in_ECX + 0x7c) + 0x158);
+      local_8 = 0;
+      if (*(int *)(iVar2 + 0x8c) == 10) {
+        iVar2 = FUN_0053a810(*(int *)(iVar2 + 0xac) + 100);
+        if (iVar2 != 0) {
+          FUN_0041d9b0("\n\nNote that selling the mama fish will not sell her baby fish.");
+        }
+      }
+      FUN_0054fc90(local_30);
+      FUN_0041d8f0();
+    }
+  }
+  else if (param_1 == 0x66) {
+    iVar2 = *(int *)(in_ECX + 0x7c);
+    if ((iVar2 != 0) && (*(int *)(iVar2 + 0x158) != 0)) {
+      *(undefined1 *)(in_ECX + 0x92) = 1;
+      FUN_005449c0(*(int *)(iVar2 + 0x158),*(char *)(*(int *)(iVar2 + 0x158) + 0xf4) == '\0');
+      FUN_00529cc0();
+      (**(code **)(**(int **)(in_ECX + -0x78) + 0x2c))(in_ECX + -0x88);
+    }
+  }
+  else if (param_1 == 0x68) {
+    iVar2 = *(int *)(in_ECX + 0x7c);
+    if ((iVar2 != 0) && (*(int *)(iVar2 + 0x158) != 0)) {
+      *(undefined1 *)(in_ECX + 0x92) = 1;
+      iVar2 = *(int *)(iVar2 + 0x158);
+      FUN_0041d8b0("Please choose a name for your fish");
+      local_8 = 1;
+      FUN_0054c800(local_54,*(int *)(iVar2 + 0x8c) == 10,iVar2 + 0xb0,0);
+      FUN_0041d8f0();
+    }
+  }
+  else if ((param_1 == 0x69) || (param_1 == 0x6a)) {
+    *(undefined1 *)(in_ECX + 0x92) = 1;
+    local_38 = CONCAT31(local_38._1_3_,param_1 == 0x6a);
+    piVar3 = (int *)(in_ECX + 0x2c);
+    local_34 = 0x14;
+    do {
+      if ((*piVar3 != 0) && (iVar2 = *(int *)(*piVar3 + 0x158), iVar2 != 0)) {
+        FUN_005449c0(iVar2,local_38);
+      }
+      (**(code **)(**(int **)(in_ECX + -0x78) + 0x2c))(in_ECX + -0x88,uVar1);
+      FUN_00529cc0();
+      piVar3 = piVar3 + 1;
+      local_34 = local_34 + -1;
+    } while (local_34 != 0);
+  }
+LAB_0052a063:
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+

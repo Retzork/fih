@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-29 (P2.12 store pass - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before it - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+Last updated: 2026-10-29 (P2.12 screen pass - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
 click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
@@ -80,15 +80,15 @@ tank update, not the click handler (EV-0129); and `FUN_004D80C0` is an object-ki
 unreachable and every earlier "demo" reading of that predicate is withdrawn (EV-0130). Note
 `docs\analysis\notes\p2.11-modes.md`. New open item: Q-0024 (mode writer, `+0x19C` receiver,
 `Tank+0x4FE` writer, `+0x2DC`/`+0x2E0`, VT helpers).
-Next: finish P2.12. The mode writer (Q-0024), the store's price/grey-out rule and the stock refresh
-are all answered (EV-0132/EV-0135), so what is left is the **remaining screen ctors**, which the
-`xrefs`-the-vtable recipe reaches in two calls each (`HelpScreen`
-0x5A0A20/0x5A0A44, `HighScoreScreen` 0x5A0B60/0x5A0B84, `PetsScreen` 0x5A1020/0x5A1044,
-`HatchScreen` 0x5A08E0/0x5A0904, `SimFishScreen` 0x5A1280/0x5A12A4, `SimSetupScreen`
-0x5A13C8/0x5A13F0, `StoryScreen` 0x5A1770/0x5A1794, `InterludeScreen` 0x5A0DC0/0x5A0DE4, the three
-dialogs), plus the two Q-0018 residuals (the owner of the normal store-item object, and whether the
-rolled pet really receives `FUN_00519730`). Q-0025 holds the three loose ends (`manager+0x738`, the
-`profile+0x5A` clear, `profile+0x18`).
+Next: the P2.12 dialog layer. The screen map is complete - all 13 screen ctors and their click
+handlers are documented (EV-0136) - so what is left is the **dialogs**: `OptionsDialog`
+(`FUN_005349D0`, vtable set 0x5A6040/48/50/74), `MoneyDialog` (0x530987), `ContinueDialog`
+(0x5335E0), `FishNamingDialog` (0x533B2C), `FoodDialog` (0x533E96), `UserDialog` (0x5365D6),
+`NewUserDialog` (0x5348A0), `RegisterDialog` (0x535B7D), `PetDialog` (0x5356D5), `VirtualDialog`
+(0x536DB9) and `ScreenSaverDialog` (0x535F36) - all now located in `p2.12-vtable-inventory.txt`, plus
+the two Q-0018 residuals (the owner of the normal store-item object, and whether the rolled pet really
+receives `FUN_00519730`) and Q-0026 (`profile+0x72..+0x77`). Q-0025 holds the last screen-flow loose
+end (`manager+0x738` is read by BonusScreen but no writer is known, and `profile+0x18`).
 P2.8 residuals stay in Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the
 Gus pellet hp cost, `FUN_005442C0` death animation, tank flag writers). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
@@ -311,9 +311,18 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   `profile+0x90`/`+0x94`, pet slots on `profile+0x72+i`, the Cookie-once rule through `FUN_0051C0B0` /
   `FUN_0052B800`), and Q-0018's price/grey-out answered: `FUN_00536350` = `SetPrice`
   (`sprintf("%d")`), `FUN_005372F0` writes the literal **`SOLD`**. Note
-  `docs\analysis\notes\p2.12-menus.md`. Open: the remaining screen ctors, the owner of the normal
-  store-item object (Q-0018), and Q-0025 (`manager+0x738` owner, the `profile+0x5A` clear,
-  `profile+0x18`).)
+  `docs\analysis\notes\p2.12-menus.md`.
+  Screen pass (EV-0136): the vtable-xref recipe **does not generalise** (8 of 9 screen vtables answer
+  empty), so the ctor map was rebuilt with an RTTI + vtable-immediate scan - all 13 screen ctors and 7
+  inline overlay ctors located and written up (conventions table in note §10.1); per-screen field maps
+  for Hatch, Help (8-page counter at `+0xA4`), HighScore (tab at `+0xA8`), Interlude, Pets (24-slot grid,
+  `profile[0x5A+i]` writer), SimFish (20-row browser), SimSetup (three vtables, manager at `+0x90`,
+  checkbox -> `Tank+0x4FC..+0x500`, backdrop cycle over `profile+0x72..+0x77`), Story (the
+  `profile+0x7C` popcount gate, Q-0013) and Bonus (`manager+0x738` read, mode-4 story branch); all 10
+  click dispatchers decoded; the transition-helper table (note §10.12). Open: the dialog layer
+  (11 dialogs, ctors already located), the owner of the normal store-item object (Q-0018), Q-0025
+  (`manager+0x738` owner, `profile+0x18` - the `profile+0x5A` clear is explained by the PetsScreen
+  ctor) and the new Q-0026 (`profile+0x72..+0x77` backdrop-vs-pet-slot conflict).)
 - [~] **P2.13** Save/profile format: writer/reader functions, file location, versioning, Steam paths
   (2026-10-21: live folder found at `C:\ProgramData\Steam\Insaniquarium\userdata`; sample
   `users.dat`/`user1.dat`/`adv1.dat` copied to `docs\analysis\inputs\p2.13-saves-2026-10-21`

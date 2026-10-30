@@ -1,0 +1,33 @@
+
+void FUN_00517c70(int param_1)
+
+{
+  int iVar1;
+  int in_ECX;
+  
+  if (param_1 == 99) {
+    FUN_0054adf0();
+    iVar1 = *(int *)(*(int *)(in_ECX + 4) + 0x87c);
+    if ((iVar1 == 1) || (iVar1 == 4)) {
+      FUN_00552230();
+      return;
+    }
+    iVar1 = *(int *)(*(int *)(in_ECX + 4) + 0x8b8);
+    if ((*(int *)(iVar1 + 0x1c) != 5) || (*(int *)(iVar1 + 0x20) != 2)) {
+      FUN_00552380(0,0);
+      return;
+    }
+LAB_00517ce5:
+    FUN_0054bd80();
+    return;
+  }
+  if (param_1 == 100) {
+    FUN_0054adf0();
+    iVar1 = *(int *)(*(int *)(in_ECX + 4) + 0x8b8);
+    if ((*(int *)(iVar1 + 0x1c) == 5) && (*(int *)(iVar1 + 0x20) == 2)) goto LAB_00517ce5;
+    FUN_00552100();
+  }
+  return;
+}
+
+

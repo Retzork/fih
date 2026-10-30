@@ -1,0 +1,124 @@
+
+void FUN_0051f450(int param_1,undefined4 param_2)
+
+{
+  int iVar1;
+  undefined4 uVar2;
+  undefined4 *puVar3;
+  undefined4 *puVar4;
+  undefined4 *in_ECX;
+  undefined1 local_34 [4];
+  void *local_30;
+  undefined4 local_28;
+  undefined4 local_24;
+  undefined4 local_20;
+  uint local_1c;
+  int local_18;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0058770e;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_0046dca0(DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+  puVar4 = in_ECX + 0x22;
+  *puVar4 = Sexy::ButtonListener::vftable;
+  local_8 = 0;
+  *in_ECX = Sexy::HatchScreen::vftable;
+  *puVar4 = Sexy::HatchScreen::vftable;
+  in_ECX[0x23] = param_1;
+  local_18 = FUN_00564345(0x58);
+  local_8._0_1_ = 1;
+  if (local_18 == 0) {
+    uVar2 = 0;
+  }
+  else {
+    uVar2 = FUN_00505350();
+  }
+  local_8._0_1_ = 0;
+  in_ECX[0x24] = uVar2;
+  local_28 = 0xbe;
+  local_24 = 0xdc;
+  local_20 = 0x102;
+  local_1c = 200;
+  FUN_00500120(&local_28);
+  FUN_00500180(10,5);
+  FUN_00512080();
+  in_ECX[0x25] = 0;
+  in_ECX[0x26] = param_2;
+  *(undefined1 *)(param_1 + 0x884) = 1;
+  in_ECX[0xc] = 0;
+  in_ECX[0xd] = 0;
+  in_ECX[0xe] = *(undefined4 *)(in_ECX[0x23] + 0xc0);
+  in_ECX[0xf] = *(undefined4 *)(in_ECX[0x23] + 0xc4);
+  local_1c = 0xf;
+  local_20 = 0;
+  local_30 = (void *)((uint)local_30 & 0xffffff00);
+  FUN_00426be0("Please Wait...",0xe);
+  local_8._0_1_ = 2;
+  uVar2 = FUN_00506820(99,puVar4,local_34,DAT_005e8c1c);
+  in_ECX[0x2b] = uVar2;
+  local_8 = (uint)local_8._1_3_ << 8;
+  if (0xf < local_1c) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_30);
+  }
+  (**(code **)(*(int *)in_ECX[0x2b] + 0x11c))(DAT_005e8a5c);
+  *(undefined1 *)(in_ECX[0x2b] + 0x55) = 0;
+  iVar1 = in_ECX[0x2b];
+  if ((*(int *)(iVar1 + 0x60) == 0) || (*(int *)(iVar1 + 100) - *(int *)(iVar1 + 0x60) >> 4 == 0)) {
+    FUN_00564335();
+  }
+  puVar4 = *(undefined4 **)(iVar1 + 0x60);
+  puVar3 = (undefined4 *)CRect::CRect((CRect *)&local_28,0xff,0xf0,0,0xff);
+  *puVar4 = *puVar3;
+  puVar4[1] = puVar3[1];
+  puVar4[2] = puVar3[2];
+  puVar4[3] = puVar3[3];
+  (**(code **)(*(int *)in_ECX[0x2b] + 0xa0))(0xba,0x1bd,0x108,((int *)in_ECX[0x2b])[0xf]);
+  (**(code **)(**(int **)(in_ECX[0x23] + 800) + 0x2c))(in_ECX[0x2b]);
+  local_1c = 0xf;
+  local_20 = 0;
+  local_30 = (void *)((uint)local_30 & 0xffffff00);
+  FUN_00426be0(&DAT_005a2b10,4);
+  local_8._0_1_ = 3;
+  uVar2 = FUN_00506820(100,in_ECX + 0x22,local_34,DAT_005e8c1c);
+  in_ECX[0x2c] = uVar2;
+  local_8._0_1_ = 0;
+  if (0xf < local_1c) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_30);
+  }
+  (**(code **)(*(int *)in_ECX[0x2c] + 0xa0))(0x20d,4,0x50,((int *)in_ECX[0x2c])[0xf]);
+  if ((*(int *)(*(int *)(in_ECX[0x23] + 0x8b8) + 0x1c) == 5) &&
+     (*(int *)(*(int *)(in_ECX[0x23] + 0x8b8) + 0x20) == 2)) {
+    *(undefined1 *)(in_ECX[0x2c] + 0x54) = 0;
+  }
+  puVar4 = (undefined4 *)FUN_00564345(0x8c);
+  local_8._0_1_ = 4;
+  if (puVar4 == (undefined4 *)0x0) {
+    puVar4 = (undefined4 *)0x0;
+  }
+  else {
+    FUN_0046dca0();
+    *puVar4 = HatchScreenOverlay::vftable;
+    puVar4[0x22] = in_ECX;
+    *(undefined1 *)((int)puVar4 + 0x55) = 0;
+    *(undefined1 *)(puVar4 + 0x10) = 1;
+    puVar4[0xe] = 0x280;
+    puVar4[0xf] = 0x1e0;
+  }
+  local_8 = (uint)local_8._1_3_ << 8;
+  in_ECX[0x2d] = puVar4;
+  in_ECX[0x27] = 0;
+  in_ECX[0x28] = 0;
+  in_ECX[0x29] = 0x1e0;
+  FUN_0054b020();
+  FUN_0054b1a0(2,0x36,0);
+  ExceptionList = local_10;
+  return;
+}
+
+

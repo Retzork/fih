@@ -2961,3 +2961,82 @@ behavior or specs; follow up with a binary observation entry.
   `FUN_0052B800(kind)` builds the named pet outright (0 Rocky, 1 Ludwig, 2 Cookie, 3 Johnny V., 4
   Kilgore; `[pet+0x124] = kind`), so the roller's `FUN_0051C0B0(2) / FUN_0052B800(2)` pair is "hand out
   Cookie once, roll randomly after that".
+
+### EV-0136 - P2.12 the remaining screens: ctor map, the click wire-up, the story mask gate
+- Date: 2026-10-29
+- Type: code trace (module decompilation + RTTI/vtable scan)
+- Source: `docs/evidence/p2.12-vtable-inventory.txt` (derived; RTTI CompleteObjectLocator ->
+  TypeDescriptor -> mangled name, plus byte-aligned vtable-immediate scan over `0x590000-0x5C8000`),
+  `docs/evidence/p2.12-fn-51F498.json`/`.txt`, `p2.12-fn-520998`, `p2.12-fn-524218`, `p2.12-fn-52572F`,
+  `p2.12-fn-527870`, `p2.12-fn-52A1E1`, `p2.12-fn-52DB11`, `p2.12-fn-52EECB`, `p2.12-fn-52F30B`,
+  `p2.12-fn-54C220`, `p2.12-fn-517C70`, `p2.12-fn-5182A0`, `p2.12-fn-518570`, `p2.12-fn-5187D0`,
+  `p2.12-fn-5289F0`, `p2.12-fn-529DD0`, `p2.12-fn-52AE40`, `p2.12-fn-52EAF0`, `p2.12-fn-51E060`,
+  `p2.12-fn-517560`, `p2.12-fn-51B6C0` (all `.json` + `.txt`), `p2.12-xrefs-5A0904.json` (answered),
+  `p2.12-xrefs-5A0A44.json` (empty - the negative that motivated the scan)
+- Confidence: high for the ctor map, the per-screen field/button tables and the id dispatchers; medium
+  for the *roles* of the `FUN_0054Axxx`/`FUN_0055xxxx` transition helpers, which are named from their
+  call sites only (note 5)
+- Notes:
+  (1) **`xrefs` is not a general recipe.** It returned the dtor+ctor pair for `HatchScreen`'s object
+  vtable (0x517959, 0x51f498) and an **empty list** for the other eight screen vtables. The ctor map
+  was obtained instead from `p2.12-vtable-inventory.txt`: MSVC writes its vtable with
+  `mov [reg], imm32` (`C7 xx imm32`), so a **byte-aligned** little-endian copy of the vtable VA inside
+  `.text` sits exactly 2 bytes after the instruction start; two hits per class = deleting dtor
+  (`0x51xxxx`) + ctor (`0x52xxxx`), one hit = a ctor that also builds an inline overlay. The rule
+  reproduces the four ctors already known from the other direction (Title `0x52EB96`, GameSelector
+  `0x52E0BB`, Store `0x52B321`, Tank `0x52CB83`). Full map: Hatch 0x51F450, Help 0x520950, HighScore
+  0x5241D0, Interlude 0x5256E0, Pets 0x527820, SimFish 0x52F2C0, SimSetup 0x52A190, Story 0x52EE80,
+  Bonus 0x52DAD0; the seven overlays have ctor-only hits inside their parent (`HatchScreenOverlay`
+  0x51F6FD, `GameSelectorOverlay` 0x52E7AA, `InterludeScreenOverlay` 0x5259CD, `PetScreenOverlay`
+  0x527E66, `SimFishScreenOverlay` 0x52FAD1, `StoreScreenOverlay` 0x52B7B1, `BonusScreenOverlay`
+  0x52DC07).
+  (2) **Every screen's `ButtonListener` slot 2 is one `(int id)` dispatcher** - Hatch `FUN_00517C70`,
+  Help `FUN_005182A0`, HighScore `FUN_00518570`, Interlude `FUN_005187D0`, Pets `FUN_005289F0`,
+  SimFish `FUN_00529DD0`, SimSetup `FUN_0052AE40`, Story `FUN_0052EAF0`, Bonus `FUN_0051E060`, Tank
+  `FUN_0051B6C0`. Only Pets/SimFish also override slots 4/5 (hover) and only Bonus overrides slot 1
+  (`FUN_00517560`, cursor + a hit test of the prize button); everything else keeps the shared no-op
+  `0x46C690`. The screen flow is therefore a button table + one switch per screen - no hidden state
+  machine.
+  (3) **`SimSetupScreen` is the only three-vtable screen**: `ButtonListener` at `+0x88` (0x5A13C8),
+  `CheckboxListener` at `+0x8C` (0x5A13D0) and the object vtable at `+0x00` (0x5A13F4), which pushes
+  the manager to **`+0x90`** (all other screens keep it at `+0x8C`). Its five checkboxes are
+  `FUN_00500B70(kind, checkboxListener, Tank+0x4FC..+0x500)` with the state byte at `checkbox+0x90`, and
+  "Return to Tank" copies those five bytes back into the tank (kind 6 <-> `Tank+0x500`, kind 7 <->
+  `+0x4FF`), setting `Tank+0x2C0 = 3000` when `Tank+0x4FE` is clear.
+  (4) **`StoryScreen` reads `profile+0x7C` as a bitmask**: the ctor shifts the dword one bit at a time
+  and stops after two set bits; with fewer than two it hides Previous and Next. That is the first
+  instruction-level reader for the 32-bit story mask Q-0013 tracked (the mask semantics are now
+  proven; the gold-trophy flag `profile+0x80` is still unwritten/unread). The page field is `+0xA4`,
+  clamped to `0..0x20` (else `DAT_005e9088`), and ids 1/2 call `FUN_0052E9D0(-1)`/`(+1)`.
+  (5) The transition helpers are un-named but consistent: `FUN_00552100` = main menu (Hatch, Help,
+  Interlude, Pets, Story, Tank); `FUN_0054AD70`/`ADB0`/`ADF0`/`AE30`/`AE70`/`AED0`/`AF10`/`AF50`/`AF90`
+  = one "close this screen" member per class, always the first call of the click handler;
+  `FUN_0054AFF0` = "the tank changed" follow-up; `FUN_00538940` + `FUN_0053DB80(0)` = return into the
+  running tank; `FUN_0054BD80` = the Virtual Tank screen; `FUN_0054CBF0` = continue the flow with no
+  tank; `FUN_00552230` = advance the bonus/hatch stage; `FUN_00552280` = leave the hall of fame;
+  `FUN_00552E50(x)` = the in-tank menu entry. Only `FUN_0054C220` is a real screen opener
+  (`manager+0x834 = new HelpScreen(...)`, rect 0,0,cx,cy, pushed to render-list slot 0xC).
+  (6) **`PetsScreen` confirms `profile+0x5A` is the pet selection and adds a second clear**: outside
+  Virtual Tank the ctor zeroes all 24 bytes, and Continue writes them back from the buttons'
+  `+0x130` flags (`profile[0x5A+i] = button+0x130`); Virtual Tank instead diffs the open-time snapshot
+  `screen+0x100+i` against the buttons and calls `FUN_0053A770(id+1000)` / `FUN_00544A90(i,-1,-1,0,0)`
+  to add/remove pets. Fewer than three selections outside Virtual Tank raises the app message box
+  (slot 0x120, kind 0x14) "Select More Pets?" with the "3 pets"/"at least 3 pets" wording chosen by
+  whether the cap `screen+0x130` is below 4.
+  (7) **`manager+0x738` gains its first reader**: `BonusScreen`'s Continue handler takes the
+  `FUN_00552230()` branch when `[manager+0x738] != 0` (as it does in mode 1), so the field means "a
+  side screen is open". No writer was found in nine further ctors (Q-0025).
+  (8) **`profile+0x72..+0x77` conflict.** The SimSetup backdrop picker writes
+  `profile[0x72 + (Tank+0x3E8 - 1)] = 1`, skips unset entries while cycling and refuses to sell the
+  last one ("You are not allowed to sell your only backdrop!", refund 10000), i.e. six backdrop
+  ownership flags - while EV-0135 read the same six bytes as the store's pet slots. Recorded as
+  Q-0026; do not derive pet ownership from that range until the roller is re-read.
+  (9) Other ctors: `HelpScreen` has **8 pages** at `+0xA4` (seeded from `DAT_005e15f8`, wrapping 1..8)
+  and switches between the paged and tutorial layouts on its ctor flag (the tutorial hides "Click Here
+  To Continue" and, with a live tank, relabels Menu to "Back to Game"); `HighScoreScreen` writes the
+  selected tab to `+0xA8` (default `DAT_005e15fc`); `InterludeScreen` seeds `DAT_005e9084 = 0` and
+  `DAT_005e907C = 12*0x23 + 0x1C39`; `BonusScreen` holds seven `std::string`s at `+0xE8..+0x1B4` and
+  relabels Continue to "Click for Story Time" in Challenge mode 4 with a live tank; `TankScreen`'s ids
+  0-3 call `FUN_0051A710(id+1)`, id 4 calls `FUN_0054AED0() + FUN_00552E50(-1)`, id 99 goes to the main
+  menu. `HatchScreen` sets `manager+0x884 = 1` on construction.
+

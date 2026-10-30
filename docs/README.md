@@ -3,8 +3,9 @@
 **Handover status: Phase 2 in progress (2026-10-29).** Phase 0, Phase 1 and Phase 3 are
 complete; Phase 2 is 9/18 done with **P2.12 (menus & UI flow) in progress**. P2.1-P2.4, P2.7-P2.11
 are closed, P2.5 and P2.6 are substantially complete with tracked open questions, and P2.12 has
-its first pass plus the store pass done (screen map, mode writer, store screen and stock refresh,
-level-start flow). Phase 4 (Godot
+its screen pass done (screen map, mode writer, store screen and stock refresh, level-start flow,
+all 13 screen constructors and their click handlers); what is left there is the dialog layer.
+Phase 4 (Godot
 gameplay implementation) has not started: the repository currently contains the Godot project shell
 plus the imported sprite resources. `PLAN.md` is the source of truth for progress.
 
@@ -14,8 +15,8 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
    session-end checklist in `AGENTS.md`.
 2. **Want the current state quickly?** Read the `P2.12` entry in `PLAN.md`, then
    `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen and stock
-   refresh, level-start flow, EV-0131..EV-0135), then `analysis/notes/p2.11-modes.md` for the mode
-   behavior itself.
+   refresh, level-start flow, all screen ctors and click handlers, EV-0131..EV-0136), then
+   `analysis/notes/p2.11-modes.md` for the mode behavior itself.
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -54,10 +55,21 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   **`SOLD`**. The screen's slots (attach/detach/refresh/update/draw/mousemove) and its tooltip
   (`FUN_0051B9E0` kind-to-text, 16 ticks of hover, "Thanks for shopping at the Fish Emporium!") are
   mapped too.
-- **P2.12 still open (Q-0018, Q-0025):** the owner of the *normal* store-item object and whether the
-  rolled pet is really the receiver of `FUN_00519730`, `manager+0x738` has no known
-  owner, the 24-byte `profile+0x5A` clear contradicts the pet-selection reading (Q-0025) and
-  `profile+0x18` is unbound. Do not guess these.
+- **P2.12 screen pass (2026-10-29, EV-0136):** the vtable-xref recipe only worked on the first four
+  screens, so the ctor map was rebuilt from an RTTI + vtable-immediate scan (a class stores its
+  vtable with `mov [reg], imm32`, so the vtable VA appears in `.text` two bytes after the
+  instruction): all **13 screen ctors** plus 7 inline overlay ctors are located and written up. Each
+  screen gets a field map (Help's 8-page counter at `+0xA4`, HighScore's tab at `+0xA8`, Pets' 24-slot
+  grid and its `profile[0x5A+i]` writer, SimFish's 20-row browser, SimSetup's three vtables with the
+  manager at `+0x90` and its checkbox copy into `Tank+0x4FC..+0x500`, Story's `profile+0x7C` popcount
+  gate, Bonus' `manager+0x738` read), all 10 click dispatchers are decoded, and the transition
+  helpers are tabulated. Story unlock stays Q-0013.
+- **P2.12 still open (Q-0018, Q-0025, Q-0026):** the owner of the *normal* store-item object and
+  whether the rolled pet is really the receiver of `FUN_00519730`; `manager+0x738` now has a reader
+  (the Bonus handler) but still no writer; `profile+0x18` is unbound (the `profile+0x5A` clear is
+  explained - it is the PetsScreen ctor resetting the pending pet selection); and `profile+0x72..+0x77`
+  is claimed both as the backdrop ownership map (SimSetup) and as store pet slots (Q-0026). The
+  dialog layer is the remaining P2.12 work. Do not guess these.
 - **P2.11 game modes (2026-10-29)** mapped all four shipped modes off the single binding
   `mode = [manager+0x87C]`: 0 Adventure, 1 Time Trial, 3 Sandbox, 4 Challenge, 5 Virtual Tank
   (2 is referenced but never observed). `FUN_0054CBF0` is `start_level`, and the per-mode work
@@ -132,12 +144,12 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
   runtime; VT beetle value. See `PLAN.md`.
-- **Next planned task:** finish P2.12 - the store price/grey-out is done (EV-0135), so walk the
-  remaining screen ctors with the vtable-xref
-  recipe (`HelpScreen` 0x5A0A20/0x5A0A44, `HighScoreScreen` 0x5A0B60/0x5A0B84, `PetsScreen`,
-  `HatchScreen`, `SimFishScreen`, `SimSetupScreen`, `StoryScreen`, `InterludeScreen`) and the three
-  dialogs, then close Q-0018's two residuals. Q-0025's `profile+0x5A` clear is the one item that
-  needs the session-init functions.
+- **Next planned task:** finish P2.12 - the screen pass is done (EV-0136), so decompile the 11
+  dialogs whose ctors are already located (`OptionsDialog` 0x5349D0, `MoneyDialog` 0x530987,
+  `ContinueDialog` 0x5335E0, `FishNamingDialog` 0x533B2C, `FoodDialog` 0x533E96, `UserDialog`
+  0x5365D6, `NewUserDialog` 0x5348A0, `RegisterDialog` 0x535B7D, `PetDialog` 0x5356D5,
+  `VirtualDialog` 0x536DB9, `ScreenSaverDialog` 0x535F36), then close Q-0018's two residuals and
+  Q-0026's `profile+0x72..+0x77` conflict.
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
 ## What is in the repository
@@ -211,7 +223,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0135). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0136). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11 and P2.12 opens. |
@@ -223,8 +235,8 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
 - [ ] Read the latest EVIDENCE entries and the current system note (`p2.12-menus.md` now).
-- [ ] Pick the next task from `PLAN.md` (finish `P2.12` menus & UI flow); check its open questions
-  (Q-0018, Q-0025) first.
+- [ ] Pick the next task from `PLAN.md` (finish `P2.12` menus & UI flow - the dialog layer);
+  check its open questions (Q-0018, Q-0025, Q-0026) first.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended
   `EVIDENCE.md`, `DECISIONS.md` questions, note's P4 spec, saved raw output, and a commit.

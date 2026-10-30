@@ -1,0 +1,206 @@
+
+void FUN_0052dad0(undefined4 param_1)
+
+{
+  undefined4 *puVar1;
+  uint uVar2;
+  int iVar3;
+  undefined4 uVar4;
+  int *piVar5;
+  undefined4 *in_ECX;
+  undefined1 local_68 [4];
+  void *local_64;
+  int local_5c;
+  int local_58;
+  int local_54;
+  uint local_50;
+  void *local_48;
+  undefined4 local_38;
+  uint local_34;
+  void *local_2c;
+  undefined4 local_1c;
+  uint local_18;
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_0058851a;
+  local_10 = ExceptionList;
+  uVar2 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_14 = uVar2;
+  FUN_0046dca0(uVar2);
+  in_ECX[0x22] = Sexy::ButtonListener::vftable;
+  *in_ECX = Sexy::BonusScreen::vftable;
+  in_ECX[0x22] = Sexy::BonusScreen::vftable;
+  in_ECX[0x25] = 0;
+  in_ECX[0x26] = 0;
+  in_ECX[0x27] = 0;
+  in_ECX[0x28] = 0;
+  in_ECX[0x3f] = 0xf;
+  in_ECX[0x3e] = 0;
+  *(undefined1 *)(in_ECX + 0x3a) = 0;
+  in_ECX[0x46] = 0xf;
+  in_ECX[0x45] = 0;
+  *(undefined1 *)(in_ECX + 0x41) = 0;
+  in_ECX[0x4d] = 0xf;
+  in_ECX[0x4c] = 0;
+  *(undefined1 *)(in_ECX + 0x48) = 0;
+  in_ECX[0x54] = 0xf;
+  in_ECX[0x53] = 0;
+  *(undefined1 *)(in_ECX + 0x4f) = 0;
+  in_ECX[0x5b] = 0xf;
+  in_ECX[0x5a] = 0;
+  *(undefined1 *)(in_ECX + 0x56) = 0;
+  in_ECX[0x62] = 0xf;
+  in_ECX[0x61] = 0;
+  *(undefined1 *)(in_ECX + 0x5d) = 0;
+  local_8._0_1_ = 6;
+  local_8._1_3_ = 0;
+  in_ECX[0x23] = param_1;
+  iVar3 = FUN_00564345(0x58);
+  local_8._0_1_ = 7;
+  if (iVar3 == 0) {
+    uVar4 = 0;
+  }
+  else {
+    uVar4 = FUN_00505350();
+  }
+  local_8._0_1_ = 6;
+  in_ECX[0x24] = uVar4;
+  piVar5 = (int *)FUN_00564345(0x8c);
+  local_8._0_1_ = 8;
+  if (piVar5 == (int *)0x0) {
+    piVar5 = (int *)0x0;
+  }
+  else {
+    FUN_0046dca0(uVar2);
+    *piVar5 = (int)BonusScreenOverlay::vftable;
+    piVar5[0x22] = (int)in_ECX;
+    *(undefined1 *)((int)piVar5 + 0x55) = 0;
+    *(undefined1 *)(piVar5 + 0x10) = 1;
+  }
+  in_ECX[0x29] = piVar5;
+  local_8._0_1_ = 6;
+  (**(code **)(*piVar5 + 0xa0))(0,0,0x280,0x1e0);
+  local_34 = 0xf;
+  local_38 = 0;
+  local_48 = (void *)((uint)local_48 & 0xffffff00);
+  local_18 = 0xf;
+  local_1c = 0;
+  local_2c = (void *)((uint)local_2c & 0xffffff00);
+  in_ECX[0x25] = 0xaf;
+  in_ECX[0x26] = 0xe6;
+  in_ECX[0x27] = 300;
+  in_ECX[0x28] = 0xe1;
+  local_54 = in_ECX[0x27] + -0x28;
+  local_58 = in_ECX[0x26] + -0xf;
+  local_5c = in_ECX[0x25] + 0x14;
+  local_8._0_1_ = 10;
+  local_50 = 0xcd;
+  FUN_00500120(&local_5c);
+  FUN_00500180(10,3);
+  FUN_00512080();
+  local_50 = 0xf;
+  local_54 = 0;
+  local_64 = (void *)((uint)local_64 & 0xffffff00);
+  FUN_00426be0(&DAT_005a2b10,4);
+  puVar1 = in_ECX + 0x22;
+  local_8._0_1_ = 0xb;
+  uVar4 = FUN_00506820(1,puVar1,local_68,DAT_005e8c1c);
+  in_ECX[0x2a] = uVar4;
+  local_8._0_1_ = 10;
+  if (0xf < local_50) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_64);
+  }
+  (**(code **)(*(int *)in_ECX[0x2a] + 0xa0))(0x20d,4,0x50,((int *)in_ECX[0x2a])[0xf]);
+  if ((*(int *)(*(int *)(in_ECX[0x23] + 0x8b8) + 0x1c) == 5) &&
+     (*(int *)(*(int *)(in_ECX[0x23] + 0x8b8) + 0x20) == 2)) {
+    *(undefined1 *)(in_ECX[0x2a] + 0x54) = 0;
+  }
+  local_50 = 0xf;
+  local_54 = 0;
+  local_64 = (void *)((uint)local_64 & 0xffffff00);
+  FUN_00426be0("Click Here To Continue",0x16);
+  local_8._0_1_ = 0xc;
+  uVar4 = FUN_00506820(0,puVar1,local_68,DAT_005e8c1c);
+  in_ECX[0x2b] = uVar4;
+  local_8 = CONCAT31(local_8._1_3_,10);
+  if (0xf < local_50) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_64);
+  }
+  (**(code **)(*(int *)in_ECX[0x2b] + 0xa0))(0xba,0x1bd,0x108,((int *)in_ECX[0x2b])[0xf]);
+  iVar3 = *(int *)in_ECX[0x2b];
+  uVar4 = FUN_00433360(0xff,0xf0,0);
+  (**(code **)(iVar3 + 0x88))(0,uVar4);
+  (**(code **)(*(int *)in_ECX[0x2b] + 0x11c))(DAT_005e8a5c);
+  if ((*(int *)(in_ECX[0x23] + 0x87c) == 4) && (*(int *)(in_ECX[0x23] + 0x730) != 0)) {
+    FUN_00426be0("Click for Story Time",0x14);
+    *(undefined1 *)(in_ECX[0x2a] + 0x54) = 0;
+  }
+  local_50 = 0xf;
+  local_54 = 0;
+  local_64 = (void *)((uint)local_64 & 0xffffff00);
+  FUN_00426be0(&DAT_005ad7a6,0);
+  local_8._0_1_ = 0xd;
+  uVar4 = FUN_00506820(2,puVar1,local_68,DAT_005e8ed8);
+  in_ECX[0x2c] = uVar4;
+  local_8 = CONCAT31(local_8._1_3_,10);
+  if (0xf < local_50) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_64);
+  }
+  iVar3 = *(int *)in_ECX[0x2c];
+  uVar4 = FUN_00433360(0xff,0xff,0xff);
+  (**(code **)(iVar3 + 0x88))(0,uVar4);
+  (**(code **)(*(int *)in_ECX[0x2c] + 0xa0))(0xd5,200,0xd1,((int *)in_ECX[0x2c])[0xf]);
+  (**(code **)(*(int *)in_ECX[0x2c] + 0x7c))(1);
+  *(undefined1 *)(in_ECX + 0x38) = 0;
+  in_ECX[0x32] = 0x32;
+  in_ECX[0x30] = 0;
+  in_ECX[0x2f] = 0;
+  in_ECX[0x31] = *(undefined4 *)(*(int *)(in_ECX[0x23] + 0x8b8) + 0x48);
+  FUN_0051c8e0();
+  iVar3 = in_ECX[0x2f];
+  if (iVar3 / (int)in_ECX[0x32] < 0xf) {
+    in_ECX[0x32] = iVar3 / 0xf;
+  }
+  else if (0x32 < iVar3 / (int)in_ECX[0x32]) {
+    in_ECX[0x32] = iVar3 / 0x32;
+  }
+  in_ECX[0x33] = 0;
+  if ((int)in_ECX[0x32] < 0x32) {
+    in_ECX[0x32] = 0x32;
+  }
+  FUN_00516f70();
+  (**(code **)(*(int *)in_ECX[0x2a] + 0x94))(1);
+  (**(code **)(*(int *)in_ECX[0x2b] + 0x94))(1);
+  (**(code **)(*(int *)in_ECX[0x2c] + 0x94))(1);
+  in_ECX[0x2d] = 0;
+  in_ECX[0x36] = 0;
+  in_ECX[0x37] = 0;
+  in_ECX[0x35] = 0;
+  *(undefined1 *)((int)in_ECX + 0xe1) = 0;
+  uVar4 = FUN_0054acf0();
+  in_ECX[0x2e] = uVar4;
+  if (0xf < local_18) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_2c);
+  }
+  local_18 = 0xf;
+  local_1c = 0;
+  local_2c = (void *)((uint)local_2c & 0xffffff00);
+  if (0xf < local_34) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_48);
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+

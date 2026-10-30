@@ -1,0 +1,84 @@
+
+void FUN_0051e060(int param_1)
+
+{
+  int iVar1;
+  undefined4 uVar2;
+  int in_ECX;
+  char *pcVar3;
+  undefined1 local_80 [28];
+  undefined1 local_64 [28];
+  undefined1 local_48 [28];
+  undefined1 local_2c [28];
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00587578;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  if (param_1 == 1) {
+    FUN_0054ae30(DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+  }
+  else {
+    if (param_1 != 0) {
+      if (param_1 == 2) {
+        iVar1 = *(int *)(*(int *)(in_ECX + 4) + 0x8b8);
+        if (*(int *)(iVar1 + 0x48) < *(int *)(in_ECX + 0x48)) {
+          pcVar3 = "this Bonus Pet";
+          if (3 < *(int *)(iVar1 + 0xb0)) {
+            pcVar3 = "this Bonus Upgrade";
+          }
+          FUN_0041d8b0(&DAT_005b161c);
+          local_8 = 0;
+          FUN_0041d8b0("Not Enough Shells");
+          local_8._0_1_ = 1;
+          uVar2 = FUN_004120c0(local_80,
+                               "Sorry, but you need more Shells to purchase %s.  Keep playing to earn more!"
+                               ,pcVar3);
+          local_8 = CONCAT31(local_8._1_3_,2);
+          (**(code **)(**(int **)(in_ECX + 4) + 0x120))(0xe,1,local_2c,uVar2,local_48,3);
+          FUN_0041d8f0();
+          FUN_0041d8f0();
+        }
+        else if (*(int *)(iVar1 + 0xb0) < 4) {
+          FUN_0041d8b0("Would you like to\nbuy this Bonus Pet?");
+          local_8 = 3;
+          FUN_0054fdd0(local_48);
+        }
+        else {
+          FUN_0041d8b0("Would you like to\nbuy this Bonus Upgrade?");
+          local_8 = 4;
+          FUN_0054fdd0(local_64);
+        }
+        FUN_0041d8f0();
+      }
+      ExceptionList = local_10;
+      return;
+    }
+    FUN_0054ae30(DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+    iVar1 = *(int *)(in_ECX + 4);
+    if ((*(int *)(iVar1 + 0x87c) != 1) && (*(int *)(iVar1 + 0x738) == 0)) {
+      if (*(int *)(iVar1 + 0x87c) == 4) {
+        FUN_00552e50(*(undefined4 *)(in_ECX + 0x30));
+        ExceptionList = local_10;
+        return;
+      }
+      if ((*(int *)(*(int *)(iVar1 + 0x8b8) + 0x1c) == 5) &&
+         (*(int *)(*(int *)(iVar1 + 0x8b8) + 0x20) == 2)) {
+        FUN_0054bd80();
+        ExceptionList = local_10;
+        return;
+      }
+      FUN_00552380(1,1);
+      ExceptionList = local_10;
+      return;
+    }
+  }
+  FUN_00552230();
+  ExceptionList = local_10;
+  return;
+}
+
+

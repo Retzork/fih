@@ -1,0 +1,21 @@
+
+void FUN_0051b6c0(uint param_1)
+
+{
+  if (param_1 == 99) {
+    FUN_0054aed0();
+    FUN_00552100();
+    return;
+  }
+  if (param_1 < 4) {
+    FUN_0051a710(param_1 + 1);
+    return;
+  }
+  if (param_1 == 4) {
+    FUN_0054aed0();
+    FUN_00552e50(0xffffffff);
+  }
+  return;
+}
+
+

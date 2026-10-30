@@ -1,0 +1,89 @@
+
+void FUN_0052ee80(undefined4 param_1,undefined4 param_2)
+
+{
+  undefined4 *puVar1;
+  int iVar2;
+  undefined4 uVar3;
+  uint uVar4;
+  undefined4 *in_ECX;
+  undefined4 local_24;
+  undefined4 local_20;
+  undefined4 local_1c;
+  undefined4 local_18;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00588653;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_0046dca0(DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+  puVar1 = in_ECX + 0x22;
+  *puVar1 = Sexy::ButtonListener::vftable;
+  local_8 = 0;
+  *in_ECX = Sexy::StoryScreen::vftable;
+  *puVar1 = Sexy::StoryScreen::vftable;
+  in_ECX[0x23] = param_1;
+  FUN_0054b1a0(2,5,0);
+  in_ECX[0x29] = param_2;
+  local_24 = 0;
+  local_20 = 0xffffffec;
+  local_1c = 0x280;
+  local_18 = 0x208;
+  iVar2 = FUN_00564345(0x58);
+  local_8._0_1_ = 1;
+  if (iVar2 == 0) {
+    uVar3 = 0;
+  }
+  else {
+    uVar3 = FUN_00505350();
+  }
+  local_8 = (uint)local_8._1_3_ << 8;
+  in_ECX[0x27] = uVar3;
+  FUN_00500120(&local_24);
+  FUN_00500180(10,3);
+  FUN_00512080();
+  in_ECX[0xc] = 0;
+  in_ECX[0xd] = 0;
+  in_ECX[0xe] = *(undefined4 *)(in_ECX[0x23] + 0xc0);
+  in_ECX[0xf] = *(undefined4 *)(in_ECX[0x23] + 0xc4);
+  iVar2 = FUN_0052c360(0,puVar1);
+  in_ECX[0x24] = iVar2;
+  *(int *)(iVar2 + 0x30) = 0x276 - *(int *)(iVar2 + 0x38);
+  *(int *)(in_ECX[0x24] + 0x34) = 0x1cc - *(int *)(in_ECX[0x24] + 0x3c) / 2;
+  uVar3 = FUN_0052c360(1,puVar1);
+  in_ECX[0x26] = uVar3;
+  uVar3 = FUN_0052c360(2,puVar1);
+  in_ECX[0x25] = uVar3;
+  *(int *)(in_ECX[0x26] + 0x30) = 0xdc - *(int *)(in_ECX[0x26] + 0x38);
+  *(undefined4 *)(in_ECX[0x25] + 0x30) = 0x1a4;
+  *(undefined4 *)(in_ECX[0x25] + 0x34) = 0xf;
+  *(undefined4 *)(in_ECX[0x26] + 0x34) = 0xf;
+  uVar4 = *(uint *)(*(int *)(in_ECX[0x23] + 0x8b8) + 0x7c);
+  iVar2 = 0;
+  if (uVar4 != 0) {
+    do {
+      if (1 < iVar2) break;
+      if ((uVar4 & 1) != 0) {
+        iVar2 = iVar2 + 1;
+      }
+      uVar4 = uVar4 >> 1;
+    } while (uVar4 != 0);
+    if (1 < iVar2) goto LAB_0052f047;
+  }
+  *(undefined1 *)(in_ECX[0x26] + 0x54) = 0;
+  *(undefined1 *)(in_ECX[0x25] + 0x54) = 0;
+LAB_0052f047:
+  in_ECX[0x28] = 0;
+  if (((int)in_ECX[0x29] < 0) || (0x20 < (int)in_ECX[0x29])) {
+    in_ECX[0x29] = DAT_005e9088;
+  }
+  FUN_0052e9d0(0);
+  FUN_0052c490();
+  ExceptionList = local_10;
+  return;
+}
+
+

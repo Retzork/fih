@@ -1,0 +1,128 @@
+
+void FUN_0052ae40(int param_1)
+
+{
+  char *pcVar1;
+  int in_ECX;
+  int iVar2;
+  int iVar3;
+  undefined1 local_84 [4];
+  void *local_80;
+  uint local_6c;
+  undefined1 local_68 [4];
+  void *local_64;
+  undefined4 local_54;
+  uint local_50;
+  undefined1 local_4c [4];
+  void *local_48;
+  undefined4 local_38;
+  uint local_34;
+  undefined1 local_30 [4];
+  void *local_2c;
+  uint local_18;
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_005880c0;
+  local_10 = ExceptionList;
+  local_14 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  if (param_1 == 9) {
+    FUN_0054af50();
+    *(undefined1 *)(*(int *)(*(int *)(in_ECX + 8) + 0x730) + 0x4fc) =
+         *(undefined1 *)(*(int *)(in_ECX + 0x2c) + 0x90);
+    *(undefined1 *)(*(int *)(*(int *)(in_ECX + 8) + 0x730) + 0x4fd) =
+         *(undefined1 *)(*(int *)(in_ECX + 0x30) + 0x90);
+    *(undefined1 *)(*(int *)(*(int *)(in_ECX + 8) + 0x730) + 0x4fe) =
+         *(undefined1 *)(*(int *)(in_ECX + 0x34) + 0x90);
+    *(undefined1 *)(*(int *)(*(int *)(in_ECX + 8) + 0x730) + 0x500) =
+         *(undefined1 *)(*(int *)(in_ECX + 0x38) + 0x90);
+    *(undefined1 *)(*(int *)(*(int *)(in_ECX + 8) + 0x730) + 0x4ff) =
+         *(undefined1 *)(*(int *)(in_ECX + 0x3c) + 0x90);
+    iVar2 = *(int *)(*(int *)(in_ECX + 8) + 0x730);
+    if (*(char *)(iVar2 + 0x4fe) == '\0') {
+      *(undefined4 *)(iVar2 + 0x2c0) = 3000;
+    }
+    FUN_00538940();
+    if (*(char *)(in_ECX + 0x14) != '\0') {
+      FUN_0054aff0();
+    }
+    FUN_0053db80(0);
+  }
+  else if ((param_1 == 0) || (param_1 == 1)) {
+    *(undefined1 *)(in_ECX + 0x14) = 1;
+    iVar2 = *(int *)(*(int *)(*(int *)(in_ECX + 8) + 0x730) + 1000) + -1;
+    *(undefined1 *)(*(int *)(*(int *)(in_ECX + 8) + 0x8b8) + 0x72 + iVar2) = 1;
+    do {
+      iVar2 = iVar2 + (uint)(param_1 != 0) * 2 + -1;
+      if (iVar2 < 0) {
+        iVar2 = 5;
+      }
+      else if (5 < iVar2) {
+        iVar2 = 0;
+      }
+    } while (*(char *)(*(int *)(*(int *)(in_ECX + 8) + 0x8b8) + 0x72 + iVar2) == '\0');
+    FUN_00538a10(iVar2 + 1);
+  }
+  else if (param_1 == 2) {
+    iVar3 = 0;
+    pcVar1 = (char *)(*(int *)(*(int *)(in_ECX + 8) + 0x8b8) + 0x72);
+    iVar2 = 6;
+    do {
+      if (*pcVar1 != '\0') {
+        iVar3 = iVar3 + 1;
+      }
+      pcVar1 = pcVar1 + 1;
+      iVar2 = iVar2 + -1;
+    } while (iVar2 != 0);
+    if (iVar3 == 1) {
+      FUN_0041d8b0(&DAT_005b161c);
+      local_8 = 0;
+      FUN_0041d8b0("You are not allowed to sell your only backdrop!");
+      local_8._0_1_ = 1;
+      FUN_0041d8b0("Not Allowed");
+      local_8 = CONCAT31(local_8._1_3_,2);
+      (**(code **)(**(int **)(in_ECX + 8) + 0x120))(0xe,1,local_68,local_4c,local_84,3);
+      if (0xf < local_50) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_64);
+      }
+      local_50 = 0xf;
+      local_54 = 0;
+      local_64 = (void *)((uint)local_64 & 0xffffff00);
+      if (0xf < local_34) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_48);
+      }
+      local_34 = 0xf;
+      local_38 = 0;
+      local_48 = (void *)((uint)local_48 & 0xffffff00);
+      if (0xf < local_6c) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_80);
+      }
+    }
+    else {
+      FUN_004120c0(local_30,
+                   "Are you sure that you want to sell this backdrop?\n\nRefund Value: %d Shells",
+                   10000);
+      local_8 = 3;
+      FUN_0054fc90(local_30);
+      if (0xf < local_18) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_2c);
+      }
+    }
+  }
+  else if (param_1 == 8) {
+    FUN_0054fef0(local_14);
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+

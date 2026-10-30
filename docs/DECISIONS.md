@@ -179,6 +179,13 @@
   reader/writer for `+0x7C` or `+0x80` was located, and the sample's four record bytes are
   `1,1,1,0` rather than a clean four-tank set. Keep Q-0013 **OPEN**; the labels are a lead, not
   a proven trophy trigger.
+- 2026-10-29 update (P2.12, EV-0136): the **read side of `profile+0x7C` is found**. The
+  `StoryScreen` ctor `FUN_0052EE80` loads `profile+0x7C`, shifts it one bit at a time and counts
+  set bits, stopping at 2; if fewer than two bits are set it hides both the Previous and the Next
+  button (`byte[+0x54] = 0`). So `+0x7C` is a per-story **unlock bitmask** that gates the story
+  browser on "at least two stories seen" - the first instruction-level reader for it. There is
+  still no writer for the individual bits and no reader/writer for a 33rd ending flag at `+0x80`.
+  Keep Q-0013 OPEN and narrower: the mask semantics are proven, the trophy trigger is not.
 
 ### Q-0014 - Mode 2 role
 - OPEN (2026-10-20, EV-0075). No observed condition or name for `manager+0x87C == 2`. Do not
@@ -403,3 +410,31 @@
   `extraout_EDX`) in the between-tanks branch (EV-0134). The field is not in `user%d.dat` (the file
   starts at `+0x1C`), so it is runtime state; "current tank < unlocked tanks" is a reading, not
   evidence.
+- 2026-10-29 update (P2.12, EV-0136) - two of the three are now narrower:
+  - **`profile+0x5A` has a second writer.** The `PetsScreen` ctor `FUN_00527820` clears all 24 bytes
+    (`profile[0x5A + i] = 0`, i = 0..0x17) on every open **outside** Virtual Tank; in mode 5 it leaves
+    the array alone and instead derives the per-pet owned flag from the tank (it walks `Tank+0x108`,
+    keeps type ids `-1000 < 0x18`, sets `PetButtonWidget+0x56` and the screen byte `+0x100+(id-1000)`, and
+    counts them into `+0x124`). The array is therefore the **pending pet selection**, cleared both by the
+    pet screen and by the level-start funnel - clearing it in both places is faithful.
+  - **`manager+0x738`** is still unwritten: nine more screen ctors (`Hatch`, `Help`, `HighScore`,
+    `Interlude`, `Pets`, `SimFish`, `SimSetup`, `Story`, `Bonus`) were opened and none writes it (bounded
+    negative over `docs/evidence/p2.12-fn-5*.txt`). It does have a **reader**: the BonusScreen click
+    handler `FUN_0051E060` sends Continue down the `FUN_00552230()` branch when `[manager+0x738] != 0`,
+    i.e. the field means "a side screen is open". The identity of its writer is still open; the teardown
+    stays "close whatever is open".
+  - `profile+0x18` is still unbound. `PetsScreen` reads it only as `min(profile+0xB4, profile+0x18)`,
+    clamped to 4 outside Virtual Tank, which is consistent with "unlocked tanks" but not proof.
+
+### Q-0026 - `profile+0x72..+0x77` role: backdrop ownership or store pet slots
+- OPEN (2026-10-29, EV-0135 vs EV-0136). Two passes read the same six bytes differently and neither
+  is proven:
+- EV-0135 (store): `FUN_0052F0D0` walks `profile+0x72+i` (i = 0..5) as the store's **pet slots**, and
+  the refresh timer's one-off unlocks use `profile+0x90`/`+0x94`.
+- EV-0136 (Virtual Tank setup): the SimSetupScreen Prev/Next backdrop picker writes
+  `profile[0x72 + (Tank+0x3E8 - 1)] = 1` when the player views a backdrop, skips entries whose flag is
+  0 while cycling, and the Sell button refuses when exactly one of the six is set ("You are not
+  allowed to sell your only backdrop!") - i.e. six **backdrop ownership** flags.
+- Until the roller is re-read against the picker, the remake must not derive pet ownership from
+  `profile+0x72..+0x77`; six backdrops is the reading with dialog text behind it. Resolve in P2.13 with
+  the profile writer (`FUN_00501530` and the save loader).
