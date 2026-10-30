@@ -1,0 +1,10 @@
+﻿/* 0x40F9E0 pseudo code (rea/ghidra) */
+
+void FUN_0040f9e0(void)
+
+{
+  FUN_0040aeb0();
+  return;
+}
+
+

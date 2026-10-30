@@ -1,0 +1,10 @@
+﻿/* 0x5004E0 pseudo code (rea/ghidra) */
+
+void FUN_005004e0(void)
+
+{
+  FUN_00500480(&stack0x00000004,4);
+  return;
+}
+
+

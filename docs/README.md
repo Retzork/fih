@@ -1,11 +1,12 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
 **Handover status: Phase 2 in progress (2026-10-29).** Phase 0, Phase 1 and Phase 3 are
-complete; Phase 2 is 9/18 done with **P2.12 (menus & UI flow) in progress**. P2.1-P2.4, P2.7-P2.11
-are closed, P2.5 and P2.6 are substantially complete with tracked open questions, and P2.12 has
-its screen and dialog passes done (screen map, mode writer, store screen and stock refresh,
-level-start flow, all 13 screen constructors and their click handlers, the dialog base plus all
-ten dialog ctors and their click handlers); what is left there are the tracked open questions.
+complete; Phase 2 is 10/18 done with **P2.13 (save/profile format) in progress**. P2.1-P2.4 and
+P2.7-P2.12 are closed, P2.5, P2.6 and P2.13 are substantially complete with tracked open questions,
+and P2.12 has its screen and dialog passes done (screen map, mode writer, store screen and stock
+refresh, level-start flow, all 13 screen constructors and their click handlers, the dialog base
+plus all ten dialog ctors and their click handlers); what is left there are the tracked open
+questions.
 Phase 4 (Godot
 gameplay implementation) has not started: the repository currently contains the Godot project shell
 plus the imported sprite resources. `PLAN.md` is the source of truth for progress.
@@ -17,7 +18,9 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 2. **Want the current state quickly?** Read the `P2.12` entry in `PLAN.md`, then
    `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen and stock
    refresh, level-start flow, all screen ctors and click handlers, the dialog layer,
-   EV-0131..EV-0142), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
+   EV-0131..EV-0140), then `analysis/notes/p2.13-saves.md` (file naming, the profile fields, the
+   bonus-shell escrow, EV-0142/EV-0143), then `analysis/notes/p2.11-modes.md` for the mode
+   behavior itself.
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.

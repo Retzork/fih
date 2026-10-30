@@ -1,0 +1,12 @@
+﻿/* 0x500340 pseudo code (rea/ghidra) */
+
+undefined4 FUN_00500340(void)
+
+{
+  undefined4 local_8;
+  
+  FUN_00500290(&local_8,4);
+  return local_8;
+}
+
+

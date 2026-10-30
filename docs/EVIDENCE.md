@@ -3374,3 +3374,59 @@ behavior or specs; follow up with a binary observation entry.
   "pretend success"), and the id-0 branch of `FUN_00533760` deletes the current mode's file *before*
   `[manager]->vtable[0x134](this+0xB4)`, whose meaning is still P2.12's open "start session" call.
 
+### EV-0143 - Q-0019 settled: `scr%d.dat` is the bonus-shells escrow - 102 raw dwords gated by `profile+0x88`
+- Date: 2026-10-29
+- Type: code trace (decompilation of the reader/writer/SaveGame plus a byte-level decode of the reader's
+  return path and of the save-side flush)
+- Source: `docs/evidence/p2.13-fn-5148C0.json`/`.txt` (reader), `p2.13-fn-515910.json`/`.txt` (writer),
+  `p2.13-fn-47F5D0.json`/`.txt` (whole-file loader), `p2.13-fn-546990.json`/`.txt` (SaveGame),
+  `p2.13-fn-546AA0.json`/`.txt` (LoadGame), `p2.13-fn-500340`, `p2.13-fn-5004E0`, `p2.13-fn-5030F0`,
+  `p2.13-fn-513E30` (stream helpers), `p2.13-caller-552167.json`/`.txt` (`FUN_00552100`); byte dumps
+  0x514AE4-0x514B70 (the cash-in function) and 0x5469B0-0x546A6C (SaveGame's flush); E8 scans for
+  0x5148C0, 0x515910, 0x514B00, 0x501200 and 0x40F9E0
+- Confidence: high for the layout, the token gate, the return value and the four cash-in sites; the
+  intent of the demo/registered gate stays open
+- Notes:
+  (1) **The file is 102 raw dwords - no header, no cipher.** `FUN_00515910(delta)` writes
+  `[profile+0x88]`, 50 x `_rand() % 20000`, `old + delta`, 50 x `_rand() % 20000`, i.e.
+  4 + 50*4 + 4 + 50*4 = **0x198 = 408 bytes**. The helpers are plain: `FUN_00500340()` is
+  `FUN_00500290(&v,4)` (raw dword read), `FUN_005004E0(v)` is `FUN_00500480(&v,4)` (raw dword write),
+  and `FUN_005030F0(0x20)` is the buffer reset `if (n < 0x20) n = 0x20; [this+0x10] = n; [this+8] =
+  alloc(n)` - every save writer calls it with 0x20 (user `FUN_00514730`, tank `FUN_00546990`, scr), so
+  it is a growth hint, not a version. The only structured reader, `FUN_00513E30`, is a
+  `Sexy::DataSync` constructor (`*ecx = Sexy::DataSync::vftable`, two sentinel lists, `[ecx+1] =
+  param_1`) and the scr writer never constructs one: the escrow carries no DataSync header.
+  (2) **The reader returns the payload; a token mismatch yields 0.** `FUN_005148C0(consume)` reads
+  dword 0 and compares it with `[profile+0x88]` (`cmp eax,[edi+0x88]`, `je` to the read loops); on a
+  match it skips 50 dwords, reads one into EDI, skips 50 more, and returns EDI (`mov eax,edi`); every
+  other exit runs `xor eax,eax`. The epilogue is `mov esp,ebp; pop ebp; ret 4` (one stack argument),
+  so the stored value is dword **index 51 = file offset 0xCC** and a stale/moved file reads as 0
+  instead of being added - the token check is what makes a copied `scr%d.dat` worthless on another
+  slot.
+  (3) **`consume != 0` deletes the file** right after a successful read (`FUN_0047FBC0`, the
+  `DeleteFileA` wrapper of EV-0142 note 6), so the read is destructive by design; the writer's own
+  `FUN_005148C0(0)` call is the non-destructive variant.
+  (4) **Who fills it: `FUN_00546990` (SaveGame).** After `FUN_0047F310` has written the tank file the
+  body runs `if (thunk_FUN_00479FC0()) { FUN_00515910(*(this + 0x400)); *(this + 0x400) = 0; }`
+  (byte-decoded 0x546A47-0x546A6C: `test al,al` / `je`, `mov edx,[esi+0x400]`, `mov eax,[esi+0x8C]`,
+  `mov ecx,[eax+0x8B8]` = profile, `push edx`, call 0x515910). `this` is the tank - the same function
+  writes `Tank+0x4EE`/`+0x118`/`+0x438`/`+0x2A6` on the load side - so the flushed value is the
+  bonus-round shell counter `Tank+0x400` of EV-0073 and the save leaves it at 0.
+  (5) **Who empties it: `FUN_00514B00`.** `v = FUN_005148C0(1)`, clamp `v > 100000 -> 100000`, return
+  when `v <= 0`, else `FUN_00501200(v)` (add Shells, `profile+0x48`, EV-0065), `profile+0x88 =
+  FUN_0040F9E0()`, then a tail jump into `FUN_00514730` (the `user%d.dat` save). Four E8 sites land on
+  its entry: 0x546AEE in `FUN_00546AA0` (LoadGame, taken when `thunk_FUN_00479FC0()` is **false**),
+  0x54BCED in `FUN_0054BCA0` (pre-bonus store screen), 0x54BFB4 in `FUN_0054BF60` (BonusScreen
+  opener) and 0x552167 in `FUN_00552100` (session setup, gated on `this[0x22E]` = `manager+0x8B8`,
+  the profile pointer).
+  (6) **Correction of EV-0069.** EV-0069 note (2) read this as "stores now at `this+0x88`" and called
+  the stored dword a bonus timestamp. The callee at 0x514B24 is `FUN_0040F9E0`, one of the module's
+  RNG entry points (73 E8 call sites; `p2.2-tank-sim.md` lists it next to `FUN_0040AEB0`) and the same
+  helper the profile reset uses for `+0x98/+0x88` (EV-0063). `profile+0x88` is therefore a **random
+  token**: regenerated at every cash-in, serialized as the trailing dword of `user%d.dat`, and the key
+  the escrow must match. The escrowed number is likewise a shell amount, not a time.
+  (7) Bounded negative: the two branches around `thunk_FUN_00479FC0()` (the demo/registered check of
+  `p2.5-economy.md`) are measured - the full version banks `Tank+0x400` at save, the demo cashes the
+  escrow at load - but why they differ is not established from the code. `FUN_00513EE0`, the
+  write-side partner of the DataSync constructor, is not decoded.
+

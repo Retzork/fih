@@ -1,0 +1,110 @@
+﻿/* 0x515910 pseudo code (rea/ghidra) */
+
+void FUN_00515910(int param_1)
+
+{
+  undefined4 uVar1;
+  undefined4 uVar2;
+  int iVar3;
+  int iVar4;
+  int in_ECX;
+  int iVar5;
+  undefined1 local_a0 [4];
+  void *local_9c;
+  uint local_88;
+  undefined1 local_84 [4];
+  void *local_80;
+  undefined4 local_70;
+  uint local_6c;
+  undefined1 local_68 [4];
+  void *local_64;
+  undefined4 local_54;
+  uint local_50;
+  undefined1 local_4c [4];
+  void *local_48;
+  undefined4 local_3c;
+  undefined4 local_38;
+  uint local_34;
+  undefined1 local_30 [4];
+  void *local_2c;
+  uint local_18;
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00586de3;
+  local_10 = ExceptionList;
+  local_14 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  if (0 < param_1) {
+    uVar1 = FUN_004120c0(local_84,"userdata/scr%d.dat",*(undefined4 *)(in_ECX + 0x44),local_14);
+    local_8 = 0;
+    uVar2 = FUN_0040fb60(local_4c);
+    local_8._0_1_ = 1;
+    FUN_0042d4e0(local_30,uVar2,uVar1);
+    if (0xf < local_34) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_48);
+    }
+    local_34 = 0xf;
+    local_38 = 0;
+    local_48 = (void *)((uint)local_48 & 0xffffff00);
+    local_8._0_1_ = 4;
+    if (0xf < local_6c) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_80);
+    }
+    local_6c = 0xf;
+    local_70 = 0;
+    local_80 = (void *)((uint)local_80 & 0xffffff00);
+    iVar3 = FUN_005148c0(0);
+    FUN_005003d0();
+    local_8 = CONCAT31(local_8._1_3_,5);
+    FUN_005030f0(0x20);
+    FUN_005004e0(*(undefined4 *)(in_ECX + 0x88));
+    iVar5 = 0x32;
+    do {
+      iVar4 = _rand();
+      FUN_005004e0(iVar4 % 20000);
+      iVar5 = iVar5 + -1;
+    } while (iVar5 != 0);
+    FUN_005004e0(iVar3 + param_1);
+    iVar3 = 0x32;
+    do {
+      iVar5 = _rand();
+      FUN_005004e0(iVar5 % 20000);
+      iVar3 = iVar3 + -1;
+    } while (iVar3 != 0);
+    uVar1 = FUN_0040fb60(local_a0);
+    local_8._0_1_ = 6;
+    uVar1 = FUN_0042d420(local_68,uVar1,"userdata");
+    local_8._0_1_ = 7;
+    FUN_00411bc0(uVar1);
+    if (0xf < local_50) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_64);
+    }
+    local_50 = 0xf;
+    local_54 = 0;
+    local_64 = (void *)((uint)local_64 & 0xffffff00);
+    local_8 = CONCAT31(local_8._1_3_,5);
+    if (0xf < local_88) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_9c);
+    }
+    FUN_0047f310(local_30,local_3c,local_38);
+    FUN_00479f90(0);
+    FUN_005030e0();
+    if (0xf < local_18) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_2c);
+    }
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+

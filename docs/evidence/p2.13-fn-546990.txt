@@ -1,0 +1,48 @@
+﻿/* 0x546990 pseudo code (rea/ghidra) */
+
+void FUN_00546990(undefined4 param_1)
+
+{
+  char cVar1;
+  int in_ECX;
+  __time64_t _Var2;
+  undefined1 local_60 [12];
+  undefined4 local_54;
+  undefined1 local_24 [8];
+  undefined4 local_1c;
+  undefined4 local_18;
+  void *local_10;
+  undefined1 *puStack_c;
+  uint local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_005899c0;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  FUN_005003d0(DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+  local_8 = 0;
+  FUN_005030f0(0x20);
+  FUN_00513ee0(local_24);
+  local_8 = CONCAT31(local_8._1_3_,1);
+  local_54 = 0x36;
+  FUN_005004e0(0x36);
+  FUN_00546240(local_60);
+  _Var2 = __time64((__time64_t *)0x0);
+  FUN_005004e0((int)_Var2);
+  FUN_00512310();
+  FUN_0047f310(param_1,local_1c,local_18);
+  FUN_00479f90(0);
+  cVar1 = thunk_FUN_00479fc0();
+  if (cVar1 != '\0') {
+    FUN_00515910(*(undefined4 *)(in_ECX + 0x400));
+    *(undefined4 *)(in_ECX + 0x400) = 0;
+  }
+  local_8 = local_8 & 0xffffff00;
+  FUN_005120e0();
+  local_8 = 0xffffffff;
+  FUN_005030e0();
+  ExceptionList = local_10;
+  return;
+}
+
+

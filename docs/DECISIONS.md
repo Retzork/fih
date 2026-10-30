@@ -260,7 +260,7 @@
   store-item object, still deferred to the tank update in P2.13, plus the unlocated writers of
   `prize+0x1D0`/`+0x1D1`.
 
-### Q-0019 - `userdata/scr%d.dat` format and Shells persistence
+### Q-0019 - `userdata/scr%d.dat` format and Shells persistence (RESOLVED)
 - OPEN (2026-10-20, EV-0069/EV-0075). `FUN_005148C0` formats `userdata/scr%d.dat` from
   `this+0x44`, deserializes it (`FUN_0047F5D0`), compares a stored integer with `this+0x88`, and
   on a match consumes 50 filler ints + 1 + 50 filler ints; `FUN_00515910(param)` writes
@@ -283,6 +283,26 @@
   used by `userdata/user%d.dat`, `userdata/scr%d.dat` and the six per-mode tank files - so the
   Shells file is one-per-slot, and `FUN_005059D0` deletes it together with the others when the
   profile is removed. `FUN_005148C0`/`FUN_00515910` themselves are still unread; **OPEN**.
+- RESOLVED (2026-10-29, EV-0143). `scr%d.dat` is the **escrow for bonus-round Shells**, not a save of
+  its own:
+- Format: 102 raw little-endian dwords = `0x198` bytes - `[token] [50 x rand()%20000] [payload]
+  [50 x rand()%20000]`. The payload is dword 51 (offset `0xCC`). No header, no cipher, no checksum;
+  the filler is never validated. `FUN_00500340`/`FUN_005004E0` are plain 4-byte read/write and the
+  only structured reader in the family (`FUN_00513E30`) is a `Sexy::DataSync` ctor the escrow writer
+  never calls.
+- Token gate: dword 0 must equal `profile+0x88`. `FUN_005148C0(consume)` returns the payload on a
+  match and 0 otherwise, and deletes the file when `consume != 0` - so a copied or stale file is
+  discarded rather than credited.
+- Lifecycle: `FUN_00546990` (SaveGame) flushes `Tank+0x400` (the bonus-round shell counter) into the
+  escrow and zeroes it; `FUN_00514B00` cashes in - clamp to 100000, `FUN_00501200(v)` adds to Shells
+  (`profile+0x48`), regenerate the token, save the profile - from tank load (`FUN_00546AA0`),
+  `FUN_0054BCA0` (pre-bonus store), `FUN_0054BF60` (BonusScreen) and `FUN_00552100` (session setup).
+- **Correction of the first pass:** the value stored at `profile+0x88` is a **random token**
+  (`FUN_0040F9E0`, an RNG entry point; also what `FUN_00501530` seeds `+0x98/+0x88` with), not a
+  timestamp. It is the trailing dword of `user%d.dat`, so the escrow is bound to the profile record.
+- Port: keep the shell counter in the profile or the tank save and pay it exactly once; the file
+  itself is not worth reproducing (`p2.13-saves.md` §7). Residue: why the demo branch cashes at load
+  while the full version banks at save is not established.
 
 ### Q-0020 - P2.8 residual alien questions
 - OPEN (2026-10-29, EV-0110-EV-0116). Items that survived the P2.8 pass; none blocks P2.9/P2.10

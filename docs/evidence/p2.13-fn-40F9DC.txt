@@ -1,0 +1,2 @@
+﻿/* 0x40F9DC pseudo code (rea/ghidra) */
+(no raw_result.value)
