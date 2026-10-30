@@ -1,0 +1,62 @@
+﻿/* 0x505880 pseudo code (rea/ghidra) */
+
+undefined4 FUN_00505880(undefined4 param_1,int param_2,undefined4 param_3)
+
+{
+  undefined *puVar1;
+  undefined4 uVar2;
+  undefined4 uVar3;
+  undefined1 local_4c [4];
+  void *local_48;
+  uint local_34;
+  undefined1 local_30 [4];
+  void *local_2c;
+  undefined4 local_1c;
+  uint local_18;
+  undefined4 local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00584b30;
+  local_10 = ExceptionList;
+  ExceptionList = &local_10;
+  local_14 = 0;
+  if (param_2 == 5) {
+    puVar1 = &DAT_0059d608;
+  }
+  else if (param_2 == 1) {
+    puVar1 = &DAT_0059d604;
+  }
+  else if (param_2 == 4) {
+    puVar1 = &DAT_0059d600;
+  }
+  else {
+    puVar1 = &DAT_0059d5fc;
+    if (param_2 != 3) {
+      puVar1 = &DAT_0059d5f8;
+    }
+  }
+  uVar2 = FUN_004120c0(local_4c,"userdata\\%s%d.dat",puVar1,param_3,
+                       DAT_005e39d8 ^ (uint)&stack0xfffffffc);
+  local_8 = 0;
+  uVar3 = FUN_0040fb60(local_30);
+  local_8 = CONCAT31(local_8._1_3_,1);
+  FUN_0042d4e0(param_1,uVar3,uVar2);
+  if (0xf < local_18) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_2c);
+  }
+  local_18 = 0xf;
+  local_1c = 0;
+  local_2c = (void *)((uint)local_2c & 0xffffff00);
+  if (0xf < local_34) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_48);
+  }
+  ExceptionList = local_10;
+  return param_1;
+}
+
+

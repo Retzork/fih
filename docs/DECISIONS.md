@@ -279,6 +279,10 @@
   `sim1.dat`, but still no `scr%d.dat`. The 232-byte `user%d.dat` field order is now mapped
   end-to-end through `FUN_00503730` (see P2.13 note). The `scr%d.dat` serializer, its
   obfuscation, and the exact timestamp/value meaning remain **OPEN**.
+- 2026-10-29 update (EV-0142): `this+0x44` is the profile's **save-slot number** - the same `%d`
+  used by `userdata/user%d.dat`, `userdata/scr%d.dat` and the six per-mode tank files - so the
+  Shells file is one-per-slot, and `FUN_005059D0` deletes it together with the others when the
+  profile is removed. `FUN_005148C0`/`FUN_00515910` themselves are still unread; **OPEN**.
 
 ### Q-0020 - P2.8 residual alien questions
 - OPEN (2026-10-29, EV-0110-EV-0116). Items that survived the P2.8 pass; none blocks P2.9/P2.10
@@ -489,3 +493,15 @@
   Rename/Delete read the highlighted list row (`FUN_00536990` -> `list->vtable[0x120](out,
   [list+0xD4])`) and open `NewUserDialog(isRename=1)` / a Yes/No confirm. Only the *text* of the
   runtime caption at 0x5E8B74 stays unknown - a note-level bounded negative, not a port blocker.
+
+### Q-0028 - Save lifecycle: the save/delete gate and the no-write flag
+- OPEN (2026-10-29, EV-0142). Two small gates around the per-mode tank save are read but not bound:
+- **`FUN_00537BF0()`.** `FUN_005497A0` saves the tank only when it returns true; otherwise it deletes
+  the same file (`FUN_0047FBC0`). It is also the gate of the OptionsDialog "Back to Main Menu" branch
+  (EV-0137). Its body and the field it tests are unread.
+- **`[app+0x511]`.** `FUN_0047FBC0` returns 1 without touching disk when this byte is non-zero (a
+  "no writes" mode such as the screensaver would use); the writer is unknown.
+- Also open: the id-0 branch of the Continue handler `FUN_00533760` deletes the current mode's file
+  *before* `[manager]->vtable[0x134](this+0xB4)`; whether that is "consume the resume file" or a
+  discarded-session path is unproven. Port the delete/save decision behind one named flag instead of
+  guessing which way it flips.

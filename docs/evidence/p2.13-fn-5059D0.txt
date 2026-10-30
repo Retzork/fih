@@ -1,0 +1,103 @@
+﻿/* 0x5059D0 pseudo code (rea/ghidra) */
+
+void FUN_005059d0(void)
+
+{
+  uint uVar1;
+  undefined4 uVar2;
+  undefined4 uVar3;
+  int in_ECX;
+  int iVar4;
+  undefined1 local_80 [4];
+  void *local_7c;
+  uint local_68;
+  undefined1 local_64 [4];
+  void *local_60;
+  uint local_4c;
+  undefined1 local_48 [4];
+  void *local_44;
+  undefined4 local_34;
+  uint local_30;
+  undefined1 local_2c [4];
+  void *local_28;
+  undefined4 local_18;
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00584b88;
+  local_10 = ExceptionList;
+  uVar1 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  uVar2 = FUN_004120c0(local_64,"userdata/user%d.dat",*(undefined4 *)(in_ECX + 0x44),uVar1);
+  local_8 = 0;
+  uVar3 = FUN_0040fb60(local_48);
+  local_8._0_1_ = 1;
+  uVar2 = FUN_0042d4e0(local_2c,uVar3,uVar2);
+  local_8 = CONCAT31(local_8._1_3_,2);
+  FUN_0047fbc0(uVar2);
+  if (0xf < local_14) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_28);
+  }
+  local_14 = 0xf;
+  local_18 = 0;
+  local_28 = (void *)((uint)local_28 & 0xffffff00);
+  if (0xf < local_30) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_44);
+  }
+  local_30 = 0xf;
+  local_34 = 0;
+  local_44 = (void *)((uint)local_44 & 0xffffff00);
+  local_8 = 0xffffffff;
+  if (0xf < local_4c) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_60);
+  }
+  uVar2 = FUN_004120c0(local_64,"userdata/scr%d.dat",*(undefined4 *)(in_ECX + 0x44),uVar1);
+  local_8 = 3;
+  uVar3 = FUN_0040fb60(local_2c);
+  local_8._0_1_ = 4;
+  uVar2 = FUN_0042d4e0(local_48,uVar3,uVar2);
+  local_8 = CONCAT31(local_8._1_3_,5);
+  FUN_0047fbc0(uVar2);
+  if (0xf < local_30) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_44);
+  }
+  local_30 = 0xf;
+  local_34 = 0;
+  local_44 = (void *)((uint)local_44 & 0xffffff00);
+  if (0xf < local_14) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_28);
+  }
+  local_14 = 0xf;
+  local_18 = 0;
+  local_28 = (void *)((uint)local_28 & 0xffffff00);
+  local_8 = 0xffffffff;
+  if (0xf < local_4c) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_60);
+  }
+  iVar4 = 0;
+  do {
+    local_8 = 0xffffffff;
+    uVar2 = FUN_00505880(local_80,iVar4,*(undefined4 *)(in_ECX + 0x44));
+    local_8 = 6;
+    FUN_0047fbc0(uVar2);
+    local_8 = 0xffffffff;
+    if (0xf < local_68) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_7c);
+    }
+    iVar4 = iVar4 + 1;
+  } while (iVar4 < 6);
+  ExceptionList = local_10;
+  return;
+}
+
+

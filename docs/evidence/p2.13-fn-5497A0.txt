@@ -1,0 +1,65 @@
+﻿/* 0x5497A0 pseudo code (rea/ghidra) */
+
+void FUN_005497a0(void)
+
+{
+  char cVar1;
+  undefined4 uVar2;
+  int in_ECX;
+  undefined1 local_68 [4];
+  void *local_64;
+  uint local_50;
+  undefined1 local_4c [4];
+  void *local_48;
+  undefined4 local_38;
+  uint local_34;
+  undefined1 local_30 [4];
+  void *local_2c;
+  uint local_18;
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  int local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00589b28;
+  local_10 = ExceptionList;
+  local_14 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  FUN_00505880(local_30,*(undefined4 *)(*(int *)(in_ECX + 0x8c) + 0x87c),
+               *(undefined4 *)(*(int *)(*(int *)(in_ECX + 0x8c) + 0x8b8) + 0x44),local_14);
+  local_8 = 0;
+  cVar1 = FUN_00537bf0();
+  if (cVar1 == '\0') {
+    FUN_0047fbc0(local_30);
+  }
+  else {
+    uVar2 = FUN_0040fb60(local_68);
+    local_8._0_1_ = 1;
+    uVar2 = FUN_0042d420(local_4c,uVar2,"userdata");
+    local_8._0_1_ = 2;
+    FUN_00411bc0(uVar2);
+    if (0xf < local_34) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_48);
+    }
+    local_34 = 0xf;
+    local_38 = 0;
+    local_48 = (void *)((uint)local_48 & 0xffffff00);
+    local_8 = (uint)local_8._1_3_ << 8;
+    if (0xf < local_50) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_64);
+    }
+    FUN_00546990(local_30);
+  }
+  if (0xf < local_18) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_2c);
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+

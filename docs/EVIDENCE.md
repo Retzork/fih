@@ -3324,3 +3324,53 @@ behavior or specs; follow up with a binary observation entry.
   (5) The wall-clock store seed is `profile+0x98` (`FUN_0040AE50(profile[0x98] + t)`), and the roller's
   one-off unlock gates remain `profile+0x90` / `+0x94`.
 
+### EV-0142 - P2.13: the tank save is one file per game mode (`adv`/`tim`/`snd`/`sur`/`sim`)
+- Date: 2026-10-29
+- Type: code trace (module decompilation + byte decode of the string ladder and the IAT slot)
+- Source: `docs/evidence/p2.13-fn-505880.json` / `.txt` (`FUN_00505880`), `p2.13-fn-42D4E0.json` / `.txt`
+  (the string assign), `p2.13-fn-5497A0.json` / `.txt` (`FUN_005497A0`, save), `p2.13-fn-5059D0.json` /
+  `.txt` (`FUN_005059D0`, delete-all), `p2.11-fn-54CB20.txt` (load), `p2.12-fn-533760.txt` (Continue);
+  byte dumps 0x105880-0x105B10 (code), 0x19D5C0-0x19D5FF (strings), 0x7FBC0-0x7FC00 (`DeleteFileA`)
+- Confidence: high for the prefix table, the callers and the file lifecycle; the `[app+0x511]` gate and
+  the intent of the Continue branch stay open
+- Notes:
+  (1) **`FUN_00505880(out, mode, slot)` builds the tank-save path.** The mode ladder (byte-decoded at
+  0x5058A5-0x5058E1, confirmed by the decompile): `mode == 5` -> 0x59D608 `sim`, `== 1` -> 0x59D604
+  `tim`, `== 4` -> 0x59D600 `sur`, `== 3` -> 0x59D5FC `snd`, everything else (0, 2) -> 0x59D5F8 `adv`.
+  The prefix feeds `FUN_004120C0(tmp, "userdata\\%s%d.dat", prefix, slot)` and the result is assigned
+  into the caller's `std::string` by `FUN_0042D4E0` (a two-operand string assign: `FUN_00422210` on the
+  first, `FUN_004269F0` on the second, then capacity `+0x18 = 0xF`).
+  (2) **The literals sit back to back.** `userdata\%s%d.dat` starts at 0x59D5E4 and the five 3-byte
+  prefixes follow at 0x59D5F8 (`adv`), 0x59D5FC (`snd`), 0x59D600 (`sur`), 0x59D604 (`tim`), 0x59D608
+  (`sim`). Each prefix is referenced exactly once in the module (dword scan: 0x5058B5 `sim`, 0x5058C1
+  `tim`, 0x5058CD `sur`, 0x5058D7 `snd`, 0x5058DE `adv`) and the format string once (0x5058EB), so this
+  is the only tank-save name builder.
+  (3) **`mode` is the game-mode field.** Every non-test caller passes `[manager+0x87C]`, the mode of
+  EV-0126 (0 Adventure, 1 Time Trial, 3 Sandbox, 4 Challenge, 5 Virtual Tank; 2 unobserved). The tank
+  save is therefore per mode, one file each, all written by the same `FUN_00546990`/`FUN_00546AA0` pair
+  (EV-0044). `sim%d.dat` is the **Virtual Tank** save; mode 2 would also land in `adv%d.dat`.
+  (4) **`slot` is `[profile+0x44]`.** It is the `%d` of all three name families - `userdata\%s%d.dat`,
+  `userdata/scr%d.dat` and `userdata/user%d.dat` - so it is the profile's save-slot number, not a
+  Virtual-Tank-specific field. This corrects the wording of EV-0126 note (3) ("`profile+0x44` is
+  therefore the VT tank slot"): the field is shared, the *file type* comes from the mode.
+  (5) **Call sites** (E8 scan): 0x505B49 in `FUN_005059D0` (mode hard-coded 0), 0x5337B4 in
+  `FUN_00533760` (ContinueDialog), 0x5497E7 in `FUN_005497A0` (save), 0x54CB65 in `FUN_0054CB20` (load),
+  0x5524E1 in `FUN_00552480`. Save chain: `FUN_005497A0` builds the path, then on `FUN_00537BF0()`
+  false calls `FUN_0047FBC0(path)`, else `FUN_00411BC0("userdata")` (create directory) and
+  `FUN_00546990(path)` = SaveGame (version 0x36, tank body, `__time64`). Load chain: `FUN_0054CB20` ->
+  path -> `FUN_00546AA0(path)` = LoadGame (EV-0126 note 3).
+  (6) **`FUN_0047FBC0` is a `DeleteFileA` wrapper.** 0x47FBC0: `80 B9 11 05 00 00 00` `cmp byte
+  [ecx+0x511],0`, `74 05` (equal -> `B0 01 C2 04 00` = return 1), else it pushes the `std::string`
+  buffer (`[string+4]` once capacity `>= 0x10`) and calls the IAT slot 0x59612C, which resolves to
+  `DeleteFileA`; the `neg/sbb/neg` epilogue returns "success != 0". `FUN_005059D0` is the matching
+  delete-all routine: it removes `userdata/user<N>.dat`, `userdata/scr<N>.dat` and then loops
+  `i = 0..5` through `FUN_00505880(slot)`, i.e. all six mode files of profile `<N>` - independent proof
+  that all six kind values are used.
+  (7) **Samples line up.** The local `adv1.dat` is mode 0 / slot 1 (tank 1, level 1, 1081 bytes, the
+  tutorial string at 0x184); the GameBanana `sim1.dat` is mode 5 / slot 1 (tank 1, level 5, 11800
+  bytes). Both start with version `0x36`, so the size gap is content (a populated Virtual Tank), not a
+  second format. That pack has no `adv1.dat`.
+  (8) Bounded negative: the `[app+0x511]` delete gate is unbound (a "no disk writes" flag reading as
+  "pretend success"), and the id-0 branch of `FUN_00533760` deletes the current mode's file *before*
+  `[manager]->vtable[0x134](this+0xB4)`, whose meaning is still P2.12's open "start session" call.
+

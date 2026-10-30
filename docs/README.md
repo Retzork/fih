@@ -17,7 +17,7 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 2. **Want the current state quickly?** Read the `P2.12` entry in `PLAN.md`, then
    `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen and stock
    refresh, level-start flow, all screen ctors and click handlers, the dialog layer,
-   EV-0131..EV-0140), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
+   EV-0131..EV-0142), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -157,21 +157,24 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   semantics, Q-0016 credits trigger, Q-0017 tank 6, Q-0018 StoreScreen/store-item population,
   Q-0019 `scr%d.dat` (real saves now available; `scr` itself still absent, EV-0108/EV-0109).
   Do not guess these in the remake.
-- **P2.13 saves (2026-10-21, partial):** live folder
+- **P2.13 saves (2026-10-21, partial; 2026-10-29 naming settled):** live folder
   `C:\ProgramData\Steam\Insaniquarium\userdata`; real early and GameBanana samples are copied
   under `analysis/inputs/`. `users.dat` and the full 232-byte `user%d.dat` field order are
   mapped through `FUN_00513850`, `FUN_005145A0`/`FUN_00514730`, and `FUN_00503730`
   (EV-0108/EV-0109). The GameBanana profile has `+0x7C = 0xFFFFFFFF` and `+0x80 = 1`, a strong
   candidate for a 32-story mask + gold trophy, but the reader is not located; Q-0013 stays
-  open. `adv`/`sim` body semantics and `scr%d.dat` remain open. Note:
-  `analysis/notes/p2.13-saves.md`.
+  open. The tank save is **one file per game mode** (EV-0142): `FUN_00505880(out, mode, slot)`
+  formats `userdata\%s%d.dat` with `adv`/`tim`/`snd`/`sur`/`sim` for modes 0/2, 1, 3, 4 and 5, so
+  `sim%d.dat` is the Virtual Tank save; `FUN_005497A0` saves and `FUN_0054CB20` loads through the
+  shared `FUN_00546990`/`FUN_00546AA0` pair. The tank-save body field meanings and `scr%d.dat`
+  remain open, as does the save/delete gate (Q-0028). Note: `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
   runtime; VT beetle value. See `PLAN.md`.
-- **Next planned task:** P2.13 (the tank update, saves, the `adv`/`sim` bodies), which also closes
-  Q-0018's last residual (the call-site owner of the normal store-item object); its Q-0026 dependency
-  is already settled (EV-0141); then P2.14 (audio), P2.15 (resources), and finally P2.18 `SPECS.md`
-  to close Phase 2. P2.12 itself is closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends
-  tracked.
+- **Next planned task:** P2.13 (the tank-save body fields and Q-0019's `scr%d.dat`), which also closes
+  Q-0018's last residual (the call-site owner of the normal store-item object); the save-file naming
+  and Q-0026 are already settled (EV-0141/EV-0142); then P2.14 (audio), P2.15 (resources), and finally
+  P2.18 `SPECS.md` to close Phase 2. P2.12 itself is closed (EV-0139/EV-0140) with only Q-0027's two
+  dialog loose ends tracked.
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
 ## What is in the repository
@@ -245,7 +248,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0141). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0142). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11 and P2.12 opens. |
