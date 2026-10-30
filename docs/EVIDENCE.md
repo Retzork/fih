@@ -3155,3 +3155,45 @@ behavior or specs; follow up with a binary observation entry.
   found; `FUN_00536990`'s receiver is the dialog object (it reads `+0x160`/`+0x174`), while the click
   handler's receiver is the listener at `+0x88`, and the decompiler does not show the adjustment.
 
+### EV-0138 - Q-0018 closed: the store price getter prices the *prize*, and the prize kind lives at `+0x8C`
+- Date: 2026-10-29
+- Type: code trace (direct byte reads of the carved module; no new decompilation)
+- Source: `docs\analysis\snapshots\insaniquarium-game-module.exe` read at `VA - 0x400000` - byte dumps
+  of 0x519EB0-0x519F5A, 0x52F160-0x52F290, 0x52FE30-0x52FE90, 0x4EEF00-0x4EFDF0 and 0x4F02A0-0x4F0330,
+  plus a `.text` scan (0x4E0000-0x501000) for `C7 86 8C 00 00 00 <imm32>`; class names from
+  `docs/evidence/p2.12-vtable-inventory.txt` (rows `.?AVFish@Sexy@@` 0x00597D54, `.?AVOscar@Sexy@@`
+  0x0059843C); decompiled bodies `p2.12-fn-519EB0/519730/51B260/52F0D0/52FE10.txt`
+- Confidence: high - the register trace, the per-class kind writer and the switch domain agree, and no
+  single one of them is load-bearing on its own
+- Notes:
+  (1) **Every call site sets `ECX` from the object it just built.** `FUN_00519EB0` keeps its `this` in
+  EBX (`mov ebx, ecx` at 0x519ED7), allocates two 0x230-byte objects and captures them with
+  `mov edi, eax` (after `FUN_004EEF00`) and `mov esi, eax` (after `FUN_004EFDA0`); then at 0x519F32
+  `8B CF` (`mov ecx, edi`) -> `call 0x519730` at 0x519F36 -> `push eax; push edi; call 0x547290`
+  (`FUN_00537290`), and at 0x519F48 `mov ecx, esi` -> `call 0x519730` at 0x519F4A -> same wiring with
+  ESI. The roller `FUN_0052F0D0` does the same after its factory calls (`mov edi, eax` then `mov ecx,
+  edi` at 0x52F19D, `call` at 0x52F1A0; second roll at 0x52F27B/0x52F27E), and `FUN_0052FE10` with EBX
+  (0x52FE61/0x52FE66) and EDI (0x52FE77/0x52FE7A). The decompiler's bare `FUN_00519730()` is therefore
+  a thiscall on the newly constructed object, **not** on the store item.
+  (2) **Those objects are prize fish.** `FUN_004EEF00` installs vtable 0x597D54 = `.?AVFish@Sexy@@`
+  (`C7 06 54 7D 59 00` at 0x4EEF3D) and `FUN_004EFDA0` installs 0x59843C = `.?AVOscar@Sexy@@`
+  (`C7 06 3C 84 59 00` at 0x4EFDE0), i.e. the icon children of a kind-1 slot are fish objects, and the
+  roller's factory returns the same family.
+  (3) **`+0x8C` is the prize kind, and each class writes it itself.** The scan finds one
+  `mov dword [esi+0x8C], <kind>` per factory class, each in the tail of the function that precedes that
+  class's ctor: 0x4EA70E = 9 (before `FUN_004EA7B0`), 0x4EC04E = 8 (before `FUN_004EC0F0`), 0x4EE512 =
+  0xA (before `FUN_004EE530`), 0x4EF97E = 7 (before `FUN_004EF9A0`), 0x4EFD8E = 5 (before the Oscar ctor
+  `FUN_004EFDA0`), 0x4F01BE = 0x22, 0x4F027E = 6, 0x4F055E = 0x23, 0x4F061C = 0x24 (each before the
+  matching `FUN_004F01E0`/`FUN_004F02A0`/`FUN_004F0570`/`FUN_004F0630`). Those values are exactly the ids
+  of `FUN_0051B260`'s weighted table (8/9/7/10/6/0x24/0x23/0x22) and exactly the cases of
+  `FUN_00519730`'s switch (0, 5, 6, 7, 8, 9, 10, 0x22, 0x23, 0x24).
+  (4) So a kind-1 slot's price is a property of the prize rolled - `25000/30000/40000/50000` flat for
+  the tank index 1/2/4/5, 0/3/6, 7 and 8 from `FUN_00501060()`, and only for 9 the kind table (10000 for
+  6/0x24, 3500 for 7, 2500 for 8/9, 5000 for 10, 15000/20000 for 0x22/0x23, 25/500/2500 for kind 0,
+  100 default) rounded down to a multiple of 5 with a 10 floor. Re-bind the index when P2.13 names
+  `FUN_00501060`.
+  (5) Bounded negatives: no writer of `prize+0x1D0`/`+0x1D1` was located (the getter reads them as two
+  variant bytes: kind 0 is 25 when `+0x1D0 == 0`, else 500 or 2500 with `+0x1D1`; kind 5 is 1000 or
+  5000, and falls back to 100 when `+0x1D0 == 0`); the `+0x8C` writers sit in 0x0A-0xA2-byte stubs that
+  were not decompiled, so they are cited by address only.
+

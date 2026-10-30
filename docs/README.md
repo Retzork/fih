@@ -17,7 +17,7 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 2. **Want the current state quickly?** Read the `P2.12` entry in `PLAN.md`, then
    `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen and stock
    refresh, level-start flow, all screen ctors and click handlers, the dialog layer,
-   EV-0131..EV-0137), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
+   EV-0131..EV-0138), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -52,10 +52,13 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   and greys it to `0xCCCCCC` when the enabled byte `+0x55` is 0. The stock is rolled on attach by
   `FUN_0052FEA0` -> `FUN_0052F0D0` (one-off unlocks on `profile+0x90`/`+0x94`, pet slots on
   `profile+0x72+i`, Cookie handed out once through `FUN_0051C0B0`/`FUN_0052B800`); each slot then
-  takes `FUN_005363D0` (`SetPrice`, `sprintf("%d")`) or `FUN_005372F0`, which writes the literal
-  **`SOLD`**. The screen's slots (attach/detach/refresh/update/draw/mousemove) and its tooltip
-  (`FUN_0051B9E0` kind-to-text, 16 ticks of hover, "Thanks for shopping at the Fish Emporium!") are
-  mapped too.
+  takes `FUN_005363D0` (the *buyable* path, which re-applies `SetPrice` `FUN_00536350`, a bare
+  `sprintf("%d")`) or `FUN_005372F0`, which writes the literal **`SOLD`**. The price itself is a
+  property of the prize the slot rolled (EV-0138): `FUN_00519730` is a method on the `Sexy::Fish` /
+  `Sexy::Oscar` object the factory just built, keyed on the prize kind at `+0x8C`, with the tank index
+  from `FUN_00501060()` overriding it flat. The screen's slots (attach/detach/refresh/update/draw/
+  mousemove) and its tooltip (`FUN_0051B9E0` kind-to-text, 16 ticks of hover, "Thanks for shopping at
+  the Fish Emporium!") are mapped too.
 - **P2.12 screen pass (2026-10-29, EV-0136):** the vtable-xref recipe only worked on the first four
   screens, so the ctor map was rebuilt from an RTTI + vtable-immediate scan (a class stores its
   vtable with `mov [reg], imm32`, so the vtable VA appears in `.text` two bytes after the
@@ -75,8 +78,9 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   ScreenSaver's six checkboxes over `app+0x838..0x83E`), and five click handlers cover all of them.
   The base vtable pair is RTTI-named `Sexy::MoneyDialog` and no `.?AVDialog@Sexy@@` exists - recorded
   as a naming conflict and settled as D-0011 (no money dialog is ported).
-- **P2.12 still open (Q-0018, Q-0025, Q-0026):** the owner of the *normal* store-item object and
-  whether the rolled pet is really the receiver of `FUN_00519730`; `manager+0x738` now has a reader
+- **P2.12 still open (Q-0018, Q-0025, Q-0026):** the owner of the *normal* store-item object (its
+  price display is answered, and EV-0138 closed the "is the rolled pet the receiver of
+  `FUN_00519730`" question - yes); `manager+0x738` now has a reader
   (the Bonus handler) but still no writer; `profile+0x18` is unbound (the `profile+0x5A` clear is
   explained - it is the PetsScreen ctor resetting the pending pet selection); and `profile+0x72..+0x77`
   is claimed both as the backdrop ownership map (SimSetup) and as store pet slots (Q-0026). Inside the
@@ -156,10 +160,10 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
   runtime; VT beetle value. See `PLAN.md`.
-- **Next planned task:** finish P2.12's open questions - Q-0018's two residuals (the owner of the
-  normal store-item object, and whether the rolled pet really receives `FUN_00519730`) and Q-0026's
-  `profile+0x72..+0x77` conflict - then P2.14 (audio) / P2.15 (resources) / P2.13's `adv`/`sim` bodies,
-  and finally P2.18 `SPECS.md` to close Phase 2.
+- **Next planned task:** close P2.12's remaining open questions - Q-0018's last residual (the
+  call-site owner of the normal store-item object, which needs the tank update, so it lands with
+  P2.13) and Q-0026's `profile+0x72..+0x77` conflict - then P2.14 (audio), P2.15 (resources), P2.13's
+  `adv`/`sim` bodies, and finally P2.18 `SPECS.md` to close Phase 2.
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
 ## What is in the repository
@@ -233,7 +237,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0137). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0138). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11 and P2.12 opens. |

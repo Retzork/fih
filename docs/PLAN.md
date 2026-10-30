@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-29 (P2.12 dialog pass - the `Sexy::Dialog` base with its kind-driven built-in button row, the ten dialog ctors and their openers, five click handlers, the `MoneyDialog` naming conflict as D-0011 (EV-0137); P2.12 screen pass before it - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+Last updated: 2026-10-29 (P2.12 EV-0138 closed Q-0018's price-getter receiver - the store price is a property of the rolled prize, whose kind sits at `+0x8C`; P2.12 dialog pass before it - the `Sexy::Dialog` base with its kind-driven built-in button row, the ten dialog ctors and their openers, five click handlers, the `MoneyDialog` naming conflict as D-0011 (EV-0137); P2.12 screen pass before it - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
 click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
@@ -81,9 +81,11 @@ unreachable and every earlier "demo" reading of that predicate is withdrawn (EV-
 `docs\analysis\notes\p2.11-modes.md`. New open item: Q-0024 (mode writer, `+0x19C` receiver,
 `Tank+0x4FE` writer, `+0x2DC`/`+0x2E0`, VT helpers).
 Next: P2.12's remaining open questions. Both halves of the UI layer are now documented - the screens
-(EV-0136) and the dialogs (EV-0137) - so what is left is Q-0018's two residuals (the owner of the
-normal store-item object, and whether the rolled pet really receives `FUN_00519730`), Q-0026
-(`profile+0x72..+0x77`, backdrop flags vs store pet slots) and Q-0025's `manager+0x738` writer.
+(EV-0136) and the dialogs (EV-0137) - and Q-0018's price question is fully closed (EV-0138: the store
+price is a property of the rolled prize, keyed on the prize kind at `+0x8C`), so what is left is
+Q-0018's last residual (the call-site owner of the normal store-item object, which needs the tank
+update and therefore lands with P2.13), Q-0026 (`profile+0x72..+0x77`, backdrop flags vs store pet
+slots) and Q-0025's `manager+0x738` writer.
 Four small dialog wiring gaps also stay open (note §11.6): `NewUserDialog`'s edit filter (0x530D00,
 not decompiled), `RegisterDialog`'s second button, OptionsDialog's `+0x18C` byte and the
 `manager+0x838..0x83E` screen-saver flag writers. Then P2.14 (audio), P2.15 (resources), P2.13's
@@ -327,7 +329,12 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   (§11.3), five click handlers cover all of them (§11.4), and the Edit/List/Slider/Checkbox listener
   bases are sized (§11.5). The base vtable pair is RTTI-named `Sexy::MoneyDialog` while no
   `.?AVDialog@Sexy@@` locator exists - recorded as a naming conflict and settled as D-0011.
-  Open: the owner of the normal store-item object (Q-0018), Q-0025
+  Price pass (EV-0138): Q-0018's last technical question is closed - `FUN_00519730` is a method on the
+  prize the slot rolls (the machine code loads `ECX` from the object just built at all four call
+  sites; the children are `Sexy::Fish` 0x597D54 / `Sexy::Oscar` 0x59843C), the prize kind is written
+  per class at `+0x8C` (9/8/0xA/7/5/0x22/6/0x23/0x24), and the tank index from `FUN_00501060()`
+  overrides the kind price flat for 0-8.
+  Open: the call-site owner of the normal store-item object (Q-0018, deferred to P2.13), Q-0025
   (`manager+0x738` owner, `profile+0x18` - the `profile+0x5A` clear is explained by the PetsScreen
   ctor), the new Q-0026 (`profile+0x72..+0x77` backdrop-vs-pet-slot conflict), and four dialog wiring
   gaps (NewUser's edit filter, Register's second button, Options' `+0x18C`, the screen-saver flags).)

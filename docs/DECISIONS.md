@@ -249,6 +249,16 @@
   Still open: the call-site owner of the *normal* store-item object (unchanged) and whether the rolled
   pet is really the receiver of `FUN_00519730()` (the decompiler loses `ECX` there; the fields
   `+0x8C`/`+0x1D0`/`+0x1D1` fit a pet). Close the owner in P2.13 with the tank update.
+- 2026-10-29 update (P2.12, EV-0138): **the receiver question is ANSWERED - yes.** The machine code
+  sets `ECX` from the object just built at all four call sites (`mov ecx, edi`/`esi` at 0x519F32,
+  0x519F48, 0x52F19D, 0x52F27B and 0x52FE61/0x52FE77, right before `call 0x519730`), so the getter is a
+  method on the prize, not on the store item: the icon children are `Sexy::Fish` (vtable 0x597D54) and
+  `Sexy::Oscar` (0x59843C), and every class the roller's factory can return stamps **its own kind at
+  `+0x8C`** in the stub that precedes its ctor (9, 8, 0xA, 7, 5, 0x22, 6, 0x23, 0x24) - exactly the
+  switch domain of the getter. A kind-1 slot is therefore priced by the prize it rolled, with the tank
+  index from `FUN_00501060()` overriding it flat for 0-8. Remaining: the call-site owner of the normal
+  store-item object, still deferred to the tank update in P2.13, plus the unlocated writers of
+  `prize+0x1D0`/`+0x1D1`.
 
 ### Q-0019 - `userdata/scr%d.dat` format and Shells persistence
 - OPEN (2026-10-20, EV-0069/EV-0075). `FUN_005148C0` formats `userdata/scr%d.dat` from
