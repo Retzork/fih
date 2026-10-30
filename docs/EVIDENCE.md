@@ -3040,3 +3040,118 @@ behavior or specs; follow up with a binary observation entry.
   0-3 call `FUN_0051A710(id+1)`, id 4 calls `FUN_0054AED0() + FUN_00552E50(-1)`, id 99 goes to the main
   menu. `HatchScreen` sets `manager+0x884 = 1` on construction.
 
+### EV-0137 - P2.12 the dialog layer: the `Sexy::Dialog` base, all 11 dialogs, 5 click handlers
+- Date: 2026-10-29
+- Type: code trace (module decompilation + vtable/RTTI scan + direct byte reads)
+- Source: `docs/evidence/p2.12-vtable-inventory.txt`, `docs/evidence/p2.12-fn-{475C40,530920, 5309C0,
+  530AE0,5302E0,476E70}.json`/`.txt` (base dialog + shared handlers),
+  `p2.12-fn-{5309C0,5334D0,533A40,533D80,534740,5349D0,5355C0,535A40,535E10,536450,536C80}.json`/`.txt`
+  (the dialog ctors), `p2.12-fn-{533760,531680,535430,536BD0,536990}.json`/`.txt` (the per-dialog click
+  handlers and the user-list getter); call-site scan: `E8 rel32` over `.text` (`0x401000-0x5A0000`) with
+  the ctor entries as targets; string reads via `[IO.File]::ReadAllBytes` at `VA - 0x400000`
+- Confidence: high for the ctor map, the base-dialog layout/parameter roles, the per-dialog fields and
+  the id dispatchers; medium for `FUN_00475C40`'s parameter *names* (roles are read off the stores, not
+  off any symbol table)
+- Notes:
+  (1) **The base is `Sexy::Dialog`, and it is a 9-argument builder.** `FUN_00475C40` (0x475C40) installs
+  `ButtonListener` at `+0x88` and `Dialog` over both sub-objects, creates the three `std::string`s
+  (title `+0xA4` with its size at `+0xB4`, message `+0xC0`/`+0xD0`, button label `+0xDC`/`+0xEC`),
+  stores the font at `+0x90`, the rect
+  `(0x18,0x18,0x18,0x18)` at `+0x11C`, the byte flag at `+0x140` and the layout kind at `+0xF4`.
+  Argument roles, read off the stores: `(font, colour, +0x13C, flag, title, message, buttonLabel,
+  kind)`. **Kind** 1 = the built-in Yes/No pair, 2 = OK/Cancel, 3 = one custom button labelled by the
+  caller's `buttonLabel`, 0 = no buttons; kinds 1/2 create two `ButtonWidget`s (0x138 bytes) with ids
+  **1000/1001** through `FUN_00476EB0`, and their captions come from the localization keys
+  `"DIALOG_BUTTON_YES"`/`"NO"` or `"DIALOG_BUTTON_OK"`/`"CANCEL"` through `FUN_004872F0`.
+  (2) **`FUN_00530920` is the 9-argument dialog ctor every dialog calls first**: it forwards
+  `(font, colour, heightOrPad, flag, title, message, buttonLabel, kind)` to `FUN_00475C40`, then
+  installs the base vtables, sets `+0x150 = manager` and `+0x154 = -1`, then calls `FUN_00504060`. The
+  two vtables it installs are the pair RTTI attributes to `.?AVMoneyDialog@Sexy@@`
+  (0x5A5D68 ButtonListener / 0x5A5D8C object, COL at 0x5A5D64 -> TypeDescriptor 0x5E2034 -> the
+  mangled name read byte-for-byte), and the *same* pair is re-installed by `FUN_005309C0`, a 0x13-byte
+  body (`mov [ecx],0x5A5D8C` / `mov [ecx+0x88],0x5A5D68` / tail `jmp 0x4761A3`) that is called from the
+  dialog **destructor** cluster (0x530C45, 0x530E41, 0x531499, 0x53176F, 0x531F37, 0x5322DB,
+  0x5323ED, 0x532603, 0x5327C6) - i.e. the base-class sub-object ctor/dtor pair that restores the same
+  vtables. There is **no `.?AVDialog@Sexy@@` locator in the module's RTTI**, so the base vtable pair
+  carries the MoneyDialog name; the note records this as a naming conflict, not as "dialogs derive from
+  a money dialog".
+  (3) **Ctor map for all 11 dialogs** (object vtable / ctor function; parameters): `MoneyDialog`
+  0x5A5D8C / - (no standalone ctor found: every writer of its vtables is the shared base helper or the
+  dialog dtors, so it is never instantiated in this build); `ContinueDialog` 0x5A6A24 / `FUN_005334D0
+  (manager)`; `FishNamingDialog` 0x5A6B94 / `FUN_00533A40(manager, initialName)`; `FoodDialog`
+  0x5A6CF4 / `FUN_00533D80(manager)`; `NewUserDialog` 0x5A5EFC / `FUN_00534740(manager, isRename)`;
+  `OptionsDialog` 0x5A6074 / `FUN_005349D0(manager, flag)`; `PetDialog` 0x5A62FC / `FUN_005355C0
+  (manager)`; `RegisterDialog` 0x5A646C / `FUN_00535A40(manager)`; `ScreenSaverDialog` 0x5A65D4 /
+  `FUN_00535E10(app)`; `UserDialog` 0x5A6764 / `FUN_00536450(manager, isCreateNew)`; `VirtualDialog`
+  0x5A68C4 / `FUN_00536C80(manager)`. Each ctor writes its own vtables *after* calling the base, and
+  each embeds its listeners directly behind the base object: ButtonListener always at `+0x88`,
+  EditListener at `+0x158` (FishNaming, NewUser, Register, User), SliderListener `+0x158` +
+  CheckboxListener `+0x15C` (Options), CheckboxListener `+0x158` (ScreenSaver), ListListener `+0x158` +
+  EditListener `+0x15C` (User).
+  (4) **The openers are one call site each** (E8 scan against the ctor entry, so these are exact):
+  Continue 0x54B3E4, FishNaming 0x54C848, Food 0x54C7C9, NewUser 0x54B6F1 + 0x54B7C2, Options
+  0x54C66D, Pet 0x54C741, Register 0x54E9D9, ScreenSaver 0x54FF39, User 0x54B641 + 0x54F151, Virtual
+  0x54B530. All of them are the `new(398..)` + `vtable[0x124]()` measure + `vtable[0xA0](rect)` +
+  `[manager]->vtable[0x12C](1, dlg)` template already recorded for the options dialog in §8 of the
+  note (EV-0133).
+  (5) **Only five click handlers exist** (slot 2 of each dialog's ButtonListener vtable, read from the
+  module bytes): 0x530AE0 is shared by MoneyDialog, FishNaming, Food, NewUser, Pet, ScreenSaver and
+  Virtual; ContinueDialog uses 0x533760, RegisterDialog 0x531680, OptionsDialog 0x535430, UserDialog
+  0x536BD0. `FUN_00530AE0(id)` is a 12-byte body: `if ([this+0xCC] < [this-0x60]) FUN_00476E70(id)`,
+  and `FUN_00476E70` only acts on ids **1000/1001** - it stores the id at `+0xBC` (relative to the
+  listener) and notifies `[this+4]` through `vtable[1]` - so the shared handler is the auto-button
+  result reporting, not a close. The two operands of the guard (`+0xCC` = object `+0x154`, the `-1`
+  sentinel of note 2, and `-0x60` = object `+0x28`) are not both explained; the id is forwarded on the
+  stack, which the decompiler drops.
+  (6) **ContinueDialog** (`FUN_005334D0`): title "CONTINUE GAME?", message "", one custom button
+  "CANCEL" (kind 3). Mode 0 adds "Continue" (id 0, `+0x158`) and "Restart Level" (id 1, `+0x15C`);
+  every other mode adds "Continue"/"New Game". Click 0 = `FUN_00505880(path, mode, profile+0x44)` +
+  `FUN_0047FBC0(path)` + `[manager]->vtable[0x134](dlg+0x154)`; click 1 = a nested message box of kind
+  0x22 ("Restart Level?"/"New Game?" with "Are you sure that you want to restart the level?" /
+  "...start a new game?"); any other id = `vtable[0x134](...)` + `FUN_00552100()` (main menu).
+  (7) **OptionsDialog**: title "Options", "OK" (kind 3), then buttons Register id 0, `Help` id 1 (the
+  label comes from the 4-byte string at `DAT_005a5bec`), the web link id 2 (label built by
+  `FUN_004872F0` from the strings "weblinktext" and "weblink"), Back to Main Menu id 3, Check Updates
+  id 4; two sliders `FUN_0046F360(colour, colour, 5/6)` at `+0x164`/`+0x168` seeded from
+  `[manager]->vtable[0xE0]`/`[0xE4]`, three checkboxes `FUN_00500B70(7/8/9)` at `+0x16C/+0x170/+0x174`
+  seeded from `manager+0x6A5`/`manager+0x71D`/`FUN_00489A20()`. Visibility: `manager+0x6A5` hides Check
+  Updates, `manager+0x71D` hides Register, the byte at `+0x18C` hides Back to Main Menu, and the web
+  button is shown only when `[widget+0xA0] != 0`. Click: 0 -> `FUN_0054E8A0` (register), 1 ->
+  `FUN_0054C220(0)` (help, unpaged), 2 -> `[manager]->vtable[0x94]("http://www.popcap.com", 0)`, 3 ->
+  `FUN_0054E760()` when `mode != 5 && Tank != 0 && FUN_00537BF0()` else `FUN_00552230()`, 4 ->
+  `FUN_00551A70()`.
+  (8) **World/account dialogs.** `UserDialog` ("WHO ARE YOU?" type-2 base; "TRANSFER SHELLS" when
+  creating) builds a list widget `FUN_00470B60(0, DAT_005e8dac, +0x158)` at `+0x160`, a scrollbar
+  `FUN_0046FDF0(0, list+0x88)` at `+0x168`, an edit widget at `+0x164`, "Rename" id 0 (+0x16C) and
+  "Delete" id 1 (+0x170), and stores the create-new flag at `+0x174`; it hides the edit box when
+  selecting and the two buttons when creating; click `FUN_00536BD0` reads the name with
+  `FUN_00536990(out)` (the list's selected text, empty when `list+0xD4 < 1`) and calls `FUN_0054B770
+  (name)` for id 0 / `FUN_0054F790(name)` for id 1. `NewUserDialog` ("NEW USER" / "RENAME USER",
+  body "\nPlease enter your name.", label "", kind 2) embeds an EditListener at `+0x158` whose char
+  filter is the derived slot 2 = 0x530D00, creates edit widget `FUN_00500AD0(0, +0x158)` at `+0x160`
+  with max length 0xC at `widget+0xF0`, and the same font/rect/colour block as FishNaming.
+  `RegisterDialog` ("Register Insaniquarium", body "You must obtain a registration code online and
+  enter it below.", kind 2) has `+0x150 = manager`, two edit widgets at `+0x15C`/`+0x160` cross-linked
+  through `+0x80/+0x84` for tab order, the link button "CLICK HERE TO GET REGISTRATION CODE" id 0 at
+  `+0x164`, and click 0 = `[manager]->vtable[0x190]()` (open the registration page).
+  (9) **Content dialogs.** `FoodDialog` ("FOOD SELECTOR", "CLOSE", kind 3) clears eight 24-byte
+  records at `+0x160..+0x21F` {x,y,0x32,0x32,index,owned}, fills the owned bytes from `FUN_0053A3C0`
+  (all eight when `Tank == 0`), centres the row at `x = 300 - count*56/2`, y = 2. `PetDialog`
+  ("PRESTO CHANGE-O", "CANCEL", kind 3) clears 24 16-byte icon rects at `+0x160` and lays them out in
+  three runs (7 rows of 50 px at x = 10 from y = 120, 11 columns of 52 px at y = 420, 6 more at x = 582
+  counting down from 370), storing the ownership flags from `FUN_00501410(i)` at `+0x2E0..+0x2F7`.
+  `FishNamingDialog` ("Name Your Fish", body = the current name, kind 2) puts the edit widget at
+  `+0x160` (max length 0xC at `+0xF0`, width 0xAA at `+0xF4`), keeps the manager at `+0x15C` and 0x3039
+  at `+0x164`, and its EditListener slot 2 = `FUN_005302E0`, a character filter that accepts printable
+  ASCII only. `VirtualDialog` ("WELCOME TO VIRTUAL TANK!", "OK", kind 3) sets its own size
+  (550x400 at `+0x38/+0x3C`), an inner rect (30,85,490,220) at `+0x15C..+0x168` and an image widget
+  `FUN_00505350()` at `+0x158`. `ScreenSaverDialog` ("Screensaver", "", "", kind 2) maps six
+  checkboxes ids 0-5 at `+0x15C..+0x170` to `manager+0x838`, `+0x839`, `+0x83A`, `+0x83B`, `+0x83C` and
+  `+0x83E` - note the gap at `+0x83D`, which no id reads.
+  (10) Bounded negatives: no instruction in the module calls the MoneyDialog vtable pair as a
+  constructed object; `RegisterDialog` builds the strings "Register" and "Cancel" without the
+  decompiled body using them (the call that consumes them is lost to the decompiler - recorded as open);
+  the `+0x18C` byte of OptionsDialog is only *read* (hides Back to Main Menu) and its writer was not
+  found; `FUN_00536990`'s receiver is the dialog object (it reads `+0x160`/`+0x174`), while the click
+  handler's receiver is the listener at `+0x88`, and the decompiler does not show the adjustment.
+

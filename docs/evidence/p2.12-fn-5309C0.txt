@@ -1,0 +1,13 @@
+
+void FUN_005309c0(void)
+
+{
+  undefined4 *in_ECX;
+  
+  *in_ECX = Sexy::MoneyDialog::vftable;
+  in_ECX[0x22] = Sexy::MoneyDialog::vftable;
+  FUN_004761a0();
+  return;
+}
+
+

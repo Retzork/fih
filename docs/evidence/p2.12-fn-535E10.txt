@@ -1,0 +1,89 @@
+
+void FUN_00535e10(int param_1)
+
+{
+  undefined4 *puVar1;
+  uint uVar2;
+  undefined4 uVar3;
+  undefined4 *in_ECX;
+  undefined1 local_68 [4];
+  void *local_64;
+  undefined4 local_54;
+  uint local_50;
+  undefined1 local_4c [4];
+  void *local_48;
+  undefined4 local_38;
+  uint local_34;
+  undefined1 local_30 [4];
+  void *local_2c;
+  undefined4 local_1c;
+  uint local_18;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00588d10;
+  local_10 = ExceptionList;
+  uVar2 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_50 = 0xf;
+  local_54 = 0;
+  local_64 = (void *)((uint)local_64 & 0xffffff00);
+  FUN_00426be0(&DAT_005ad7a6,0);
+  local_8 = 0;
+  local_34 = 0xf;
+  local_38 = 0;
+  local_48 = (void *)((uint)local_48 & 0xffffff00);
+  FUN_00426be0(&DAT_005ad7a6,0);
+  local_8._0_1_ = 1;
+  local_18 = 0xf;
+  local_1c = 0;
+  local_2c = (void *)((uint)local_2c & 0xffffff00);
+  FUN_00426be0("Screensaver",0xb);
+  local_8._0_1_ = 2;
+  FUN_00530920(param_1,DAT_005e8cc0,DAT_005e8c54,0x25,1,local_30,local_4c,local_68,2);
+  if (0xf < local_18) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_2c);
+  }
+  local_18 = 0xf;
+  local_1c = 0;
+  local_2c = (void *)((uint)local_2c & 0xffffff00);
+  if (0xf < local_34) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_48);
+  }
+  local_34 = 0xf;
+  local_38 = 0;
+  local_48 = (void *)((uint)local_48 & 0xffffff00);
+  local_8 = CONCAT31(local_8._1_3_,6);
+  if (0xf < local_50) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_64);
+  }
+  in_ECX[0x56] = Sexy::CheckboxListener::vftable;
+  local_50 = 0xf;
+  puVar1 = in_ECX + 0x56;
+  *in_ECX = Sexy::ScreenSaverDialog::vftable;
+  in_ECX[0x22] = Sexy::ScreenSaverDialog::vftable;
+  *puVar1 = Sexy::ScreenSaverDialog::vftable;
+  local_54 = 0;
+  local_64 = (void *)((uint)local_64 & 0xffffff00);
+  uVar3 = FUN_00500b70(0,puVar1,*(undefined1 *)(in_ECX[0x54] + 0x838),uVar2);
+  in_ECX[0x57] = uVar3;
+  uVar3 = FUN_00500b70(1,puVar1,*(undefined1 *)(param_1 + 0x839));
+  in_ECX[0x58] = uVar3;
+  uVar3 = FUN_00500b70(2,puVar1,*(undefined1 *)(param_1 + 0x83a));
+  in_ECX[0x59] = uVar3;
+  uVar3 = FUN_00500b70(3,puVar1,*(undefined1 *)(param_1 + 0x83b));
+  in_ECX[0x5a] = uVar3;
+  uVar3 = FUN_00500b70(4,puVar1,*(undefined1 *)(param_1 + 0x83c));
+  in_ECX[0x5b] = uVar3;
+  uVar3 = FUN_00500b70(5,puVar1,*(undefined1 *)(param_1 + 0x83e));
+  in_ECX[0x5c] = uVar3;
+  ExceptionList = local_10;
+  return;
+}
+
+

@@ -1,0 +1,64 @@
+
+void FUN_00535430(undefined4 param_1)
+
+{
+  char cVar1;
+  uint uVar2;
+  undefined4 uVar3;
+  int in_ECX;
+  undefined1 local_64 [28];
+  undefined1 local_48 [28];
+  undefined1 local_2c [28];
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00588cc8;
+  local_10 = ExceptionList;
+  uVar2 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  FUN_00530ae0(param_1);
+  switch(param_1) {
+  case 0:
+    FUN_0054e8a0();
+    ExceptionList = local_10;
+    return;
+  case 1:
+    FUN_0054c220(0);
+    ExceptionList = local_10;
+    return;
+  case 2:
+    FUN_0041d8b0("http://www.popcap.com");
+    local_8 = 0;
+    FUN_0041d8b0("weblink");
+    local_8._0_1_ = 1;
+    uVar3 = FUN_004872f0(local_64,local_2c,local_48);
+    local_8 = CONCAT31(local_8._1_3_,2);
+    (**(code **)(**(int **)(in_ECX + 0xd8) + 0x94))(uVar3,0);
+    FUN_0041d8f0();
+    FUN_0041d8f0();
+    FUN_0041d8f0();
+    ExceptionList = local_10;
+    return;
+  case 3:
+    break;
+  case 4:
+    FUN_00551a70(uVar2);
+  default:
+    ExceptionList = local_10;
+    return;
+  }
+  if (((*(int *)(*(int *)(in_ECX + 0xd8) + 0x87c) != 5) &&
+      (*(int *)(*(int *)(in_ECX + 0xd8) + 0x730) != 0)) && (cVar1 = FUN_00537bf0(), cVar1 != '\0'))
+  {
+    FUN_0054e760();
+    ExceptionList = local_10;
+    return;
+  }
+  FUN_00552230();
+  ExceptionList = local_10;
+  return;
+}
+
+

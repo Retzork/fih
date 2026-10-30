@@ -1,0 +1,101 @@
+
+void FUN_00536c80(undefined4 param_1)
+
+{
+  uint uVar1;
+  int iVar2;
+  undefined4 uVar3;
+  undefined4 *in_ECX;
+  undefined1 local_78 [4];
+  void *local_74;
+  undefined4 local_64;
+  uint local_60;
+  undefined1 local_5c [4];
+  void *local_58;
+  undefined4 local_48;
+  uint local_44;
+  undefined1 local_40 [4];
+  void *local_3c;
+  undefined4 local_2c;
+  uint local_28;
+  int local_24;
+  undefined4 local_20;
+  int local_1c;
+  int local_18;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00588f4b;
+  local_10 = ExceptionList;
+  uVar1 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  local_60 = 0xf;
+  local_64 = 0;
+  local_74 = (void *)((uint)local_74 & 0xffffff00);
+  FUN_00426be0(&DAT_005b161c,2);
+  local_8 = 0;
+  local_44 = 0xf;
+  local_48 = 0;
+  local_58 = (void *)((uint)local_58 & 0xffffff00);
+  FUN_00426be0(&DAT_005ad7a6,0);
+  local_8._0_1_ = 1;
+  local_28 = 0xf;
+  local_2c = 0;
+  local_3c = (void *)((uint)local_3c & 0xffffff00);
+  FUN_00426be0("WELCOME TO VIRTUAL TANK!",0x18);
+  local_8._0_1_ = 2;
+  FUN_00530920(param_1,DAT_005e8cc0,DAT_005e8c54,0x27,1,local_40,local_5c,local_78,3);
+  if (0xf < local_28) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_3c);
+  }
+  local_28 = 0xf;
+  local_2c = 0;
+  local_3c = (void *)((uint)local_3c & 0xffffff00);
+  if (0xf < local_44) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_58);
+  }
+  local_44 = 0xf;
+  local_48 = 0;
+  local_58 = (void *)((uint)local_58 & 0xffffff00);
+  local_8._0_1_ = 6;
+  if (0xf < local_60) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_74);
+  }
+  in_ECX[0x57] = 0x1e;
+  local_60 = 0xf;
+  in_ECX[0x58] = 0x55;
+  in_ECX[0x59] = 0x1ea;
+  local_64 = 0;
+  local_74 = (void *)((uint)local_74 & 0xffffff00);
+  *in_ECX = Sexy::VirtualDialog::vftable;
+  in_ECX[0x22] = Sexy::VirtualDialog::vftable;
+  in_ECX[0xe] = 0x226;
+  in_ECX[0xf] = 400;
+  in_ECX[0x5a] = 0xdc;
+  iVar2 = FUN_00564345(0x58,uVar1);
+  local_8._0_1_ = 7;
+  if (iVar2 == 0) {
+    uVar3 = 0;
+  }
+  else {
+    uVar3 = FUN_00505350();
+  }
+  local_20 = in_ECX[0x58];
+  local_24 = in_ECX[0x57] + 0x14;
+  local_1c = in_ECX[0x59] + -0x28;
+  local_18 = in_ECX[0x5a] + -10;
+  local_8 = CONCAT31(local_8._1_3_,6);
+  in_ECX[0x56] = uVar3;
+  FUN_00500120(&local_24);
+  FUN_00500180(10,3);
+  FUN_00512080();
+  ExceptionList = local_10;
+  return;
+}
+
+

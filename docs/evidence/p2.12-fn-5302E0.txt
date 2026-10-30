@@ -1,0 +1,14 @@
+
+undefined4 FUN_005302e0(undefined4 param_1,byte param_2)
+
+{
+  int iVar1;
+  
+  iVar1 = _isprint((uint)param_2);
+  if ((iVar1 == 0) && (param_2 != 0x20)) {
+    return 0;
+  }
+  return 1;
+}
+
+

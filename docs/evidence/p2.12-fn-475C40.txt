@@ -1,0 +1,218 @@
+
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+void FUN_00475c40(undefined4 param_1,int param_2,undefined4 param_3,undefined1 param_4,
+                 undefined4 param_5,undefined4 param_6,undefined4 param_7,int param_8)
+
+{
+  undefined1 uVar1;
+  undefined4 *puVar2;
+  int iVar3;
+  undefined4 uVar4;
+  undefined4 *in_ECX;
+  bool bVar5;
+  CRect local_44 [4];
+  void *local_40;
+  undefined4 local_30;
+  uint local_2c;
+  undefined1 local_28 [4];
+  void *local_24;
+  undefined4 local_14;
+  uint local_10;
+  void *local_c;
+  undefined1 *puStack_8;
+  undefined4 local_4;
+  
+  local_4 = 0xffffffff;
+  puStack_8 = &LAB_005902e3;
+  local_c = ExceptionList;
+  ExceptionList = &local_c;
+  FUN_0046dca0(DAT_005e39d8 ^ (uint)&stack0xffffffa8);
+  in_ECX[0x22] = Sexy::ButtonListener::vftable;
+  *in_ECX = Sexy::Dialog::vftable;
+  in_ECX[0x22] = Sexy::Dialog::vftable;
+  in_ECX[0x2e] = 0xf;
+  in_ECX[0x2d] = 0;
+  *(undefined1 *)(in_ECX + 0x29) = 0;
+  in_ECX[0x35] = 0xf;
+  in_ECX[0x34] = 0;
+  *(undefined1 *)(in_ECX + 0x30) = 0;
+  in_ECX[0x3c] = 0xf;
+  in_ECX[0x3b] = 0;
+  *(undefined1 *)(in_ECX + 0x37) = 0;
+  local_4._0_1_ = 3;
+  local_4._1_3_ = 0;
+  FUN_004728d0();
+  FUN_004728d0();
+  in_ECX[0x24] = param_1;
+  in_ECX[0x4f] = param_3;
+  in_ECX[0x51] = 0x7fffffff;
+  *(undefined1 *)(in_ECX + 0x50) = param_4;
+  puVar2 = (undefined4 *)CRect::CRect(local_44,0x18,0x18,0x18,0x18);
+  in_ECX[0x47] = *puVar2;
+  in_ECX[0x48] = puVar2[1];
+  in_ECX[0x49] = puVar2[2];
+  iVar3 = DAT_005eb680;
+  bVar5 = DAT_005eb680 == 0;
+  in_ECX[0x4a] = puVar2[3];
+  in_ECX[0x40] = 0;
+  in_ECX[0x41] = 0;
+  in_ECX[0x4b] = 10;
+  in_ECX[0x53] = 0;
+  in_ECX[0x52] = 8;
+  if (bVar5) {
+    iVar3 = 0;
+  }
+  else {
+    iVar3 = iVar3 + 4;
+  }
+  in_ECX[0x23] = iVar3;
+  FUN_00422210(param_5,0,0xffffffff);
+  FUN_00422210(param_7,0,0xffffffff);
+  in_ECX[0x3d] = param_8;
+  if ((param_8 == 1) || (param_8 == 2)) {
+    iVar3 = FUN_00564345(0x138);
+    local_4._0_1_ = 4;
+    if (iVar3 == 0) {
+      uVar4 = 0;
+    }
+    else {
+      uVar4 = FUN_00476eb0(param_2,1000,in_ECX + 0x22);
+    }
+    local_4._0_1_ = 3;
+    in_ECX[0x25] = uVar4;
+    iVar3 = FUN_00564345(0x138);
+    local_4._0_1_ = 5;
+    if (iVar3 == 0) {
+      uVar4 = 0;
+    }
+    else {
+      uVar4 = FUN_00476eb0(param_2,0x3e9,in_ECX + 0x22);
+    }
+    local_4._0_1_ = 3;
+    uVar1 = (undefined1)local_4;
+    local_4._0_1_ = 3;
+    in_ECX[0x26] = uVar4;
+    local_30 = 0;
+    local_40 = (void *)((uint)local_40 & 0xffffff00);
+    local_2c = 0xf;
+    if (in_ECX[0x3d] == 1) {
+      FUN_00426be0("DIALOG_BUTTON_YES",0x11);
+      local_4._0_1_ = 6;
+      uVar4 = FUN_004872f0(local_28,local_44,&DAT_005e7f80);
+      local_4._0_1_ = 7;
+      FUN_00422210(uVar4,0,0xffffffff);
+      if (0xf < local_10) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_24);
+      }
+      local_4._0_1_ = 3;
+      local_10 = 0xf;
+      local_14 = 0;
+      local_24 = (void *)((uint)local_24 & 0xffffff00);
+      if (0xf < local_2c) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_40);
+      }
+      local_2c = 0xf;
+      local_30 = 0;
+      local_40 = (void *)((uint)local_40 & 0xffffff00);
+      FUN_00426be0("DIALOG_BUTTON_NO",0x10);
+      local_4._0_1_ = 8;
+      uVar4 = FUN_004872f0(local_28,local_44,&DAT_005e7f9c);
+      local_4._0_1_ = 9;
+      FUN_00422210(uVar4,0,0xffffffff);
+      if (0xf < local_10) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_24);
+      }
+    }
+    else {
+      local_4._0_1_ = uVar1;
+      FUN_00426be0("DIALOG_BUTTON_OK",0x10);
+      local_4._0_1_ = 10;
+      uVar4 = FUN_004872f0(local_28,local_44,&DAT_005e7fb8);
+      local_4._0_1_ = 0xb;
+      FUN_00422210(uVar4,0,0xffffffff);
+      if (0xf < local_10) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_24);
+      }
+      local_4._0_1_ = 3;
+      local_10 = 0xf;
+      local_14 = 0;
+      local_24 = (void *)((uint)local_24 & 0xffffff00);
+      if (0xf < local_2c) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_40);
+      }
+      local_2c = 0xf;
+      local_30 = 0;
+      local_40 = (void *)((uint)local_40 & 0xffffff00);
+      FUN_00426be0("DIALOG_BUTTON_CANCEL",0x14);
+      local_4._0_1_ = 0xc;
+      uVar4 = FUN_004872f0(local_28,local_44,&DAT_005e7fd4);
+      local_4._0_1_ = 0xd;
+      FUN_00422210(uVar4,0,0xffffffff);
+      if (0xf < local_10) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_24);
+      }
+    }
+    local_4._0_1_ = 3;
+    local_24 = (void *)((uint)local_24 & 0xffffff00);
+    local_14 = 0;
+    local_10 = 0xf;
+    if (0xf < local_2c) {
+      local_4._0_1_ = 3;
+      local_10 = 0xf;
+      local_14 = 0;
+                    /* WARNING: Subroutine does not return */
+      _free(local_40);
+    }
+  }
+  else if (param_8 == 3) {
+    iVar3 = FUN_00564345(0x138);
+    local_4._0_1_ = 0xe;
+    if (iVar3 == 0) {
+      uVar4 = 0;
+    }
+    else {
+      uVar4 = FUN_00476eb0(param_2,1000,in_ECX + 0x22);
+    }
+    local_4._0_1_ = 3;
+    in_ECX[0x25] = uVar4;
+    FUN_00422210(in_ECX + 0x2f,0,0xffffffff);
+    in_ECX[0x26] = 0;
+  }
+  else {
+    in_ECX[0x25] = 0;
+    in_ECX[0x26] = 0;
+    in_ECX[0x27] = 0;
+  }
+  FUN_00422210(param_6,0,0xffffffff);
+  uVar4 = 0x18;
+  if (param_2 != 0) {
+    uVar4 = *(undefined4 *)(param_2 + 0x28);
+  }
+  in_ECX[0x42] = uVar4;
+  *(undefined1 *)((int)in_ECX + 0x5a) = 1;
+  *(undefined1 *)(in_ECX + 0x10) = 1;
+  in_ECX[0x3e] = 0;
+  in_ECX[0x3f] = 0;
+  *(undefined1 *)(in_ECX + 0x4c) = 0;
+  in_ECX[0x13] = 1;
+  if (param_2 == 0) {
+    _DAT_005e7384 = 0;
+    _DAT_005e7388 = 0;
+    _DAT_005e738c = 0;
+    _DAT_005e7390 = 0;
+    _DAT_005e7394 = 0;
+    _DAT_005e7398 = 0;
+  }
+  FUN_0046ded0(&DAT_005e7360,7);
+  ExceptionList = local_c;
+  return;
+}
+
+

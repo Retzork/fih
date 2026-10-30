@@ -1,0 +1,14 @@
+
+void FUN_00530ae0(void)
+
+{
+  int in_ECX;
+  
+  if (*(int *)(in_ECX + 0xcc) < *(int *)(in_ECX + -0x60)) {
+    FUN_00476e70();
+    return;
+  }
+  return;
+}
+
+

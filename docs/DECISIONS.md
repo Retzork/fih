@@ -92,6 +92,23 @@
   document each finding clearly. Earlier name-shaped guesses (BallFish/SylvesterFish/BiFish =
   hostile aliens) were wrong - they are the Virtual Tank prize fish (EV-0060).
 
+### D-0011 - The dialog base is ported by role; `Sexy::MoneyDialog` is not a remake class
+- Date: 2026-10-29
+- Decision: The ten concrete dialogs (Continue, FishNaming, Food, NewUser, Options, Pet, Register,
+  ScreenSaver, User, Virtual) are modelled as data on one modal base implemented by role
+  (`Dialog`: three strings + `kind` 0/1/2/3 + the 1000/1001 button ids + listener mixins). No
+  `MoneyDialog` class is ported, and the base is **not** described as deriving from a money dialog.
+- Why: the base vtable pair installed by `FUN_00530920` is the pair RTTI attributes to
+  `.?AVMoneyDialog@Sexy@@` (listener 0x5A5D68, object 0x5A5D8C; locator 0x5A5D64 -> TypeDescriptor
+  0x5E2034, name read byte-for-byte), the same pair is re-installed by the 0x13-byte helper
+  `FUN_005309C0` from every dialog destructor's base call, and **no `.?AVDialog@Sexy@@` locator
+  exists in the module**. There is also no constructed MoneyDialog instance: its only "ctor" is that
+  helper, whose nine callers all sit in the dialog dtors. So the name is a RTTI artefact of the
+  vendored SexyApp framework, not a UI the player can open (EV-0137, note §11.1).
+- Boundaries: this settles the *modelling* question only. Why the framework's dialog base carries
+  the MoneyDialog name (a folded/merged vtable, most likely) is not established and is not needed
+  for the remake.
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15

@@ -1,0 +1,129 @@
+
+void FUN_00533760(int param_1)
+
+{
+  int in_ECX;
+  undefined1 local_c0 [4];
+  void *local_bc;
+  undefined4 local_ac;
+  uint local_a8;
+  undefined1 local_a4 [4];
+  void *local_a0;
+  undefined4 local_90;
+  uint local_8c;
+  undefined1 local_88 [4];
+  void *local_84;
+  undefined4 local_74;
+  uint local_70;
+  undefined1 local_6c [4];
+  void *local_68;
+  undefined4 local_58;
+  uint local_54;
+  undefined1 local_50 [4];
+  void *local_4c;
+  undefined4 local_3c;
+  uint local_38;
+  undefined4 local_34;
+  undefined1 local_30 [4];
+  void *local_2c;
+  undefined4 local_1c;
+  uint local_18;
+  uint local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_00588961;
+  local_10 = ExceptionList;
+  local_14 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  ExceptionList = &local_10;
+  if (param_1 == 0) {
+    FUN_00505880(local_30,*(undefined4 *)(*(int *)(in_ECX + 200) + 0x87c),
+                 *(undefined4 *)(*(int *)(*(int *)(in_ECX + 200) + 0x8b8) + 0x44));
+    local_8 = 0;
+    FUN_0047fbc0(local_30);
+    (**(code **)(**(int **)(in_ECX + 200) + 0x134))(*(undefined4 *)(in_ECX + 0xb4));
+    if (0xf < local_18) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_2c);
+    }
+  }
+  else if (param_1 == 1) {
+    if (*(int *)(*(int *)(in_ECX + 200) + 0x87c) == 0) {
+      FUN_0041d8b0(&DAT_005ad7a6);
+      local_8 = 1;
+      FUN_0041d8b0("Are you sure that you want to restart the level?");
+      local_8._0_1_ = 2;
+      FUN_0041d8b0("Restart Level?");
+      local_8 = CONCAT31(local_8._1_3_,3);
+      local_34 = (**(code **)(**(int **)(in_ECX + 200) + 0x120))
+                           (0x22,1,local_a4,local_6c,local_30,2);
+      if (0xf < local_8c) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_a0);
+      }
+      local_8c = 0xf;
+      local_90 = 0;
+      local_a0 = (void *)((uint)local_a0 & 0xffffff00);
+      if (0xf < local_54) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_68);
+      }
+      local_54 = 0xf;
+      local_58 = 0;
+      local_68 = (void *)((uint)local_68 & 0xffffff00);
+      local_8 = 0xffffffff;
+      if (0xf < local_18) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_2c);
+      }
+      local_18 = 0xf;
+      local_1c = 0;
+      local_2c = (void *)((uint)local_2c & 0xffffff00);
+      FUN_00426be0("Restart",7);
+    }
+    else {
+      FUN_0041d8b0(&DAT_005ad7a6);
+      local_8 = 4;
+      FUN_0041d8b0("Are you sure that you want to start a new game?");
+      local_8._0_1_ = 5;
+      FUN_0041d8b0("New Game?");
+      local_8 = CONCAT31(local_8._1_3_,6);
+      local_34 = (**(code **)(**(int **)(in_ECX + 200) + 0x120))
+                           (0x22,1,local_50,local_88,local_c0,2);
+      if (0xf < local_38) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_4c);
+      }
+      local_38 = 0xf;
+      local_3c = 0;
+      local_4c = (void *)((uint)local_4c & 0xffffff00);
+      if (0xf < local_70) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_84);
+      }
+      local_70 = 0xf;
+      local_74 = 0;
+      local_84 = (void *)((uint)local_84 & 0xffffff00);
+      local_8 = 0xffffffff;
+      if (0xf < local_a8) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_bc);
+      }
+      local_a8 = 0xf;
+      local_ac = 0;
+      local_bc = (void *)((uint)local_bc & 0xffffff00);
+      FUN_00426be0("New Game",8);
+    }
+  }
+  else {
+    (**(code **)(**(int **)(in_ECX + 200) + 0x134))(*(undefined4 *)(in_ECX + 0xb4),local_14);
+    FUN_00552100();
+  }
+  ExceptionList = local_10;
+  __security_check_cookie(local_14 ^ (uint)&stack0xfffffffc);
+  return;
+}
+
+
