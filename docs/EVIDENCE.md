@@ -3197,3 +3197,47 @@ behavior or specs; follow up with a binary observation entry.
   5000, and falls back to 100 when `+0x1D0 == 0`); the `+0x8C` writers sit in 0x0A-0xA2-byte stubs that
   were not decompiled, so they are cited by address only.
 
+### EV-0139 - Dialog wiring closed: the edit filter is slot 2, and `RegisterDialog` relabels the built-in buttons
+- Date: 2026-10-29
+- Type: code trace (direct byte reads of the carved module + three new decompiles)
+- Source: byte dumps of 0x535B3C-0x535B9F, 0x53675A, 0x4D5350, 0x519120, 0x530CE0 and 0x532240; the
+  vtable dwords at 0x5A5D54, 0x5A5EC8, 0x5A6B60, 0x5A6438, 0x5A6720, 0x5A6710, 0x5A6038, 0x5A13C0;
+  strings 0x59D880 "Register", 0x5AF930 "Login", 0x5AF938 "Cancel" and `DAT_005ae104` "0";
+  decompiled bodies `p2.12-fn-530D00.txt`, `p2.12-fn-532260.txt`, `p2.12-fn-536450.txt`,
+  `p2.12-fn-535A40.txt`
+- Confidence: high for (1)-(5) - each is a byte-level or decompiled fact; medium for the slot-2
+  dispatch itself, see (6)
+- Notes:
+  (1) **`RegisterDialog` relabels the base's two auto buttons.** The calls that read as orphaned in
+  `FUN_00535A40` are `std::string::assign` on the button labels: 0x535B49 `mov ecx,[esi+0x94]`,
+  0x535B58 `push 8`, 0x535B5A `add ecx,0x8C`, 0x535B60 `push 0x59D880` ("Register"), `call 0x426BE0`
+  at 0x535B87; then 0x535B8C `mov ecx,[esi+0x98]`, 0x535B92 `push 6`, 0x535B94 `add ecx,0x8C`,
+  0x535B9A `push 0x5AF938` ("Cancel"), `call 0x426BE0` at 0x535B9F. So a `kind`-2 RegisterDialog
+  reads **Register / Cancel**, and `+0x94`/`+0x98` now have a *consumer*, not just the base's writers.
+  (2) **`NewUserDialog`'s filter is `isalnum(c) || c == ' '`.** `FUN_00530D00` is a two-line body
+  (`_isalnum(c)` or a space -> 1, else 0), installed at slot 2 of 0x5A5EC8 (dword at 0x5A5ED0). New
+  user names therefore admit letters, digits and spaces only.
+  (3) **`UserDialog`'s filter is `isdigit(c)` only** (`FUN_00532260`, slot 2 of 0x5A6720 at 0x5A6728),
+  and its edit widget is seeded with the one-character string `"0"`: at 0x53675A `push 1; push
+  0x5AE104` builds the string (`DAT_005ae104` = "0") and the widget at `[dialog+0x164]` then gets it
+  through vtable `+0x124`. A digits-only, `"0"`-seeded field does not look like a name entry - open,
+  see (6).
+  (4) **The character filter is slot 2 of the edit listener, and the default is "accept".** The base
+  `EditListener` table (0x5A5D54) holds 4 slots: `0x519120` = `ret 8`, then `0x4D5350` x3, and
+  `0x4D5350` is `B0 01 C2 08 00` = `mov al,1; ret 8`. Every dialog's derived table replaces slot 0 with
+  a text-change forwarder and slot 2 with the predicate above. No slot is a destructor: `ret 8` pops
+  two dwords, which fits a `(int id, char c)` callback and not a `this`-only dtor. The sibling bases
+  are `ListListener` 0x5A6710 (3 slots: 0x531E70, 0x51A440, 0x531E70), `SliderListener` 0x5A6038
+  (1 slot: 0x531E70) and `CheckboxListener` 0x5A13C0 (1 slot: the `ret 8` stub).
+  (5) **Two listener addresses in the note's ctor map were wrong and are now fixed.** `RegisterDialog`
+  installs ButtonListener **0x5A644C** at 0x535B71 (`C7 86 88 00 00 00 4C 64 5A 00`; 0x5A6454 is the
+  next dword and was a transcription slip), and OptionsDialog installs the **Slider 0x5A6048** at
+  `+0x158` and the **Checkbox 0x5A6040** at `+0x15C` - the pair had been swapped. Both were re-derived
+  by scanning each ctor body for `mov [reg+disp], imm32` stores with a 0x5A0000-0x5A9000 immediate.
+  (6) Bounded negatives: a `.text` scan finds **no** `E8` call to any of the three filters and only 20
+  `call [reg+disp8]`-style slot-2 sites in the whole module, none with a nearby character argument, so
+  the "the edit widget feeds the typed character into slot 2" step is inferred from the default-accept
+  stub plus three `ctype` predicates rather than observed at a call site. `UserDialog`'s digits-only
+  box is unexplained for the same reason: the rename path's name comes from `FUN_00536990`, whose
+  receiver is its own open question, so whether that box is a name field is not settled.
+

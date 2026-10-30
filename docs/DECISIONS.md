@@ -465,3 +465,20 @@
 - Until the roller is re-read against the picker, the remake must not derive pet ownership from
   `profile+0x72..+0x77`; six backdrops is the reading with dialog text behind it. Resolve in P2.13 with
   the profile writer (`FUN_00501530` and the save loader).
+
+### Q-0027 - P2.12 residual dialog questions: two blind writers and one unexplained field
+- OPEN (2026-10-29, EV-0137-EV-0139). The dialog layer is mapped end to end (§11 of the note) and
+  P2.12 is closed as a mapping phase; these three stay open without blocking the port:
+- **OptionsDialog `+0x18C`.** The dialog only *reads* it (non-zero hides "Back to Main Menu") and no
+  writer appears in the OptionsDialog ctor `FUN_005349D0`, its opener (`0x54C66D`, inside
+  `FUN_0054C620`) or its click handler `FUN_00535430`. Port the button's visibility as "hidden unless
+  something outside the dialog sets it".
+- **`manager+0x838..0x83E`.** The ScreenSaverDialog ctor reads six of these seven bytes into its
+  checkboxes (`+0x83D` is skipped), and a bounded negative over the decompiled dialog/screen corpus
+  (`docs/evidence/p2.12-fn-*.txt`) finds no writer; whether OK persists them anywhere is unknown. Port
+  the six as booleans with an unknown producer rather than inventing a settings store.
+- **`UserDialog`'s edit box.** Seeded with the one-character string `"0"` and filtered to
+  `isdigit(c)` (EV-0139), while Rename/Delete act on a name read through `FUN_00536990`, whose receiver
+  is the dialog object rather than the widget (§11.6). Either the box is a numeric entry and the rename
+  source is elsewhere, or the game really restricts the field. Settle it by decompiling `FUN_0054B770`
+  (rename), `FUN_0054F790` (delete) and `FUN_00536990` - not done.
