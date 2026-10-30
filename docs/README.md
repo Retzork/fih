@@ -17,7 +17,7 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 2. **Want the current state quickly?** Read the `P2.12` entry in `PLAN.md`, then
    `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen and stock
    refresh, level-start flow, all screen ctors and click handlers, the dialog layer,
-   EV-0131..EV-0139), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
+   EV-0131..EV-0140), then `analysis/notes/p2.11-modes.md` for the mode behavior itself.
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -81,15 +81,17 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   closed the last two questions: the per-character **edit filter is slot 2** of the edit listener (the
   base default is `mov al,1; ret 8`; the three dialogs narrow it to printable ASCII, alnum + space, and
   digits), and `RegisterDialog` **relabels** the base's two auto buttons to Register/Cancel. That pass
-  also fixed two wrong listener addresses in §11.2.
+  also fixed two wrong listener addresses in §11.2. A residue pass (EV-0140) then settled the odd
+  field: `UserDialog`'s digits-only `"0"` box is the **shells transfer amount** of the "TRANSFER
+  SHELLS" mode (drawn only when `+0x174 != 0`), and Rename/Delete read the highlighted list row.
 - **P2.12 still open (Q-0018, Q-0025, Q-0026, Q-0027):** the owner of the *normal* store-item object (its
   price display is answered, and EV-0138 closed the "is the rolled pet the receiver of
   `FUN_00519730`" question - yes); `manager+0x738` now has a reader
   (the Bonus handler) but still no writer; `profile+0x18` is unbound (the `profile+0x5A` clear is
   explained - it is the PetsScreen ctor resetting the pending pet selection); `profile+0x72..+0x77`
   is claimed both as the backdrop ownership map (SimSetup) and as store pet slots (Q-0026); and Q-0027
-  keeps three dialog loose ends without blocking the port (Options' `+0x18C` writer, the screen-saver
-  flag writers, `UserDialog`'s digits-only `"0"` edit box). Do not guess these.
+  keeps two dialog loose ends without blocking the port (Options' `+0x18C` writer and the screen-saver
+  flag writers - its third item, `UserDialog`'s box, is answered in EV-0140). Do not guess these.
 - **P2.11 game modes (2026-10-29)** mapped all four shipped modes off the single binding
   `mode = [manager+0x87C]`: 0 Adventure, 1 Time Trial, 3 Sandbox, 4 Challenge, 5 Virtual Tank
   (2 is referenced but never observed). `FUN_0054CBF0` is `start_level`, and the per-mode work
@@ -167,7 +169,7 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 - **Next planned task:** P2.13 (the tank update, saves, the `adv`/`sim` bodies), which also closes
   Q-0018's last residual (the call-site owner of the normal store-item object) and Q-0026's
   `profile+0x72..+0x77` conflict; then P2.14 (audio), P2.15 (resources), and finally P2.18 `SPECS.md`
-  to close Phase 2. P2.12 itself is closed (EV-0139) with only Q-0027's three dialog loose ends
+  to close Phase 2. P2.12 itself is closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends
   tracked.
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
@@ -242,7 +244,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0139). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0140). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11 and P2.12 opens. |

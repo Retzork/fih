@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-29 (P2.12 is **complete** (EV-0139 - the edit character filter is the edit listener's slot 2, whose default is `mov al,1; ret 8`, and `RegisterDialog` relabels the base's auto buttons to Register/Cancel; two §11.2 listener addresses fixed; the three remaining dialog loose ends are Q-0027); P2.12 EV-0138 closed Q-0018's price-getter receiver - the store price is a property of the rolled prize, whose kind sits at `+0x8C`; P2.12 dialog pass before it - the `Sexy::Dialog` base with its kind-driven built-in button row, the ten dialog ctors and their openers, five click handlers, the `MoneyDialog` naming conflict as D-0011 (EV-0137); P2.12 screen pass before it - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+Last updated: 2026-10-29 (P2.12 is **complete** (EV-0140 closes the last semantic gap - `UserDialog`'s digits-only `"0"` box is the shells transfer amount of the "TRANSFER SHELLS" mode, and Rename/Delete read the highlighted list row; EV-0139 - the edit character filter is the edit listener's slot 2, whose default is `mov al,1; ret 8`, and `RegisterDialog` relabels the base's auto buttons to Register/Cancel; two §11.2 listener addresses fixed; the two remaining dialog loose ends are Q-0027); P2.12 EV-0138 closed Q-0018's price-getter receiver - the store price is a property of the rolled prize, whose kind sits at `+0x8C`; P2.12 dialog pass before it - the `Sexy::Dialog` base with its kind-driven built-in button row, the ten dialog ctors and their openers, five click handlers, the `MoneyDialog` naming conflict as D-0011 (EV-0137); P2.12 screen pass before it - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
 click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
@@ -80,12 +80,14 @@ tank update, not the click handler (EV-0129); and `FUN_004D80C0` is an object-ki
 unreachable and every earlier "demo" reading of that predicate is withdrawn (EV-0130). Note
 `docs\analysis\notes\p2.11-modes.md`. New open item: Q-0024 (mode writer, `+0x19C` receiver,
 `Tank+0x4FE` writer, `+0x2DC`/`+0x2E0`, VT helpers).
-Next: P2.13 (tank update, saves, the `adv`/`sim` bodies). P2.12 is **closed** as a mapping phase (EV-0139)
+Next: P2.13 (tank update, saves, the `adv`/`sim` bodies). P2.12 is **closed** as a mapping phase (EV-0139,
+EV-0140)
 - Q-0018's last residual, the call-site owner of the normal store-item object, needs the tank update and
 lands with P2.13, and Q-0026 (`profile+0x72..+0x77`, backdrop flags vs store pet slots) resolves with the
-profile writer there. Q-0027 holds the three dialog loose ends that stay open without blocking the port
-(OptionsDialog's `+0x18C` writer, the `manager+0x838..0x83E` screen-saver flag writers, and
-`UserDialog`'s digits-only `"0"` edit box); Q-0025's `manager+0x738` writer stays open.
+profile writer there. Q-0027 now holds two dialog loose ends that stay open without blocking the port
+(OptionsDialog's `+0x18C` writer and the `manager+0x838..0x83E` screen-saver flag writers); its third
+item, `UserDialog`'s digits-only `"0"` box, closed in EV-0140 as the shells transfer amount of the
+"TRANSFER SHELLS" mode; Q-0025's `manager+0x738` writer stays open.
 Then P2.14 (audio), P2.15 (resources) and P2.18 `SPECS.md` to close Phase 2.
 P2.8 residuals stay in Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the
 Gus pellet hp cost, `FUN_005442C0` death animation, tank flag writers). P2.6 remains open
@@ -338,13 +340,18 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   through their `+0x8C` label strings. Two listener addresses in §11.2 were wrong (RegisterDialog's
   ButtonListener is 0x5A644C; OptionsDialog's Slider/Checkbox were swapped) and are fixed; the four
   listener bases are 4/3/1/1 slots and none of their slots is a destructor.
-  The phase **closes** here: the remaining loose ends are Q-0027 (Options' `+0x18C` writer, the
-  `manager+0x838..0x83E` writers, `UserDialog`'s digits-only `"0"` edit box) plus the Q-0018/Q-0025/
-  Q-0026 items already tracked for P2.13.
+  Residue pass (EV-0140): the last semantic gap closes - `FUN_00536A40` is `UserDialog`'s draw
+  override and the digits-only `"0"` box is the **shells transfer amount** of the "TRANSFER SHELLS"
+  mode (caption "Transfer Amount", shown only when `+0x174 != 0`, hidden in the "WHO ARE YOU?"
+  picker), while Rename/Delete read the highlighted list row and open
+  `NewUserDialog(isRename=1)` / a Yes/No confirm. One note-level detail stays unknown: the caption
+  drawn left of the amount box comes from a runtime string pointer at 0x5E8B74.
+  The phase **closes** here: the remaining loose ends are Q-0027 (Options' `+0x18C` writer and the
+  `manager+0x838..0x83E` writers) plus the Q-0018/Q-0025/Q-0026 items already tracked for P2.13.
   Open: the call-site owner of the normal store-item object (Q-0018, deferred to P2.13), Q-0025
   (`manager+0x738` owner, `profile+0x18` - the `profile+0x5A` clear is explained by the PetsScreen
-  ctor), Q-0026 (`profile+0x72..+0x77` backdrop-vs-pet-slot conflict) and Q-0027 (the three dialog
-  writer/semantic gaps); all tracked, none blocking the port.)
+  ctor), Q-0026 (`profile+0x72..+0x77` backdrop-vs-pet-slot conflict) and Q-0027 (the two dialog
+  writer gaps); all tracked, none blocking the port.)
 - [~] **P2.13** Save/profile format: writer/reader functions, file location, versioning, Steam paths
   (2026-10-21: live folder found at `C:\ProgramData\Steam\Insaniquarium\userdata`; sample
   `users.dat`/`user1.dat`/`adv1.dat` copied to `docs\analysis\inputs\p2.13-saves-2026-10-21`

@@ -466,9 +466,9 @@
   `profile+0x72..+0x77`; six backdrops is the reading with dialog text behind it. Resolve in P2.13 with
   the profile writer (`FUN_00501530` and the save loader).
 
-### Q-0027 - P2.12 residual dialog questions: two blind writers and one unexplained field
-- OPEN (2026-10-29, EV-0137-EV-0139). The dialog layer is mapped end to end (§11 of the note) and
-  P2.12 is closed as a mapping phase; these three stay open without blocking the port:
+### Q-0027 - P2.12 residual dialog questions: two blind writers, one answered field
+- OPEN (2026-10-29, EV-0137-EV-0140). The dialog layer is mapped end to end (§11 of the note) and
+  P2.12 is closed as a mapping phase; these two stay open without blocking the port:
 - **OptionsDialog `+0x18C`.** The dialog only *reads* it (non-zero hides "Back to Main Menu") and no
   writer appears in the OptionsDialog ctor `FUN_005349D0`, its opener (`0x54C66D`, inside
   `FUN_0054C620`) or its click handler `FUN_00535430`. Port the button's visibility as "hidden unless
@@ -477,8 +477,9 @@
   checkboxes (`+0x83D` is skipped), and a bounded negative over the decompiled dialog/screen corpus
   (`docs/evidence/p2.12-fn-*.txt`) finds no writer; whether OK persists them anywhere is unknown. Port
   the six as booleans with an unknown producer rather than inventing a settings store.
-- **`UserDialog`'s edit box.** Seeded with the one-character string `"0"` and filtered to
-  `isdigit(c)` (EV-0139), while Rename/Delete act on a name read through `FUN_00536990`, whose receiver
-  is the dialog object rather than the widget (§11.6). Either the box is a numeric entry and the rename
-  source is elsewhere, or the game really restricts the field. Settle it by decompiling `FUN_0054B770`
-  (rename), `FUN_0054F790` (delete) and `FUN_00536990` - not done.
+- **`UserDialog`'s edit box - ANSWERED in EV-0140.** It is the shells **transfer amount** of the
+  "TRANSFER SHELLS" mode: digits-only, seeded with `"0"`, captioned "Transfer Amount" and drawn only
+  when `+0x174 != 0`, while the plain "WHO ARE YOU?" picker hides it and shows Rename/Delete instead.
+  Rename/Delete read the highlighted list row (`FUN_00536990` -> `list->vtable[0x120](out,
+  [list+0xD4])`) and open `NewUserDialog(isRename=1)` / a Yes/No confirm. Only the *text* of the
+  runtime caption at 0x5E8B74 stays unknown - a note-level bounded negative, not a port blocker.

@@ -3241,3 +3241,54 @@ behavior or specs; follow up with a binary observation entry.
   box is unexplained for the same reason: the rename path's name comes from `FUN_00536990`, whose
   receiver is its own open question, so whether that box is a name field is not settled.
 
+### EV-0140 - `FUN_00536A40` is `UserDialog`'s draw override: the digits-only box is the shells transfer amount
+- Date: 2026-10-29
+- Type: code trace (one new decompile + byte reads of the ctor, the draw override and three vtables)
+- Source: `p2.12-fn-536A40.txt` (new), re-reads of `p2.12-fn-536450.txt`, `p2.12-fn-536990.txt`,
+  `p2.12-fn-536BD0.txt`, `p2.12-fn-54B770.txt`, `p2.12-fn-54F790.txt`; byte dumps 0x53658C-0x5365DA,
+  0x536B20-0x536BB0, 0x5A6710-0x5A6790, 0x509848-0x509860, 0x522BC0-0x522BFF and the module dword at
+  0x5E8B74
+- Confidence: high - ctor, draw override and both action helpers are decompiled, and every frame/slot
+  claim below is a byte read
+- Notes:
+  (1) **The ctor confirms the §11.2 field map, and visibility is mode-based.** `FUN_00536450` indexes
+  the dialog object as `in_ECX[0x56..0x5d]` = `+0x158..+0x174`. The stores are 0x53658E
+  `[+0x158] = 0x5A6710`, 0x536598 `[+0x15C] = 0x5A5D54`, 0x5365BA `[+0] = 0x5A6764`, 0x5365C0
+  `[+0x88] = 0x5A6744`, 0x5365CA `[+0x158] = 0x5A6734`, 0x5365D0 `[+0x15C] = 0x5A6720` and 0x5365DA
+  `[+0x174] = param_2`. At the end of the ctor the scrollbar hides while
+  `[manager+0x8b0]+0xC < 8` users exist, then `param_2 == 0` hides the **edit widget**
+  (`+0x164`->`vtable[0x7C](0)`) while `param_2 != 0` hides **Rename and Delete**. The draft note's
+  "selecting hides the edit box" was wrong: it is the mode, not the selection.
+  (2) **Rows.** `param_2 == 0` adds "(Create a New User)" (19 chars) first; when `[manager+0x8b8]`
+  (current user) is set, its name (`+0x24`) is added through `list->vtable[0x124]` and the result is
+  passed to `list->vtable[0x14C]` (read as "select that row"; that slot is inferred, not decompiled).
+  The remaining users come from `[manager+0x8b0]`, each node's name at `+0x54`, skipping the one that
+  compares equal to the current name.
+  (3) **`FUN_00536A40` is the draw override and only draws the box in transfer mode.** It calls the
+  base draw `FUN_00476710(g)` and, only when `[+0x174] != 0`, draws "Transfer Shells to User" (0x17
+  chars), "Transfer Amount" (0xF chars) at `y = editY - dialogY + 0x11`, a caption at
+  `(editX - dialogX - 0x23, editY - dialogY + 3)` through `FUN_00455D20` from the global at 0x5E8B74,
+  and finally the widget itself `FUN_00503470(g, [+0x164])`. The three `[dialog+0x164]` reads
+  (0x536B29, 0x536B6F, 0x536BA4) all sit in this function, which starts at 0x536A40
+  (`55 8B EC 6A FF 68 C0 8D 58 00`), so the digits-only, `"0"`-seeded box is the transfer amount and
+  not a name field.
+  (4) **Rename and Delete read the highlighted row.** `FUN_00536990` returns
+  `list->vtable[0x120](out, [list+0xD4])` after a bound check against `list->vtable[0x12C]()`, and
+  guards `[+0x174] == 0 && [list+0xD4] < 1` to an empty string - so in picker mode row 0 (the
+  "(Create a New User)" placeholder) can never be renamed or deleted. `FUN_00536BD0` then calls
+  `FUN_0054B770(name)` for id 0 - close 0x1B, `FUN_00564345(0x164)`, `FUN_00534740(manager, 1)`
+  (NewUserDialog with `isRename = 1`), `vtable[0x124](400)` measure, centred `vtable[0xA0]` rect,
+  `FUN_00532820(name)` prefill, push as id 0x1B - and `FUN_0054F790(name)` for id 1 - close 0x1A,
+  build "Are You Sure?" (0xD) plus "This will permanently remove '%s' from the player roster!",
+  `vtable[0x120](0x1A, 1, message, formatted, title, 1)`. Names therefore come from `NewUserDialog`
+  (alnum + space, 12 characters), never from this box.
+  (5) **Derived listener tables** (dwords; each table is followed by its COL pointer): base
+  ListListener 0x5A6710 = (0x531E70, 0x51A440, 0x531E70); `UserDialog`'s list listener 0x5A6734 =
+  (0x5321E0, 0x51A440, 0x531E70); `UserDialog`'s edit listener 0x5A6720 = (0x532240, 0x4D5350,
+  0x532260, 0x4D5350), with slot 2 still the `isdigit` predicate of EV-0139. The two base list bodies
+  are stubs - 0x531E70 = `C2 0C 00` (`ret 0xC`), 0x51A440 = `C2 04 00` (`ret 4`) - so a row click has
+  no callback and the dialog reads `[list+0xD4]` on demand.
+  (6) Bounded negative: the caption text behind 0x5E8B74 is not statically readable. The global is 0
+  in the file image and is filled at runtime (0x509852 `A3 74 8B 5E 00` = `mov [0x5E8B74],eax` right
+  after a call), with a reader at 0x522BD9 that also dereferences it.
+
