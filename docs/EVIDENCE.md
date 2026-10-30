@@ -3292,3 +3292,35 @@ behavior or specs; follow up with a binary observation entry.
   in the file image and is filled at runtime (0x509852 `A3 74 8B 5E 00` = `mov [0x5E8B74],eax` right
   after a call), with a reader at 0x522BD9 that also dereferences it.
 
+### EV-0141 - Q-0026 settled: `profile+0x72..+0x77` are the six backdrop flags, and the store sells one unowned backdrop for 15000
+- Date: 2026-10-29
+- Type: code trace (byte-level decode of the stock roller's dropped blocks + the save-field map)
+- Source: byte dumps 0x52F1D4-0x52F2A6 and 0x52F206-0x52F2B6 of `FUN_0052F0D0`; `p2.12-fn-52F0D0.txt`
+  (the blocks are dropped there as "unreachable": ram 0x52F20E/0x52F218/0x52F233/0x52F238/0x52F297);
+  `docs/analysis/notes/p2.13-saves.md` field table (rows `0x3A..0x51` and `0x52..0x57`), the real and
+  GameBanana samples, and the SimSetup picker of EV-0136
+- Confidence: high - the store's own code names the kind (3) and the price (0x3A98), and the save map
+  independently puts pet ownership elsewhere
+- Notes:
+  (1) **The roller's candidate list is a `std::vector<int>` of indexes 0..5.** 0x52F1DB `lea
+  ecx,[esi+0x1D0]` + call 0x40AEB0 is the store RNG; 0x52F1F0/0x52F1F3 `lea edx,[ebp-0x10]` (the loop
+  index), `lea ecx,[ebp-0x20]` (the vector) and the call at 0x52F1F7 push the index when
+  `profile[0x72+i] == 0` (with the extra `rand%5 == 0` gate on `i == 5`).
+  (2) **After the loop it consumes the vector and buys a backdrop.** 0x52F206-0x52F215: `begin`, `end`,
+  `count = (end-begin)/4`, skip when 0; 0x52F217-0x52F227 seeds the roll with the cached 64-bit store
+  time (`+0xB98`/`+0xB9C`) and the count; 0x52F237-0x52F23A `mov eax,[edx+ebx*4]` reads the chosen
+  candidate; 0x52F23D-0x52F24B `mov ecx,[esi+0xB8]`, `push 0x3A98`, `push eax`, `push 3`, call
+  `FUN_00537230` - i.e. **kind 3, that backdrop index, price 15000**, the same setter the one-off
+  unlocks use (`FUN_00537230(2,0,20000)`, `(4,0,50000)`, `(5,0,20000)`). Kind 3 is the backdrop kind
+  of the store map (§6), so the six bytes are backdrop ownership.
+  (3) **Fallback.** With no clear flag left (all six owned) the same slot rolls
+  `FUN_0051B260(1,-1,9)` - a random pet - which is why the range also looked like a pet list.
+  (4) **Independent confirmation from the save map.** Pet ownership is the 24-byte flag array at
+  `profile+0x00..+0x17` (save `0x3A..0x51`, read by `FUN_00501410` for the PetDialog), and pet
+  *selection* is the 24 bytes at `profile+0x5A..+0x71` that the PetsScreen ctor clears. The six bytes
+  at `profile+0x72..+0x77` are save `0x52..0x57`, `01 00 00 00 00 00` in the real sample and all `01` in
+  the maxed GameBanana one - exactly "one default backdrop owned" versus "all six bought", matching
+  the picker's "not allowed to sell your only backdrop" rule.
+  (5) The wall-clock store seed is `profile+0x98` (`FUN_0040AE50(profile[0x98] + t)`), and the roller's
+  one-off unlock gates remain `profile+0x90` / `+0x94`.
+

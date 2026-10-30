@@ -84,14 +84,15 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   also fixed two wrong listener addresses in §11.2. A residue pass (EV-0140) then settled the odd
   field: `UserDialog`'s digits-only `"0"` box is the **shells transfer amount** of the "TRANSFER
   SHELLS" mode (drawn only when `+0x174 != 0`), and Rename/Delete read the highlighted list row.
-- **P2.12 still open (Q-0018, Q-0025, Q-0026, Q-0027):** the owner of the *normal* store-item object (its
+- **P2.12 still open (Q-0018, Q-0025, Q-0027):** the owner of the *normal* store-item object (its
   price display is answered, and EV-0138 closed the "is the rolled pet the receiver of
   `FUN_00519730`" question - yes); `manager+0x738` now has a reader
   (the Bonus handler) but still no writer; `profile+0x18` is unbound (the `profile+0x5A` clear is
-  explained - it is the PetsScreen ctor resetting the pending pet selection); `profile+0x72..+0x77`
-  is claimed both as the backdrop ownership map (SimSetup) and as store pet slots (Q-0026); and Q-0027
+  explained - it is the PetsScreen ctor resetting the pending pet selection); and Q-0027
   keeps two dialog loose ends without blocking the port (Options' `+0x18C` writer and the screen-saver
-  flag writers - its third item, `UserDialog`'s box, is answered in EV-0140). Do not guess these.
+  flag writers - its third item, `UserDialog`'s box, is answered in EV-0140). Q-0026 is **settled**
+  (EV-0141): `profile+0x72..+0x77` are the six backdrop ownership flags, since the store roller builds
+  its kind-3 stock from the clear entries and buys one backdrop for 15000. Do not guess these.
 - **P2.11 game modes (2026-10-29)** mapped all four shipped modes off the single binding
   `mode = [manager+0x87C]`: 0 Adventure, 1 Time Trial, 3 Sandbox, 4 Challenge, 5 Virtual Tank
   (2 is referenced but never observed). `FUN_0054CBF0` is `start_level`, and the per-mode work
@@ -167,8 +168,8 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 - **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
   runtime; VT beetle value. See `PLAN.md`.
 - **Next planned task:** P2.13 (the tank update, saves, the `adv`/`sim` bodies), which also closes
-  Q-0018's last residual (the call-site owner of the normal store-item object) and Q-0026's
-  `profile+0x72..+0x77` conflict; then P2.14 (audio), P2.15 (resources), and finally P2.18 `SPECS.md`
+  Q-0018's last residual (the call-site owner of the normal store-item object); its Q-0026 dependency
+  is already settled (EV-0141); then P2.14 (audio), P2.15 (resources), and finally P2.18 `SPECS.md`
   to close Phase 2. P2.12 itself is closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends
   tracked.
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
@@ -244,7 +245,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0140). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0141). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11 and P2.12 opens. |
@@ -257,7 +258,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
 - [ ] Read the latest EVIDENCE entries and the current system note (`p2.12-menus.md` now).
 - [ ] Pick the next task from `PLAN.md` (P2.13, then P2.14-P2.18);
-  check its open questions (Q-0018, Q-0025, Q-0026, Q-0027) first.
+  check its open questions (Q-0018, Q-0025, Q-0027) first.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended
   `EVIDENCE.md`, `DECISIONS.md` questions, note's P4 spec, saved raw output, and a commit.

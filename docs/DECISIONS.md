@@ -453,18 +453,24 @@
   - `profile+0x18` is still unbound. `PetsScreen` reads it only as `min(profile+0xB4, profile+0x18)`,
     clamped to 4 outside Virtual Tank, which is consistent with "unlocked tanks" but not proof.
 
-### Q-0026 - `profile+0x72..+0x77` role: backdrop ownership or store pet slots
-- OPEN (2026-10-29, EV-0135 vs EV-0136). Two passes read the same six bytes differently and neither
-  is proven:
-- EV-0135 (store): `FUN_0052F0D0` walks `profile+0x72+i` (i = 0..5) as the store's **pet slots**, and
-  the refresh timer's one-off unlocks use `profile+0x90`/`+0x94`.
-- EV-0136 (Virtual Tank setup): the SimSetupScreen Prev/Next backdrop picker writes
+### Q-0026 - `profile+0x72..+0x77` role: six backdrop ownership flags (RESOLVED)
+- RESOLVED (2026-10-29, EV-0141). Two passes read the same six bytes differently; the store's own code
+  settles it for **backdrops**:
+- EV-0136 (Virtual Tank setup) had it right: the SimSetupScreen Prev/Next picker writes
   `profile[0x72 + (Tank+0x3E8 - 1)] = 1` when the player views a backdrop, skips entries whose flag is
-  0 while cycling, and the Sell button refuses when exactly one of the six is set ("You are not
-  allowed to sell your only backdrop!") - i.e. six **backdrop ownership** flags.
-- Until the roller is re-read against the picker, the remake must not derive pet ownership from
-  `profile+0x72..+0x77`; six backdrops is the reading with dialog text behind it. Resolve in P2.13 with
-  the profile writer (`FUN_00501530` and the save loader).
+  0 while cycling, and Sell refuses when exactly one of the six is set - i.e. six **backdrop ownership**
+  flags.
+- EV-0135's "store pet slots" label was the misreading. Re-decoding the roller `FUN_0052F0D0` past the
+  blocks the decompiler dropped as unreachable shows it appends every clear `profile[0x72+i]` (i = 0..5)
+  to a `std::vector<int>`, then rolls one of them and calls `FUN_00537230(3, index, 15000)` on the
+  store's `+0xB8` sub-object: **kind 3 = backdrop**, 15000 shells. Only when all six are owned does that
+  slot fall back to `FUN_0051B260(1,-1,9)`, a random pet - which is where the pet reading came from.
+- Pet ownership is elsewhere and stays unambiguous: the 24 flags at `profile+0x00..+0x17`
+  (`FUN_00501410`), with the pending selection at `profile+0x5A..+0x71`. The save samples agree - the
+  six bytes are `01 00 00 00 00 00` in the real profile (one default backdrop) and all `01` in the
+  maxed one.
+- Port: model six backdrop-owned booleans, one owned at start; the store offers one random unowned
+  backdrop per refresh at 15000. Do not derive pet ownership from these bytes.
 
 ### Q-0027 - P2.12 residual dialog questions: two blind writers, one answered field
 - OPEN (2026-10-29, EV-0137-EV-0140). The dialog layer is mapped end to end (§11 of the note) and
