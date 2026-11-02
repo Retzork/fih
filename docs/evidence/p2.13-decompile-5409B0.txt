@@ -1,0 +1,88 @@
+/* 0x5409B0 decompile (rea/ghidra) */
+
+int * FUN_005409b0(int param_1,undefined4 param_2)
+
+{
+  code *pcVar1;
+  int iVar2;
+  int *piVar3;
+  int in_ECX;
+  int iStack_68;
+  undefined4 uStack_64;
+  undefined1 *puStack_60;
+  undefined4 uStack_5c;
+  undefined4 uStack_58;
+  undefined4 uStack_54;
+  int *piStack_50;
+  uint uStack_4c;
+  undefined1 *local_3c [8];
+  int local_1c;
+  undefined4 local_18;
+  int local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  local_8 = 0xffffffff;
+  puStack_c = &LAB_005894cb;
+  local_10 = ExceptionList;
+  uStack_4c = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  local_14 = *(int *)(in_ECX + 0x2e4 + param_1 * 4);
+  if (local_14 < 0) {
+    return (int *)0x0;
+  }
+  piVar3 = *(int **)(in_ECX + 0x404 + local_14 * 4);
+  if (piVar3 == (int *)0x0) {
+    piStack_50 = (int *)param_1;
+    local_3c[0] = (undefined1 *)0x12;
+    local_3c[1] = (undefined1 *)0x57;
+    local_3c[2] = (undefined1 *)0x90;
+    local_3c[3] = (undefined1 *)0xd9;
+    local_3c[4] = (undefined1 *)0x122;
+    local_3c[5] = (undefined1 *)0x16b;
+    local_3c[6] = (undefined1 *)0x1b4;
+    uStack_54 = 0x540a47;
+    ExceptionList = &local_10;
+    local_18 = FUN_00538100();
+    piStack_50 = (int *)0x198;
+    uStack_54 = 0x540a54;
+    local_1c = FUN_00564345();
+    iVar2 = 0;
+    local_8 = 0;
+    if (local_1c == 0) {
+      piVar3 = (int *)0x0;
+    }
+    else {
+      if (in_ECX != 0) {
+        iVar2 = in_ECX + 0x88;
+      }
+      local_3c[7] = (undefined1 *)&iStack_68;
+      FUN_0041d8b0(local_18);
+      piVar3 = (int *)FUN_005373c0(*(undefined4 *)(in_ECX + 0x10),param_1,iVar2);
+    }
+    *(int **)(in_ECX + 0x404 + local_14 * 4) = piVar3;
+    local_8 = 0xffffffff;
+    uStack_54 = 0x540ab5;
+    piStack_50 = piVar3;
+    (**(code **)(**(int **)(in_ECX + 0x10) + 0xc))();
+    piVar3[0x2c] = DAT_005e8c60;
+    pcVar1 = *(code **)(*piVar3 + 0xa0);
+    piVar3[0x2e] = DAT_005e8d64;
+    uStack_54 = 0x3c;
+    uStack_58 = 0x3a;
+    piVar3[0x2d] = DAT_005e8e74;
+    puStack_60 = local_3c[local_14];
+    uStack_5c = 3;
+    uStack_64 = 0x540af2;
+    (*pcVar1)();
+    uStack_64 = param_2;
+    iStack_68 = param_1;
+    FUN_005406a0();
+    *(undefined1 *)(param_1 + 0x3a4 + in_ECX) = 1;
+    *(int *)(in_ECX + 0x2e0) = *(int *)(in_ECX + 0x2e0) + 1;
+  }
+  ExceptionList = local_10;
+  return piVar3;
+}
+
+

@@ -1,0 +1,144 @@
+﻿/* 0x541A20 decompile (rea/ghidra) */
+
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+void FUN_00541a20(void)
+
+{
+  undefined4 *puVar1;
+  int in_ECX;
+  int iVar2;
+  int *piVar3;
+  int local_8;
+  
+  *(undefined4 *)(in_ECX + 0x444) = 0;
+  iVar2 = 0;
+  puVar1 = (undefined4 *)(in_ECX + 0x314);
+  do {
+    puVar1[-0xc] = 0xffffffff;
+    *puVar1 = 0;
+    puVar1[0x18] = 0xffffffff;
+    *(undefined1 *)(in_ECX + 0x3a4 + iVar2) = 0;
+    iVar2 = iVar2 + 1;
+    puVar1 = puVar1 + 1;
+  } while (iVar2 < 0xc);
+  iVar2 = *(int *)(in_ECX + 0x8c);
+  if (*(int *)(iVar2 + 0x87c) == 0) {
+    *(undefined4 *)(in_ECX + 0x3c8) = *(undefined4 *)(*(int *)(iVar2 + 0x8b8) + 0x1c);
+    *(undefined4 *)(in_ECX + 0x3cc) = *(undefined4 *)(*(int *)(iVar2 + 0x8b8) + 0x20);
+  }
+  else {
+    *(undefined4 *)(in_ECX + 0x3c8) = *(undefined4 *)(iVar2 + 0x888);
+    *(undefined4 *)(in_ECX + 0x3cc) = 5;
+  }
+  if (*(int *)(iVar2 + 0x87c) == 3) {
+    *(undefined4 *)(in_ECX + 0x3f0) = 999999;
+  }
+  else {
+    *(undefined4 *)(in_ECX + 0x3f0) = 200;
+  }
+  *(undefined4 *)(in_ECX + 0x4ac) = 5;
+  *(undefined4 *)(in_ECX + 0x2c0) = 3000;
+  *(undefined1 *)(in_ECX + 0x2a4) = 0;
+  *(undefined4 *)(in_ECX + 0x2c8) = 0;
+  *(undefined4 *)(in_ECX + 0x2a8) = 0;
+  *(undefined4 *)(in_ECX + 0x43c) = 1;
+  *(undefined4 *)(in_ECX + 0x3e4) = 2;
+  *(undefined4 *)(in_ECX + 700) = 2;
+  DAT_005e89dc = 0;
+  DAT_005df58c = 1;
+  DAT_005e89cc = 0;
+  DAT_005e89d0 = 0;
+  DAT_005e89c0 = 0;
+  *(undefined1 *)(in_ECX + 0x440) = 0;
+  if (*(char *)(*(int *)(in_ECX + 0x8c) + 0x880) != '\0') {
+    DAT_005e89dc = 0;
+    DAT_005df58c = 3;
+    *(undefined4 *)(in_ECX + 0x3e4) = 8;
+    *(undefined4 *)(in_ECX + 0x3f0) = 200;
+    _DAT_005e8f18 = 0;
+  }
+  *(undefined4 *)(in_ECX + 0x460) = 0;
+  *(undefined4 *)(in_ECX + 0x464) = 0;
+  *(undefined4 *)(in_ECX + 0x468) = 0;
+  *(undefined4 *)(in_ECX + 0x46c) = 0;
+  *(undefined4 *)(in_ECX + 0x470) = 0;
+  *(undefined4 *)(in_ECX + 0x474) = 0;
+  *(undefined4 *)(in_ECX + 0x478) = 0;
+  *(undefined4 *)(in_ECX + 0x47c) = 0;
+  *(undefined4 *)(in_ECX + 0x480) = 0;
+  *(undefined4 *)(in_ECX + 0x484) = 0;
+  *(undefined4 *)(in_ECX + 0x488) = 0;
+  *(undefined4 *)(in_ECX + 0x48c) = 0;
+  *(undefined4 *)(in_ECX + 0x490) = 0;
+  *(undefined4 *)(in_ECX + 0x494) = 0;
+  *(undefined4 *)(in_ECX + 0x498) = 0;
+  *(undefined4 *)(in_ECX + 0x49c) = 0;
+  *(undefined4 *)(in_ECX + 0x4a0) = 0;
+  *(undefined4 *)(in_ECX + 0x4a4) = 0;
+  *(undefined4 *)(in_ECX + 0x4a8) = 0;
+  (**(code **)(**(int **)(in_ECX + 0x10) + 0xc))(*(undefined4 *)(in_ECX + 0x114));
+  (**(code **)(**(int **)(in_ECX + 0x10) + 0xc))(*(undefined4 *)(in_ECX + 0x438));
+  (**(code **)(**(int **)(in_ECX + 0x10) + 0xc))(*(undefined4 *)(in_ECX + 0x118));
+  FUN_0053a360();
+  _memset((void *)(in_ECX + 0x4b0),0,0x36);
+  FUN_00541200();
+  *(undefined4 *)(in_ECX + 0x2dc) = 0;
+  *(undefined4 *)(in_ECX + 0x2e0) = 0;
+  piVar3 = (int *)(in_ECX + 0x374);
+  local_8 = 2;
+  do {
+    if (-1 < piVar3[-0x24]) {
+      *(int *)(in_ECX + 0x2dc) = *(int *)(in_ECX + 0x2dc) + 1;
+    }
+    if (*piVar3 == -1) {
+      *piVar3 = piVar3[-0x18] / 100;
+    }
+    piVar3[-0xc] = piVar3[-0x18];
+    if (-1 < piVar3[-0x23]) {
+      *(int *)(in_ECX + 0x2dc) = *(int *)(in_ECX + 0x2dc) + 1;
+    }
+    if (piVar3[1] == -1) {
+      piVar3[1] = piVar3[-0x17] / 100;
+    }
+    piVar3[-0xb] = piVar3[-0x17];
+    if (-1 < piVar3[-0x22]) {
+      *(int *)(in_ECX + 0x2dc) = *(int *)(in_ECX + 0x2dc) + 1;
+    }
+    if (piVar3[2] == -1) {
+      piVar3[2] = piVar3[-0x16] / 100;
+    }
+    piVar3[-10] = piVar3[-0x16];
+    if (-1 < piVar3[-0x21]) {
+      *(int *)(in_ECX + 0x2dc) = *(int *)(in_ECX + 0x2dc) + 1;
+    }
+    if (piVar3[3] == -1) {
+      piVar3[3] = piVar3[-0x15] / 100;
+    }
+    piVar3[-9] = piVar3[-0x15];
+    if (-1 < piVar3[-0x20]) {
+      *(int *)(in_ECX + 0x2dc) = *(int *)(in_ECX + 0x2dc) + 1;
+    }
+    if (piVar3[4] == -1) {
+      piVar3[4] = piVar3[-0x14] / 100;
+    }
+    piVar3[-8] = piVar3[-0x14];
+    if (-1 < piVar3[-0x1f]) {
+      *(int *)(in_ECX + 0x2dc) = *(int *)(in_ECX + 0x2dc) + 1;
+    }
+    if (piVar3[5] == -1) {
+      piVar3[5] = piVar3[-0x13] / 100;
+    }
+    piVar3[-7] = piVar3[-0x13];
+    piVar3 = piVar3 + 6;
+    local_8 = local_8 + -1;
+  } while (local_8 != 0);
+  if (*(int *)(*(int *)(in_ECX + 0x8c) + 0x87c) == 5) {
+    FUN_0053e280();
+  }
+  (**(code **)(**(int **)(in_ECX + 0x10) + 0x28))();
+  return;
+}
+
+
+

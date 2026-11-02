@@ -1,0 +1,263 @@
+﻿/* 0x541200 decompile (rea/ghidra) */
+
+void FUN_00541200(void)
+
+{
+  int iVar1;
+  uint uVar2;
+  int in_ECX;
+  int iVar3;
+  
+  if (*(char *)(*(int *)(in_ECX + 0x8c) + 0x880) == '\0') {
+    iVar3 = *(int *)(in_ECX + 0x3c8);
+    if (iVar3 == 1) {
+      *(undefined4 *)(in_ECX + 0x324) = 1000;
+      *(undefined4 *)(in_ECX + 0x33c) = 1000;
+      *(undefined4 *)(in_ECX + 0x2e4) = 0;
+      *(undefined4 *)(in_ECX + 0x2ec) = 1;
+      *(undefined4 *)(in_ECX + 0x2f0) = 2;
+      *(undefined4 *)(in_ECX + 0x2f4) = 3;
+      *(undefined4 *)(in_ECX + 0x30c) = 5;
+      *(undefined4 *)(in_ECX + 0x310) = 6;
+      *(undefined4 *)(in_ECX + 0x314) = 100;
+      *(undefined4 *)(in_ECX + 0x31c) = 200;
+      *(undefined4 *)(in_ECX + 800) = 300;
+      switch(*(undefined4 *)(in_ECX + 0x3cc)) {
+      case 1:
+        *(undefined4 *)(in_ECX + 700) = 0;
+        *(undefined4 *)(in_ECX + 0x340) = 0x96;
+        *(undefined4 *)(in_ECX + 0x2ec) = 0xffffffff;
+        *(undefined4 *)(in_ECX + 0x2f0) = 0xffffffff;
+        *(undefined4 *)(in_ECX + 0x2f4) = 0xffffffff;
+        *(undefined4 *)(in_ECX + 0x30c) = 0xffffffff;
+        break;
+      case 2:
+        *(undefined4 *)(in_ECX + 0x340) = 500;
+        *(undefined4 *)(in_ECX + 700) = 1;
+        *(undefined4 *)(in_ECX + 0x2c0) = 0x6d6;
+        *(undefined4 *)(in_ECX + 0x2f4) = 0xffffffff;
+        *(undefined4 *)(in_ECX + 0x30c) = 0xffffffff;
+        break;
+      case 3:
+        *(undefined4 *)(in_ECX + 0x340) = 2000;
+        *(undefined4 *)(in_ECX + 700) = 2;
+        break;
+      case 4:
+switchD_00541373_caseD_4:
+        *(undefined4 *)(in_ECX + 0x340) = 3000;
+        *(undefined4 *)(in_ECX + 700) = 3;
+        break;
+      case 5:
+        *(undefined4 *)(in_ECX + 0x340) = 5000;
+        *(undefined4 *)(in_ECX + 700) = 3;
+      }
+    }
+    else {
+      if (iVar3 != 2) {
+        if (iVar3 == 3) {
+          *(undefined4 *)(in_ECX + 0x2e4) = 0;
+          *(undefined4 *)(in_ECX + 0x334) = 2000;
+          *(undefined4 *)(in_ECX + 0x33c) = 2000;
+          *(undefined4 *)(in_ECX + 0x2ec) = 1;
+          *(undefined4 *)(in_ECX + 0x2f0) = 2;
+          *(undefined4 *)(in_ECX + 0x300) = 3;
+          *(undefined4 *)(in_ECX + 0x304) = 4;
+          *(undefined4 *)(in_ECX + 0x30c) = 5;
+          *(undefined4 *)(in_ECX + 0x310) = 6;
+          *(undefined4 *)(in_ECX + 0x314) = 100;
+          *(undefined4 *)(in_ECX + 0x31c) = 200;
+          *(undefined4 *)(in_ECX + 800) = 300;
+          *(undefined4 *)(in_ECX + 0x330) = 0x2ee;
+          switch(*(undefined4 *)(in_ECX + 0x3cc)) {
+          case 1:
+            *(undefined4 *)(in_ECX + 0x340) = 1000;
+            *(undefined4 *)(in_ECX + 700) = 3;
+            *(undefined4 *)(in_ECX + 0x30c) = 0xffffffff;
+            *(undefined4 *)(in_ECX + 0x304) = 0xffffffff;
+            break;
+          case 2:
+            *(undefined4 *)(in_ECX + 0x340) = 5000;
+            uVar2 = FUN_0040aeb0();
+            *(uint *)(in_ECX + 700) = uVar2 & 1 | 4;
+            break;
+          case 3:
+            *(undefined4 *)(in_ECX + 0x340) = 0x1d4c;
+            *(undefined4 *)(in_ECX + 700) = 7;
+            break;
+          case 4:
+            *(undefined4 *)(in_ECX + 0x340) = 10000;
+            *(undefined4 *)(in_ECX + 700) = 6;
+            break;
+          case 5:
+            *(undefined4 *)(in_ECX + 0x340) = 15000;
+            uVar2 = FUN_0040aeb0();
+            *(uint *)(in_ECX + 700) = uVar2 & 1 | 6;
+          }
+        }
+        else if (iVar3 == 4) {
+          *(undefined4 *)(in_ECX + 0x2e8) = 0;
+          *(undefined4 *)(in_ECX + 0x318) = 200;
+          *(undefined4 *)(in_ECX + 0x31c) = 200;
+          *(undefined4 *)(in_ECX + 0x2ec) = 1;
+          *(undefined4 *)(in_ECX + 0x2f0) = 2;
+          *(undefined4 *)(in_ECX + 0x2f4) = 3;
+          *(undefined4 *)(in_ECX + 0x308) = 4;
+          *(undefined4 *)(in_ECX + 0x30c) = 5;
+          *(undefined4 *)(in_ECX + 0x310) = 6;
+          *(undefined4 *)(in_ECX + 800) = 300;
+          *(undefined4 *)(in_ECX + 0x324) = 1000;
+          *(undefined4 *)(in_ECX + 0x338) = 10000;
+          *(undefined4 *)(in_ECX + 0x33c) = 5000;
+          switch(*(undefined4 *)(in_ECX + 0x3cc)) {
+          case 1:
+            *(undefined4 *)(in_ECX + 0x340) = 3000;
+            *(undefined4 *)(in_ECX + 700) = 3;
+            *(undefined4 *)(in_ECX + 0x30c) = 0xffffffff;
+            *(undefined4 *)(in_ECX + 0x308) = 0xffffffff;
+            break;
+          case 2:
+            *(undefined4 *)(in_ECX + 0x340) = 25000;
+            *(undefined4 *)(in_ECX + 700) = 8;
+            break;
+          case 3:
+            *(undefined4 *)(in_ECX + 0x340) = 50000;
+            *(undefined4 *)(in_ECX + 700) = 4;
+            break;
+          case 4:
+            *(undefined4 *)(in_ECX + 0x340) = 75000;
+            *(undefined4 *)(in_ECX + 700) = 8;
+            break;
+          case 5:
+            *(undefined4 *)(in_ECX + 0x340) = 99999;
+            *(undefined4 *)(in_ECX + 700) = 8;
+          }
+        }
+        else if (iVar3 == 5) {
+          *(undefined4 *)(in_ECX + 0x310) = 6;
+          *(undefined4 *)(in_ECX + 0x340) = 0;
+          *(undefined4 *)(in_ECX + 0x43c) = 3;
+          *(undefined4 *)(in_ECX + 700) = 0x15;
+        }
+        goto switchD_00541373_default;
+      }
+      *(undefined4 *)(in_ECX + 0x2e4) = 0;
+      *(undefined4 *)(in_ECX + 0x2ec) = 1;
+      *(undefined4 *)(in_ECX + 0x2f0) = 2;
+      *(undefined4 *)(in_ECX + 0x2f8) = 3;
+      *(undefined4 *)(in_ECX + 0x2fc) = 4;
+      *(undefined4 *)(in_ECX + 0x30c) = 5;
+      *(undefined4 *)(in_ECX + 0x310) = 6;
+      *(undefined4 *)(in_ECX + 0x314) = 100;
+      *(undefined4 *)(in_ECX + 0x31c) = 200;
+      *(undefined4 *)(in_ECX + 800) = 300;
+      *(undefined4 *)(in_ECX + 0x328) = 0xfa;
+      *(undefined4 *)(in_ECX + 0x32c) = 0x2ee;
+      *(undefined4 *)(in_ECX + 0x33c) = 1000;
+      switch(*(undefined4 *)(in_ECX + 0x3cc)) {
+      case 1:
+        *(undefined4 *)(in_ECX + 0x340) = 0x2ee;
+        *(undefined4 *)(in_ECX + 700) = 2;
+        *(undefined4 *)(in_ECX + 0x30c) = 0xffffffff;
+        *(undefined4 *)(in_ECX + 0x2fc) = 0xffffffff;
+        break;
+      case 2:
+        goto switchD_00541373_caseD_4;
+      case 3:
+        *(undefined4 *)(in_ECX + 0x340) = 5000;
+        *(undefined4 *)(in_ECX + 700) = 4;
+        break;
+      case 4:
+        *(undefined4 *)(in_ECX + 0x340) = 0x1d4c;
+        *(undefined4 *)(in_ECX + 700) = 5;
+        break;
+      case 5:
+        *(undefined4 *)(in_ECX + 0x340) = 10000;
+        uVar2 = FUN_0040aeb0();
+        *(uint *)(in_ECX + 700) = uVar2 & 1 | 4;
+      }
+    }
+    goto switchD_00541373_default;
+  }
+  *(undefined4 *)(in_ECX + 0x314) = 100;
+  *(undefined4 *)(in_ECX + 0x324) = 1000;
+  *(undefined4 *)(in_ECX + 0x338) = 10000;
+  *(undefined4 *)(in_ECX + 0x32c) = 0x2ee;
+  *(undefined4 *)(in_ECX + 0x330) = 0x2ee;
+  *(undefined4 *)(in_ECX + 0x334) = 2000;
+  *(undefined4 *)(in_ECX + 0x310) = 6;
+  switch(*(undefined4 *)(in_ECX + 0x3c8)) {
+  case 1:
+    *(undefined4 *)(in_ECX + 0x340) = 5000;
+    goto LAB_005412c0;
+  case 2:
+    *(undefined4 *)(in_ECX + 0x2fc) = 3;
+    *(undefined4 *)(in_ECX + 0x340) = 5000;
+    break;
+  case 3:
+    *(undefined4 *)(in_ECX + 0x300) = 3;
+    *(undefined4 *)(in_ECX + 0x304) = 5;
+    *(undefined4 *)(in_ECX + 0x340) = 10000;
+    break;
+  case 4:
+    *(undefined4 *)(in_ECX + 0x308) = 5;
+    *(undefined4 *)(in_ECX + 0x340) = 25000;
+LAB_005412c0:
+    *(undefined4 *)(in_ECX + 0x2f4) = 3;
+    break;
+  default:
+    goto switchD_0054126f_default;
+  }
+  *(undefined4 *)(in_ECX + 0x2e4) = 0;
+switchD_0054126f_default:
+  iVar3 = 0;
+  do {
+    FUN_005409b0(iVar3,1);
+    iVar3 = iVar3 + 1;
+  } while (iVar3 < 0xc);
+  FUN_00537c20();
+switchD_00541373_default:
+  iVar3 = *(int *)(in_ECX + 0x8c);
+  if (*(int *)(iVar3 + 0x87c) == 4) {
+    iVar1 = *(int *)(in_ECX + 0x3c8);
+    if (iVar1 == 2) {
+      *(undefined4 *)(in_ECX + 0x340) = 5000;
+    }
+    else if (iVar1 == 3) {
+      *(undefined4 *)(in_ECX + 0x340) = 15000;
+    }
+    else if (iVar1 == 4) {
+      *(undefined4 *)(in_ECX + 0x340) = 25000;
+    }
+  }
+  if (*(int *)(iVar3 + 0x87c) == 1) {
+    *(undefined4 *)(in_ECX + 0x340) = 100;
+  }
+  if (*(int *)(iVar3 + 0x87c) == 5) {
+    FUN_00538a10(*(int *)(*(int *)(iVar3 + 0x8b8) + 0x8c) + 1);
+    return;
+  }
+  iVar3 = *(int *)(in_ECX + 0x3c8);
+  if (iVar3 == 1) {
+    FUN_00538a10(1);
+    return;
+  }
+  if (iVar3 != 2) {
+    if (iVar3 == 3) {
+      FUN_00538a10(4);
+      return;
+    }
+    if (iVar3 != 4) {
+      if (iVar3 == 5) {
+        FUN_00538a10(6);
+      }
+      return;
+    }
+    FUN_00538a10(5);
+    return;
+  }
+  FUN_00538a10(2);
+  return;
+}
+
+
+

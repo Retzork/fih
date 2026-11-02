@@ -1,0 +1,16 @@
+/* 0x505860 decompile (rea/ghidra) */
+
+void FUN_00505860(void)
+
+{
+  int in_ECX;
+  
+  if (*(int *)(in_ECX + 4) != 0) {
+    FUN_005057f0();
+    return;
+  }
+  FUN_00504010();
+  return;
+}
+
+

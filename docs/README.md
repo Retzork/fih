@@ -1,12 +1,12 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Handover status: Phase 2 in progress (2026-10-29).** Phase 0, Phase 1 and Phase 3 are
-complete; Phase 2 is 10/18 done with **P2.13 (save/profile format) in progress**. P2.1-P2.4 and
-P2.7-P2.12 are closed, P2.5, P2.6 and P2.13 are substantially complete with tracked open questions,
-and P2.12 has its screen and dialog passes done (screen map, mode writer, store screen and stock
+**Handover status: Phase 2 in progress (2026-11-01).** Phase 0, Phase 1 and Phase 3 are
+complete; Phase 2 is 11/18 done with **P2.13 (save/profile format) complete**. P2.1-P2.4 and
+P2.7-P2.13 are closed, P2.5 and P2.6 are substantially complete with tracked open questions, and
+P2.12 has its screen and dialog passes done (screen map, mode writer, store screen and stock
 refresh, level-start flow, all 13 screen constructors and their click handlers, the dialog base
 plus all ten dialog ctors and their click handlers); what is left there are the tracked open
-questions.
+questions. Next is P2.14 (audio), then P2.15 and P2.18 `SPECS.md`.
 Phase 4 (Godot
 gameplay implementation) has not started: the repository currently contains the Godot project shell
 plus the imported sprite resources. `PLAN.md` is the source of truth for progress.
@@ -15,12 +15,11 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 
 1. **New agent session:** read `../AGENTS.md` first, then `PLAN.md` (mandatory). Follow the
    session-end checklist in `AGENTS.md`.
-2. **Want the current state quickly?** Read the `P2.12` entry in `PLAN.md`, then
-   `analysis/notes/p2.12-menus.md` (screen/vtable map, the mode writer, store screen and stock
-   refresh, level-start flow, all screen ctors and click handlers, the dialog layer,
-   EV-0131..EV-0140), then `analysis/notes/p2.13-saves.md` (file naming, the profile fields, the
-   bonus-shell escrow, EV-0142/EV-0143), then `analysis/notes/p2.11-modes.md` for the mode
-   behavior itself.
+2. **Want the current state quickly?** Read the `P2.13` entry in `PLAN.md`, then
+   `analysis/notes/p2.13-saves.md` (the whole tank body in order, both samples, load repairs,
+   EV-0144), then `analysis/notes/p2.12-menus.md` for the screen/vtable map, the dialog layer and
+   store population (EV-0131..EV-0140), then `analysis/notes/p2.11-modes.md` for the mode behavior
+   itself.
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -31,7 +30,7 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 | --- | --- |
 | P0 environment / tooling | Complete (13/13) |
 | P1 target identity | Complete (10/10) |
-| P2 reverse engineering | In progress (10/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.12 `[x]`; P2.13 `[~]`; P2.14+ pending |
+| P2 reverse engineering | In progress (11/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.13 `[x]`; P2.14+ pending |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
 | P4 Godot implementation | Not started (0/14) |
 | P5 validation / polish | Not started (0/5) |
@@ -157,10 +156,9 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   rounds/payout, tank-5 victory gate, corrected store tables and session init. Evidence is
   EV-0061..EV-0076; the note ends with an "Implementation spec for P4" section (D-0008).
 - **P2.6 still open:** Q-0013 trophy/story gate, Q-0014 mode 2, Q-0015 `+0x58`/`+0x50`
-  semantics, Q-0016 credits trigger, Q-0017 tank 6, Q-0018 StoreScreen/store-item population,
-  Q-0019 `scr%d.dat` (real saves now available; `scr` itself still absent, EV-0108/EV-0109).
-  Do not guess these in the remake.
-- **P2.13 saves (2026-10-21, partial; 2026-10-29 naming settled):** live folder
+  semantics, Q-0016 credits trigger, Q-0017 tank 6, Q-0018 StoreScreen/store-item population.
+  Q-0019 (`scr%d.dat`) is settled by EV-0143. Do not guess these in the remake.
+- **P2.13 saves (2026-11-01, complete):** live folder
   `C:\ProgramData\Steam\Insaniquarium\userdata`; real early and GameBanana samples are copied
   under `analysis/inputs/`. `users.dat` and the full 232-byte `user%d.dat` field order are
   mapped through `FUN_00513850`, `FUN_005145A0`/`FUN_00514730`, and `FUN_00503730`
@@ -169,15 +167,24 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   open. The tank save is **one file per game mode** (EV-0142): `FUN_00505880(out, mode, slot)`
   formats `userdata\%s%d.dat` with `adv`/`tim`/`snd`/`sur`/`sim` for modes 0/2, 1, 3, 4 and 5, so
   `sim%d.dat` is the Virtual Tank save; `FUN_005497A0` saves and `FUN_0054CB20` loads through the
-  shared `FUN_00546990`/`FUN_00546AA0` pair. The tank-save body field meanings and `scr%d.dat`
-  remain open, as does the save/delete gate (Q-0028). Note: `analysis/notes/p2.13-saves.md`.
+  shared `FUN_00546990`/`FUN_00546AA0` pair. Q-0019 is settled (EV-0143): `scr%d.dat` is not a tank
+  save but the bonus-round **Shells escrow** - 102 raw dwords, `[profile+0x88 token] [50 x
+  rand()%20000] [pending shells] [50 x rand()%20000]`, written by SaveGame from `Tank+0x400` and paid
+  into `profile+0x48` by `FUN_00514B00`. The **tank body is decoded end to end** (EV-0144):
+  `FUN_00546240` is both writer and reader, and the order is version `0x36`, tank, level,
+  `+0x2A5`, `+0x2A6`, entity stream (type `0x1F` skipped), optional `+0x110` object, overlay block,
+  24 per-pet flags, 316 scalar bytes, 12 x 17-byte store rows, then SaveGame's `__time64`; section
+  starts are `42+E+S`, `454+E+S`, `658+E+S`, and both samples parse with no remainder. Residual
+  unbound fields are bounded in Q-0029; the save/delete gate stays Q-0028. Note:
+  `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
   runtime; VT beetle value. See `PLAN.md`.
-- **Next planned task:** P2.13 (the tank-save body fields and Q-0019's `scr%d.dat`), which also closes
-  Q-0018's last residual (the call-site owner of the normal store-item object); the save-file naming
-  and Q-0026 are already settled (EV-0141/EV-0142); then P2.14 (audio), P2.15 (resources), and finally
-  P2.18 `SPECS.md` to close Phase 2. P2.12 itself is closed (EV-0139/EV-0140) with only Q-0027's two
-  dialog loose ends tracked.
+- **Next planned task:** P2.14 (audio: BASS usage, mo3 music playback, channel/mixing behavior),
+  then P2.15 (resources), then P2.18 `SPECS.md` to close Phase 2. P2.13 is closed (EV-0144);
+  P2.12 itself is closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends tracked.
+  Q-0018's tank-side call site is identified (`0x54782A` = `FUN_005409B0()` inside `FUN_00547610`,
+  gated on tank 5 / `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`); the tutorial-loop owner and
+  the `prize+0x1D0/+0x1D1` writers stay open.
 - **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
 
 ## What is in the repository
@@ -251,10 +258,10 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0142). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0144). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
-| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11 and P2.12 opens. |
+| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11, P2.12 and P2.13 opens. |
 | `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.11-modes.md`, `p2.12-menus.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
 | `analysis/` | Inventories (`resources.json`, `extraction.json`, ...), snapshots (gitignored), evidence maps. |
 | `evidence/` | Raw REA evidence JSON exports cited by EV IDs. |
@@ -262,9 +269,9 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 ## Handover checklist
 
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
-- [ ] Read the latest EVIDENCE entries and the current system note (`p2.12-menus.md` now).
-- [ ] Pick the next task from `PLAN.md` (P2.13, then P2.14-P2.18);
-  check its open questions (Q-0018, Q-0025, Q-0027) first.
+- [ ] Read the latest EVIDENCE entries and the current system note (`p2.13-saves.md` now).
+- [ ] Pick the next task from `PLAN.md` (P2.14, then P2.15-P2.18);
+  check its open questions (Q-0018, Q-0028, Q-0029) first.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended
   `EVIDENCE.md`, `DECISIONS.md` questions, note's P4 spec, saved raw output, and a commit.

@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-10-29 (P2.13 progress (EV-0143) - Q-0019 is settled: `scr%d.dat` is the bonus-shell **escrow**, 102 raw dwords gated by the `profile+0x88` random token, filled by SaveGame's `Tank+0x400` flush and cashed into the profile's Shells by `FUN_00514B00`; no header, no cipher. Earlier the same day: (EV-0142) - the tank save is one file per game mode: `FUN_00505880(out, mode, slot)` formats `userdata\%s%d.dat` with `adv` (mode 0/2), `tim` (1), `snd` (3), `sur` (4) or `sim` (5), `slot` = `[profile+0x44]`, so `sim%d.dat` is the Virtual Tank save; the save chain is `FUN_005497A0` -> `FUN_00546990` and the load chain `FUN_0054CB20` -> `FUN_00546AA0`, and `FUN_005059D0` deletes `user`/`scr` plus all six mode files via `FUN_0047FBC0` = `DeleteFileA`. P2.13 EV-0141 before it - Q-0026 is settled: `profile+0x72..+0x77` are the six backdrop ownership flags, because the store roller's dropped blocks build a candidate vector from the clear entries and buy one backdrop as kind 3 for 15000, falling back to a random pet only when all six are owned. P2.12 is **complete** (EV-0140 closes the last semantic gap - `UserDialog`'s digits-only `"0"` box is the shells transfer amount of the "TRANSFER SHELLS" mode, and Rename/Delete read the highlighted list row; EV-0139 - the edit character filter is the edit listener's slot 2, whose default is `mov al,1; ret 8`, and `RegisterDialog` relabels the base's auto buttons to Register/Cancel; two §11.2 listener addresses fixed; the two remaining dialog loose ends are Q-0027); P2.12 EV-0138 closed Q-0018's price-getter receiver - the store price is a property of the rolled prize, whose kind sits at `+0x8C`; P2.12 dialog pass before it - the `Sexy::Dialog` base with its kind-driven built-in button row, the ten dialog ctors and their openers, five click handlers, the `MoneyDialog` naming conflict as D-0011 (EV-0137); P2.12 screen pass before it - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+Last updated: 2026-11-01 (P2.13 is **complete** - EV-0144 decodes the whole tank save body: `FUN_00546240` is both writer and reader, and the order is header (version `0x36`, tank, level, `+0x2A5`, `+0x2A6`, entity count), entity stream (type `0x1F` skipped), optional `+0x110` object, overlay block, 24 per-pet flags, 316 scalar bytes, 12 x 17-byte store rows, then SaveGame's `__time64`. Section starts are `42+E+S` / `454+E+S` / `658+E+S` and both real samples parse with no remainder; field meanings, load-time repairs, the store `present` widget latch and the "non-Adventure saves level 5" rule are all in EV-0144 + note §6; residual unbound fields are bounded in Q-0029. Earlier: P2.13 EV-0143 settles Q-0019 - `scr%d.dat` is the bonus-shell **escrow**, 102 raw dwords gated by the `profile+0x88` random token, filled by SaveGame's `Tank+0x400` flush and cashed into the profile's Shells by `FUN_00514B00`; no header, no cipher. EV-0142 - the tank save is one file per game mode: `FUN_00505880(out, mode, slot)` formats `userdata\%s%d.dat` with `adv` (mode 0/2), `tim` (1), `snd` (3), `sur` (4) or `sim` (5), `slot` = `[profile+0x44]`, so `sim%d.dat` is the Virtual Tank save; the save chain is `FUN_005497A0` -> `FUN_00546990` and the load chain `FUN_0054CB20` -> `FUN_00546AA0`, and `FUN_005059D0` deletes `user`/`scr` plus all six mode files via `FUN_0047FBC0` = `DeleteFileA`. P2.13 EV-0141 - Q-0026 is settled: `profile+0x72..+0x77` are the six backdrop ownership flags, because the store roller's dropped blocks build a candidate vector from the clear entries and buy one backdrop as kind 3 for 15000, falling back to a random pet only when all six are owned. P2.12 is **complete** (EV-0140 closes the last semantic gap - `UserDialog`'s digits-only `"0"` box is the shells transfer amount of the "TRANSFER SHELLS" mode, and Rename/Delete read the highlighted list row; EV-0139 - the edit character filter is the edit listener's slot 2, whose default is `mov al,1; ret 8`, and `RegisterDialog` relabels the base's auto buttons to Register/Cancel; two §11.2 listener addresses fixed; the two remaining dialog loose ends are Q-0027); P2.12 EV-0138 closed Q-0018's price-getter receiver - the store price is a property of the rolled prize, whose kind sits at `+0x8C`; P2.12 dialog pass before it - the `Sexy::Dialog` base with its kind-driven built-in button row, the ten dialog ctors and their openers, five click handlers, the `MoneyDialog` naming conflict as D-0011 (EV-0137); P2.12 screen pass before it - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
 click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
@@ -28,6 +28,10 @@ P2.13 save sample (2026-10-21): live folder `C:\ProgramData\Steam\Insaniquarium\
 GameBanana sample (`users.dat`/`user1.dat`/`sim1.dat`) is in
 `docs\analysis\inputs\p2.13-saves-gamebanana-100\`; the 232-byte `user%d.dat` field order is
 now mapped through `FUN_00503730` (EV-0109, `docs\analysis\notes\p2.13-saves.md`).
+P2.13 body decode (2026-11-01): the tank save is a header + one body function, fully ordered and
+byte-verified on both samples; `adv1` = 1081 B (E=362, S=49, tank/level 1/1, money 190, cap 2,
+tick 440), `sim1` = 11800 B (E=10946, S=32, 1/5, money 200, cap 8, tick 241676, wave 61).
+EV-0144; note §6 has the field table, load repairs and the P4 spec.
 P2.8 aliens (2026-10-29): Q-0011 answered - every hostile alien except Bilaterus is one
 `Sexy::Alien` class whose kind (`Alien+0x1EC`) selects stats/sprite/attack code; kind table
 1/2 Sylvester, 3 Balrog, 4 Gus, 5 Destructor, 6 Ulysses, 7 Psychosquid, 8 Bilaterus, 9-0xC
@@ -80,16 +84,17 @@ tank update, not the click handler (EV-0129); and `FUN_004D80C0` is an object-ki
 unreachable and every earlier "demo" reading of that predicate is withdrawn (EV-0130). Note
 `docs\analysis\notes\p2.11-modes.md`. New open item: Q-0024 (mode writer, `+0x19C` receiver,
 `Tank+0x4FE` writer, `+0x2DC`/`+0x2E0`, VT helpers).
-Next: P2.13 (the tank-save body field meanings - the last format gap). Both name families and
-`scr%d.dat` are settled (EV-0142: one file per game mode; EV-0143: the bonus-shell escrow), and P2.12
-is **closed** as a mapping phase (EV-0139, EV-0140). Q-0018's last residual, the call-site owner of
-the normal store-item object, needs the tank update and lands with P2.13. Q-0026
-(`profile+0x72..+0x77`) is already **settled** - the store roller names the
-six flags as backdrops (kind 3, 15000 each, EV-0141). Q-0027 now holds two dialog loose ends that stay
-open without blocking the port (OptionsDialog's `+0x18C` writer and the `manager+0x838..0x83E`
-screen-saver flag writers); its third item, `UserDialog`'s digits-only `"0"` box, closed in EV-0140 as
-the shells transfer amount of the "TRANSFER SHELLS" mode; Q-0025's `manager+0x738` writer stays open.
-Then P2.14 (audio), P2.15 (resources) and P2.18 `SPECS.md` to close Phase 2.
+Next: P2.14 (audio: BASS usage, mo3 music playback, channel/mixing behavior). P2.13 is **complete**
+(EV-0144: the whole tank body is decoded and byte-verified on both samples; Q-0029 bounds the
+residual fields). Q-0018's tank-side xref is identified - `0x54782A` is the `FUN_005409B0()` call
+inside `FUN_00547610`, gated on tank 5 / `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`, i.e. the
+tank owns the item cache at `Tank+0x404` and builds lazily; the tutorial-loop xref (`0x4F18xx`) and the
+`prize+0x1D0/+0x1D1` writers stay open in Q-0018. Q-0026 (`profile+0x72..+0x77`) is **settled** -
+the store roller names the six flags as backdrops (kind 3, 15000 each, EV-0141). Q-0027 now holds two
+dialog loose ends that stay open without blocking the port (OptionsDialog's `+0x18C` writer and the
+`manager+0x838..0x83E` screen-saver flag writers); its third item, `UserDialog`'s digits-only `"0"`
+box, closed in EV-0140 as the shells transfer amount of the "TRANSFER SHELLS" mode; Q-0025's
+`manager+0x738` writer stays open. Then P2.15 (resources) and P2.18 `SPECS.md` to close Phase 2.
 P2.8 residuals stay in Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the
 Gus pellet hp cost, `FUN_005442C0` death animation, tank flag writers). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
@@ -108,7 +113,7 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 9 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 11 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
 | P4 | Godot implementation | 0 | 14 | `[ ]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
@@ -356,7 +361,7 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   (`manager+0x738` owner, `profile+0x18` - the `profile+0x5A` clear is explained by the PetsScreen
   ctor), Q-0027 (the two dialog writer gaps - Q-0026 is settled by EV-0141); all tracked, none blocking
   the port.)
-- [~] **P2.13** Save/profile format: writer/reader functions, file location, versioning, Steam paths
+- [x] **P2.13** Save/profile format: writer/reader functions, file location, versioning, Steam paths
   (2026-10-21: live folder found at `C:\ProgramData\Steam\Insaniquarium\userdata`; sample
   `users.dat`/`user1.dat`/`adv1.dat` copied to `docs\analysis\inputs\p2.13-saves-2026-10-21`
   with hashes/layout notes, EV-0108. Second GameBanana sample in
@@ -372,13 +377,22 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   is `[profile+0x44]`; `FUN_005497A0` saves through `FUN_00546990` and `FUN_0054CB20` loads through
   `FUN_00546AA0`, while `FUN_005059D0` deletes the profile's `user`/`scr` files plus all six mode files
   (`FUN_0047FBC0` = `DeleteFileA`). `sim%d.dat` is therefore the Virtual Tank save, which explains the
-  GameBanana 11800-byte sample. Remaining: the tank body field meanings.
+  11800-byte sample.
   2026-10-29 (EV-0143): `scr%d.dat` closes Q-0019 - it is the bonus-shell escrow, 102 raw dwords
   `[token = profile+0x88][50 filler][payload][50 filler]` (408 bytes, no header, no cipher);
   `FUN_005148C0(consume)` returns dword 51 and deletes the file, `FUN_00515910(delta)` writes
   `old + delta`, `FUN_00546990` flushes `Tank+0x400` at save, and `FUN_00514B00` cashes it into the
   Shells (`profile+0x48`) and regenerates the token. `profile+0x88` is a **random** token, not a
-  timestamp (correction of EV-0069).)
+  timestamp (correction of EV-0069).
+  2026-11-01 (EV-0144): **complete.** `FUN_00546240` is both writer and reader (direction
+  `[stream+4]`); the body order is header (version `0x36`, tank, level, `+0x2A5`, `+0x2A6`, count),
+  entity stream (type `0x1F` skipped), optional `+0x110` object, overlay block, 24 per-pet flags,
+  316 scalar bytes, 12 x 17-byte store rows, then SaveGame's `__time64`. Section starts are
+  `42+E+S` / `454+E+S` / `658+E+S` (file ends `662+E+S` + slack); both samples parse with no
+  remainder. Field meanings, load-time repairs (`+0x2E0 = 0`, widget rebuilds, Wadsworth/Meryl
+  cleanup), the store `present` latch (widget-built, not "sold") and the `sim1` level 5
+  (non-Adventure modes write level 5) are in EV-0144 and note §6. Residual unbound fields are
+  bounded in Q-0029; they do not block the P4 model.)
 - [ ] **P2.14** Audio system: BASS usage, mo3 music playback, channel/mixing behavior
 - [ ] **P2.15** Resource system: `properties\resources.xml` semantics (image/animation/sound tables)
 - [ ] **P2.16** Screensaver variants (`Insaniquarium.scr`, `WinFish_Scr.exe`): feature deltas

@@ -3381,9 +3381,10 @@ behavior or specs; follow up with a binary observation entry.
 - Source: `docs/evidence/p2.13-fn-5148C0.json`/`.txt` (reader), `p2.13-fn-515910.json`/`.txt` (writer),
   `p2.13-fn-47F5D0.json`/`.txt` (whole-file loader), `p2.13-fn-546990.json`/`.txt` (SaveGame),
   `p2.13-fn-546AA0.json`/`.txt` (LoadGame), `p2.13-fn-500340`, `p2.13-fn-5004E0`, `p2.13-fn-5030F0`,
-  `p2.13-fn-513E30` (stream helpers), `p2.13-caller-552167.json`/`.txt` (`FUN_00552100`); byte dumps
-  0x514AE4-0x514B70 (the cash-in function) and 0x5469B0-0x546A6C (SaveGame's flush); E8 scans for
-  0x5148C0, 0x515910, 0x514B00, 0x501200 and 0x40F9E0
+  `p2.13-fn-513E30`/`p2.13-fn-513EE0` (the two `DataSync` ctors), `p2.13-fn-40F9E0` (the token RNG),
+  `p2.13-caller-552167.json`/`.txt` (`FUN_00552100`); `p2.13-dump-514AE4-5469B0.txt` (byte dumps of the
+  cash-in function 0x514AE4-0x514B70 and of SaveGame's 0x5469B0-0x546A6C); E8 scans for 0x5148C0,
+  0x515910, 0x514B00, 0x501200 and 0x40F9E0
 - Confidence: high for the layout, the token gate, the return value and the four cash-in sites; the
   intent of the demo/registered gate stays open
 - Notes:
@@ -3420,13 +3421,132 @@ behavior or specs; follow up with a binary observation entry.
   opener) and 0x552167 in `FUN_00552100` (session setup, gated on `this[0x22E]` = `manager+0x8B8`,
   the profile pointer).
   (6) **Correction of EV-0069.** EV-0069 note (2) read this as "stores now at `this+0x88`" and called
-  the stored dword a bonus timestamp. The callee at 0x514B24 is `FUN_0040F9E0`, one of the module's
-  RNG entry points (73 E8 call sites; `p2.2-tank-sim.md` lists it next to `FUN_0040AEB0`) and the same
-  helper the profile reset uses for `+0x98/+0x88` (EV-0063). `profile+0x88` is therefore a **random
-  token**: regenerated at every cash-in, serialized as the trailing dword of `user%d.dat`, and the key
-  the escrow must match. The escrowed number is likewise a shell amount, not a time.
+  the stored dword a bonus timestamp. The callee at 0x514B24 is `FUN_0040F9E0`, a two-instruction
+  thunk (`FUN_0040AEB0(); return;`) onto the module's `rand32` helper - the same one the backdrop
+  roller calls (EV-0141) - and what the profile reset seeds `+0x98/+0x88` with (EV-0063).
+  `profile+0x88` is therefore a full 32-bit **random token**: regenerated at every cash-in,
+  serialized as the trailing dword of `user%d.dat`, and the key the escrow must match. The escrowed
+  number is likewise a shell amount, not a time.
   (7) Bounded negative: the two branches around `thunk_FUN_00479FC0()` (the demo/registered check of
   `p2.5-economy.md`) are measured - the full version banks `Tank+0x400` at save, the demo cashes the
-  escrow at load - but why they differ is not established from the code. `FUN_00513EE0`, the
-  write-side partner of the DataSync constructor, is not decoded.
+  escrow at load - but why they differ is not established from the code. `FUN_00513EE0` is the second
+  `DataSync` ctor (the same body as `FUN_00513E30`, storing its argument at `+0x08` instead of
+  `+0x04`), so no escrow writer ever builds one - the file is header-less by construction.
+
+### EV-0144 - P2.13: the tank-save body end to end - order, field meanings, both-sample values, P4 model
+- Date: 2026-11-01
+- Type: code trace (module decompilation of the body serializer, SaveGame/LoadGame, the level init, the
+  overlay/optional-object serializers, the entity-enable writer, the store-item builder and the backdrop
+  tint) + byte decode (forward parse of both samples against that order)
+- Source: `docs/evidence/p2.13-decompile-546240.txt`/`.json` (`FUN_00546240`, the body),
+  `p2.13-fn-546990.txt` (SaveGame `FUN_00546990`), `p2.13-fn-546AA0.txt` (LoadGame `FUN_00546AA0`),
+  `p2.13-decompile-541A20.txt` (level init `FUN_00541A20`), `p2.13-decompile-530780.txt` (overlay
+  `FUN_00530780`), `p2.13-decompile-505860.txt` + `p2.13-decompile-504010.txt` (string sync),
+  `p2.13-decompile-5387F0.txt` (optional `Tank+0x110` object), `p2.13-decompile-539AD0.json` and
+  `p2.13-decompile-539C90.json` (`Tank+0x2A6`), `p2.13-decompile-5409B0.txt` (store-item build),
+  `p2.13-decompile-547610.txt` (tank update: VT wave gate, egg hint, `+0x2A7`), `p2.13-decompile-537D30.json`
+  (backdrop tint), `p2.13-decompile-503010/503040/503070.json` (the sync helpers),
+  `p2.13-forward-tank-parse.txt` (authoritative forward parse of both files); samples
+  `docs/analysis/inputs/p2.13-saves-2026-10-21/adv1.dat` (1081 bytes) and
+  `docs/analysis/inputs/p2.13-saves-gamebanana-100/sim1.dat` (11800 bytes); field bindings from EV-0044,
+  EV-0063, EV-0073, EV-0089, EV-0090, EV-0127, EV-0136
+- Confidence: high for the order, the sizes, the file offsets and the values; medium for the intent of
+  `+0x2A6`, `+0x2C4/+0x2C8` and the overlay tail; residual unknowns are bounded in note (7)
+- Notes:
+  (1) **One body function, both directions.** `FUN_00546990` (SaveGame) resets the stream
+  (`FUN_005030F0(0x20)`, a growth hint not a version), constructs the `DataSync` (`FUN_00513EE0`), writes
+  dword version `0x36` (`FUN_005004E0`), calls `FUN_00546240` for the body, appends the low dword of
+  `__time64`, then flushes (`FUN_00512310` + `FUN_0047F310`). `FUN_00546AA0` (LoadGame) reads the whole file
+  into a string (`FUN_0047F5D0`), builds the same stream, reads the version and rejects `<= 0x34`, calls the
+  same `FUN_00546240`, reads the timestamp and rebuilds the scene. Direction is `[stream+4]`: 0 writes,
+  nonzero reads. The helpers are dword `FUN_00503010`, byte `FUN_00503070`, color `FUN_005036A0` (four
+  `FUN_00503040` byte syncs, i.e. r,g,b,a) and string `FUN_00505860` (u16 length + chars,
+  `FUN_00500480`). On a read in mode 0 the body also refuses a save whose tank/level do not match
+  `profile+0x1C/+0x20` (returns 0, so LoadGame falls through to a fresh tank).
+  (2) **The body order (file offsets).** `E` = entity-stream bytes, `S` = overlay string bytes. The entity
+  stream starts at 0x12; after it the pet array starts at **42 + E + S**, the store array at
+  **454 + E + S**, the timestamp at **658 + E + S**, and the file ends at **662 + E + S** plus the
+  stream's spare capacity (8 bytes in `adv1`, 160 in `sim1` - zeroes after the timestamp that the loader
+  never reads).
+
+  | # | Field (type) | Meaning / evidence | adv1 / sim1 |
+  | --- | --- | --- | --- |
+  | 1 | `+0x3C8` u32 | tank index | 1 / 1 |
+  | 2 | `+0x3CC` u32 | level; written as 5 for every non-Adventure mode (`FUN_00541A20`) | 1 / 5 |
+  | 3 | `+0x2A5` u8 | tank-complete latch (set by the finalizer `FUN_00537E20`) | 0 / 0 |
+  | 4 | `+0x2A6` u8 | tank-wide entity-enable latch (`FUN_00539AD0`, see note 3) | 1 / 1 |
+  | 5 | u32 count | entities that follow | 2 / 39 |
+  | 6 | entities | each u32 class id + the object's slot 0x140 `Serialize`; type `0x1F` is skipped | 362 / 10946 B |
+  | 7 | `+0x110` object | u8 presence + object (`FUN_005387F0`; alloc 0x208, bare ctor `FUN_004ECF80`) | absent / absent |
+  | 8 | overlay `+0x118` | string (`+0x8C`, u16 + chars), color `+0xA8`, color `+0xB8`, dword `+0xC8`, dword `+0xD0`, byte `+0xD4`, dword `+0xD8` (`FUN_00530780`) | text 49 B / 32 B |
+  | 9 | 24 x u32 `+0x144..+0x1A0` | **per-pet presence**, index = pet id 0..23 | all 0 / all 1 |
+  | 10 | `+0x2A4` u8 | bonus round active | 0 / 0 |
+  | 11 | `+0x2A8` u32 | tick anchor of the bonus start | 0 / 0 |
+  | 12 | `+0x2BC` u32 | alien type for the next wave | 0 / 6 |
+  | 13 | `+0x2C0` u32 | alien countdown (3000 at wave start) | 3000 / 1518 |
+  | 14 | `+0x2C4` u32 | timer set to 35 by the wave-0 block; consumer unread | 0 / 0 |
+  | 15 | `+0x2C8` u32 | timer set to 36 by `FUN_00539C90` (hostiles clear); consumer unread | 0 / 0 |
+  | 16 | `+0x2CC..+0x2D8` 4 x u32 | alien spawn points x1,y1,x2,y2 (rolled at countdown 275) | 0,0,0,0 / 228,140,271,291 |
+  | 17 | `+0x2DC` u32 | count of store entries whose slot id is >= 0 (computed in `FUN_00541A20`) | 2 / 6 |
+  | 18 | `+0x3B0..+0x3BC` 4 x u32 | elapsed seconds (bonus-freeze value), bonus time base x2, bonus countdown | 0,0,0,0 / 0,0,0,0 |
+  | 19 | `+0x3C0` / `+0x3C4` u32 | last feed / last fire wall-clock stamp (`FUN_00537B60`) | 1540,0 / 6713084,6628468 |
+  | 20 | `+0x3E4` u32 | pet capacity (2 base, 8 demo, boss sets 10) | 2 / 8 |
+  | 21 | `+0x3E8` u32 | backdrop index; `+0x3EC` is a live override, never saved | 1 / 1 |
+  | 22 | `+0x3F0` u32 | money | 190 / 200 |
+  | 23 | `+0x3F4` u32 | bonus-round shells | 0 / 0 |
+  | 24 | `+0x3F8` u32 | bonus end delay counter (P2.6/E2.6) | 0 / 0 |
+  | 25 | `+0x3FC` u32 | elapsed seconds | 0 / 0 |
+  | 26 | `+0x2AC` i32 | unknown; finalizer writes -1 | -1 / -1 |
+  | 27 | `+0x2B0` u32 | unknown; finalizer writes 0 | 0 / 0 |
+  | 28 | `+0x43C` u32 | egg pieces / progress (starts at 1) | 1 / 1 |
+  | 29 | `+0x440` u8 | unknown; cleared by the finalizer | 0 / 0 |
+  | 30 | `+0x444..+0x4AC` 27 x u32 | see note (4) | see note (4) |
+  | 31 | `+0x4FC..+0x500` 5 x u8 | VT checkbox seeds for store kinds 3/4/5/7/6 (EV-0136) | 0,0,0,0,1 / 1,1,1,0,1 |
+  | 32 | `+0x4B0..+0x4E5` 54 x u8 | tutorial/hint byte block (memset at level start) | `01 01 00..` / all 0 |
+  | 33 | `+0x4E6` u8 | egg-hint armed; `+0x4E8` dword is its idle counter (hint at > 1500) | 0,0 / 0,0 |
+  | 34 | `+0x4F0` u32 / `+0x4F4` u8 | unknown, no writer/reader in the captured corpus | 0,0 / 0,0 |
+  | 35 | `5e89d0/d4/d8` 3 x u32 | hidden-Wadsworth count + mouth x/y (EV-0090) | 0,0,0 / 0,506,109 |
+  | 36 | `5e89c0/c4/c8` 3 x u32 | held-pellet / cursor attractor flag + x/y (fish pause within 8 px) | 0,0,0 / 0,0,0 |
+  | 37 | `5e89cc` u8 | Meryl song-active (EV-0089) | 0 / 0 |
+  | 38 | `5e89dc` u32 | food quality level 0..2 | 0 / 2 |
+  | 39 | `5df58c` u32 | food quantity level 1..9 | 1 / 5 |
+  | 40 | `5e89e8` 4 B | backdrop tint r,g,b,a (`FUN_00537D30`; backdrop 1 = 0x42,0x30,0x29) | `42 30 29 ff` / same |
+  | 41 | 12 x 17 B | store table, see note (5) | see note (5) |
+  | 42 | timestamp u32 | `__time64` low dword, not written by the body | 0x6A7C355C / 0x684E93F0 |
+
+  (3) **`+0x2A6` and the optional object.** `FUN_00539AD0(b)` stores `b` in `Tank+0x2A6` and in every
+  element's `+0x55` for the lists at `Tank+0xA0` and `+0xC0`, plus the pets in `+0xB4` when Meryl (index
+  `0x10`) is ready to sing or index `0x17`. `FUN_00545620` (spawn) calls it with 0, `FUN_00539C90` calls it
+  with 1 once the three hostile containers are empty, and the mode-5 loader re-applies the saved byte
+  (`FUN_00546AA0` tail). `FUN_00547610` also flushes a pending `Tank+0x2A7` through it. The byte is
+  therefore a tank-wide "entity latch"; which value means enabled is not proven. The `Tank+0x110` object is
+  written as a presence byte plus the object's own serializer (the boss spawn of P2.8 stores its pointer
+  there); both samples have no object.
+  (4) **The 27-dword run `+0x444..+0x4AC`.** Bound: `+0x444` tick counter (`FUN_00537B60`/frames),
+  `+0x450/+0x454/+0x458` mode timers (`+0x454` is the Challenge price-inflation countdown, 500 at mode-4
+  start), `+0x45C` wave number, `+0x460` level total earned, `+0x46C` carnivore/Oscar high-water,
+  `+0x470` Ultravore high-water, `+0x48C` guppy high-water, `+0x494` Penta high-water, `+0x4AC` pellet
+  price. Unknown: `+0x448` (tick-like), `+0x464`, `+0x468`, `+0x474`, `+0x478`, `+0x47C`, `+0x480`,
+  `+0x484`, `+0x488`, `+0x490`, `+0x498..+0x4A4`, `+0x4A8` (incremented by the corner-reaching larva
+  before `FUN_0053C1E0`, P2.10). The late `sim1` values `+0x468=107`, `+0x474=136`, `+0x488=219` are the
+  reason a "lifetime spawn/purchase total" label is tempting, but no writer for them was read; `adv1` is
+  an early level and has all three at 0, which is consistent with (not proof of) that hypothesis.
+  (5) **The store table.** Twelve entries, each `u32 slot id (+0x2E4)`, `u32 price (+0x314)`, `u32 base
+  (+0x344)`, `u32 increment (+0x374)`, `u8 present (+0x3A4)`. Slot id -1 = empty entry. `FUN_00541A20`
+  computes `+0x2DC` as the count of entries with slot >= 0 and, when increment is -1, sets
+  increment = price / 100 and base = price. `FUN_005409B0(i, ...)` resolves slot `i`, and only when the
+  widget at `+0x404+slot*4` is null does it create it, mark `present[i] = 1` and increment `+0x2E0`;
+  `+0x2E0` is therefore a runtime "widgets built" count, reset to 0 after a load and **not serialized**.
+  The loader rebuilds a widget for every entry whose `present` byte is set. `adv1` slots
+  `[0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,6]`; `sim1` `[0,-1,1,2,3,-1,-1,-1,-1,-1,5,6]`; all 24 `present`
+  bytes are 0 in both, i.e. no store widget had been built when those files were written.
+  (6) **Sample cross-check.** `adv1` (E=362, S=49): pet array 0x1C5, store 0x361, timestamp 0x42D, 8
+  trailing zeroes. `sim1` (E=10946, S=32): pet array 0x2B0C, store 0x2CA8, timestamp 0x2D74, 160 trailing
+  zeroes. The two body parses consume every byte through the timestamp with no remainder, so the order
+  above is self-consistent on both save families.
+  (7) **Bounded unknowns (Q-0029).** `+0x448`, `+0x464`, `+0x468`, `+0x474`, `+0x478`, `+0x47C`,
+  `+0x480`, `+0x484`, `+0x488`, `+0x490`, `+0x498..+0x4A8`, `+0x2C4/+0x2C8`, `+0x440`, `+0x4F0`,
+  `+0x4F4`, `+0x2AC/+0x2B0`; the overlay tail `+0xC8/+0xD0/+0xD4/+0xD8`; the direction of `+0x2A6`;
+  the exact gameplay effect of the two attractor triples; and the `+0x3EC` writer (only the body's
+  swap-restore reads it). `+0x4E6/+0x4E8` are bound (egg hint) and `+0x2E0` is runtime-only.
 

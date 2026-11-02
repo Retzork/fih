@@ -259,6 +259,13 @@
   index from `FUN_00501060()` overriding it flat for 0-8. Remaining: the call-site owner of the normal
   store-item object, still deferred to the tank update in P2.13, plus the unlocated writers of
   `prize+0x1D0`/`+0x1D1`.
+- 2026-11-01 update (P2.13, EV-0144): **the tank-side xref is identified, the owner question is
+  narrowed.** `0x54782A` is a `FUN_005409B0()` call inside `FUN_00547610`, gated on tank 5 /
+  `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`. `FUN_005409B0` only lazily builds a widget when
+  `Tank+0x404 + slot*4` is null and marks the row's `present` byte, so the **tank owns the item cache**
+  and the store screen/widgets are just clients. Still open: the `0x4F18xx` tutorial-loop owner (which
+  screen/step triggers it), the `prize+0x1D0`/`+0x1D1` writers, and whether the normal (non-Challenge)
+  screen path ever builds the cache through another caller.
 
 ### Q-0019 - `userdata/scr%d.dat` format and Shells persistence (RESOLVED)
 - OPEN (2026-10-20, EV-0069/EV-0075). `FUN_005148C0` formats `userdata/scr%d.dat` from
@@ -434,15 +441,20 @@
   already applied to the remake: missiles start still and the victim lock `target+0x98` is always
   set; the earlier "demo" label is withdrawn. Re-open if a caller passes a different class
   explicitly.
-- **`Tank+0x4FE` writer.** In Virtual Tank the byte gates the entire alien/wave clock (mode 5 +
-  `+0x4FE == 0` skips it) and elsewhere it is the warning-sound enable (P2.8). No writer is traced,
-  so "VT can have aliens" is not implementable - keep it a flag defaulting to 0.
-- **`Tank+0x2DC` / `+0x2E0` pair.** Sandbox re-rolls the store while `+0x2E0 < +0x2DC`; both fields
-  are otherwise unbound (P2.6 lists `+0x2DC` only as "item arrays A/B/C/D and +0x2DC"). Do not use
-  them as a counter in the remake.
+- **`Tank+0x4FE` writer - ANSWERED** (2026-11-01, P2.13, EV-0136/EV-0144). The writer is the
+  `SimSetupScreen` "Return to Tank" handler: it copies the five checkbox state bytes back into
+  `Tank+0x4FC..+0x500`, so `+0x4FE` is one of the five Virtual Tank option bytes (`+0x4FC`..`+0x500`
+  are serialized as group 31 of the tank body). It still defaults to 0, but the remake can now expose
+  it as a named VT checkbox instead of an unbound flag.
+- **`Tank+0x2DC` / `+0x2E0` pair - ANSWERED** (2026-11-01, P2.13, EV-0144). `+0x2DC` is the count of
+  store rows whose slot id is >= 0, recomputed by `FUN_00541A20` at level init (and serialized).
+  `+0x2E0` is a runtime "widgets built" counter: `FUN_005409B0` increments it only when it creates a
+  missing store widget, and the loader resets it to 0; it is **not serialized**. Sandbox's re-roll
+  loop "while `+0x2E0 < +0x2DC`" therefore means "while some store rows still lack widgets". Model it
+  as a rebuilt-on-load UI count, never as progress.
 - **VT session helpers.** `FUN_005394E0` (populate), `FUN_0053A4F0` (store), `FUN_0053AA00` (HUD),
   `FUN_0054BC30` (create) and `FUN_0054B3A0` (load) are named by call site only; the `sim%d.dat`
-  payload itself is P2.13.
+  payload itself is decoded in EV-0144 (§6 of the P2.13 note).
 
 ### Q-0025 - P2.12 residual screen-flow questions
 - OPEN (2026-10-29, EV-0131-EV-0134). Three loose ends from the menu pass; none blocks the flow
@@ -525,3 +537,29 @@
   *before* `[manager]->vtable[0x134](this+0xB4)`; whether that is "consume the resume file" or a
   discarded-session path is unproven. Port the delete/save decision behind one named flag instead of
   guessing which way it flips.
+
+### Q-0029 - P2.13 residual tank-body fields (bounded, non-blocking)
+- OPEN (2026-11-01, EV-0144). The tank body is fully ordered and byte-verified, but these fields are
+  serialized without a proven writer or consumer. They are carried in the P4 model as named
+  `unknown_XX` values; none changes the file order or blocks the remake:
+  - **27-dword run:** `+0x448`, `+0x464`, `+0x468`, `+0x474`, `+0x478`, `+0x47C`, `+0x480`, `+0x484`,
+    `+0x488`, `+0x490`, `+0x498..+0x4A4`, `+0x4A8`. The late `sim1` values (`+0x468=107`,
+    `+0x474=136`, `+0x488=219`) are *consistent with* lifetime spawn/purchase totals, but no writer
+    was read; `adv1` has all three at 0, which is equally consistent.
+  - **Timers:** `+0x2C4` (set to 35 by the wave-0 block) and `+0x2C8` (set to 36 when hostiles
+    clear); consumers unread.
+  - **Scalars:** `+0x440` (cleared by the finalizer), `+0x4F0` u32 / `+0x4F4` u8 (no writer or reader
+    in the captured corpus), `+0x2AC`/`+0x2B0` (finalizer writes -1/0; meaning unbound).
+  - **Overlay tail:** `+0xC8`, `+0xD0`, `+0xD4`, `+0xD8` are serialized by `FUN_00530780` but their
+    readers are not located.
+  - **`+0x2A6` direction:** the writer/consumers are bound (`FUN_00539AD0`, spawn = 0, wave-clear = 1,
+    mode-5 load re-applies the saved byte, `+0x2A7` flushes through it), but which value means
+    "enabled" is not proven.
+  - **Attractor triples:** `5e89d0/d4/d8` (hidden Wadsworth count + mouth x/y) and `5e89c0/c4/c8`
+    (held-pellet/cursor attractor flag + x/y) are written and read, but the exact gameplay effect of
+    the held-pellet triple is only observed as "fish pause within 8 px".
+  - **`+0x3EC` writer:** only the body's temporary swap/restore reads it; no writer is bound. It is
+    correctly absent from the file.
+- Bounded negatives: the forward parse of both samples consumes every byte through the timestamp, so
+  no hidden field exists between the listed groups; `+0x2E0` and the stream slack after the timestamp
+  are runtime-only.
