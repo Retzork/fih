@@ -3948,3 +3948,57 @@ behavior or specs; follow up with a binary observation entry.
   (8) **No string keys at runtime.** Every group handler resolves its ids once at load time into
   globals; the manager's lookup is never on a hot path, and the later gameplay code touches the
   resource objects directly.
+
+### EV-0155 - P2.3: the coin predicate is `counter >= threshold`, with mode-5 difficulty and starving rewinds
+- Date: 2026-11-02
+- Type: observation
+- Source: `docs/evidence/p2.3-lastfn-4D7100.json` (`FUN_004D7100`, operation
+  `procedure_pseudo_code`); caller `docs/evidence/p2.2-fish-4F1400.json` (`FUN_004F1400`, the
+  per-fish counter at `+0x220`); raw pseudocode quoted in that JSON
+- Confidence: high
+- Notes:
+  (1) **Normal modes** (`Tank+0x87C != 5`): `return param_2 <= *param_1`, i.e. the drop matures
+  when `counter >= threshold`. `param_2` is the threshold (the fish's `+0x224`), `param_1` points at
+  the counter. `FUN_004F1400` increments `+0x220` and then calls this; the caller is reached from
+  the tank's per-fish list pass only while the pending-object predicate `FUN_004DA780` is false.
+  (2) **Mode-5 adjustment** (`Tank+0x87C == 5`) is entered only for `+0xAC >= 0` (pets are
+  negative). Two gates can skip the adjustment: `thunk_FUN_00479FC0()` and
+  `tank_manager+0x400 > DAT_005df590`; the exact meaning of both remains open (Q-0024 family).
+  When applied, a threshold above `0x168` (360) is reduced by `difficulty(+0x14C) * 0x21C` (540),
+  with a floor of 360.
+  (3) **Pacing gate** (`Tank+0x500`): with it set, a starving fish (`fullness +0x9C < 0`) is
+  rewound to `threshold - 0x5A` (90) when its counter has passed the threshold, and the call returns
+  false; otherwise the plain `threshold <= counter` result is returned. Without the gate, a counter
+  past the threshold is reset to 0 and the call returns false, so the drop is suppressed rather than
+  emitted.
+  (4) This pins the predicate and the counter/threshold rewinds. Which coin **kind** a
+  species/stage emits is still not established (the virtual `FUN_00544430` call site elides its
+  arguments): Q-0036. `FUN_004D7100` units are objective ticks; the P2.1/P2.7 rate question
+  (Q-0034) is unchanged.
+
+### EV-0156 - P2.2: `Fish::Update`'s default swim branch is the `mode >= 5` slow-hover/zigzag, not a fallback glide
+- Date: 2026-11-02
+- Type: observation
+- Source: `docs/analysis/inputs/p2.2-fish-update-pseudocode.txt`, exported from
+  `docs/evidence/p2.2-fish-4F6970.json` (`FUN_004F6970`, `procedure.pseudocode`), branch at
+  `iVar10 < 5` / `else` (source lines 185-228) and the post-machine tail (lines 408-418)
+- Confidence: high for the branch structure and float constants; medium for the `FUN_00564160`
+  target-timer operand (see note 4)
+- Notes:
+  (1) The mode switch (`+0x1AC`) handles `0x7B`, then `0`-`4`, and sends every other value
+  (**all modes >= 5**) to one shared default branch. Its per-tick body: if the dart timer
+  (`+0x82`) is clear, `vy = -0.5` when `y >= 115`, else `vy = -0.1` (the double is
+  `0xBFB999999999999A` = -0.1).
+  (2) Every 40 ticks (`mode_timer > 0x27`) it resets the timer and runs a horizontal zigzag: with
+  `turn_dir == +1`, `vx += 2.0` if `vx < 0` else `+1.0`; if `x > 250`, `turn_dir = -1` and
+  `vx -= 2.0`. With `turn_dir == -1`, `vx -= 2.0` if `vx > 0` else `-1.0`; if `x < 175`,
+  `turn_dir = +1` and `vx += 2.0`. The branch has **no** vertical glide subtraction (unlike modes
+  0-4). This explains why the previously documented "...mode = 0 default" reading was wrong: any
+  unlisted mode uses this branch, and mode 3/4's `y > 240 -> mode 0` is the only fallback.
+  (3) The shared tail (all modes) increments `+0x1B0` and `+0x1B4`, and every `> 20` ticks resets
+  `+0x1B4` and rerolls `mode = rand()%9 + 1` on a `rand()%10 == 0` roll. `FUN_004DA780` then
+  suppresses slot `0x144` (coin scheduler, slot 81) while a target/food is pending.
+  (4) The branch calls `FUN_00564160` (already established as the CRT float->int helper, EV-0118)
+  to seed the target timer `+0x6F`; this decompile does not expose the float operand, so the P4
+  placeholder uses `rand % 6`. Tracked as Q-0039.
+

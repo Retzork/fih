@@ -172,7 +172,9 @@ Every fish carries a drop counter (`+0x220`) that spawns a coin at a per-species
 kind → value table and Virtual Tank multipliers live in P2.5 §5. Coins fall, land at `y 370`, bob,
 expire by threshold, and are collected by proximity to non-Fish creatures, the cursor-driven
 collectors, and the "collect all" call that runs at level end (`FUN_0053C2D0`). Collection dispatch is
-per-list and order-sensitive (EV-0055); the intent question for coin hits is Q-0010.
+per-list and order-sensitive (EV-0055); the intent question for coin hits is Q-0010. P4 seam: `Fish`
+emits `coin_due` when the counter matures (EV-0155); the coin system owns the stage -> kind mapping
+(Q-0036), and the coin object itself is not part of P4.3.
 
 ### 3.4 Pets
 
@@ -530,6 +532,11 @@ reference the question id in the code comment.
 | Q-0032 | `framemap` `-1`, `framedelay` unit | animation (§2.3) |
 | Q-0033 | grayscale runtime colourisation | fish/effect tints (§3.1) |
 | Q-0034 | 100 Hz vs 36 Hz tick rate | **everything time-based** (§1.2) |
+| Q-0035 | `Food` landed flag and `FUN_004D62D0` bottom behaviour | food fall/land (§3.2) |
+| Q-0036 | which coin kind each species/stage emits | coin spawn (§3.3) |
+| Q-0037 | stage-4 overshoot for non-Guppy species | growth (§3.1) |
+| Q-0038 | two food-approach paths + per-species `+0x229` | feeding/steering (§3.1) |
+| Q-0039 | swim target-timer operand (`FUN_00564160`) | swim timing (§3.1) |
 
 ---
 

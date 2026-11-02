@@ -678,3 +678,55 @@
   inventing a removal or a bounce (`tests/headless_entity_check.gd` asserts both). `docs/SPECS.md`
   §3.2's wording ("landed pellet bobs on a 120..150-tick cycle") should be re-read against the y-band
   reading when this closes.
+
+### Q-0036 - Which coin kind does each species/stage emit?
+- OPEN (2026-11-02, raised by `scripts/entities/fish.gd` for P4.3; source P2.4 §6/§7, P2.5 §5).
+- `FUN_00544430` takes the coin kind as an argument; the slot-81 call sites in the species update
+  bodies decompile with the argument elided, so the stage -> kind assignment is not bound. P2.5 §5
+  has the value/kind table and the Virtual Tank multipliers, not the per-species selector.
+- What is missing: register/stack inspection at each `FUN_00544430` call site (or the caller's
+  `this` type + stage at that point), and a runtime sample of one drop per species/stage.
+- Non-blocking: `Fish` emits `coin_due(fish)` and the level/coin system owns the mapping. No value
+  or kind is guessed inside the entity.
+
+### Q-0037 - Shared growth tail: the stage-4 overshoot for non-Guppy species is unverified in play
+- OPEN (2026-11-02, raised by `scripts/entities/fish.gd` for P4.3; source P2.3 §7.5, P2.4 §1-§3).
+- The consume tail is shared: `stage < 2` grows one step, and a second independent `if` promotes
+  `stage > 1 && stage != 4` to stage 4 when feed points reach `(virtual ? 8 : 15) * food_needed`.
+  Oscar/Ultra/Gekko start at stages 5/6/7 and their species inits leave the food-point threshold at
+  the common 4-6, so under a literal reading they could reach 60-90 points and take the stage-4
+  branch. No recovered spawn path creates a stage-4 Carnivore/Ultravore/Beetlemuncher, and the
+  stage field's meaning for those classes may differ (their stage starts are observed, not a
+  progression).
+- What is missing: a runtime/write reference that shows whether the overshoot branch is reachable
+  for stages > 2 in the original, or whether a class/flag gate suppresses it.
+- Non-blocking: `Fish._apply_growth()` implements the decoded tail literally (Q-0037) so the
+  Guppy path matches P2.3; non-Guppy stage-4 promotion is treated as an accepted, documented
+  divergence until measured.
+
+### Q-0038 - Two food-approach paths and the `+0x229` seek gate
+- OPEN (2026-11-02, raised by `scripts/entities/fish.gd` for P4.3; source P2.2 §5.4-§5.5,
+  P2.3 §7).
+- `Fish::Update`'s food branch (guarded by the pending-object predicate and `+0x229`) steers with
+  the same ±5/±10 px acceleration bands that slot 84's approach/eat uses; the independent call
+  sites are not fully separated in the recovered body. P4 implements one combined seek+eat path
+  instead of double-steering. The `+0x229` value is confirmed 0 only for Ultra (`FUN_004D9EE0`);
+  for the other six classes the ctor's value is not yet read, so `can_seek` in the species table is
+  an inference from the branch semantics.
+- P4 reading: `can_seek` suppresses active steering; a non-seeker still consumes a pellet that
+  enters the ~35 px eat window, because the shared update calls the eat virtual. This keeps
+  Carnivore/Ultravore/Beetlemuncher functional while avoiding a second steering controller.
+- What is missing: per-species `+0x229` ctor values and the slot-84 body's own target search, so the
+  "who moves toward the pellet" split can be stated exactly.
+- Non-blocking: Guppy/Sylvester/Ball/Bi seek; Oscar/Ultra/Gekko eat opportunistically.
+
+### Q-0039 - The swim target-timer seed: `FUN_00564160`'s float operand is not in the decompile
+- OPEN (2026-11-02, raised by `scripts/entities/fish.gd` for P4.3; source EV-0156, P2.2 §5.3).
+- Modes 0-4 call `FUN_00564160()` to seed `+0x6F` (the 0..5 target timer). EV-0118 establishes
+  `FUN_00564160` as the CRT float->int helper, not an RNG, so the decompiled call shows no modulus;
+  the float argument is consumed from the x87 stack and is not rendered. P4 uses `rand % 6` from
+  the tank stream as a deterministic placeholder.
+- What is missing: the assembly around each call (`FSUB/FMUL` source) or a runtime trace of `+0x6F`
+  after a mode entry.
+- Non-blocking: the timer only feeds animation/oscillator timing; it does not affect hunger,
+  growth, death or the coin counter.

@@ -1,13 +1,15 @@
 # Architecture (Phase 4 start)
 
-Status: **P4.1-P4.2 complete** (2026-11-02). This is the design the P4 tasks build against, derived from
+Status: **P4.1-P4.2 complete; P4.3 in progress** (2026-11-02). This is the design the P4 tasks build against, derived from
 [`SPECS.md`](SPECS.md) (behaviour) and [`PIPELINE.md`](PIPELINE.md) (assets). It is deliberately small:
 it fixes the tick model, the resource registry, the autoload set and the coupling rules, and leaves
 every system to its own P4 task.
 
-What exists after P4.2: the boot scene, four autoloads, the project settings that make the remake a
-640x480 pixel game, the committed content manifest resolving all 326 ids into typed handles, and two
-headless checks (tick driver, content registry). There is still no gameplay.
+What exists after P4.3's Fish pass: the boot scene, four autoloads, the project settings that make the
+remake a 640x480 pixel game, the committed content manifest resolving all 326 ids into typed handles,
+the entity/tank seam, `Food`, and `Fish` for all seven species. Four headless checks cover the tick
+driver, the content registry, the entity seam/Food, and Fish. There is still no playable scene,
+rendering, economy or HUD.
 
 ## 1. The tick contract
 
@@ -236,6 +238,9 @@ a running remake:
 # the entity/tank seam and Food rules (38 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_entity_check.gd
 
+# the Fish entity (92 assertions; exit 0 = pass)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_fish_check.gd
+
 # regenerate the runtime manifest after any asset regeneration (writes resources/content.json)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tools/godot/gen_content.gd
 
@@ -260,6 +265,13 @@ per-tank seeded RNG reproducibility, and `Food::Update`'s decoded rules (fall 1.
 0.05, x clamp 20..550, death at 410/400, star and breeding removals, lifetime, inedible countdown,
 animation wrap, the 120..150 bob bands, homing).
 
+`tests/headless_fish_check.gd` covers: the seven-species ctor defaults (stages, bands, hunger, boxes,
+coin thresholds), hunger decay/hints/death and successor requests, every swim branch (modes 0-4,
+`0x7B` drift, the default `>= 5` hover), the ±5/±10 approach bands, the eat window and acceptance
+rules (homing, inedible, variant 1, breeding pellet gate), nutrition per quality/species, the shared
+growth tail and stage-4 overshoot, the star potion, the slot-81 coin scheduler (stage gate, food
+suppression, threshold reset) and same-seed RNG reproducibility.
+
 Golden-file tests for saves (P4.12) and the existing `verify_fonts.gd` / `gen_spriteframes.gd` tools
 follow the same pattern: a `--script` entry point that prints per-assertion lines and exits non-zero on
 any failure.
@@ -277,7 +289,7 @@ drops the backlog and a screen change must not carry old time into the next leve
 
 | not done | task |
 | --- | --- |
-| the remaining entity types (fish, pets, aliens, coins, projectiles) | P4.3/P4.4 |
+| the remaining entity types (pets, aliens, coins, projectiles) | P4.3/P4.4 |
 | input map / click routing beyond the screen-listener plan | P4.3/P4.14 |
 | any concrete screen, dialog, HUD widget | P4.5-P4.14 |
 | audio buses and music/SFX wiring | P4.13 |
@@ -297,13 +309,15 @@ scripts/autoload/screens.gd       screen stack + single modal slot
 scripts/data/image_res.gd         resolved image handle: grid, SpriteFrames, tick delays
 scripts/entities/sim_entity.gd    entity base: phase, tick, despawn
 scripts/entities/food.gd          Food pellet (P2.3 §1 rules)
+scripts/entities/fish.gd          Fish: seven species, swim/feed/grow/coin (P2.2-P2.4)
 scripts/tank/tank.gd              tank host: spawn/despawn, layers, seeded RNG, pause
 resources/content.json            committed runtime manifest, 326 ids (generated)
 tools/godot/gen_content.gd        manifest generator + group-partition check
 tests/headless_sim_check.gd       17-assertion contract check for the tick driver
 tests/headless_content_check.gd   51-assertion contract check for the content registry
 tests/headless_entity_check.gd    38-assertion check for the entity seam and Food
+tests/headless_fish_check.gd      92-assertion check for Fish (P2.2-P2.4)
 ```
 
-Next: the rest of P4.3's entity set (fish, pets, aliens, coins, projectiles), then P4.4 (the tank
+Next: the rest of P4.3's entity set (pets, aliens, coins, projectiles), then P4.4 (the tank
 simulation and feeding loop).

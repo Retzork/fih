@@ -14,8 +14,8 @@ refresh, level-start flow, all 13 screen constructors and their click handlers, 
 plus all ten dialog ctors and their click handlers); what is left there are the tracked open
 questions.
 **Phase 4 is in progress:** P4.1 (tick/scene scaffold) and P4.2 (content registry) are complete and
-P4.3 is partial - `SimEntity`, the `Tank` host and `Food` are implemented and green headlessly;
-Fish, pets, aliens, coins and projectiles remain. The next task is the rest of P4.3 (Fish first).
+P4.3 is partial - `SimEntity`, the `Tank` host, `Food` and `Fish` (all seven species) are implemented
+and green headlessly; pets, aliens, coins and projectiles remain. The next task is the rest of P4.3.
 `PLAN.md` is the source of truth for progress.
 
 ## Start here
@@ -42,7 +42,7 @@ Fish, pets, aliens, coins and projectiles remain. The next task is the rest of P
 | P1 target identity | Complete (10/10) |
 | P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In progress (2/14 + P4.3 partial): P4.1 architecture tick/scene scaffold, P4.2 content registry (326 ids, three load phases), P4.3 entity base + tank host + Food; three headless checks green |
+| P4 Godot implementation | In progress (2/14 + P4.3 partial): P4.1 architecture tick/scene scaffold, P4.2 content registry (326 ids, three load phases), P4.3 entity base + tank host + Food + Fish; four headless checks green |
 | P5 validation / polish | Not started (0/5) |
 
 - **P2.12 menus & UI flow (2026-10-29, first pass):** every screen class is a widget container plus
