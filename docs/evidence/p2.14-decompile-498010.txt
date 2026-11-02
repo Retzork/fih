@@ -1,0 +1,172 @@
+/* 0x498010 decompile (rea/ghidra) */
+
+
+void FUN_00498010(void)
+
+{
+  HMODULE hModule;
+  FARPROC pFVar1;
+  undefined4 *unaff_ESI;
+  
+  *unaff_ESI = Sexy::BASS_INSTANCE::vftable;
+  hModule = LoadLibraryA(".\\bass.dll");
+  unaff_ESI[1] = hModule;
+  if (hModule != (HMODULE)0x0) {
+    pFVar1 = GetProcAddress(hModule,"BASS_Init");
+    unaff_ESI[4] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_Init");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_Free");
+    unaff_ESI[6] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_Free");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_Stop");
+    unaff_ESI[7] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_Stop");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_Start");
+    unaff_ESI[8] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_Start");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SetGlobalVolumes");
+    unaff_ESI[9] = pFVar1;
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SetVolume");
+    unaff_ESI[10] = pFVar1;
+    if ((pFVar1 == (FARPROC)0x0) && (unaff_ESI[9] == 0)) {
+      MessageBoxA((HWND)0x0,"Neither BASS_SetGlobalVolumes or BASS_SetVolume found in bass.dll",
+                  "Error",0x10);
+                    /* WARNING: Subroutine does not return */
+      _exit(0);
+    }
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SetConfig");
+    unaff_ESI[0xd] = pFVar1;
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_GetConfig");
+    unaff_ESI[0xe] = pFVar1;
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_GetVolume");
+    unaff_ESI[0xb] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_GetVolume");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_GetInfo");
+    unaff_ESI[0xc] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_GetInfo");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_GetVersion");
+    unaff_ESI[3] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_GetVersion");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelStop");
+    unaff_ESI[0xf] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelStop");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelPlay");
+    unaff_ESI[0x10] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelPlay");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelPause");
+    unaff_ESI[0x11] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelPause");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelSetAttributes");
+    unaff_ESI[0x12] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelSetAttributes");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelGetAttributes");
+    unaff_ESI[0x13] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelGetAttributes");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelSetPosition");
+    unaff_ESI[0x14] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelSetPosition");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelGetPosition");
+    unaff_ESI[0x15] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelGetPosition");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelIsActive");
+    unaff_ESI[0x17] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelIsActive");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelSetFlags");
+    unaff_ESI[0x16] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelSetFlags");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelSlideAttributes");
+    unaff_ESI[0x18] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelSlideAttributes");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelIsSliding");
+    unaff_ESI[0x19] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelIsSliding");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelGetLevel");
+    unaff_ESI[0x1a] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelGetLevel");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelSetSync");
+    unaff_ESI[0x20] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelSetSync");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelRemoveSync");
+    unaff_ESI[0x21] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelRemoveSync");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelGetData");
+    unaff_ESI[0x1e] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelGetData");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_FXSetParameters");
+    unaff_ESI[0x27] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_FXSetParameters");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_FXGetParameters");
+    unaff_ESI[0x28] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_FXGetParameters");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelSetFX");
+    unaff_ESI[0x1b] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelSetFX");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelRemoveFX");
+    unaff_ESI[0x1c] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ChannelRemoveFX");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_MusicLoad");
+    unaff_ESI[0x22] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_MusicLoad");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_MusicFree");
+    unaff_ESI[0x24] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_MusicFree");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_MusicGetAttribute");
+    unaff_ESI[0x29] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_MusicGetAttribute");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_MusicSetAttribute");
+    unaff_ESI[0x2a] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_MusicSetAttribute");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_StreamCreateFile");
+    unaff_ESI[0x25] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_StreamCreateFile");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_StreamFree");
+    unaff_ESI[0x26] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_StreamFree");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_MusicGetOrders");
+    unaff_ESI[0x2b] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_MusicGetOrders");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_MusicGetOrderPosition");
+    unaff_ESI[0x2c] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_MusicGetOrderPosition");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SampleLoad");
+    unaff_ESI[0x2e] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_SampleLoad");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SampleFree");
+    unaff_ESI[0x2f] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_SampleFree");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SampleSetInfo");
+    unaff_ESI[0x30] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_SampleSetInfo");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SampleGetInfo");
+    unaff_ESI[0x31] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_SampleGetInfo");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SampleGetChannel");
+    unaff_ESI[0x32] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_SampleGetChannel");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_SampleStop");
+    unaff_ESI[0x33] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_SampleStop");
+    pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ErrorGetCode");
+    unaff_ESI[0x34] = pFVar1;
+    FUN_00497fa0(pFVar1,"BASS_ErrorGetCode");
+    *(bool *)(unaff_ESI + 2) = unaff_ESI[0xd] != 0;
+    if (unaff_ESI[0xd] != 0) {
+      unaff_ESI[5] = unaff_ESI[4];
+      unaff_ESI[4] = 0;
+      unaff_ESI[0x23] = unaff_ESI[0x22];
+      unaff_ESI[0x22] = 0;
+      pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_PluginLoad");
+      unaff_ESI[0x2d] = pFVar1;
+      pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelGetLength");
+      unaff_ESI[0x1d] = pFVar1;
+      pFVar1 = GetProcAddress((HMODULE)unaff_ESI[1],"BASS_ChannelPreBuf");
+      unaff_ESI[0x1f] = pFVar1;
+      return;
+    }
+    unaff_ESI[0x2d] = 0;
+    unaff_ESI[0x1f] = 0;
+  }
+  return;
+}
+
+

@@ -1,0 +1,68 @@
+# P2.14 - read sites of every sound-id global (engine-free scan of .text, VAs only)
+# matched encodings: A1/8B0D/8B15/8B1D (mov r32,[g]) and FF35 (push [g]); the containing function is not resolved
+# name | global | read sites
+SOUND_APPLAUSE | 0x5e8c38 | 540e78
+SOUND_AWOOGA | 0x5e8c28 | (no direct read)
+SOUND_BABY | 0x5e8dd0 | (no direct read)
+SOUND_BONUSCOLLECT | 0x5e8e24 | 545edd
+SOUND_BONUSCOUNT | 0x5e8edc | 517256
+SOUND_BUBBLES | 0x5e8b98 | (no direct read)
+SOUND_BUTTONCLICK | 0x5e8c40 | 4ebb5a, 517563, 517915, 519093, 519455, 51a6f5, 51aa38, 52b140, 530ac8, 530b08, 5312aa, 532741, 547815, 54a373
+SOUND_BUY | 0x5e8d14 | 520836
+SOUND_BUZZER | 0x5e8f0c | (no direct read)
+SOUND_CHOMP | 0x5e8ba0 | (no direct read)
+SOUND_CHOMP2 | 0x5e8c8c | (no direct read)
+SOUND_CROWNED | 0x5e8d10 | (no direct read)
+SOUND_DIAMOND | 0x5e8d08 | 545eb4
+SOUND_DIE | 0x5e8a70 | 538681
+SOUND_DROPFOOD | 0x5e8e14 | (no direct read)
+SOUND_EEL1 | 0x5e8d78 | (no direct read)
+SOUND_EEL2 | 0x5e8ac4 | (no direct read)
+SOUND_EEL3 | 0x5e8b9c | (no direct read)
+SOUND_EVILLAFF | 0x5e8c9c | 5207f0, 5458f6
+SOUND_EXPLODE | 0x5e8d54 | (no direct read)
+SOUND_EXPLOSION1 | 0x5e8b28 | (no direct read)
+SOUND_EXPLOSION4 | 0x5e8e84 | (no direct read)
+SOUND_FART | 0x5e8e90 | (no direct read)
+SOUND_FART2 | 0x5e8ef4 | (no direct read)
+SOUND_GROW | 0x5e8af0 | 4e4843, 520855
+SOUND_GUFFAW | 0x5e8e98 | 54587b
+SOUND_HATCH | 0x5e8d44 | 5171e8, 520802
+SOUND_HEAL | 0x5e8bf8 | 51b148
+SOUND_HIT | 0x5e8e68 | (no direct read)
+SOUND_INTERFER | 0x5e8bc8 | 5458a3
+SOUND_MISSLE | 0x5e8d94 | (no direct read)
+SOUND_NIKOCLOSE | 0x5e8c34 | (no direct read)
+SOUND_NIKOOPEN | 0x5e8b20 | (no direct read)
+SOUND_PEARL | 0x5e8e54 | 545ec9
+SOUND_POINTS | 0x5e8d74 | 53844f, 545e91, 545ea2
+SOUND_POINTS2 | 0x5e8b24 | 53840f
+SOUND_POINTS3 | 0x5e8e94 | 538424
+SOUND_POINTS4 | 0x5e8b1c | 538439
+SOUND_PRIMALSCREAM | 0x5e8acc | (no direct read)
+SOUND_PUNCH | 0x5e8d34 | (no direct read)
+SOUND_RATTLE | 0x5e8e10 | (no direct read)
+SOUND_RICOCHET | 0x5e8b40 | (no direct read)
+SOUND_ROAR | 0x5e8c6c | 545928
+SOUND_ROAR2 | 0x5e8b6c | 5458ba
+SOUND_ROAR3 | 0x5e89fc | 5458e2
+SOUND_SFX | 0x5e8c48 | (no direct read)
+SOUND_SING | 0x5e8c10 | (no direct read)
+SOUND_SLURP | 0x5e8de4 | 538505
+SOUND_SLURP2 | 0x5e8bdc | 5384fe
+SOUND_SLURP3 | 0x5e8de0 | 5384f4
+SOUND_SNEEZE | 0x5e8d8c | 544062
+SOUND_SONAR | 0x5e8a18 | (no direct read)
+SOUND_SPLASH | 0x5e8e64 | 538387
+SOUND_SPLASH2 | 0x5e8d2c | 5383a6
+SOUND_SPLASH3 | 0x5e8cd4 | 5383bd
+SOUND_SPLASHBIG | 0x5e8ea4 | (no direct read)
+SOUND_TAPGLASS | 0x5e8b68 | 53bfdb
+SOUND_TONE | 0x5e8ec4 | 5425f9
+SOUND_TONEHI | 0x5e8a68 | 542616
+SOUND_TONELO | 0x5e8a3c | 542608
+SOUND_TONESUPERHI | 0x5e8a7c | 542625
+SOUND_TREASURE | 0x5e8df0 | (no direct read)
+SOUND_UNLEASH | 0x5e8a94 | (no direct read)
+SOUND_ZAP | 0x5e8d9c | (no direct read)
+SOUND_ZZAM | 0x5e8b5c | (no direct read)

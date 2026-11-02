@@ -1,0 +1,61 @@
+/* 0x419363 decompile (rea/ghidra) */
+
+
+/* WARNING: Removing unreachable block (ram,0x00419399) */
+
+undefined1 FUN_00419320(int param_1)
+
+{
+  double dVar1;
+  undefined1 uVar2;
+  char cVar3;
+  int iVar4;
+  int *in_ECX;
+  undefined1 auStack_28 [4];
+  void *pvStack_24;
+  uint uStack_10;
+  void *local_c;
+  undefined1 *puStack_8;
+  undefined4 uStack_4;
+  
+  uStack_4 = 0xffffffff;
+  puStack_8 = &LAB_0058f5c0;
+  local_c = ExceptionList;
+  ExceptionList = &local_c;
+  iVar4 = (**(code **)(**(int **)(in_ECX[0x16] + 0x4b4) + 0x40))
+                    (DAT_005e39d8 ^ (uint)&stack0xffffffac);
+  if (iVar4 < 0) {
+    FUN_00426be0("Out of free sound ids",0x15);
+    uStack_4 = 0;
+    uVar2 = FUN_00415ba0();
+  }
+  else {
+    cVar3 = (**(code **)(**(int **)(in_ECX[0x16] + 0x4b4) + 0xc))(iVar4);
+    if (cVar3 == '\0') {
+      FUN_004120c0(auStack_28,"Failed to load sound: %s");
+      uStack_4 = 1;
+      uVar2 = FUN_00415ba0();
+      if (0xf < uStack_10) {
+                    /* WARNING: Subroutine does not return */
+        _free(pvStack_24);
+      }
+    }
+    else {
+      dVar1 = *(double *)(param_1 + 0x70);
+      if (!NAN(dVar1) && 0.0 < dVar1 != (dVar1 == 0.0)) {
+        (**(code **)(**(int **)(in_ECX[0x16] + 0x4b4) + 0x18))
+                  (iVar4,*(undefined8 *)(param_1 + 0x70));
+      }
+      if (*(int *)(param_1 + 0x78) != 0) {
+        (**(code **)(**(int **)(in_ECX[0x16] + 0x4b4) + 0x1c))(iVar4,*(int *)(param_1 + 0x78));
+      }
+      *(int *)(param_1 + 0x6c) = iVar4;
+      (**(code **)(*in_ECX + 0x34))();
+      uVar2 = 1;
+    }
+  }
+  ExceptionList = local_c;
+  return uVar2;
+}
+
+

@@ -1,0 +1,232 @@
+/* 0x506EA0 decompile (rea/ghidra) */
+
+
+/* WARNING: Globals starting with '_' overlap smaller symbols at the same address */
+
+undefined4 FUN_00506ea0(int *param_1)
+
+{
+  uint uStack_68;
+  undefined1 local_58 [4];
+  void *local_54;
+  undefined4 local_44;
+  uint local_40;
+  undefined1 local_3c [4];
+  void *local_38;
+  undefined4 local_28;
+  uint local_24;
+  undefined1 local_20 [12];
+  undefined1 *local_14;
+  void *local_10;
+  undefined1 *puStack_c;
+  undefined4 local_8;
+  
+  puStack_c = &LAB_00584d68;
+  local_10 = ExceptionList;
+  uStack_68 = DAT_005e39d8 ^ (uint)&stack0xfffffffc;
+  local_14 = (undefined1 *)&uStack_68;
+  ExceptionList = &local_10;
+  DAT_005e8f17 = 1;
+  local_8 = 0;
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("FONT_JUNGLEFEVER10OUTLINE",0x19);
+  local_8._0_1_ = 1;
+  DAT_005e8cf0 = (**(code **)(*param_1 + 0x48))(local_3c);
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("FONT_JUNGLEFEVER17OUTLINE",0x19);
+  local_8._0_1_ = 2;
+  DAT_005e8e40 = (**(code **)(*param_1 + 0x48))(local_3c);
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_BLANK",0xb);
+  local_8._0_1_ = 3;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 4;
+  DAT_005e8d80 = thunk_FUN_004682b0();
+  local_8._0_1_ = 3;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_CURSOR_DRAGGING",0x15);
+  local_8._0_1_ = 5;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 6;
+  DAT_005e8a80 = thunk_FUN_004682b0();
+  local_8._0_1_ = 5;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_CURSOR_HAND",0x11);
+  local_8._0_1_ = 7;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 8;
+  DAT_005e8e20 = thunk_FUN_004682b0();
+  local_8._0_1_ = 7;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_CURSOR_POINTER",0x14);
+  local_8._0_1_ = 9;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 10;
+  DAT_005e8a4c = thunk_FUN_004682b0();
+  local_8._0_1_ = 9;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_CURSOR_TEXT",0x11);
+  local_8._0_1_ = 0xb;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 0xc;
+  DAT_005e8b50 = thunk_FUN_004682b0();
+  local_8._0_1_ = 0xb;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_LOADERBAR",0xf);
+  local_8._0_1_ = 0xd;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 0xe;
+  DAT_005e8b00 = thunk_FUN_004682b0();
+  local_8._0_1_ = 0xd;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_LOADERBARLOADING",0x16);
+  local_8._0_1_ = 0xf;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 0x10;
+  DAT_005e8f10 = thunk_FUN_004682b0();
+  local_8._0_1_ = 0xf;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_LOADERBAROVER",0x13);
+  local_8._0_1_ = 0x11;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 0x12;
+  _DAT_005e8c30 = thunk_FUN_004682b0();
+  local_8._0_1_ = 0x11;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_LOADERPLAY",0x10);
+  local_8._0_1_ = 0x13;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 0x14;
+  DAT_005e8d6c = thunk_FUN_004682b0();
+  local_8._0_1_ = 0x13;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_TITLEPAGE",0xf);
+  local_8._0_1_ = 0x15;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 0x16;
+  DAT_005e8bec = thunk_FUN_004682b0();
+  local_8._0_1_ = 0x15;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_24 = 0xf;
+  local_28 = 0;
+  local_38 = (void *)((uint)local_38 & 0xffffff00);
+  FUN_00426be0("IMAGE_TITLEPAGEMASK",0x13);
+  local_8._0_1_ = 0x17;
+  (**(code **)(*param_1 + 0x40))(local_20,local_3c);
+  local_8._0_1_ = 0x18;
+  DAT_005e8e80 = thunk_FUN_004682b0();
+  local_8._0_1_ = 0x17;
+  FUN_004681e0();
+  local_8._0_1_ = 0;
+  if (0xf < local_24) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_38);
+  }
+  local_40 = 0xf;
+  local_44 = 0;
+  local_54 = (void *)((uint)local_54 & 0xffffff00);
+  FUN_00426be0("SOUND_BUTTONCLICK",0x11);
+  local_8 = CONCAT31(local_8._1_3_,0x19);
+  DAT_005e8c40 = (**(code **)(*param_1 + 0x44))(local_58);
+  if (0xf < local_40) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_54);
+  }
+  ExceptionList = local_10;
+  return 1;
+}
+
+

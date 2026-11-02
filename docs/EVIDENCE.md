@@ -3550,3 +3550,401 @@ behavior or specs; follow up with a binary observation entry.
   the exact gameplay effect of the two attractor triples; and the `+0x3EC` writer (only the body's
   swap-restore reads it). `+0x4E6/+0x4E8` are bound (egg hint) and `+0x2E0` is runtime-only.
 
+### EV-0145 - P2.14: the audio architecture - DirectSound for effects, BASS for music, two mixers
+- Date: 2026-11-01
+- Type: code trace (module decompilation + engine-free image scans: PE imports, vtable dumps,
+  immediate-reference and call-site scans)
+- Source: `docs/evidence/p2.2-module-rtti-classes.txt` (class -> vtable map, EV-0041);
+  `tools/pe-imports.ps1 docs\analysis\snapshots\insaniquarium-game-module.exe` (import table);
+  vtable dumps (`0x5C1084`, `0x5C1104`, `0x5C10D0`, `0x5C11BC`, `0x5C1164`, `0x5C1214`);
+  `docs/evidence/p2.14-decompile-4883BA.txt` (the factory `FUN_00488300`);
+  strings `0x5C05DC..0x5C0A48` (BASS/FMOD name tables), `.snd`/`cached\`/`dsound.dll`
+- Confidence: high for the class/vtable split, the backend selection and the "two mixers" reading;
+  medium for `app+0xF0`/`+0xF1` being the no-sound / prefer-FMOD switches
+- Notes:
+  (1) **Three layers.** The module carries `Sexy::SoundManager` (abstract, vtable `0x5C1084`, 18
+  slots, only slot 0 real) with the single concrete subclass `Sexy::DSoundManager` (vtable
+  `0x5C1104`, 18 slots) and `Sexy::DSoundInstance` (`0x5C10D0`, 12), plus the resource layer
+  `Sexy::SoundRes::ResourceManager` (`0x5B0470`, 2 slots). Effects therefore go
+  SoundRes -> DSoundManager -> `IDirectSoundBuffer`. DirectSound is bound **dynamically**: the
+  static import table carries no `dsound.dll` (the 9 imported DLLs are KERNEL32, USER32, ADVAPI32,
+  WINMM, WSOCK32, GDI32, SHELL32, ole32, OLEAUT32), and the `DSoundManager` ctor resolves
+  `DirectSoundCreate` through `GetProcAddress` on a handle loaded from the literal `dsound.dll`
+  string.
+  (2) **Music is a separate engine.** `Sexy::MusicInterface` (`0x5C1164`, 20 slots) has two
+  implementations in the image: `Sexy::BassMusicInterface` (`0x5C11BC`) and
+  `Sexy::FModMusicInterface` (`0x5C1214`). The install ships `bass.dll` and no `fmod.dll`
+  (EV-0001/EV-0004), and the `_FSOUND_*`/`fmod.dll` strings (`0x5C0A48..`) belong to the dead FMOD
+  path, so BASS is the live music backend.
+  (3) **Backend selection.** `FUN_00488300` (called from app init) allocates exactly one
+  interface: 4 B base `MusicInterface` (`FUN_0049B2A0`) when `app+0xF0 != 0` (silent), 0x20 B
+  `FModMusicInterface` (`FUN_00499DD0`) when `app+0xF1 != 0`, else 0x18 B `BassMusicInterface`
+  (`FUN_00498750`). The 0x18-byte size fits BassMusicInterface's field count.
+  (4) **Two independent volume paths.** The framework's option block stores `MusicVolume` and
+  `SfxVolume` as *separate* settings (EV-0149), and the BASS wrapper keeps its own
+  `BASS_SetGlobalVolumes`/`BASS_SetVolume` handles (`BASS_INSTANCE[9]`/`[10]`) beside the
+  DirectSound side - consistent with music and effects being mixed by two different engines.
+
+### EV-0146 - P2.14: the BASS wrapper - `Sexy::BASS_INSTANCE` and its 48-entry function table
+- Date: 2026-11-01
+- Type: code trace (module decompilation, string/immediate scans)
+- Source: `docs/evidence/p2.14-decompile-498010.txt` (`FUN_00498010`, 1434 B) and
+  `docs/evidence/p2.14-trace-bassdll.json` (string xrefs for `bass.dll`); strings
+  `0x5C05DC` (`%s function not found in bass.dll`), `0x5C0608..0x5C0A04` (the name table),
+  `0x5C0A18` (`.\bass.dll`), `0x5C0A24` (`Can't find bass.dll.`), `0x5C0660` (the fatal
+  SetGlobalVolumes/SetVolume message)
+- Confidence: high
+- Notes: `FUN_00498010` stores its vtable at `+0x0`, `LoadLibraryA(".\\bass.dll")` into `+0x4`,
+  then `GetProcAddress` for every name in `.rdata`, one fixed dword index each: `[3]` GetVersion,
+  `[4]` Init, `[6]` Free, `[7]` Stop, `[8]` Start, `[9]` SetGlobalVolumes, `[10]` SetVolume,
+  `[11]` GetVolume, `[12]` GetInfo, `[13]` SetConfig, `[14]` GetConfig, `[15]` ChannelStop,
+  `[16]` ChannelPlay, `[17]` ChannelPause, `[18]` ChannelSetAttributes, `[19]` GetAttributes,
+  `[20]` SetPosition, `[21]` GetPosition, `[22]` SetFlags, `[23]` IsActive, `[24]` SlideAttributes,
+  `[25]` IsSliding, `[26]` GetLevel, `[27]` ChannelSetFX, `[28]` ChannelRemoveFX,
+  `[30]` ChannelGetData, `[32]` ChannelSetSync, `[33]` ChannelRemoveSync, `[34]` MusicLoad,
+  `[36]` MusicFree, `[37]` StreamCreateFile, `[38]` StreamFree, `[39]` FXSetParameters,
+  `[40]` FXGetParameters, `[41]` MusicGetAttribute, `[42]` MusicSetAttribute, `[43]` MusicGetOrders,
+  `[44]` MusicGetOrderPosition, `[46]`..`[52]` SampleLoad/Free/SetInfo/GetInfo/GetChannel/Stop and
+  ErrorGetCode. When `BASS_SetConfig` resolves (BASS 2.0 layout; byte `+0x08` = 1), `[4]`->`[5]`,
+  `[34]`->`[35]` and the legacy slots are cleared, and the 2.0-only names `BASS_ChannelGetLength`
+  (`[29]`), `BASS_ChannelPreBuf` (`[31]`) and `BASS_PluginLoad` (`[45]`) are resolved. Failure
+  paths: `FUN_00498690` reports `"Can't find bass.dll."`; `FUN_00497FA0` reports
+  `"%s function not found in bass.dll"` per missing entry; missing *both* volume entries is fatal
+  (`MessageBoxA(..., "Error", MB_ICONHAND)` + `_exit(0)`). The shipped `bass.dll` exports the 2.0
+  API (`BASS_ChannelSetAttributes`, `BASS_ChannelPreBuf`, `BASS_PluginLoad` present;
+  SHA-256 `d98cd5d6ed9c4a95701684aa83777cefd5d8096e14c836493f67159d68161c01`).
+
+### EV-0147 - P2.14: music - three `.mo3` tracks loaded once at app init as ids 1/3/4, played through BASS
+- Date: 2026-11-01
+- Type: code trace (module decompilation of the app init, the BASS load slot and the play slot)
+- Source: `docs/evidence/p2.14-decompile-550E53.txt` (`FUN_005503C0` = `SexyApp::Init`),
+  `p2.14-decompile-498A00.txt` (`BassMusicInterface` slot 1), `p2.14-decompile-498D10.txt` (slot 2),
+  `p2.14-decompile-49B5E0.txt` (the map insert it calls), `p2.14-decompile-498950.txt` (slot 0);
+  strings `music\Alien.mo3` / `music\Lullaby.mo3` / `music\Insaniq2.mo3`
+  (`0x5A9360`/`0x5A934C`/`0x5A9338`)
+- Confidence: high for the ids, the file names, the load path and the play semantics; medium for
+  the `BASS_MusicLoad` flags word
+- Notes:
+  (1) **Preload.** `SexyApp::Init` preloads all three tracks through `app+0x374` (the music
+  interface) slot 1 with `(trackId, fileName)`: `1 = music\Alien.mo3` (10.24 s),
+  `3 = music\Lullaby.mo3` (115.70 s), `4 = music\Insaniq2.mo3` (113.66 s) - the call sites sit
+  back to back at `0x550F10..0x550F5F`. Ids 0 and 2 are never loaded.
+  (2) **Slot 1 (`FUN_00498A00`) = LoadMusic.** With no `.` in the name it probes three extensions
+  in order `wav`, `ogg`, `mp3` (strings `0x5C0A3C/0x5C0A40/0x5C0A44`) - `mo3` is **not** in the
+  probe list. `music\Insaniq2.mo3` therefore takes the second path: the whole file is read into a
+  fresh buffer (`FUN_00495420` open, `FUN_004954F0` size, `FUN_00495520` read) and handed to
+  `BASS_INSTANCE[34]` = `BASS_MusicLoad(mem = 1, buffer, 0, 0, flags)`, then the buffer is freed;
+  the flags word is loaded from the interface field `+0x14` (value not proven). A non-module name
+  instead inserts a `std::map` entry keyed by track id (`FUN_0049B5E0` is the red-black-tree
+  find/insert).
+  (3) **Slot 2 (`FUN_00498D10`) = PlayMusic(track, position, flag).** It finds the track's node,
+  copies `node+0x30`->`node+0x20`, zeroes `+0x28`, stores the flag at `+0x38`, applies
+  `BASS_INSTANCE[18]` `ChannelSetAttributes` to the node's music handle (`+0x18`, falling back to
+  the stream handle `+0x1C`), calls `BASS_INSTANCE[15]` `ChannelStop`, restarts through
+  `FUN_00498620(position, 4 | 0x8200)` (loop bit `4`; `0x8200` only when the 2.0 layout byte is
+  set), calls `FUN_00498670(position != -1)` and, when `position > 0`, seeks with
+  `BASS_INSTANCE[20]` `ChannelSetPosition`. So the interface is load-once / play-and-seek-orders,
+  always looping.
+  (4) **Slot 0 (`FUN_00498950`) is the destructor** (frees the music, then `_free(this)` when the
+  scalar-deleting flag is set).
+
+### EV-0148 - P2.14: music playback in the game layer - `SetMusic(a, b)`, 21 call sites, mode-5 silence, the remap table
+- Date: 2026-11-01
+- Type: code trace (module decompilation + an engine-free direct-call scan of `.text`)
+- Source: `docs/evidence/p2.14-decompile-54B1A0.txt` (`FUN_0054B1A0`),
+  `p2.14-decompile-54B2F0.txt` (`FUN_0054B2D0`, the per-stage selector),
+  `p2.14-decompile-54B090.txt` (`FUN_0054B090`, the remap); call sites and their recovered
+  arguments from the call/`push`-immediate scans of this pass
+- Confidence: high for the wrapper, the call-site argument table and the mode-5 gate; medium for
+  the intent of the `(a, b)` pair and of `DAT_005e28cc`
+- Notes:
+  (1) `FUN_0054B1A0(a, b)` writes `b` to `manager+0x890` and `a` to `manager+0x88C`, calls
+  `FUN_0054B090()`, then calls music-interface slot 2 (`PlayMusic`, EV-0147). It is the single
+  music-request entry of the game layer.
+  (2) **21 direct call sites** exist. The `(a, b)` pairs: startup (`0x550F2E`) `(2, 45)`; screens
+  `(2, 54)` at `0x517322`/`0x51F755`/`0x527954`/`0x53DC3A`/`0x54C03C`, `(2, 5)` at
+  `0x51B000`/`0x52EEDD`, `(2, 0)` at `0x52A239`/`0x52B783`/`0x52F359`/`0x55250A`, `(2, 2)` at
+  `0x52E85E`, `(1, 3)` at `0x538A03`, `(1, 1)` at `0x548A45`, `(1, 0)` at `0x54C49F`, plus the
+  stage selector below. All sites pass a third argument of 0.
+  (3) **`FUN_0054B2D0` is the per-stage selector**: after `FUN_0054B020()` and **only when
+  `[manager+0x87C] != 5`** (mode 5 = Virtual Tank) it picks the pair from the level-6/bonus
+  sentinel `FUN_0054B2A0()` and the stage index `FUN_0054ACF0()`: sentinel -> `(0, 13)`, stage 1 ->
+  `(0, 22)`, stage 2 -> `(0, 0)`, stage 3 -> `(2, 32)`, stage 4 -> `(2, 45)` (call sites
+  `0x54B2F4`, `0x54B30B`, `0x54B322`, `0x54B339`, `0x54B350`). Virtual Tank therefore requests no
+  music at all.
+  (4) **The remap (`FUN_0054B090`), gated on `DAT_005e28cc != 0`**, rewrites the pair before
+  playback: `(0,22)->(4,0)`, `(0,0)->(4,12)`, `(0,13)->(4,58)`, `(2,32)->(4,25)`, `(2,45)->(4,37)`,
+  `(2,0)->(4,45)`, `(2,54)->(4,49)`, `(2,5)->(4,50)`. Every output has the first value 4 and a
+  different second value, i.e. the same music at a different order/position - consistent with slot
+  2's seek parameter. What `DAT_005e28cc` switches is not identified, and how `(a, b)` reach slot
+  2's three parameters is not proven by the pseudocode (both Q-0031).
+
+### EV-0149 - P2.14: SFX - a 256-slot DirectSound pool, the SoundRes load path, and all 65 name -> global ids
+- Date: 2026-11-01
+- Type: code trace (module decompilation) + engine-free image scan (the loader's `mov [global],eax`
+  stores and the globals' read sites)
+- Source: `docs/evidence/p2.14-decompile-4955D9.txt` (`FUN_00495590`, the `DSoundManager` ctor),
+  `p2.14-decompile-488CE7.txt` (`FUN_004883F0`, app init; the ctor call site is `0x488CE7`),
+  `p2.14-decompile-419363.txt` (`FUN_00419320`), `p2.14-decompile-4896B0.txt` (`FUN_004896B0`,
+  app vtable slot `0xD8`), `p2.14-decompile-483C82.txt` (`FUN_00483A20`, the stats overlay),
+  `p2.14-decompile-47E2B2.txt`/`p2.14-decompile-47EEFC.txt` (the option block); generated inputs
+  `docs/analysis/inputs/p2.14-sound-table.txt`, `p2.14-sound-id-xrefs.txt`,
+  `p2.14-sound-manifest.txt`
+- Confidence: high for the pool size, the load path, the play path and the name->global table;
+  medium for the primary-buffer format fields and the `Muted` derivation
+- Notes:
+  (1) **Pool.** `FUN_00495590(this, HWND, byte)` - called at `0x488CE7` with `app+0x350` (window
+  handle) as second and `*(byte*)(app+0xF1)` as third argument, guarded by `cmp [app+0xF0], 0` - runs
+  `_eh_vector_constructor_iterator_(this+0x404, 0x1C, 0x100, ...)`, i.e. **256 slot records of 28
+  bytes**, plus a 256-double volume array at `+0x2408` initialised to `1.0` each and a 256-dword
+  array at `+0x2C08` cleared. It then resolves `DirectSoundCreate` by name, calls it with the
+  default device, sets cooperative level 2 with a fallback to 1, and creates a primary buffer from
+  a `WAVEFORMATEX`-shaped stack block (raw dwords `0x100004`, `0x14`, `1`, `0`, `0x12`, `0`)
+  followed by `SetFormat`.
+  (2) **Load.** `FUN_00419320` asks slot 16 (`0x496D10`) for a free id; a negative answer logs
+  `"Out of free sound ids"` and throws. Otherwise slot 3 (`0x496720`) loads, a failure logs
+  `"Failed to load sound: %s"`, and on success the record's default volume (double at `+0x70`) is
+  applied through slot 6 (`0x496D70`) only when positive, its pan/priority int (`+0x78`) through
+  slot 7 (`0x496D90`) only when non-zero, the id is stored at `record+0x6C`, and the resource
+  manager notifies itself through its own vtable slot 13.
+  (3) **Play.** The app's only sample entry is vtable slot `0xD8` = `FUN_004896B0(soundId)`: if
+  `app+0x4B4` (the `SoundManager`) is set, `inst = soundManager->vtable[8](id)` (`0x4976F0`), and
+  when non-null `inst->vtable[7](0, 1)` (`0x497E10`) starts the voice. **Gameplay passes the id
+  only** - there is no per-call volume or pan. Slot 17 (`0x496D30`) is the occupied-slot count that
+  the stats overlay prints as `"Num Sounds: %d"`.
+  (4) **The sound table.** A single startup function assigns every `SOUND_*` resource an id and
+  stores it in a dedicated global dword; all **65** bindings are extracted in
+  `p2.14-sound-table.txt`, e.g. `SOUND_BUTTONCLICK -> 0x5E8C40`, `SOUND_BUY -> 0x5E8D14`,
+  `SOUND_HATCH -> 0x5E8D44`, `SOUND_APPLAUSE -> 0x5E8C38`, `SOUND_TONELO -> 0x5E8A3C`. The 65
+  resource names/files come from `properties\resources.xml` (P3.1, EV-0024/EV-0025): 64 in the
+  `LoadingThread` group plus `BUTTONCLICK` in `Init`; 50 `.ogg`, 15 `.au`.
+  (5) **Trigger coverage.** A whole-`.text` scan for `mov reg,[global]` / `push [global]` finds
+  direct read sites for **33 of the 65** ids (`p2.14-sound-id-xrefs.txt`), e.g.
+  `SOUND_BUTTONCLICK` at `0x530AC8`/`0x5312AA`/`0x532741`/`0x547815`/`0x54A373`,
+  `SOUND_BUY` at `0x520836`, `SOUND_DIE` at `0x538681`, the `SOUND_SPLASH*` trio at
+  `0x538387..0x5383BD`, the `SOUND_ROAR*` trio at `0x5458BA..0x545928`. Mapping each id to its
+  gameplay event is Q-0030.
+  (6) **Options.** `FUN_0047EDA0` (read) / `FUN_0047E280` (write) store `MusicVolume` and
+  `SfxVolume` as integer percent and load them into doubles at `app+0xD0` (music) and `app+0xD8`
+  (effects) as `pct/100.0`; `Muted` (`0x5BF654`) reads back into `app+0x428`, while the write
+  emits a derived value from `app+0x428`/`app+0x42C` (`A != B && A - B > 0`), which is left open
+  (Q-0031). The other keys in the same block are `ScreenMode`, `PreferredX`, `PreferredY`,
+  `CustomCursors`, `WaitForVSync`, `InProgress`, `RegistryKey`, `Buffer`.
+
+### EV-0150 - P2.15: the manifest pipeline - three fatal levels, one element dispatcher
+- Date: 2026-11-02
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.15-decompile-41897A.txt` (`FUN_00418780`, `LoadManifest`),
+  `docs/evidence/p2.15-decompile-418420.txt` (`FUN_00418420`, the `<ResourceManifest>` body),
+  `docs/evidence/p2.15-decompile-417F10.txt` (the `<Resources>` body + element dispatch),
+  `docs/evidence/p2.15-decompile-417E0A.txt` (`FUN_00417CA0`, `SetDefaults`); strings
+  `0x5AFF7C` `"Resource file not found: "`, `0x5AE0AC` `"Invalid Section '"`, `0x5AE0D8` `"id"`,
+  `0x5AFD38` `"path"`, `0x5AFF48` `"Font"`
+- Confidence: high (all four layers decompiled end to end; every error string's throw site read)
+- Notes:
+  (1) **`LoadManifest(path)`** = `FUN_00418780`. It allocates a 124-byte XML parser
+  (`FUN_00564345(0x7C)`, ctor `FUN_00402590`) into `manager+0x34`, opens the file with
+  `FUN_00402DA0`, and on failure throws `"Resource file not found: " + path`. The token loop calls
+  `FUN_004048D0` (advance) and `FUN_00403060(parser)` (next element). A start-element token
+  (`kind == 1`) whose name is not `ResourceManifest` throws `"Expecting ResourceManifest tag"`;
+  a bad token throws `"Element Not Expected '<name>'"`; matching calls `FUN_00418420` and unwinds.
+  (2) **`<ResourceManifest>` body** = `FUN_00418420`. Only `Resources` is accepted (element-name
+  compare at `0x4184xx`), everything else throws `"Invalid Section '<name>'"` (`0x4186A3`). For a
+  `<Resources>` element it reads the `id` attribute (`FUN_00426BE0(&DAT_005AE0D8, 2)` = `"id"`),
+  stores it at `manager+0x30`, throws **`"No id specified."`** when absent, and then calls
+  **vtable slot 5** with the id - which is `FUN_0050FF10` (the group dispatcher, EV-0154). At
+  document end it frees and nulls the parser (`manager+0x34`).
+  (3) **`<Resources>` body** = `FUN_00417F10`. It polls `FUN_00403060(manager[0xD])` in a loop and
+  dispatches element names through the object's own vtable: `+0x08` = `Image`, `+0x04` = `Sound`,
+  `+0x0C` = `Font`, `+0x10` = `SetDefaults`, and `"Invalid Section '"` for anything else. `kind 3`
+  (text) throws `"Element Not Expected '"`; `kind 2` (end element) returns. The name comparison
+  itself is `FUN_004010F0(name, "Image", n)` for the first case and `FUN_00422860(0, len, target,
+  targetLen)` for the rest - the `len` argument is the element name's length clamped to 5, so the
+  comparisons are case-insensitive prefix matches, not exact.
+  (4) **`SetDefaults`** = `FUN_00417CA0`. It reads exactly two attributes - `path` (`0x5AFD38`) and
+  `idprefix` - and each *replaces* the corresponding inherited string (there is no merge and no
+  empty-string reset: both are skipped when the attribute is absent). Its return value 1 means
+  "handled".
+  (5) **Nothing recovers.** All five error paths above throw through `FUN_0041D8B0` and abort
+  startup; there is no partial load, no "skip bad entry" and no log-and-continue. This is why the
+  manifest in the install is so regular, and why P4 must not reproduce the brittleness (§8.1 of the
+  note).
+
+### EV-0151 - P2.15: id and path resolution - `idprefix` + `id`, then a fixed six-extension probe
+- Date: 2026-11-02
+- Type: code trace + engine-free scan (generated inventory of the shipped manifest)
+- Source: `docs/evidence/p2.15-decompile-4A025F.txt` (`FUN_0049FED0`, the image loader),
+  `docs/evidence/p2.15-decompile-417E0A.txt` (`SetDefaults`), `docs/evidence/p2.15-decompile-416EF9.txt`
+  (the `<Image>` parser's `path`/`alphaimage` joins); `docs/analysis/inputs/p2.15-groups.txt`
+  (generated by `tools/p2.15-groups.js`); string constants `0x5C1390` `.tga`, `0x5C1398` `.jpg`,
+  `0x5C13A0` `.png`, `0x5C13A8` `.gif`, `0x5C13B0` `.j2k`, `0x5C13B8` `.jp2`, `0x5B0F58` `"_"`
+- Confidence: high for the id/path model and the probe order; high for the 326/326 id partition
+- Notes:
+  (1) **Id = `idprefix` + `id`.** Every group switches defaults before its entries, so
+  `id="BLANK"` under `idprefix="IMAGE_"` becomes `IMAGE_BLANK`, which is exactly the string the
+  group handlers push at their `GetImage` call sites. The manifest therefore never contains the
+  fully-qualified ids the engine looks up - they are composed at load time.
+  (2) **Path = default `path` + `"\\"` + entry `path`.** `Init` walks images -> data -> sounds,
+  `Register` data -> images, `LoadingThread` images -> sounds; the full chains are printed per
+  group in `p2.15-groups.txt`.
+  (3) **Extension probing** (`FUN_0049FED0`): split at the last `.` after the last path separator.
+  With an extension, only that decoder runs. Without one, six decoders are tried in a fixed order -
+  `.tga` (`FUN_0049BFD0`), `.jpg` (`FUN_0049F800`), `.png` (`FUN_0049BE40`), `.gif` (`FUN_0049C160`),
+  `.j2k` (`FUN_0049FB10`), `.jp2` (`FUN_0049FB10`) - each guarded by `__stricmp` against the parsed
+  extension and the "no extension" flag. The install is a mix of `.gif` sprites and `.jpg`
+  backgrounds and relies on this: not one `path` in `resources.xml` carries an extension.
+  (4) **Exact partition.** 246 images = 11 (`Init`) + 3 (`Register`) + 232 (`LoadingThread`);
+  15 fonts = 2 + 13 + 0; 65 sounds = 1 + 0 + 64. The three handlers statically reference 14 + 16 +
+  296 = **326** ids, i.e. every manifest id and nothing else (`p2.15-groups.txt`). That cross-check
+  is the strongest single result of this pass: it proves both the id composition rule and that the
+  shipped manifest is exactly what the binary was built against.
+
+### EV-0152 - P2.15: `<Image>` entries - the attribute set, the grid, and the four animation modes
+- Date: 2026-11-02
+- Type: code trace + generated manifest inventory
+- Source: `docs/evidence/p2.15-decompile-416EF9.txt` (`FUN_004166C0`, the `<Image>` parser),
+  `docs/evidence/p2.15-decompile-4575E0.txt` (the animation builder, batch 5); attribute-name VAs
+  resolved with `tools/p2.15-vastr.js` - `rows` `0x5AFE1C`, `cols` `0x5AFE24`, `anim` `0x5AFE2C`,
+  `path` `0x5AFD38`; `docs/analysis/inputs/p2.15-manifest-inventory.txt`,
+  `docs/analysis/inputs/p2.15-groups.txt`
+- Confidence: high for the attribute list, the field offsets, the grid and the anim enum; medium for
+  the time unit of `framedelay` (see Q-0032)
+- Notes:
+  (1) **The parser** allocates a 0x110-byte `Sexy::Image`/`MemoryImage`, lets the entry fill it
+  through a virtual call, then reads the attributes in a fixed order into fixed offsets:
+  `nopal` `+0xCD`, `a4r4g4b4` `+0xCE`, `a8r8g8b8` `+0xCF`, `ddsurface` `+0xD0`, `nobits` `+0xD1`
+  (with `nobits2d`/`nobits3d` sub-cases consulted first), `minsubdivide` `+0xD2`, `noalpha` `+0xCC`,
+  `alphaimage`, `alphacolor` `+0xDC` (default `0xFFFFFF`, `sscanf("%x")`), `variant` (read then
+  discarded), `alphagrid`, `rows` `+0xD4` (default 1), `cols` `+0xD8` (default 1), `anim` `+0xE0`,
+  `framedelay` `+0xE4`, then `begindelay`, `enddelay`, `perframedelay`, `framemap` and finally
+  `FUN_004575E0(animType, beginDelay, endDelay)` to build the animation.
+  (2) **Grid.** `frameCount = cols * rows`, cell = `imageSize / (cols, rows)`, frame index
+  row-major (`col = i % cols`, `row = i / cols`) - the order `gen_spriteframes.gd` already
+  implements. 111 of 246 entries declare `cols` and 52 declare `rows`; of the 114 grid-declaring
+  entries, 66 are animated and **48 are not** (manual frame tables used with explicit indices by
+  gameplay). All 246 propagate exactly (P3.2).
+  (3) **`anim` enum**: `none` = 0, `once` = 1, `pingpong` = 2, `loop` = 3, compared with
+  `__stricmp`; any other value throws `"Invalid animation type."` and the entry fails. Shipped use:
+  56 `loop`, 8 `pingpong` (`WAVE`, `WAVESIDE`, `NIKO`, `VERT`, `WALTER` + `SCL_NIKO`/`SCL_VERT`/
+  `SCL_WALTER`), 2 `once` (`MERYLBLINK`, `MERYLTAIL`), 0 `none`.
+  (4) **Delays.** 66 entries are animated; 65 declare `framedelay` and every value is `2` or `4`.
+  The 66th is `MERYLBLINK`, which declares only `perframedelay` (`3,2,3,1,1,1`, parallel to its
+  six-step `framemap`) - its missing default is clamped to 1 by the builder (note 6). `begindelay`
+  is used three times (`MERYLTAIL` 3, `WAVESIDE` 6, `WAVE` 6); `enddelay` never. Whether the unit is
+  the 10 ms logic tick (P2.1) or a millisecond is Q-0032 - with a 100 Hz loop, `2`/`4` are 20/40 ms,
+  i.e. 50/25 fps, which is the plausible reading for swim cycles.
+  (5) **`framemap`** is used twice: `MERYLBLINK` `0,1,2,1,0,-1` and `MERYLTAIL` `7,6,5,4,3,2,1,0`.
+  The `-1` is not a terminator (the parallel `perframedelay` list has six entries) and not a frame
+  index (the sheet has three cells); see Q-0032.
+  (6) **The animation is built once at load** by `FUN_004575E0(data, beginDelay, endDelay)`
+  (`docs/evidence/p2.15-decompile-4575E0.txt`), whose record layout is
+  `{type, defaultDelay, frameCount, perFrameDelays, frameMap, totalDuration}`:
+  `frameCount`/`defaultDelay` are clamped to >= 1; **`pingpong` is expanded into an explicit
+  `0..N-1,N-2..1` sequence** rather than interpreted per frame; a supplied `framemap` *replaces* the
+  sequence and sets `frameCount` to its length; `perframedelay` entries `< 1` are replaced by
+  `defaultDelay` (so partial lists mean "use the default", which is why `MERYLBLINK`'s six delays
+  line up with its six map entries); and `totalDuration` is `frameCount * defaultDelay` when there
+  are no per-frame delays, otherwise the sum of the per-frame list. The precomputed integer total is
+  the strongest evidence that delays are integer ticks (the tick length itself is P2.1's). The
+  builder does **not** special-case a negative `framemap` entry - it stores the map verbatim - so
+  `-1` must be handled by the frame-advance path (Q-0032a).
+
+### EV-0153 - P2.15: two-file alpha - the `_` companion, `alphaimage`, and the cell-sized `alphagrid`
+- Date: 2026-11-02
+- Type: code trace + asset measurement (`assets_raw/extraction.json`, `System.Drawing` on the mask
+  files)
+- Source: `docs/evidence/p2.15-decompile-4A025F.txt` (`FUN_0049FED0`, the mask merge at the tail of
+  the loader - `lookForAlpha` branch), `docs/evidence/p2.15-decompile-418A0A.txt`
+  (`FUN_004189B0`, the `alphagrid` composition), `docs/evidence/p2.15-decompile-416EF9.txt`
+  (where the two attributes are read); string `0x5B0F58` = `"_"`; P3.2 (EV-0026/EV-0027) for the
+  on-disk inventory
+- Confidence: high for the implicit `_` companion and for `alphagrid`; high for `alphaimage` via
+  measurement (no decompile of its own composition path)
+- Notes:
+  (1) **Implicit `_` companion.** When `FUN_0049FED0(name, 1)` is called, it splits the directory
+  off the name, builds `dir + "_" + filename` (`"_"` = `0x5B0F58`), loads that too, and then:
+  - if the base failed and the companion loaded, the companion becomes the result with RGB forced
+  to white and alpha left from its own channel 0 (the loop `*bits = *bits << 24 | 0xFFFFFF`);
+  - if both loaded and the sizes match, it copies the companion's channel-0 byte into the base's
+  alpha byte (`base.a = mask.b`, stride 4 on both sides) and frees the companion;
+  - a size mismatch silently keeps the base as it is (only the explicit paths throw).
+  **Alpha comes from the mask's blue channel only** - the mask's RGB is discarded, so a grayscale
+  silhouette is all that is needed. 187 of 246 images in the install rely on this convention.
+  (2) **`alphagrid`** = `FUN_004189B0`. It loads the mask with the same `LoadImage(mask, 1)` call,
+  computes `cellW = image.w / cols`, `cellH = image.h / rows` from the two fields the entry parser
+  filled (`+0xD8` cols, `+0xD4` rows), requires the mask to be *exactly* one cell, otherwise
+  throws `"GridAlphaImage size mismatch between %s and %s"`, then walks rows -> cols -> cell pixels
+  copying mask channel 0 into the base alpha and marks the image dirty (vtable slot 25).
+  (3) **`alphaimage`** names a mask the size of the whole image. Measured on the install:
+  `tankbackdrops_.gif` 190x121 = `tankbackdrop1` 190x121, `eggbonus_.gif` 96x121 = `eggbrink`,
+  `aatop_.jpg` 32x37 = `aatop1`/`aatop2`, `_mbuttono.gif` 57x60 = `mbuttond`. `alphagrid` masks are
+  one cell: `mainbutton_.gif` 90x29 against a 270x29 `cols=3` sheet, `leftbutton_.gif` 63x29
+  against 189x29. Every `alphaimage` entry in the shipped manifest is single-cell, so the two
+  attributes are interchangeable in this game's data - the rule is simply "mask matches the unit it
+  masks".
+  (4) **Counts.** 17 entries declare a mask explicitly (13 `alphaimage`, 4 `alphagrid`), 204 of 246
+  images have a literal mask file, and only `SLIDERTHUMB`, `HELPALIEN`, `HELPPETCHOOSE` carry alpha
+  in the base GIF (P3.2). `EDITBOX`'s `_EditBox.gif` (96x33 against a 90x42 image) is the one size
+  mismatch in the set and is a source-asset inconsistency, not an engine case.
+  (5) **Grappling with the black-bodied SIM fish is out of scope here**: their `_` companions hold
+  body silhouettes while the base holds eyes on black, so a plain alpha merge would leave the fish
+  black. The engine must colourise those (Q-0033); P3 keeps the layers separate and P4 composites
+  them.
+
+### EV-0154 - P2.15: the three groups, the deferred entry loader, and the typed lookups
+- Date: 2026-11-02
+- Type: code trace + engine-free static extraction of the handler id lists
+- Source: `docs/evidence/p2.15-decompile-50FF39.txt` (`FUN_0050FF10`, the group dispatcher),
+  `docs/evidence/p2.15-decompile-506EA0.txt` (group `Init`), `docs/evidence/p2.15-decompile-50E190.txt`
+  (group `Register`), `docs/evidence/p2.15-decompile-419780.txt` (`FUN_00419480`, the entry loader),
+  `docs/evidence/p2.15-decompile-419E47.txt` (`FUN_00419D50`, `GetImage`),
+  `docs/evidence/p2.15-decompile-41A003.txt` (`FUN_00419F40`, `GetSound`),
+  `docs/evidence/p2.15-decompile-41A13E.txt` (`FUN_0041A080`, `GetFont`); generated inputs
+  `docs/analysis/inputs/p2.15-loadingthread-ids.txt` (296 ids), `p2.15-register-ids.txt` (16),
+  `p2.15-groups.txt`
+- Confidence: high for the group contents, the partition and the lookup/deferral rules; high for the
+  entry loader's three kind branches; medium for the entry record's exact string field offsets
+  (Ghidra renders them as unnamed `std::string`s)
+- Notes:
+  (1) **Group dispatch** = `FUN_0050FF10(name, id)`, reached through manager vtable slot 5 from
+  `FUN_00418420`. It is a `strncmp`-chain over `Init` (`FUN_00506EA0`), `LoadingThread`
+  (`FUN_005073E0`) and `Register` (`FUN_0050E190`); an unrecognised group name returns 0 and is
+  silently ignored (**not** an error, unlike a bad section inside a group).
+  (2) **`Init`** = 14 resources, each fetched through the manager vtable and stored in a global:
+  fonts `JUNGLEFEVER10/17OUTLINE`, images `BLANK`, `CURSOR_{POINTER,HAND,DRAGGING,TEXT}`,
+  `TITLEPAGE`, `TITLEPAGEMASK`, `LOADERBAR`, `LOADERBAROVER`, `LOADERBARLOADING`, `LOADERPLAY`, and
+  `SOUND_BUTTONCLICK`. **`Register`** = 16: 13 fonts (`LIDDIE12/15/18`, `JUNGLEFEVER12/15OUTLINE`,
+  `BLAMBOTPRO8/15`, `TINY`, `TINYBOLD`, `CONTINUUMBOLD{12,12OUTLINE,14,14OUTLINE}`) plus
+  `IMAGE_DIALOG`, `IMAGE_DIALOGBUTTON`, `IMAGE_EDITBOX`. Both set `DAT_005E8F17 = 1` on entry - the
+  "boot resources resident" flag.
+  (3) **`LoadingThread`** = 296: 232 `IMAGE_*` and 64 `SOUND_*`. Ghidra **cannot decompile
+  `0x5073E0`** (it returns an empty result on both the first attempt and the retry), so the group's
+  content is taken from its `push "<id>"` sites instead - 296 of them, one per resource, which is
+  enough to pin the set exactly. The ids are in `p2.15-loadingthread-ids.txt`.
+  (4) **Exact partition.** 246 images = 11 + 3 + 232, 15 fonts = 2 + 13 + 0, 65 sounds = 1 + 0 + 64,
+  and 14 + 16 + 296 = 326 = every id in the manifest with no duplicates and none left over. The
+  sound split (64 in `LoadingThread` plus `BUTTONCLICK` in `Init`) matches EV-0149 note 4 exactly.
+  (5) **Entry creation is not entry loading.** Parsing an element only fills a record (id, path(s),
+  grid, flags; payload `+0x6C` empty, "loaded" byte `+0x68` clear). `FUN_00419480(entry)` is the
+  loader, and it branches three ways: sounds (`+0x88 == 0`, loaded through `FUN_0045CC30` - the
+  `SoundRes` path of EV-0149 - with a **stub object** on failure), images (vtable slot `0x104` of the
+  manager's owner, with `lookForAlpha = 1`), and fonts (`+0xAC != 0`, `FUN_00467560(path, flag,
+  flag, flag)`, result must RTTI-cast to `ImageFont` with a non-null glyph map, else
+  `"Failed to load font: %s"`). Failure is **not** fatal here: the entry stays unloaded and the
+  game runs on, which is why a missing asset is a missing sprite rather than a startup crash.
+  (6) **`!ref:` fonts.** A font path starting with `!ref:` is a reference, not a file: the loader
+  drops the 5-character prefix and calls `GetFont(rest)` (`"Ref font not found: "` on failure). The
+  shipped manifest has zero `!ref:` occurrences. A non-empty third string on a font entry is
+  `strtok`-ed on `", \r\n\t"` and each token fed to font vtable slot `0x48` before slot `0x58` - also
+  unused by the shipped fonts (all 15 carry only `id`/`path`).
+  (7) **Three registries, three lookups.** Images live in a map at `manager+0x10`, sounds at `+0x1C`,
+  fonts at `+0x28`. `GetImage` = `FUN_00419D50`, `GetSound` = `FUN_00419F40`, `GetFont` =
+  `FUN_0041A080`; all three share one shape: look up, and if the payload is still empty return the
+  placeholder **when `manager+0xB0` is set and the entry's `+0x68` byte says "deferred"** (i.e. the
+  loading thread is mid-run); otherwise throw `"Image/Sound/Font resource not found: %s"`
+  (`0x419E47` / `0x41A003` / `0x41A13E`). `GetSound` returns the pool id at `entry+0x6C` and treats
+  `-1` as "not loaded"; `GetImage`/`GetFont` return the object pointer (the call sites wrap images in
+  an `ImagePtr` whose ctor/dtor are `FUN_004682B0`/`FUN_004681E0`).
+  (8) **No string keys at runtime.** Every group handler resolves its ids once at load time into
+  globals; the manager's lookup is never on a hot path, and the later gameplay code touches the
+  resource objects directly.

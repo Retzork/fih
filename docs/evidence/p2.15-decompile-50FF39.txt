@@ -1,0 +1,61 @@
+/* 0x50FF39 decompile (rea/ghidra) */
+
+
+uint FUN_0050ff10(undefined4 param_1,char *param_2)
+
+{
+  uint uVar1;
+  int iVar2;
+  char *pcVar3;
+  char *pcVar4;
+  bool bVar5;
+  
+  iVar2 = 5;
+  bVar5 = true;
+  pcVar3 = param_2;
+  pcVar4 = "Init";
+  do {
+    if (iVar2 == 0) break;
+    iVar2 = iVar2 + -1;
+    bVar5 = *pcVar3 == *pcVar4;
+    pcVar3 = pcVar3 + 1;
+    pcVar4 = pcVar4 + 1;
+  } while (bVar5);
+  if (bVar5) {
+    uVar1 = FUN_00506ea0(param_1);
+    return uVar1;
+  }
+  iVar2 = 0xe;
+  bVar5 = true;
+  pcVar3 = param_2;
+  pcVar4 = "LoadingThread";
+  do {
+    if (iVar2 == 0) break;
+    iVar2 = iVar2 + -1;
+    bVar5 = *pcVar3 == *pcVar4;
+    pcVar3 = pcVar3 + 1;
+    pcVar4 = pcVar4 + 1;
+  } while (bVar5);
+  if (bVar5) {
+    uVar1 = FUN_005073e0(param_1);
+    return uVar1;
+  }
+  iVar2 = 9;
+  bVar5 = true;
+  pcVar3 = param_2;
+  pcVar4 = "Register";
+  do {
+    if (iVar2 == 0) break;
+    iVar2 = iVar2 + -1;
+    bVar5 = *pcVar3 == *pcVar4;
+    pcVar3 = pcVar3 + 1;
+    pcVar4 = pcVar4 + 1;
+  } while (bVar5);
+  if (bVar5) {
+    uVar1 = FUN_0050e190(param_1);
+    return uVar1;
+  }
+  return (uint)param_2 & 0xffffff00;
+}
+
+

@@ -1,0 +1,233 @@
+/* 0x419780 decompile (rea/ghidra) */
+
+
+void FUN_00419480(int param_1)
+
+{
+  char cVar1;
+  int iVar2;
+  int *piVar3;
+  undefined4 uVar4;
+  int *piVar5;
+  int *in_ECX;
+  char *pcVar6;
+  char *pcVar7;
+  int *local_470;
+  undefined1 local_469;
+  int *local_468;
+  undefined1 local_464 [4];
+  void *local_460;
+  uint local_44c;
+  undefined1 local_448 [4];
+  void *local_444;
+  undefined4 local_434;
+  uint local_430;
+  undefined1 local_42c [4];
+  void *local_428;
+  undefined4 local_418;
+  uint local_414;
+  char local_410 [1024];
+  uint local_10;
+  void *local_c;
+  undefined1 *puStack_8;
+  undefined4 local_4;
+  
+  local_4 = 0xffffffff;
+  puStack_8 = &LAB_0059283f;
+  local_c = ExceptionList;
+  local_10 = DAT_005e39d8 ^ (uint)&local_470;
+  ExceptionList = &local_c;
+  local_468 = in_ECX;
+  if (*(char *)(param_1 + 0xac) == '\0') {
+    if (*(int *)(param_1 + 0x88) == 0) {
+      if (*(uint *)(param_1 + 0x58) < 0x10) {
+        pcVar6 = (char *)(param_1 + 0x44);
+      }
+      else {
+        pcVar6 = *(char **)(param_1 + 0x44);
+      }
+      iVar2 = _strncmp(pcVar6,"!ref:",5);
+      if (iVar2 == 0) {
+        FUN_0041dcf0(local_42c,5,0xffffffff);
+        local_4 = 0;
+        piVar3 = (int *)FUN_00419ce0();
+        if (piVar3 == (int *)0x0) {
+          FUN_0042d330(local_464,"Ref font not found: ",local_42c);
+          local_4 = CONCAT31(local_4._1_3_,1);
+          FUN_00415ba0();
+          FUN_0041d8f0();
+          FUN_0041d8f0();
+          goto LAB_00419939;
+        }
+        local_470 = (int *)(**(code **)(*piVar3 + 0x2c))();
+        local_4 = 0xffffffff;
+        FUN_0041d8f0();
+      }
+      else {
+        FUN_0041d8b0("ResMan");
+        local_4 = 2;
+        FUN_00410b90(param_1 + 0x40);
+        local_4 = CONCAT31(local_4._1_3_,3);
+        iVar2 = FUN_0045cc30(local_464);
+        if (0xf < local_414) {
+                    /* WARNING: Subroutine does not return */
+          _free(local_428);
+        }
+        local_4 = 0xffffffff;
+        local_414 = 0xf;
+        local_418 = 0;
+        local_428 = (void *)((uint)local_428 & 0xffffff00);
+        if (0xf < local_44c) {
+                    /* WARNING: Subroutine does not return */
+          _free(local_460);
+        }
+        if (iVar2 != 0) {
+          *(int *)(param_1 + 0x6c) = iVar2;
+          (**(code **)(*local_468 + 0x34))(param_1);
+          goto LAB_00419939;
+        }
+        local_470 = (int *)FUN_00564345(0x50);
+        local_4 = 4;
+        if (local_470 == (int *)0x0) {
+          piVar3 = (int *)0x0;
+        }
+        else {
+          piVar3 = (int *)FUN_0045b630(local_470,local_468[0x16]);
+        }
+        local_4 = 0xffffffff;
+        FUN_0041d8b0("ResMan");
+        local_4 = 5;
+        uVar4 = FUN_00410b90(param_1 + 0x40);
+        local_4 = CONCAT31(local_4._1_3_,6);
+        (**(code **)(*piVar3 + 0x5c))(uVar4,local_464);
+        FUN_0041d8f0();
+        local_4 = 0xffffffff;
+        FUN_0041d8f0();
+        in_ECX = local_468;
+        local_470 = piVar3;
+      }
+    }
+    else {
+      iVar2 = (**(code **)(*(int *)in_ECX[0x16] + 0x104))
+                        (param_1 + 0x74,1,DAT_005e39d8 ^ (uint)&stack0xfffffb80);
+      if (iVar2 == 0) {
+        if (*(uint *)(param_1 + 0x8c) < 0x10) {
+          param_1 = param_1 + 0x78;
+        }
+        else {
+          param_1 = *(int *)(param_1 + 0x78);
+        }
+        FUN_004120c0(local_464,"Failed to load image: %s",param_1);
+        local_4 = 7;
+        FUN_00415ba0();
+        if (0xf < local_44c) {
+                    /* WARNING: Subroutine does not return */
+          _free(local_460);
+        }
+        goto LAB_00419939;
+      }
+      *(int *)(param_1 + 0x70) = iVar2;
+      local_470 = (int *)FUN_00564345(0x50);
+      local_4 = 8;
+      if (local_470 == (int *)0x0) {
+        local_470 = (int *)0x0;
+      }
+      else {
+        local_470 = (int *)FUN_0045b7d0(local_470,iVar2,param_1 + 0x40);
+      }
+      local_4 = 0xffffffff;
+    }
+  }
+  else {
+    local_470 = (int *)CONCAT31(local_470._1_3_,*(undefined1 *)(param_1 + 0xad));
+    local_469 = 0;
+    cVar1 = FUN_0040fa00();
+    if (cVar1 != '\0') {
+      local_469 = local_470._0_1_;
+      local_470 = (int *)((uint)local_470 & 0xffffff00);
+    }
+    iVar2 = FUN_00564345(0x20);
+    if (iVar2 == 0) {
+      local_470 = (int *)0x0;
+    }
+    else {
+      local_470 = (int *)FUN_00467560(param_1 + 0x40,local_470,*(undefined1 *)(param_1 + 0xae),
+                                      *(undefined1 *)(param_1 + 0xaf));
+    }
+    *(undefined1 *)(local_470 + 7) = *(undefined1 *)(param_1 + 0xb0);
+    *(undefined1 *)((int)local_470 + 0x1d) = local_469;
+  }
+  piVar3 = local_470;
+  piVar5 = (int *)FUN_005689c4(local_470,0,&Sexy::Font::RTTI_Type_Descriptor,
+                               &Sexy::ImageFont::RTTI_Type_Descriptor,0);
+  if (piVar5 != (int *)0x0) {
+    if ((piVar5[5] == 0) || (*(char *)(piVar5[5] + 0x50) == '\0')) {
+      if (piVar3 != (int *)0x0) {
+        (**(code **)*piVar3)(1);
+      }
+      if (*(uint *)(param_1 + 0x58) < 0x10) {
+        param_1 = param_1 + 0x44;
+      }
+      else {
+        param_1 = *(int *)(param_1 + 0x44);
+      }
+      FUN_004120c0(local_464,"Failed to load font: %s",param_1);
+      local_4 = 9;
+      FUN_00415ba0();
+      if (0xf < local_44c) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_460);
+      }
+      goto LAB_00419939;
+    }
+    if (*(int *)(param_1 + 0xa4) != 0) {
+      if (*(uint *)(param_1 + 0xa8) < 0x10) {
+        pcVar6 = (char *)(param_1 + 0x94);
+      }
+      else {
+        pcVar6 = *(char **)(param_1 + 0x94);
+      }
+      pcVar7 = local_410;
+      do {
+        cVar1 = *pcVar6;
+        *pcVar7 = cVar1;
+        pcVar6 = pcVar6 + 1;
+        pcVar7 = pcVar7 + 1;
+      } while (cVar1 != '\0');
+      pcVar6 = _strtok(local_410,", \r\n\t");
+      while (pcVar6 != (char *)0x0) {
+        local_430 = 0xf;
+        local_434 = 0;
+        local_444 = (void *)((uint)local_444 & 0xffffff00);
+        pcVar7 = pcVar6;
+        do {
+          cVar1 = *pcVar7;
+          pcVar7 = pcVar7 + 1;
+        } while (cVar1 != '\0');
+        FUN_00426be0(pcVar6,(int)pcVar7 - (int)(pcVar6 + 1));
+        local_4 = 10;
+        (**(code **)(*piVar5 + 0x48))(local_448);
+        local_4 = 0xffffffff;
+        if (0xf < local_430) {
+                    /* WARNING: Subroutine does not return */
+          _free(local_444);
+        }
+        local_430 = 0xf;
+        local_434 = 0;
+        local_444 = (void *)((uint)local_444 & 0xffffff00);
+        pcVar6 = _strtok((char *)0x0,", \r\n\t");
+        in_ECX = local_468;
+        piVar3 = local_470;
+      }
+      (**(code **)(*piVar5 + 0x58))();
+    }
+  }
+  *(int **)(param_1 + 0x6c) = piVar3;
+  (**(code **)(*in_ECX + 0x34))(param_1);
+LAB_00419939:
+  ExceptionList = local_c;
+  __security_check_cookie(local_10 ^ (uint)&local_470);
+  return;
+}
+
+

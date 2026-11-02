@@ -1,0 +1,170 @@
+/* 0x417F10 decompile (rea/ghidra) */
+
+
+void FUN_00417f10(void)
+
+{
+  uint uVar1;
+  char cVar2;
+  uint uVar3;
+  uint uVar4;
+  int iVar5;
+  undefined4 uVar6;
+  int *in_ECX;
+  undefined4 ***pppuVar7;
+  undefined1 auStack_13c [4];
+  undefined1 local_138 [28];
+  undefined1 auStack_11c [28];
+  undefined1 auStack_100 [28];
+  undefined1 local_e4 [28];
+  int local_c8 [8];
+  undefined1 local_a8 [4];
+  undefined4 **local_a4 [4];
+  uint local_94;
+  uint local_90;
+  uint local_1c;
+  void *local_14;
+  undefined1 *puStack_10;
+  undefined4 local_c;
+  
+  local_c = 0xffffffff;
+  puStack_10 = &LAB_005919f5;
+  local_14 = ExceptionList;
+  local_1c = DAT_005e39d8 ^ (uint)auStack_13c;
+  uVar3 = DAT_005e39d8 ^ (uint)&stack0xfffffeb8;
+  ExceptionList = &local_14;
+  FUN_00409180(local_c8);
+  local_c = 0;
+  cVar2 = FUN_00403060(in_ECX[0xd]);
+  uVar1 = local_94;
+  do {
+    if (cVar2 == '\0') {
+      local_c = 0xffffffff;
+      FUN_00409270(local_c8);
+LAB_004183ee:
+      ExceptionList = local_14;
+      __security_check_cookie(local_1c ^ (uint)auStack_13c);
+      return;
+    }
+    local_94 = uVar1;
+    if (local_c8[0] == 1) {
+      uVar4 = uVar1;
+      if (4 < uVar1) {
+        uVar4 = 5;
+      }
+      pppuVar7 = (undefined4 ***)local_a4[0];
+      if (local_90 < 0x10) {
+        pppuVar7 = local_a4;
+      }
+      iVar5 = FUN_004010f0(pppuVar7,"Image",uVar4);
+      if (((iVar5 == 0) && (4 < uVar1)) && (uVar1 == 5)) {
+        cVar2 = (**(code **)(*in_ECX + 8))(local_c8);
+        if (cVar2 != '\0') {
+          cVar2 = FUN_00403060(in_ECX[0xd]);
+          if (cVar2 == '\0') goto LAB_004183b8;
+          if (local_c8[0] == 2) goto LAB_00418286;
+          FUN_0041d8b0("Unexpected element found.");
+          local_c = CONCAT31(local_c._1_3_,1);
+          FUN_00415ba0();
+          FUN_0041d8f0();
+          local_c = 0xffffffff;
+          FUN_00409270(local_c8);
+          goto LAB_004183ee;
+        }
+      }
+      else {
+        iVar5 = FUN_00422860(0,uVar1,"Sound",5);
+        if (iVar5 == 0) {
+          cVar2 = (**(code **)(*in_ECX + 4))(local_c8);
+          if (cVar2 != '\0') {
+            cVar2 = FUN_00403060(in_ECX[0xd]);
+            if (cVar2 == '\0') goto LAB_004183b8;
+            if (local_c8[0] == 2) goto LAB_00418286;
+            FUN_0041d8b0("Unexpected element found.");
+            local_c = CONCAT31(local_c._1_3_,2);
+            FUN_00415ba0();
+            FUN_0041d8f0();
+            local_c = 0xffffffff;
+            FUN_00409270(local_c8);
+            goto LAB_004183ee;
+          }
+        }
+        else {
+          iVar5 = FUN_00422860(0,local_94,&DAT_005aff48,4);
+          if (iVar5 == 0) {
+            cVar2 = (**(code **)(*in_ECX + 0xc))(local_c8);
+            if (cVar2 != '\0') {
+              cVar2 = FUN_00403060(in_ECX[0xd]);
+              if (cVar2 == '\0') goto LAB_004183b8;
+              if (local_c8[0] == 2) goto LAB_00418286;
+              FUN_0041d8b0("Unexpected element found.");
+              local_c = CONCAT31(local_c._1_3_,3);
+              FUN_00415ba0();
+              FUN_0041d8f0();
+              local_c = 0xffffffff;
+              FUN_00409270(local_c8);
+              goto LAB_004183ee;
+            }
+          }
+          else {
+            iVar5 = FUN_00422860(0,local_94,"SetDefaults",0xb);
+            if (iVar5 == 0) {
+              cVar2 = (**(code **)(*in_ECX + 0x10))(local_c8);
+              if (cVar2 != '\0') {
+                cVar2 = FUN_00403060(in_ECX[0xd]);
+                if (cVar2 == '\0') goto LAB_004183b8;
+                if (local_c8[0] == 2) goto LAB_00418286;
+                FUN_0041d8b0("Unexpected element found.");
+                local_c = CONCAT31(local_c._1_3_,4);
+                FUN_00415ba0();
+                FUN_0041d8f0();
+                local_c = 0xffffffff;
+                FUN_00409270(local_c8);
+                goto LAB_004183ee;
+              }
+            }
+            else {
+              uVar6 = FUN_0042d330(local_e4,"Invalid Section \'",local_a8);
+              local_c._0_1_ = 5;
+              FUN_0042d420(local_138,uVar6,&DAT_005ad80c);
+              local_c = CONCAT31(local_c._1_3_,6);
+              FUN_00415ba0();
+              FUN_0041d8f0();
+              FUN_0041d8f0();
+            }
+          }
+        }
+      }
+      local_c = 0xffffffff;
+      FUN_00409270(local_c8);
+      goto LAB_004183ee;
+    }
+    if (local_c8[0] == 3) {
+      uVar6 = FUN_0042d330(auStack_100,"Element Not Expected \'",local_a8,uVar3);
+      local_c._0_1_ = 7;
+      FUN_0042d420(auStack_11c,uVar6,&DAT_005ad80c);
+      local_c = CONCAT31(local_c._1_3_,8);
+      FUN_00415ba0();
+      FUN_0041d8f0();
+      FUN_0041d8f0();
+LAB_004183b8:
+      local_c = 0xffffffff;
+      FUN_00409270(local_c8);
+      goto LAB_004183ee;
+    }
+    if (local_c8[0] == 2) {
+      local_c = 0xffffffff;
+      FUN_00409270(local_c8);
+      goto LAB_004183ee;
+    }
+LAB_00418286:
+    local_c = 0xffffffff;
+    FUN_00409270(local_c8);
+    FUN_00409180(local_c8);
+    local_c = 0;
+    cVar2 = FUN_00403060(in_ECX[0xd]);
+    uVar1 = local_94;
+  } while( true );
+}
+
+

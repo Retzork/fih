@@ -1,0 +1,86 @@
+/* 0x4575E0 decompile (rea/ghidra) */
+
+
+void FUN_004575e0(int *param_1,int param_2,int param_3)
+
+{
+  int in_EAX;
+  int iVar1;
+  int iVar2;
+  uint uVar3;
+  
+  param_1[2] = in_EAX;
+  if (in_EAX < 1) {
+    param_1[2] = 1;
+  }
+  if (param_1[1] < 1) {
+    param_1[1] = 1;
+  }
+  if ((*param_1 == 2) && (1 < param_1[2])) {
+    FUN_00468d70();
+    uVar3 = 0;
+    if (0 < in_EAX) {
+      do {
+        if ((param_1[8] == 0) || ((uint)(param_1[9] - param_1[8] >> 2) <= uVar3)) {
+          FUN_00564335();
+        }
+        *(uint *)(param_1[8] + uVar3 * 4) = uVar3;
+        uVar3 = uVar3 + 1;
+      } while ((int)uVar3 < in_EAX);
+    }
+    for (iVar2 = in_EAX + -2; 0 < iVar2; iVar2 = iVar2 + -1) {
+      if ((param_1[8] == 0) || ((uint)(param_1[9] - param_1[8] >> 2) <= uVar3)) {
+        FUN_00564335();
+      }
+      *(int *)(param_1[8] + uVar3 * 4) = iVar2;
+      uVar3 = uVar3 + 1;
+    }
+  }
+  iVar2 = param_1[8];
+  if ((iVar2 != 0) && (param_1[9] - iVar2 >> 2 != 0)) {
+    iVar1 = 0;
+    if (iVar2 != 0) {
+      iVar1 = param_1[9] - iVar2 >> 2;
+    }
+    param_1[2] = iVar1;
+  }
+  if (0 < param_2) {
+    FUN_00457590();
+  }
+  if (0 < param_3) {
+    FUN_00457590();
+  }
+  if ((param_1[4] == 0) || (param_1[5] - param_1[4] >> 2 == 0)) {
+    param_1[0xb] = param_1[2] * param_1[1];
+  }
+  else {
+    param_1[0xb] = 0;
+    FUN_00468d70();
+    uVar3 = 0;
+    if (0 < param_1[2]) {
+      do {
+        if ((param_1[4] == 0) || ((uint)(param_1[5] - param_1[4] >> 2) <= uVar3)) {
+          FUN_00564335();
+        }
+        iVar2 = param_1[4];
+        if (*(int *)(iVar2 + uVar3 * 4) < 1) {
+          if ((iVar2 == 0) || ((uint)(param_1[5] - iVar2 >> 2) <= uVar3)) {
+            FUN_00564335();
+          }
+          *(int *)(param_1[4] + uVar3 * 4) = param_1[1];
+        }
+        if ((param_1[4] == 0) || ((uint)(param_1[5] - param_1[4] >> 2) <= uVar3)) {
+          FUN_00564335();
+        }
+        param_1[0xb] = param_1[0xb] + *(int *)(param_1[4] + uVar3 * 4);
+        uVar3 = uVar3 + 1;
+      } while ((int)uVar3 < param_1[2]);
+    }
+  }
+  if ((param_1[8] != 0) && (param_1[9] - param_1[8] >> 2 != 0)) {
+    FUN_00468d70();
+  }
+  return;
+}
+
+

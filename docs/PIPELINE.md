@@ -31,6 +31,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\extract-audio.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\decode-music.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tools/godot/gen_spriteframes.gd
+
+# then rebuild the runtime manifest (P4.2) - it is committed with the .tres files
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tools/godot/gen_content.gd
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --import
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tools/godot/verify_fonts.gd
 ```
@@ -76,6 +79,18 @@ cell size, frame rects, `framemap`, delay attrs, `selfMask` flags.
   (EV-0010/0029). Music/fonts load outside the manifest.
 
 ## 4. Using assets in Godot (for P4 tasks)
+
+### Content registry (P4.2)
+- `resources/content.json` is the runtime manifest: generated from these P3 outputs by
+  `tools/godot/gen_content.gd`, committed, and never replaces them (it points at the same files).
+- Use the `Content` autoload rather than paths: `Content.image("IMAGE_OSCAR")`,
+  `Content.sound("SOUND_BUY")`, `Content.font("FONT_LIDDIE12")` + `Content.font_size(...)`. Ids are
+  `IMAGE_*`/`SOUND_*`/`FONT_*`, resolved once at boot; capture handles in setup code, not per tick.
+- Regenerate with `--script res://tools/godot/gen_content.gd` after re-extracting assets. It fails on
+  a missing asset file, or if the group partition stops summing to Init 14 / Register 16 /
+  LoadingThread 296.
+- Group membership is the load phase (see `docs/ARCHITECTURE.md` §3): an `Init` id is available before
+  the first frame, `Register` before any dialog, `LoadingThread` behind the loading bar.
 
 ### Sprites & animations
 - `resources\sprites\<ID>.tres` is a `SpriteFrames` with a single animation `"default"`; frames

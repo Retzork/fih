@@ -1,0 +1,45 @@
+/* 0x419270 decompile (rea/ghidra) */
+
+
+void FUN_00419270(void)
+
+{
+  int *piVar1;
+  char cVar2;
+  int iVar3;
+  int *in_ECX;
+  int extraout_ECX;
+  int *local_18;
+  int local_14;
+  int local_c;
+  
+  local_18 = (int *)0x0;
+  FUN_00421a10(&local_18);
+  piVar1 = local_18;
+  local_c = in_ECX[5];
+  if ((local_18 == (int *)0x0) || (local_18 != in_ECX + 4)) {
+    FUN_00564335();
+  }
+  if (local_14 != local_c) {
+    if (piVar1 == (int *)0x0) {
+      FUN_00564335();
+    }
+    if (local_14 == piVar1[1]) {
+      FUN_00564335();
+    }
+    iVar3 = FUN_004682c0();
+    if (iVar3 != 0) {
+LAB_00419300:
+      FUN_004681b0();
+      return;
+    }
+    if (*(char *)(extraout_ECX + 0x68) == '\0') {
+      cVar2 = (**(code **)(*in_ECX + 0x20))(extraout_ECX);
+      if (cVar2 != '\0') goto LAB_00419300;
+    }
+  }
+  FUN_004681d0();
+  return;
+}
+
+

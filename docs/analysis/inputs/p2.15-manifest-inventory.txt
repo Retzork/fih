@@ -1,0 +1,27 @@
+# P2.15 - the shipped properties\resources.xml, inventoried (2026-11-01)
+# source: canonical install manifest, read-only; element counts cross-check docs/analysis/resources.json (P3.1)
+# elements: ResourceManifest=1, Resources=3, SetDefaults=7, Image=246, Font=15, Sound=65
+# groups: Init, Register, LoadingThread
+
+## animation attributes
+anim=loop (56): SYLV, BALROG, GUS, DESTRUCTOR, ULYSSES, PSYCHOSQUID, MINISYLV, BOSS, STINKY, ITCHY, PREGO, ZORF, CLYDE, RUFUS, MERYL, WADSWORTH, SEYMOUR, SHRAPNEL, GUMBO, BLIP, RHUBARB, NIMBUS, AMP, GASH, ANGIE, PRESTO, BRINKLEY, NOSTRADAMUS, STANLEY, SCL_STINKY, SCL_ITCHY, SCL_PREGO, SCL_ZORF, SCL_CLYDE, SCL_RUFUS, SCL_MERYL, SCL_WADSWORTH, SCL_SEYMOUR, SCL_SHRAPNEL, SCL_GUMBO, SCL_BLIP, SCL_RHUBARB, SCL_NIMBUS, SCL_AMP, SCL_GASH, SCL_ANGIE, SCL_PRESTO, SCL_BRINKLEY, SCL_NOSTRADAMUS, SCL_STANLEY, SCL_OSCAR, SCL_GRUBBER, SCL_STARCATCHER, SCL_GEKKO, SCL_BREEDER, SCL_ULTRA
+anim=once (2): MERYLBLINK, MERYLTAIL
+anim=pingpong (8): WAVESIDE, WAVE, NIKO, VERT, WALTER, SCL_NIKO, SCL_VERT, SCL_WALTER
+framedelay (65): values 2,4
+perframedelay: MERYLBLINK=[3,2,3,1,1,1]
+begindelay: MERYLTAIL=3, WAVESIDE=6, WAVE=6
+framemap: MERYLBLINK=[0,1,2,1,0,-1], MERYLTAIL=[7,6,5,4,3,2,1,0]
+
+## alpha / surface attributes
+alphaimage (13): MENUBTND2 -> _mbuttono, TANKBACKDROP1 -> tankbackdrops_, TANKBACKDROP2 -> tankbackdrops_, TANKBACKDROP3 -> tankbackdrops_, TANKBACKDROP4 -> tankbackdrops_, TANKBACKDROP5 -> tankbackdrops_, TANKBACKDROP6 -> tankbackdrops_, EGGBRINKLEY -> eggbonus_, EGGNOSTRADAMUS -> eggbonus_, EGGSTANLEY -> eggbonus_, EGGWALTER -> eggbonus_, AA_TOP1 -> aatop_, AA_TOP2 -> aatop_
+alphagrid (4): MAINBUTTON -> mainbutton_, LEFTBUTTON -> leftbutton_, RIGHTBUTTON -> rightbutton_, CENTERBUTTON -> centerbutton_
+ddsurface (6): AQUARIUM1, AQUARIUM2, AQUARIUM3, AQUARIUM4, AQUARIUM5, AQUARIUM6
+
+## sound attributes
+volume: EXPLODE=0.75, HIT=0.75, NIKOOPEN=0.5, NIKOCLOSE=0.5, RICOCHET=1.0, ZAP=1.0, ZZAM=0.8
+alias: AWOOGA=START, ZZAM=END
+
+## grids
+cols values: 3,4,14,5,6,10,20,1,8,17,13,16
+rows values: 6,4,1,5,20,12,2,3,8,7,9
+entries declaring cols: 111, rows: 52, animated: 66

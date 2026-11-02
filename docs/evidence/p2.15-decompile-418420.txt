@@ -1,0 +1,128 @@
+/* 0x418420 decompile (rea/ghidra) */
+
+
+void FUN_00418420(void)
+
+{
+  char cVar1;
+  uint uVar2;
+  int iVar3;
+  undefined4 uVar4;
+  undefined4 extraout_ECX;
+  int *unaff_EDI;
+  undefined1 local_10c [4];
+  void *local_108;
+  undefined4 local_f8;
+  uint local_f4;
+  undefined1 local_f0 [28];
+  undefined1 local_d4 [28];
+  int local_b8 [8];
+  undefined1 local_98 [20];
+  undefined4 local_84;
+  uint local_10;
+  void *local_c;
+  undefined1 *puStack_8;
+  undefined4 local_4;
+  
+  local_4 = 0xffffffff;
+  puStack_8 = &LAB_0059195a;
+  local_c = ExceptionList;
+  local_10 = DAT_005e39d8 ^ (uint)local_10c;
+  uVar2 = DAT_005e39d8 ^ (uint)&stack0xfffffee8;
+  ExceptionList = &local_c;
+  cVar1 = FUN_004048d0(uVar2);
+  if (cVar1 == '\0') {
+    FUN_00409180(local_b8);
+    local_4 = 0;
+    cVar1 = FUN_00403060(unaff_EDI[0xd]);
+    while (cVar1 != '\0') {
+      if (local_b8[0] == 1) {
+        iVar3 = FUN_00422860(0,local_84,"Resources",9);
+        if (iVar3 == 0) {
+          local_f4 = 0xf;
+          local_f8 = 0;
+          local_108 = (void *)((uint)local_108 & 0xffffff00);
+          FUN_00426be0(&DAT_005ae0d8,2);
+          local_4._0_1_ = 1;
+          uVar4 = FUN_0041e580();
+          FUN_00422210(uVar4,0,0xffffffff);
+          local_4._0_1_ = 0;
+          if (0xf < local_f4) {
+                    /* WARNING: Subroutine does not return */
+            _free(local_108);
+          }
+          iVar3 = FUN_00421a90();
+          unaff_EDI[0x30] = iVar3;
+          if (unaff_EDI[0x1c] == 0) {
+            FUN_0041d8b0("No id specified.");
+            local_4 = CONCAT31(local_4._1_3_,2);
+            FUN_00415ba0();
+            FUN_0041d8f0();
+          }
+          else {
+            cVar1 = (**(code **)(*unaff_EDI + 0x14))();
+            if (cVar1 != '\0') goto LAB_00418568;
+          }
+          local_4 = 0xffffffff;
+          FUN_00409270(local_b8);
+        }
+        else {
+          uVar4 = FUN_0042d330(local_d4,"Invalid Section \'",local_98);
+          local_4._0_1_ = 3;
+          FUN_0042d420(local_f0,uVar4,&DAT_005ad80c);
+          local_4 = CONCAT31(local_4._1_3_,4);
+          FUN_00415ba0();
+          FUN_0041d8f0();
+          FUN_0041d8f0();
+          local_4 = 0xffffffff;
+          FUN_00409270(local_b8);
+        }
+        goto LAB_004185ef;
+      }
+      if (local_b8[0] == 3) {
+        uVar4 = FUN_0042d330(local_f0,"Element Not Expected \'",local_98);
+        local_4._0_1_ = 5;
+        FUN_0042d420(local_d4,uVar4,&DAT_005ad80c);
+        local_4 = CONCAT31(local_4._1_3_,6);
+        FUN_00415ba0();
+        FUN_0041d8f0();
+        FUN_0041d8f0();
+        local_4 = 0xffffffff;
+        FUN_00409270(local_b8);
+        goto LAB_004185ef;
+      }
+LAB_00418568:
+      local_4 = 0xffffffff;
+      FUN_00409270(local_b8);
+      FUN_00409180(local_b8);
+      local_4 = 0;
+      cVar1 = FUN_00403060(unaff_EDI[0xd]);
+    }
+    local_4 = 0xffffffff;
+    FUN_00409270(local_b8);
+  }
+LAB_004185ef:
+  cVar1 = FUN_004048d0(uVar2);
+  if (cVar1 != '\0') {
+    FUN_004048e0(extraout_ECX);
+    local_4 = 7;
+    FUN_00415ba0();
+    local_4 = 0xffffffff;
+    if (0xf < local_f4) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_108);
+    }
+    local_f4 = 0xf;
+    local_f8 = 0;
+    local_108 = (void *)((uint)local_108 & 0xffffff00);
+  }
+  if ((undefined4 *)unaff_EDI[0xd] != (undefined4 *)0x0) {
+    (*(code *)**(undefined4 **)unaff_EDI[0xd])(1);
+  }
+  unaff_EDI[0xd] = 0;
+  ExceptionList = local_c;
+  __security_check_cookie(local_10 ^ (uint)local_10c);
+  return;
+}
+
+

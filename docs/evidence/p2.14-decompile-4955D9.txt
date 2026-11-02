@@ -1,0 +1,117 @@
+/* 0x4955D9 decompile (rea/ghidra) */
+
+
+undefined4 * FUN_00495590(undefined4 *param_1,int param_2,undefined1 param_3)
+
+{
+  undefined4 *puVar1;
+  uint uVar2;
+  undefined4 *puVar3;
+  FARPROC pFVar4;
+  undefined8 *puVar5;
+  int iVar6;
+  undefined4 uStack_34;
+  undefined2 uStack_30;
+  undefined4 uStack_2c;
+  undefined4 uStack_28;
+  undefined4 uStack_24;
+  undefined4 uStack_20;
+  undefined4 uStack_1c;
+  void *local_c;
+  undefined1 *puStack_8;
+  undefined4 local_4;
+  
+  puStack_8 = &LAB_0058bcb3;
+  local_c = ExceptionList;
+  uVar2 = DAT_005e39d8 ^ (uint)&stack0xffffffbc;
+  ExceptionList = &local_c;
+  local_4 = 0;
+  *param_1 = Sexy::DSoundManager::vftable;
+  _eh_vector_constructor_iterator_(param_1 + 0x101,0x1c,0x100,FUN_0041d860,FUN_0041d8f0);
+  local_4 = CONCAT31(local_4._1_3_,1);
+  puVar1 = param_1 + 0x801;
+  *(undefined1 *)(param_1 + 0xc26) = param_3;
+  param_1[0xc24] = 0;
+  *puVar1 = 0;
+  puVar3 = param_1 + 0xb02;
+  puVar5 = (undefined8 *)(param_1 + 0x902);
+  iVar6 = 0x100;
+  do {
+    puVar3[-0xb01] = 0;
+    *puVar5 = 0x3ff0000000000000;
+    *puVar3 = 0;
+    puVar5 = puVar5 + 1;
+    puVar3 = puVar3 + 1;
+    iVar6 = iVar6 + -1;
+  } while (iVar6 != 0);
+  param_1[0xc02] = 0;
+  param_1[0xc03] = 0;
+  param_1[0xc04] = 0;
+  param_1[0xc05] = 0;
+  param_1[0xc06] = 0;
+  param_1[0xc07] = 0;
+  param_1[0xc08] = 0;
+  param_1[0xc09] = 0;
+  param_1[0xc0a] = 0;
+  param_1[0xc0b] = 0;
+  param_1[0xc0c] = 0;
+  param_1[0xc0d] = 0;
+  param_1[0xc0e] = 0;
+  param_1[0xc0f] = 0;
+  param_1[0xc10] = 0;
+  param_1[0xc11] = 0;
+  param_1[0xc12] = 0;
+  param_1[0xc13] = 0;
+  param_1[0xc14] = 0;
+  param_1[0xc15] = 0;
+  param_1[0xc16] = 0;
+  param_1[0xc17] = 0;
+  param_1[0xc18] = 0;
+  param_1[0xc19] = 0;
+  param_1[0xc1a] = 0;
+  param_1[0xc1b] = 0;
+  param_1[0xc1c] = 0;
+  param_1[0xc1d] = 0;
+  param_1[0xc1e] = 0;
+  param_1[0xc1f] = 0;
+  param_1[0xc20] = 0;
+  param_1[0xc21] = 0;
+  *(undefined8 *)(param_1 + 0xc22) = 0x3ff0000000000000;
+  puVar3 = param_1 + 0xc25;
+  *puVar3 = 0;
+  if (param_2 != 0) {
+    pFVar4 = GetProcAddress(DAT_005eb688,"DirectSoundCreate");
+    if (pFVar4 != (FARPROC)0x0) {
+      iVar6 = (*pFVar4)(0,puVar3,0,uVar2);
+      if (iVar6 == 0) {
+        if (*(char *)(param_1 + 0xc26) != '\0') {
+          FUN_00499d10();
+          (**(code **)(DAT_005eb6b8 + 0xc))(param_2);
+          (**(code **)(DAT_005eb6b8 + 8))(200);
+          (**(code **)(DAT_005eb6b8 + 0x10))(0xac44,0x40,2);
+        }
+        iVar6 = (**(code **)(*(int *)*puVar3 + 0x18))((int *)*puVar3,param_2,2);
+        if (iVar6 < 0) {
+          (**(code **)(*(int *)*puVar3 + 0x18))((int *)*puVar3,local_4,1);
+        }
+        else {
+          uStack_20 = 0;
+          uStack_30 = 0x12;
+          uStack_34 = 0x100004;
+          uStack_2c = 0x14;
+          uStack_28 = 1;
+          uStack_24 = 0;
+          uStack_1c = 0;
+          iVar6 = (**(code **)(*(int *)*puVar3 + 0xc))((int *)*puVar3,&uStack_2c,puVar1,0);
+          if (iVar6 == 0) {
+            (**(code **)(*(int *)*puVar1 + 0x38))((int *)*puVar1,&uStack_34);
+          }
+        }
+      }
+    }
+  }
+  ExceptionList = local_c;
+  return param_1;
+}
+
+

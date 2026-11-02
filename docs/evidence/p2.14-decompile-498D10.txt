@@ -1,0 +1,55 @@
+/* 0x498D10 decompile (rea/ghidra) */
+
+
+void FUN_00498d10(undefined4 param_1,int param_2,char param_3)
+
+{
+  undefined4 uVar1;
+  int iVar2;
+  int in_ECX;
+  undefined4 local_10;
+  undefined4 local_c;
+  
+  FUN_0049b6c0();
+  iVar2 = *(int *)(in_ECX + 8);
+  if ((local_10 == 0) || (local_10 != in_ECX + 4)) {
+    FUN_00564335();
+  }
+  if (local_c != iVar2) {
+    if (local_10 == 0) {
+      FUN_00564335();
+    }
+    if (local_c == *(int *)(local_10 + 4)) {
+      FUN_00564335();
+    }
+    iVar2 = *(int *)(local_c + 0x18);
+    *(undefined8 *)(local_c + 0x20) = *(undefined8 *)(local_c + 0x30);
+    *(undefined8 *)(local_c + 0x28) = 0;
+    *(char *)(local_c + 0x38) = param_3;
+    if (iVar2 == 0) {
+      iVar2 = *(int *)(local_c + 0x1c);
+    }
+    uVar1 = FUN_00564160(0xffffff9b);
+    (**(code **)(DAT_005eb6b0 + 0x48))(iVar2,0xffffffff,uVar1);
+    iVar2 = *(int *)(local_c + 0x18);
+    if (iVar2 == 0) {
+      iVar2 = *(int *)(local_c + 0x1c);
+    }
+    (**(code **)(DAT_005eb6b0 + 0x3c))(iVar2);
+    if (*(int *)(local_c + 0x18) != 0) {
+      if (*(char *)(DAT_005eb6b0 + 8) != '\0') {
+        FUN_00498620(param_2,(-(uint)(param_3 != '\0') & 0xfffffffc) + 4 | 0x8200);
+        return;
+      }
+      FUN_00498620(param_2,(-(uint)(param_3 != '\0') & 0xfffffffc) + 4);
+      return;
+    }
+    FUN_00498670(param_2 != -1);
+    if (0 < param_2) {
+      (**(code **)(DAT_005eb6b0 + 0x50))(*(undefined4 *)(local_c + 0x1c),param_2,param_2 >> 0x1f);
+    }
+  }
+  return;
+}
+
+

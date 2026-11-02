@@ -1,0 +1,54 @@
+/* 0x49B5E0 decompile (rea/ghidra) */
+
+
+int * FUN_0049b5e0(int *param_1,int *param_2)
+
+{
+  int iVar1;
+  bool bVar2;
+  undefined4 *puVar3;
+  int *piVar4;
+  int unaff_EBX;
+  undefined4 *puVar5;
+  
+  puVar5 = *(undefined4 **)(unaff_EBX + 4);
+  bVar2 = true;
+  if (*(char *)((int)puVar5[1] + 0x41) == '\0') {
+    puVar3 = (undefined4 *)puVar5[1];
+    do {
+      puVar5 = puVar3;
+      bVar2 = *param_2 < (int)puVar5[4];
+      if (bVar2) {
+        puVar3 = (undefined4 *)*puVar5;
+      }
+      else {
+        puVar3 = (undefined4 *)puVar5[2];
+      }
+    } while (*(char *)((int)puVar3 + 0x41) == '\0');
+  }
+  if (bVar2) {
+    if (puVar5 == (undefined4 *)**(int **)(unaff_EBX + 4)) {
+      piVar4 = (int *)FUN_0049b820(&stack0xfffffff4,1,param_2);
+      iVar1 = *piVar4;
+      param_1[1] = piVar4[1];
+      *param_1 = iVar1;
+      *(undefined1 *)(param_1 + 2) = 1;
+      return param_1;
+    }
+    FUN_0042bfe0();
+  }
+  if ((int)puVar5[4] < *param_2) {
+    piVar4 = (int *)FUN_0049b820(&stack0xfffffff4,bVar2,param_2);
+    iVar1 = piVar4[1];
+    *param_1 = *piVar4;
+    param_1[1] = iVar1;
+    *(undefined1 *)(param_1 + 2) = 1;
+    return param_1;
+  }
+  param_1[1] = (int)puVar5;
+  *param_1 = unaff_EBX;
+  *(undefined1 *)(param_1 + 2) = 0;
+  return param_1;
+}
+
+

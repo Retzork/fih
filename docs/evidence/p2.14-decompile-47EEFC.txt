@@ -1,0 +1,214 @@
+/* 0x47EEFC decompile (rea/ghidra) */
+
+
+void FUN_0047eda0(void)
+
+{
+  char cVar1;
+  uint uVar2;
+  undefined4 uVar3;
+  int in_ECX;
+  int local_9c;
+  undefined1 local_98 [4];
+  void *local_94;
+  undefined4 local_84;
+  uint local_80;
+  undefined1 local_7c [4];
+  void *local_78;
+  undefined4 local_68;
+  uint local_64;
+  undefined1 local_60 [4];
+  void *local_5c;
+  undefined4 local_4c;
+  uint local_48;
+  void *local_40;
+  undefined4 local_30;
+  uint local_2c;
+  void *local_24;
+  undefined4 local_14;
+  uint local_10;
+  void *local_c;
+  undefined1 *puStack_8;
+  undefined4 local_4;
+  
+  local_4 = 0xffffffff;
+  puStack_8 = &LAB_0059326e;
+  local_c = ExceptionList;
+  uVar2 = DAT_005e39d8 ^ (uint)&stack0xffffff50;
+  ExceptionList = &local_c;
+  *(undefined1 *)(in_ECX + 0x378) = 1;
+  local_80 = 0xf;
+  local_84 = 0;
+  local_94 = (void *)((uint)local_94 & 0xffffff00);
+  FUN_00426be0("RegistryKey",0xb);
+  local_4 = 0;
+  uVar3 = FUN_004102a0(in_ECX + 0x7c,uVar2);
+  local_4._0_1_ = 1;
+  uVar3 = FUN_004872f0(local_60,local_98,uVar3);
+  local_4._0_1_ = 2;
+  uVar3 = FUN_004102a0(uVar3);
+  local_4 = CONCAT31(local_4._1_3_,3);
+  FUN_00422210(uVar3,0,0xffffffff);
+  if (0xf < local_2c) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_40);
+  }
+  local_2c = 0xf;
+  local_30 = 0;
+  local_40 = (void *)((uint)local_40 & 0xffffff00);
+  if (0xf < local_48) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_5c);
+  }
+  local_48 = 0xf;
+  local_4c = 0;
+  local_5c = (void *)((uint)local_5c & 0xffffff00);
+  if (0xf < local_10) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_24);
+  }
+  local_4 = 0xffffffff;
+  local_10 = 0xf;
+  local_14 = 0;
+  local_24 = (void *)((uint)local_24 & 0xffffff00);
+  if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+    _free(local_94);
+  }
+  if (*(int *)(in_ECX + 0x90) != 0) {
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("MusicVolume",0xb);
+    local_4 = 4;
+    cVar1 = FUN_0047ed20(local_98,&local_9c);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    if (cVar1 != '\0') {
+      *(double *)(in_ECX + 0xd0) = (double)local_9c / 100.0;
+    }
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("SfxVolume",9);
+    local_4 = 5;
+    cVar1 = FUN_0047ed20(local_98,&local_9c);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    if (cVar1 != '\0') {
+      *(double *)(in_ECX + 0xd8) = (double)local_9c / 100.0;
+    }
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("Muted",5);
+    local_4 = 6;
+    cVar1 = FUN_0047ed20(local_98,&local_9c);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    if (cVar1 != '\0') {
+      *(int *)(in_ECX + 0x428) = local_9c;
+    }
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("ScreenMode",10);
+    local_4 = 7;
+    cVar1 = FUN_0047ed20(local_98,&local_9c);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    if (cVar1 != '\0') {
+      *(bool *)(in_ECX + 0x343) = local_9c == 0;
+    }
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("PreferredX",10);
+    local_4 = 8;
+    FUN_0047ed20(local_98,in_ECX + 0xb8);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("PreferredY",10);
+    local_4 = 9;
+    FUN_0047ed20(local_98,in_ECX + 0xbc);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("CustomCursors",0xd);
+    local_4 = 10;
+    cVar1 = FUN_0047ed20(local_98,&local_9c);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    if (cVar1 != '\0') {
+      FUN_004891d0(local_9c != 0);
+    }
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("WaitForVSync",0xc);
+    local_4 = 0xb;
+    FUN_0047ed70(local_98,in_ECX + 0x5c8);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    local_80 = 0xf;
+    local_84 = 0;
+    local_94 = (void *)((uint)local_94 & 0xffffff00);
+    FUN_00426be0("InProgress",10);
+    local_4 = 0xc;
+    cVar1 = FUN_0047ed20(local_98,&local_9c);
+    local_4 = 0xffffffff;
+    if (0xf < local_80) {
+                    /* WARNING: Subroutine does not return */
+      _free(local_94);
+    }
+    if (cVar1 != '\0') {
+      *(bool *)(in_ECX + 0x502) = local_9c == 0;
+    }
+    cVar1 = FUN_00479fc0();
+    if (cVar1 == '\0') {
+      local_64 = 0xf;
+      local_68 = 0;
+      local_78 = (void *)((uint)local_78 & 0xffffff00);
+      FUN_00426be0("InProgress",10);
+      local_4 = 0xd;
+      FUN_0047e230(local_7c,1);
+      if (0xf < local_64) {
+                    /* WARNING: Subroutine does not return */
+        _free(local_78);
+      }
+    }
+  }
+  ExceptionList = local_c;
+  return;
+}
+
+

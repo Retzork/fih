@@ -563,3 +563,118 @@
 - Bounded negatives: the forward parse of both samples consumes every byte through the timestamp, so
   no hidden field exists between the listed groups; `+0x2E0` and the stream slack after the timestamp
   are runtime-only.
+### Q-0030 - P2.14 residual: which gameplay event plays which sound (33 of 65 bound)
+- OPEN (2026-11-01, EV-0149). Every `SOUND_*` resource has a named global that holds its allocated
+  SoundManager id - all 65 bindings are in `docs/analysis/inputs/p2.14-sound-table.txt` - but the
+  *trigger* side is only partly bound: a whole-`.text` scan for `mov reg,[global]` / `push [global]`
+  finds direct read sites for 33 of the 65 ids (`p2.14-sound-id-xrefs.txt`, VAs only, containing
+  function not resolved).
+- What is missing: for each read site, which gameplay event it belongs to. Bounded search used:
+  direct absolute-address reads only (`A1`, `8B0D`, `8B15`, `8B1D`, `FF35`); a global reached through
+  a register/array copy is not covered.
+- Non-blocking: the P4 remake triggers sounds from the events the other P2 notes already describe
+  (buy, hatch, death, splash, roar, button click ...), and the resource names are semantic, so an
+  event->name mapping can be built without the remaining VAs. Resolve by decompiling the 33 read
+  sites' functions when a per-event audit is wanted.
+
+### Q-0031 - P2.14 residual: music parameter wiring, BASS load flags and the backend/pause switches
+- OPEN (2026-11-01, EV-0145/EV-0147/EV-0148/EV-0149). Five bounded gaps around otherwise complete
+  audio paths:
+  - **(a)** `BASS_MusicLoad`'s flags word: the load reads `interface+0x14` (`FUN_00498A00`), which the
+    decompile does not resolve to a constant. The play slot always restarts with bit `4`
+    (`FUN_00498620(pos, 4 | 0x8200)`), so looping is certain; the *load* flags are not.
+  - **(b)** How `FUN_0054B1A0`'s `(a, b)` reach `PlayMusic(track, position, flag)`: the pseudocode
+    shows the values stored at `manager+0x88C`/`+0x890` and the interface slot 2 called with no
+    visible arguments. The mapping `(a: 0/1/2, b: 0/1/3/5/13/22/32/45/54)` -> `(track, order, flag)`
+    is therefore unfixed; P4 starts every track at position 0 (note §8.3), which matches all
+    observed level-play calls.
+  - **(c)** `DAT_005e28cc`, the gate on the remap `FUN_0054B090` (EV-0148 note 4). Its writer and
+    meaning (version/language/mode switch) are unknown; the remap is not ported.
+  - **(d)** Writers of `app+0xF0` (null music backend) and `app+0xF1` (prefer FMOD), and of
+    `app+0x42C` (the second operand of the derived `Muted` value, EV-0149 note 6).
+  - **(e)** The exact `WAVEFORMATEX` fields of `DSoundManager`'s primary buffer: the ctor builds the
+    block on the stack and the decompile shows raw dwords only (`0x100004`, `0x14`, `1`, `0`, `0x12`,
+    `0`), so sample rate/bit depth of the DirectSound path are not proven. Not needed for P4: Godot
+    supplies its own mixer.
+
+### Q-0032 - P2.15 residual: the `framemap` `-1` entry and the time unit of `framedelay`
+- OPEN (2026-11-02, EV-0152). Two bounded gaps in an otherwise complete image-entry model:
+  - **(a) `-1` in `framemap`.** Only `MERYLBLINK` uses it (`0,1,2,1,0,-1` with
+    `perframedelay="3,2,3,1,1,1"` on a 3-cell sheet). It is not a terminator (the parallel delay
+    list has six entries) and not a frame index. The animation builder `FUN_004575E0` stores the map
+    verbatim and only uses its length, so the decoding has to be in the frame-advance path. The
+    reading that fits both the art and the slice model is "hold the previous frame for this step" -
+    a dwell on the open-eye pose. P3.5 currently *skips* negative entries, which shortens the blink
+    by one step.
+  - **(b) `framedelay` unit.** The parser stores it with `atol` into `entry+0xE4` and the value is
+    passed on; every shipped value is `2` or `4`. With P2.1's 10 ms logic tick that is 20/40 ms
+    (50/25 fps), which is plausible for a swim cycle, but the countdown site that would prove
+    "ticks, not milliseconds" is in the animation update (P2.2). P4 starts from `1 unit = 10 ms`.
+- What is missing: one trace from the animated-image frame timer to its delay field.
+- Non-blocking: both readings are visually safe (one 10 ms step; two candidate frame durations);
+  the committed `SpriteFrames` deliberately bake neither delay nor `-1` handling, and the raw
+  attributes stay in `assets_raw/extraction.json` so either can be re-applied without re-extracting.
+
+### Q-0033 - P2.15/P3 residual: runtime colourisation of grayscale sheets
+- OPEN (2026-11-02, EV-0153; first raised in P3.2). 36 of 246 base images are grayscale-only and the
+  `SIM*` fish pair a **black-bodied** base (eyes on black) with a silhouette mask, so the alpha merge
+  alone would render them black. The engine must colourise them at runtime (laser tier colours, wave
+  tints, fish species colours), and the manifest says nothing about it - there is no `color`/
+  `tint` attribute anywhere in `properties\resources.xml`.
+- What is missing: the call sites that set a colour on an `Image`/`AnimatedImage` before drawing
+  (expected in the drawing layer, P2.2/P2.10 territory, or in `Sexy::Graphics`).
+- Non-blocking: P3 keeps base and mask layers separate and P4 composites them; the colour values
+  are already in the P2 gameplay notes (fish species colours, laser tiers) even though the exact
+  engine mechanism is not traced.
+
+### Q-0034 - Cross-system: the simulation tick rate is 100 Hz in P2.1 but ~36 Hz in P2.7/P2.8/P2.9
+- OPEN (2026-11-02, raised while writing `docs/SPECS.md` §1.2; sources EV-0034, EV-0080, EV-0105,
+  EV-0114, EV-0117). Two recovered datasets imply different rates for the *same* update tick:
+  - **100 Hz.** The `SexyAppBase` ctor writes `10` into the frame-interval field at `0x4a26af`, and
+    `FUN_0049F1B4` consumes it as "ms per logic tick" with a 10-iteration catch-up loop (EV-0034).
+  - **~36 Hz.** Every gameplay timer is quoted in ticks and calibrated against wiki seconds: Blip's
+    instant-unlock test compares level age against `200`/`720` for 5 s/20 s (200/5 = 40, 720/20 =
+    36), Prego 930 ≈ 26 s, Meryl 1400 ≈ 39 s, Shrapnel 633..652 ≈ 18 s (EV-0080/EV-0105); the boss
+    arrival countdown of 300 ticks is called 8.3 s (EV-0117) and the 3000-tick wave clock 83.3 s
+    (EV-0114) - both of which are 36 Hz arithmetic.
+  The ratio is 100/36 ≈ 2.78, and the two groups cannot both be read the way their notes read them:
+  at 100 Hz the wave clock is 30 s and the boss arrival 3 s (against the 83 s and 8.3 s quoted in
+  P2.8/P2.9), while at 36 Hz the wrapper's 10 ms interval is not the tank's update period. Either the
+  wrapper ticks at 10 ms while the *tank* update runs every ~2.78th tick (an unwritten gate nobody
+  has located), or one of the two calibrations is wrong. Which reading matches the game's observable
+  cadence is not established - the wiki has no per-wave timing figure (wiki-refs), so this needs
+  measurement, not inference.
+- What is missing: the call site that advances the tank update relative to the wrapper's logic tick -
+  i.e. a frame counter, a second interval field, or a timer that gates `Tank::Update`. Bounded search
+  to run: the tank update's caller chain (`FUN_00547610` upward) for a counter compare against a
+  constant, plus a live measurement in the running game (P5.3) of any 3000-tick observable (wave
+  arrival) against a stopwatch.
+- Non-blocking: every P2 note already stores timers as **integer ticks**, so P4 can be written now
+  against a single `TICKS_PER_SECOND` constant and re-tuned once. `docs/SPECS.md` §1.2 is the
+  contract: keep the rate parameterised, do not bake seconds anywhere in the simulation.
+
+### Q-0035 - Food: nothing sets the landed flag, and `FUN_004D62D0`'s bottom behaviour is unrecovered
+- OPEN (2026-11-02, raised while writing `scripts/entities/food.gd` for P4.3; source P2.3 §1,
+  `p2.3-food-4F8AA0.json`).
+- `Food::Update` (`FUN_004F8AA0`) step 4 bobs only when `(char)[100]` / `+0x190` is set:
+
+  - `+0x190 == 0 || +0x184 != 0` -> fall `y += 1.5` (or the homing branch when `+0x185` is set);
+  - else -> the staged bob (`y >= 150 -> -8`, `135..150 -> -2.5`, `130..135 -> -1.5`,
+    `125..130 -> -1.0`, `120..125 -> -0.5`, `y < 120 -> +0x184 = 1`).
+- `+0x190` is written only by the ctor from `param_4`, and nothing recovered writes it afterwards, so
+  a pellet spawned with `flag = 0` falls forever and never enters the bob; a pellet spawned with
+  `flag = 1` starts bobbing from wherever it is. Neither reading matches "it drops, lands, then bobs",
+  which is what the game looks like. Either a caller passes `flag` contextually, or the setter lives in
+  the shared per-tick helper `FUN_004F22C0` / the tank's food list pass, neither of which was
+  decompiled for writes to `+0x190`.
+- Second loose end, same function, step 8: the non-star, non-breeding death path assigns `y` from
+  `FUN_004D62D0()` (a float result). Identity unrecovered - candidates are a bounce back into the
+  tank, a float/settle, or a y reset for the splash. The star (410 -> 400 + splash + remove) and
+  breeding (`+0x194 == 2` -> remove silently) branches are decoded and implemented.
+- What is missing: a write-reference sweep for `+0x190` across the food list pass and `FUN_004F22C0`,
+  and a run of `FUN_004D62D0` (its callers are the death path only).
+- Non-blocking: `scripts/entities/food.gd` implements every decoded branch exactly, enters the bob
+  only for a pellet spawned landed, and holds an ordinary pellet at the death line instead of
+  inventing a removal or a bounce (`tests/headless_entity_check.gd` asserts both). `docs/SPECS.md`
+  §3.2's wording ("landed pellet bobs on a 120..150-tick cycle") should be re-read against the y-band
+  reading when this closes.

@@ -1,0 +1,17 @@
+/* 0x498950 decompile (rea/ghidra) */
+
+
+void FUN_00498950(byte param_1)
+
+{
+  void *in_ECX;
+  
+  FUN_00498980();
+  if ((param_1 & 1) != 0) {
+                    /* WARNING: Subroutine does not return */
+    _free(in_ECX);
+  }
+  return;
+}
+
+

@@ -1,0 +1,19 @@
+/* 0x4896B0 decompile (rea/ghidra) */
+
+
+void FUN_004896b0(undefined4 param_1)
+
+{
+  int *piVar1;
+  int in_ECX;
+  
+  if (*(int *)(in_ECX + 0x4b4) != 0) {
+    piVar1 = (int *)(**(code **)(**(int **)(in_ECX + 0x4b4) + 0x20))(param_1);
+    if (piVar1 != (int *)0x0) {
+      (**(code **)(*piVar1 + 0x1c))(0,1);
+    }
+  }
+  return;
+}
+
+

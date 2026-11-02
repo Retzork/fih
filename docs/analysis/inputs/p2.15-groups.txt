@@ -1,0 +1,140 @@
+# P2.15 - resources.xml by group, cross-checked against the engine's own handlers
+# manifest: ../../Insaniquarium Deluxe/properties/resources.xml
+
+## group Init: images=11, fonts=2, sounds=1
+   SetDefaults chain: path=images idprefix=IMAGE_ -> path=data idprefix=FONT_ -> path=sounds idprefix=SOUND_
+   images: IMAGE_CURSOR_POINTER, IMAGE_CURSOR_HAND, IMAGE_CURSOR_DRAGGING, IMAGE_CURSOR_TEXT, IMAGE_BLANK, IMAGE_TITLEPAGE, IMAGE_TITLEPAGEMASK, IMAGE_LOADERBAR, IMAGE_LOADERBAROVER, IMAGE_LOADERBARLOADING, IMAGE_LOADERPLAY
+   fonts: FONT_JUNGLEFEVER10OUTLINE, FONT_JUNGLEFEVER17OUTLINE
+   sounds: SOUND_BUTTONCLICK
+
+## group Register: images=3, fonts=13, sounds=0
+   SetDefaults chain: path=data idprefix=FONT_ -> path=images idprefix=IMAGE_
+   images: IMAGE_DIALOG, IMAGE_DIALOGBUTTON, IMAGE_EDITBOX
+   fonts: FONT_LIDDIE12, FONT_LIDDIE15, FONT_LIDDIE18, FONT_JUNGLEFEVER12OUTLINE, FONT_JUNGLEFEVER15OUTLINE, FONT_BLAMBOTPRO8, FONT_BLAMBOTPRO15, FONT_TINY, FONT_TINYBOLD, FONT_CONTINUUMBOLD12, FONT_CONTINUUMBOLD12OUTLINE, FONT_CONTINUUMBOLD14, FONT_CONTINUUMBOLD14OUTLINE
+
+## group LoadingThread: images=232, fonts=0, sounds=64
+   SetDefaults chain: path=images idprefix=IMAGE_ -> path=sounds idprefix=SOUND_
+
+## cross-check (manifest ids vs statically referenced handler ids)
+manifest ids: 326; LoadingThread ids: 296; Register ids: 16
+in manifest, never referenced by a group handler (14): IMAGE_CURSOR_POINTER, IMAGE_CURSOR_HAND, IMAGE_CURSOR_DRAGGING, IMAGE_CURSOR_TEXT, IMAGE_BLANK, IMAGE_TITLEPAGE, IMAGE_TITLEPAGEMASK, IMAGE_LOADERBAR, IMAGE_LOADERBAROVER, IMAGE_LOADERBARLOADING, IMAGE_LOADERPLAY, FONT_JUNGLEFEVER10OUTLINE, FONT_JUNGLEFEVER17OUTLINE, SOUND_BUTTONCLICK
+referenced by a handler but absent from the manifest (0): 
+referenced by both handlers: none
+
+## animated entries, as the loader will slice them
+   IMAGE_MERYLBLINK   path=images\merylblink            cols=3 rows=1 anim=once framemap=[0,1,2,1,0,-1] perframedelay=[3,2,3,1,1,1]
+   IMAGE_MERYLTAIL    path=images\tailflop              cols=8 rows=1 anim=once framemap=[7,6,5,4,3,2,1,0] framedelay=2 begindelay=3
+   IMAGE_WAVESIDE     path=images\waveside              cols=1 rows=12 anim=pingpong framedelay=4 begindelay=6
+   IMAGE_WAVE         path=images\wavecenter            cols=1 rows=12 anim=pingpong framedelay=4 begindelay=6
+   IMAGE_SYLV         path=images\sylv                  cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_BALROG       path=images\balrog                cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_GUS          path=images\gus                   cols=10 rows=3 anim=loop framedelay=2
+   IMAGE_DESTRUCTOR   path=images\destructor            cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_ULYSSES      path=images\ulysses               cols=10 rows=3 anim=loop framedelay=4
+   IMAGE_PSYCHOSQUID  path=images\psychosquid           cols=10 rows=5 anim=loop framedelay=2
+   IMAGE_MINISYLV     path=images\smallsylv             cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_BOSS         path=images\boss                  cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_STINKY       path=images\stinky                cols=10 rows=3 anim=loop framedelay=2
+   IMAGE_NIKO         path=images\niko                  cols=10 rows=3 anim=pingpong framedelay=2
+   IMAGE_ITCHY        path=images\itchy                 cols=10 rows=4 anim=loop framedelay=2
+   IMAGE_PREGO        path=images\prego                 cols=10 rows=4 anim=loop framedelay=2
+   IMAGE_ZORF         path=images\zorf                  cols=10 rows=3 anim=loop framedelay=2
+   IMAGE_CLYDE        path=images\clyde                 cols=10 rows=1 anim=loop framedelay=4
+   IMAGE_VERT         path=images\vert                  cols=10 rows=2 anim=pingpong framedelay=2
+   IMAGE_RUFUS        path=images\rufus                 cols=10 rows=2 anim=loop framedelay=4
+   IMAGE_MERYL        path=images\meryl                 cols=10 rows=4 anim=loop framedelay=2
+   IMAGE_WADSWORTH    path=images\wadsworth             cols=10 rows=3 anim=loop framedelay=2
+   IMAGE_SEYMOUR      path=images\seymour               cols=10 rows=2 anim=loop framedelay=4
+   IMAGE_SHRAPNEL     path=images\shrapnel              cols=10 rows=2 anim=loop framedelay=4
+   IMAGE_GUMBO        path=images\gumbo                 cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_BLIP         path=images\blip                  cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_RHUBARB      path=images\rhubarb               cols=10 rows=2 anim=loop framedelay=4
+   IMAGE_NIMBUS       path=images\nimbus                cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_AMP          path=images\amp                   cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_GASH         path=images\gash                  cols=10 rows=3 anim=loop framedelay=2
+   IMAGE_ANGIE        path=images\angie                 cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_PRESTO       path=images\presto                cols=10 rows=3 anim=loop framedelay=2
+   IMAGE_BRINKLEY     path=images\brink                 cols=10 rows=2 anim=loop framedelay=4
+   IMAGE_NOSTRADAMUS  path=images\nostradamus           cols=10 rows=2 anim=loop framedelay=2
+   IMAGE_STANLEY      path=images\stanley               cols=10 rows=6 anim=loop framedelay=2
+   IMAGE_WALTER       path=images\walter                cols=10 rows=3 anim=pingpong framedelay=2
+   IMAGE_SCL_STINKY   path=images\scl_stinky            cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_NIKO     path=images\scl_niko              cols=10 rows=1 anim=pingpong framedelay=2
+   IMAGE_SCL_ITCHY    path=images\scl_itchy             cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_PREGO    path=images\scl_prego             cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_ZORF     path=images\scl_zorf              cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_CLYDE    path=images\scl_clyde             cols=10 rows=1 anim=loop framedelay=4
+   IMAGE_SCL_VERT     path=images\scl_vert              cols=10 rows=1 anim=pingpong framedelay=2
+   IMAGE_SCL_RUFUS    path=images\scl_rufus             cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_MERYL    path=images\scl_meryl             cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_WADSWORTH path=images\scl_wadsworth         cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_SEYMOUR  path=images\scl_seymour           cols=10 rows=1 anim=loop framedelay=4
+   IMAGE_SCL_SHRAPNEL path=images\scl_shrapnel          cols=10 rows=1 anim=loop framedelay=4
+   IMAGE_SCL_GUMBO    path=images\scl_gumbo             cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_BLIP     path=images\scl_blip              cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_RHUBARB  path=images\scl_rhubarb           cols=10 rows=1 anim=loop framedelay=4
+   IMAGE_SCL_NIMBUS   path=images\scl_nimbus            cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_AMP      path=images\scl_amp               cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_GASH     path=images\scl_gash              cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_ANGIE    path=images\scl_angie             cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_PRESTO   path=images\scl_presto            cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_BRINKLEY path=images\scl_brink             cols=10 rows=1 anim=loop framedelay=4
+   IMAGE_SCL_NOSTRADAMUS path=images\scl_nostradamus       cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_STANLEY  path=images\scl_stanley           cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_WALTER   path=images\scl_walter            cols=10 rows=1 anim=pingpong framedelay=2
+   IMAGE_SCL_OSCAR    path=images\scl_oscar             cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_GRUBBER  path=images\scl_grubber           cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_STARCATCHER path=images\scl_starcatcher       cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_GEKKO    path=images\scl_gekko             cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_BREEDER  path=images\scl_breeder           cols=10 rows=1 anim=loop framedelay=2
+   IMAGE_SCL_ULTRA    path=images\scl_ultra             cols=10 rows=1 anim=loop framedelay=2
+
+## non-animated entries that still declare a grid
+   IMAGE_MAINBUTTON   path=images\mainbutton            cols=3 rows=1 alphagrid=mainbutton_
+   IMAGE_LEFTBUTTON   path=images\leftbutton            cols=3 rows=1 alphagrid=leftbutton_
+   IMAGE_RIGHTBUTTON  path=images\rightbutton           cols=3 rows=1 alphagrid=rightbutton_
+   IMAGE_CENTERBUTTON path=images\centerbutton          cols=3 rows=1 alphagrid=centerbutton_
+   IMAGE_PETBUTTON    path=images\petbutton             cols=4 rows=1
+   IMAGE_SPARKLE      path=images\sparkle               cols=14 rows=1
+   IMAGE_SPARKS       path=images\sparks                cols=5 rows=1
+   IMAGE_ENERGYBALL   path=images\energyball            cols=6 rows=1
+   IMAGE_CHOMP        path=images\chomp                 cols=5 rows=1
+   IMAGE_LASERS       path=images\lasers                cols=10 rows=6
+   IMAGE_BUBBLES      path=images\bubbles               cols=5 rows=1
+   IMAGE_MONEY        path=images\money                 cols=10 rows=6
+   IMAGE_MISCITEMS    path=images\miscitems             cols=3 rows=1
+   IMAGE_SHELLS       path=images\shells                cols=20 rows=4
+   IMAGE_MONEYBAG     path=images\bag                   cols=1 rows=1
+   IMAGE_FOOD         path=images\food                  cols=10 rows=5
+   IMAGE_BALLS        path=images\balls                 cols=10 rows=4
+   IMAGE_MERYLLIPS    path=images\meryllipps            cols=3 rows=1
+   IMAGE_CROSSHAIR    path=images\crosshair             cols=5 rows=1
+   IMAGE_HATCHANIMATION path=images\hatchanimation        cols=3 rows=1
+   IMAGE_TROPHYBUTTONS path=images\trophybutts           cols=6 rows=1
+   IMAGE_EXPLOSION    path=images\explosion             cols=10 rows=1
+   IMAGE_EXPLOSIONSMALL path=images\explosionsmall        cols=10 rows=1
+   IMAGE_EXPLOSIONTINY path=images\explosiontiny         cols=10 rows=1
+   IMAGE_SMOKETINY    path=images\smoketiny             cols=20 rows=1
+   IMAGE_SMOKESMALL   path=images\smokesmall            cols=20 rows=1
+   IMAGE_SMOKEMISSILE path=images\smokemissile          cols=20 rows=1
+   IMAGE_WARPHOLE     path=images\warphole              cols=17 rows=1
+   IMAGE_WARPGLOW     path=images\warpglow              cols=17 rows=1
+   IMAGE_EGGPIECES    path=images\eggpieces             cols=3 rows=1
+   IMAGE_EGGSHARDS    path=images\eggshards             cols=8 rows=1
+   IMAGE_EGGCRACK1    path=images\eggcrack1             cols=13 rows=1
+   IMAGE_EGGCRACK2    path=images\eggcrack2             cols=10 rows=1
+   IMAGE_BUBBULATOR   path=images\bubbulator            cols=1 rows=20
+   IMAGE_STOREBACKDROPS path=images\storeaquariums        cols=6 rows=1
+   IMAGE_LASERUPGRADES path=images\lazergunz             cols=10 rows=1
+   IMAGE_MISSILE      path=images\missile               cols=16 rows=1
+   IMAGE_HUNGRYSWIM   path=images\hungryswim            cols=10 rows=5
+   IMAGE_BILATERUS    path=images\bilaterus             cols=10 rows=8
+   IMAGE_HALO         path=images\halo                  cols=10 rows=2
+   IMAGE_GUMBOLIGHT   path=images\gumbolight            cols=10 rows=2
+   IMAGE_AMPCHARGE    path=images\ampcharge             cols=10 rows=2
+   IMAGE_SMALLSWIM    path=images\smallswim             cols=10 rows=5
+   IMAGE_GRUBBER      path=images\grubgrubber           cols=10 rows=5
+   IMAGE_STARCATCHER  path=images\starcatcher           cols=10 rows=3
+   IMAGE_GEKKO        path=images\gekko                 cols=10 rows=7
+   IMAGE_BREEDER      path=images\breeder               cols=10 rows=9
+   IMAGE_ULTRA        path=images\ultravore             cols=10 rows=4

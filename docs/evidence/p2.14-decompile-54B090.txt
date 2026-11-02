@@ -1,0 +1,63 @@
+/* 0x54B090 decompile (rea/ghidra) */
+
+
+void FUN_0054b090(void)
+
+{
+  int iVar1;
+  int iVar2;
+  int *in_ECX;
+  int *unaff_ESI;
+  
+  if (DAT_005e28cc != '\0') {
+    iVar1 = *unaff_ESI;
+    if (iVar1 == 0) {
+      if (*in_ECX == 0x16) {
+        *in_ECX = 0;
+        *unaff_ESI = 4;
+        return;
+      }
+      if (*in_ECX == 0) {
+        *in_ECX = 0xc;
+        *unaff_ESI = 4;
+        return;
+      }
+    }
+    if (iVar1 == 2) {
+      iVar2 = *in_ECX;
+      if (iVar2 == 0x20) {
+        *in_ECX = 0x19;
+        *unaff_ESI = 4;
+        return;
+      }
+      if (iVar2 == 0x2d) {
+        *in_ECX = 0x25;
+        *unaff_ESI = 4;
+        return;
+      }
+      if (iVar2 == 0) {
+        *in_ECX = 0x2d;
+        *unaff_ESI = 4;
+        return;
+      }
+      if (iVar2 == 0x36) {
+        *in_ECX = 0x31;
+        *unaff_ESI = 4;
+        return;
+      }
+      if (iVar2 == 5) {
+        *in_ECX = 0x32;
+        *unaff_ESI = 4;
+        return;
+      }
+    }
+    if ((iVar1 == 0) && (*in_ECX == 0xd)) {
+      *in_ECX = 0x3a;
+      *unaff_ESI = 4;
+      return;
+    }
+  }
+  return;
+}
+
+
