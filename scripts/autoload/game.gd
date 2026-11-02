@@ -1,0 +1,56 @@
+extends Node
+## Game - application state that outlives a level: the active mode, the profile, and the shared
+## pause gates.
+##
+## Deliberately thin: this file owns *where the app is*, not what a level does. Level start, the
+## store, progression and saves are P4.4-P4.12 and live in their own nodes; they read `mode` from
+## here. See docs/ARCHITECTURE.md §4 and docs/SPECS.md §5.
+
+## Mode is an input to level start, never derived (SPECS.md §5, P2.11/EV-0126).
+enum Mode {
+	ADVENTURE = 0,
+	TIME_TRIAL = 1,
+	UNUSED = 2,
+	SANDBOX = 3,
+	CHALLENGE = 4,
+	VIRTUAL_TANK = 5,
+}
+
+## Tank save suffix per mode (P2.13/EV-0142: `userdata\%s%d.dat`).
+const SAVE_SUFFIX := {
+	Mode.ADVENTURE: "adv",
+	Mode.TIME_TRIAL: "tim",
+	Mode.SANDBOX: "snd",
+	Mode.CHALLENGE: "sur",
+	Mode.VIRTUAL_TANK: "sim",
+}
+
+signal mode_changed(mode: int)
+
+## Active mode. Written only by the main-menu buttons and the level-start dispatcher.
+var mode: int = Mode.ADVENTURE
+
+## Shared pause gate - the original's `Tank+0x94`. Pets and alien actions read this; it is not a
+## scene-tree pause, because the UI and screens keep updating while gameplay is held.
+var gameplay_paused := false
+
+
+func set_mode(new_mode: int) -> void:
+	if new_mode == mode:
+		return
+	mode = new_mode
+	mode_changed.emit(mode)
+
+
+## Save-file stem for the active mode, e.g. "adv3". P4.12 builds the path.
+func save_stem(profile_slot: int) -> String:
+	return "%s%d" % [SAVE_SUFFIX.get(mode, "adv"), profile_slot]
+
+
+func is_adventure() -> bool:
+	return mode == Mode.ADVENTURE
+
+
+## Virtual Tank plays no music and runs its own init (SPECS.md §5, P2.14/EV-0148).
+func silences_music() -> bool:
+	return mode == Mode.VIRTUAL_TANK
