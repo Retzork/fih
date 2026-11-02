@@ -1,28 +1,38 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Handover status: Phase 2 in progress (2026-11-01).** Phase 0, Phase 1 and Phase 3 are
-complete; Phase 2 is 11/18 done with **P2.13 (save/profile format) complete**. P2.1-P2.4 and
-P2.7-P2.13 are closed, P2.5 and P2.6 are substantially complete with tracked open questions, and
+**Handover status: Phase 2 closed (2026-11-02).** Phase 0, Phase 1 and Phase 3 are complete; Phase 2
+is 14/18 with **every technical system decoded** and `SPECS.md` written - only the two optional items
+P2.16 (screensaver variants) and P2.17 (cheats) remain. **P2.18 `docs/SPECS.md` is complete**: the
+behaviour-side contract for P4, twin of `PIPELINE.md` (D-0008), and the first thing to read before any
+Phase 4 task. It also raises **Q-0034**, the one genuine cross-system contradiction found while
+writing it: P2.1's wrapper loop is 10 ms (100 Hz) but P2.7-P2.9's gameplay timers calibrate at ~36 Hz
+(the ratio is 100/36 ≈ 2.78), so the effective simulation rate is parameterised until P5.3 measures
+it. P2.1-P2.4, P2.7-P2.15 and P2.18 are closed, P2.5 and P2.6 are substantially complete with
+tracked open questions, and
 P2.12 has its screen and dialog passes done (screen map, mode writer, store screen and stock
 refresh, level-start flow, all 13 screen constructors and their click handlers, the dialog base
 plus all ten dialog ctors and their click handlers); what is left there are the tracked open
-questions. Next is P2.14 (audio), then P2.15 and P2.18 `SPECS.md`.
-Phase 4 (Godot
-gameplay implementation) has not started: the repository currently contains the Godot project shell
-plus the imported sprite resources. `PLAN.md` is the source of truth for progress.
+questions.
+**Phase 4 is in progress:** P4.1 (tick/scene scaffold) and P4.2 (content registry) are complete and
+P4.3 is partial - `SimEntity`, the `Tank` host and `Food` are implemented and green headlessly;
+Fish, pets, aliens, coins and projectiles remain. The next task is the rest of P4.3 (Fish first).
+`PLAN.md` is the source of truth for progress.
 
 ## Start here
 
 1. **New agent session:** read `../AGENTS.md` first, then `PLAN.md` (mandatory). Follow the
    session-end checklist in `AGENTS.md`.
-2. **Want the current state quickly?** Read the `P2.13` entry in `PLAN.md`, then
-   `analysis/notes/p2.13-saves.md` (the whole tank body in order, both samples, load repairs,
-   EV-0144), then `analysis/notes/p2.12-menus.md` for the screen/vtable map, the dialog layer and
-   store population (EV-0131..EV-0140), then `analysis/notes/p2.11-modes.md` for the mode behavior
-   itself.
+2. **Want the current state quickly?** Read `SPECS.md` (the behaviour contract - it summarises every
+   system and maps the P4 tasks), then the newest note `analysis/notes/p2.15-resources.md` (EV-0150..
+   EV-0154), then `analysis/notes/p2.12-menus.md` for the screen/vtable map, the dialog layer and
+   store population (EV-0131..EV-0140) and `analysis/notes/p2.13-saves.md` for the save bodies
+   (EV-0144).
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
+5. **Writing gameplay code?** Read `SPECS.md` (behaviour) and `ARCHITECTURE.md` (tick model,
+   autoloads, coupling rules) first; per-tick work is `_sim_tick()` registered with `Sim`, never
+   `_physics_process`.
 
 ## Current state (handover snapshot)
 
@@ -30,9 +40,9 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
 | --- | --- |
 | P0 environment / tooling | Complete (13/13) |
 | P1 target identity | Complete (10/10) |
-| P2 reverse engineering | In progress (11/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.13 `[x]`; P2.14+ pending |
+| P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | Not started (0/14) |
+| P4 Godot implementation | In progress (2/14 + P4.3 partial): P4.1 architecture tick/scene scaffold, P4.2 content registry (326 ids, three load phases), P4.3 entity base + tank host + Food; three headless checks green |
 | P5 validation / polish | Not started (0/5) |
 
 - **P2.12 menus & UI flow (2026-10-29, first pass):** every screen class is a widget container plus
@@ -179,8 +189,43 @@ plus the imported sprite resources. `PLAN.md` is the source of truth for progres
   `analysis/notes/p2.13-saves.md`.
 - **P2.5 leftovers:** mode-enum naming is answered (EV-0126); coin-hit gameplay intent (Q-0010) ->
   runtime; VT beetle value. See `PLAN.md`.
-- **Next planned task:** P2.14 (audio: BASS usage, mo3 music playback, channel/mixing behavior),
-  then P2.15 (resources), then P2.18 `SPECS.md` to close Phase 2. P2.13 is closed (EV-0144);
+- **P2.14 audio (2026-11-01, complete):** the game ships **two mixers**. Effects are DirectSound:
+  `Sexy::SoundRes::ResourceManager` -> `Sexy::DSoundManager` -> `IDirectSoundBuffer`, a fixed pool
+  of **256** slot records (28 B at `+0x404`) with a per-slot volume array of doubles at `+0x2408`
+  (all 1.0), on the default device. Music is BASS: `Sexy::BassMusicInterface` over
+  `Sexy::BASS_INSTANCE`, which loads `.\bass.dll` and resolves 48 entry points into fixed dword
+  slots. `FUN_00488300` picks a null/FMOD/BASS interface off `app+0xF0`/`+0xF1`; the install ships
+  `bass.dll` and no `fmod.dll`, so the FMOD path (and its `_FSOUND_*` table) is dead. `SexyApp::Init`
+  preloads `music\{Alien,Lullaby,Insaniq2}.mo3` as ids **1/3/4**; a `.mo3` is read whole into memory
+  and passed to `BASS_MusicLoad(mem=1, ...)`, and the play slot always restarts with the loop bit
+  and can seek by order. Gameplay requests music through one `SetMusic(a, b)` (`FUN_0054B1A0`, 21
+  call sites); the per-stage selector gives stage 1-4 -> (0,22)/(0,0)/(2,32)/(2,45), the level
+  sentinel -> (0,13), and **Virtual Tank (mode 5) plays no music**. Effects are triggered by the id
+  alone (app vtable slot `0xD8` = `FUN_004896B0`), allocated by `FUN_00419320` from the pool
+  (`"Out of free sound ids"` when full) with the record's default volume/pan; all **65** `SOUND_*`
+  names are bound to their id globals. Volumes are doubles 0..1 at `app+0xD0`/`+0xD8`, persisted as
+  `MusicVolume`/`SfxVolume` percent. Evidence EV-0145..EV-0149; note
+  `analysis/notes/p2.14-audio.md`; open Q-0030/Q-0031.
+- **P2.15 resources (2026-11-02, complete):** `properties\resources.xml` is parsed by the game's own
+  XML tokenizer - `FUN_00418780` (`"Resource file not found: "`) -> `FUN_00418420` (only
+  `<Resources>`, else `"Invalid Section '"`, `"No id specified."`) -> `FUN_00417F10` (element
+  dispatch by vtable slot: `Image` `+0x08`, `Sound` `+0x04`, `Font` `+0x0C`, `SetDefaults` `+0x10`).
+  Ids are `SetDefaults idprefix` + `id`, paths are `SetDefaults path` + `path`, and files resolve
+  through a fixed six-extension probe (`.tga`,`.jpg`,`.png`,`.gif`,`.j2k`,`.jp2`). The manifest's
+  **326 ids partition exactly** across the group handlers - `Init` 14 (loader screen + cursors + 2
+  fonts + click sound), `Register` 16 (13 fonts + dialog skin), `LoadingThread` 296 (232 images +
+  64 sounds). `<Image>` entries are grids (`cols`/`rows`, row-major cells) with `anim` =
+  none/once/pingpong/loop, `framedelay` (all shipped values 2/4), `begindelay`/`enddelay` and the
+  parallel `framemap`/`perframedelay` lists; transparency is a **second file** - implicit `_name`
+  companions and explicit `alphaimage` (sheet-sized) / `alphagrid` (one cell, tiled) - merged as
+  alpha = mask blue channel. Elements are registered at parse time and loaded later by
+  `FUN_00419480` (failures are per-asset, not fatal); `GetImage`/`GetSound`/`GetFont` are three maps
+  that return deferred placeholders during the loading thread and otherwise throw
+  `"X resource not found: %s"`. Evidence EV-0150..EV-0154; note `analysis/notes/p2.15-resources.md`;
+  open Q-0032/Q-0033 (non-blocking).
+- **Next planned task:** P2.18 `SPECS.md` to close Phase 2 (P2.16 screensaver deltas and P2.17 cheats
+  stay optional). P2.15 is closed (EV-0150..EV-0154); P2.14 is closed (EV-0145..EV-0149); P2.13 is
+  closed (EV-0144);
   P2.12 itself is closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends tracked.
   Q-0018's tank-side call site is identified (`0x54782A` = `FUN_005409B0()` inside `FUN_00547610`,
   gated on tank 5 / `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`); the tutorial-loop owner and
@@ -218,8 +263,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 ```
 
 There is no playable scene yet. P4.1 (architecture doc/scenes/autoloads/tick model) is the first
-implementation task; read `PIPELINE.md` and the P2 notes' "Implementation spec for P4" sections
-before starting it.
+implementation task; read `SPECS.md` (behaviour contract, §12 maps each P4 task onto its section,
+note and asset set) and `PIPELINE.md` (asset contract) before starting it.
 
 ## Analysis toolchain
 
@@ -258,20 +303,23 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0144). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0154). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
-| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8, P2.9, P2.10, P2.11, P2.12 and P2.13 opens. |
-| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.11-modes.md`, `p2.12-menus.md`, `p2.13-saves.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
+| `SPECS.md` | Behaviour contract for P4 (P2.18 output): tick model, resource contract, entity rules, economy, modes, UI, persistence, audio, cross-system rules, shared constant sheet, open-question index. Read before any P4 task. |
+| `ARCHITECTURE.md` | Phase 4 design (P4.1): the tick contract and phase order, autoloads and scene tree, ownership map, coupling rules, project settings, verification commands, file map. |
+| `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8-P2.15 opens and **Q-0034** (tick rate, the one item that affects every timed system). |
+| `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.15-resources.md`, `p3-assets.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
 | `analysis/` | Inventories (`resources.json`, `extraction.json`, ...), snapshots (gitignored), evidence maps. |
 | `evidence/` | Raw REA evidence JSON exports cited by EV IDs. |
 
 ## Handover checklist
 
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
-- [ ] Read the latest EVIDENCE entries and the current system note (`p2.13-saves.md` now).
-- [ ] Pick the next task from `PLAN.md` (P2.14, then P2.15-P2.18);
-  check its open questions (Q-0018, Q-0028, Q-0029) first.
+- [ ] Read `SPECS.md` and the latest EVIDENCE entries; the newest system note is
+  `p2.15-resources.md`.
+- [ ] Pick the next task from `PLAN.md` (P4.1, Phase 4); check the open questions first
+  (Q-0018, Q-0028..Q-0034 - Q-0034 the tick rate affects everything timed).
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended
   `EVIDENCE.md`, `DECISIONS.md` questions, note's P4 spec, saved raw output, and a commit.

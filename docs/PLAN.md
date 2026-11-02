@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-11-01 (P2.13 is **complete** - EV-0144 decodes the whole tank save body: `FUN_00546240` is both writer and reader, and the order is header (version `0x36`, tank, level, `+0x2A5`, `+0x2A6`, entity count), entity stream (type `0x1F` skipped), optional `+0x110` object, overlay block, 24 per-pet flags, 316 scalar bytes, 12 x 17-byte store rows, then SaveGame's `__time64`. Section starts are `42+E+S` / `454+E+S` / `658+E+S` and both real samples parse with no remainder; field meanings, load-time repairs, the store `present` widget latch and the "non-Adventure saves level 5" rule are all in EV-0144 + note §6; residual unbound fields are bounded in Q-0029. Earlier: P2.13 EV-0143 settles Q-0019 - `scr%d.dat` is the bonus-shell **escrow**, 102 raw dwords gated by the `profile+0x88` random token, filled by SaveGame's `Tank+0x400` flush and cashed into the profile's Shells by `FUN_00514B00`; no header, no cipher. EV-0142 - the tank save is one file per game mode: `FUN_00505880(out, mode, slot)` formats `userdata\%s%d.dat` with `adv` (mode 0/2), `tim` (1), `snd` (3), `sur` (4) or `sim` (5), `slot` = `[profile+0x44]`, so `sim%d.dat` is the Virtual Tank save; the save chain is `FUN_005497A0` -> `FUN_00546990` and the load chain `FUN_0054CB20` -> `FUN_00546AA0`, and `FUN_005059D0` deletes `user`/`scr` plus all six mode files via `FUN_0047FBC0` = `DeleteFileA`. P2.13 EV-0141 - Q-0026 is settled: `profile+0x72..+0x77` are the six backdrop ownership flags, because the store roller's dropped blocks build a candidate vector from the clear entries and buy one backdrop as kind 3 for 15000, falling back to a random pet only when all six are owned. P2.12 is **complete** (EV-0140 closes the last semantic gap - `UserDialog`'s digits-only `"0"` box is the shells transfer amount of the "TRANSFER SHELLS" mode, and Rename/Delete read the highlighted list row; EV-0139 - the edit character filter is the edit listener's slot 2, whose default is `mov al,1; ret 8`, and `RegisterDialog` relabels the base's auto buttons to Register/Cancel; two §11.2 listener addresses fixed; the two remaining dialog loose ends are Q-0027); P2.12 EV-0138 closed Q-0018's price-getter receiver - the store price is a property of the rolled prize, whose kind sits at `+0x8C`; P2.12 dialog pass before it - the `Sexy::Dialog` base with its kind-driven built-in button row, the ten dialog ctors and their openers, five click handlers, the `MoneyDialog` naming conflict as D-0011 (EV-0137); P2.12 screen pass before it - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
+Last updated: 2026-11-02 (P4.2 is **complete** - the content registry and the three load phases are in. `tools/godot/gen_content.gd` turns the three P3 manifests into the committed `resources/content.json` (326 ids: 246 images, 65 sounds, 15 fonts) and enforces P2.15's partition - Init 14 / Register 16 / LoadingThread 296 - so a drifted manifest fails the build instead of the game; regeneration is byte-stable. `Content` (`scripts/autoload/content.gd`) is now autoload #1: `bootstrap()` resolves the 14 Init ids (loading screen, cursors, blank, two fonts, click sound) from `_ready()`, before any scene exists, exactly the ordering constraint P2.15 §2 records; `ensure_phase(Phase.REGISTER)` pulls the dialog skin + 13 UI fonts before the first menu; `start_phase(Phase.LOADING)` + `pump(budget_ms)` streams the remaining 232 images and 64 sounds a slice at a time so P4.5's loading bar can draw between slices. Each id resolves once into a typed handle - `ImageRes` (grid, SpriteFrames, `framemap` order, tick delays, `perframedelay`), `AudioStream` (+ manifest volume, + `alias` keys such as `SOUND_START` -> `SOUND_AWOOGA`), `FontFile` (+ native size) - and a missing id is a reported error plus null rather than the original's throw. Verified headlessly: `tests/headless_content_check.gd` passes **51 assertions** (phase table, each phase exposing only its own ids, 14/16/296, pump budget/progress, animation metadata including MERYLBLINK's `framemap` with its trailing `-1`, aliases, missing-id behaviour) and a 400-frame boot logs Init 14 -> Register 16 -> LoadingThread 296 with no script error. Earlier: P4.1 is **complete** - Phase 4 has started. `docs/ARCHITECTURE.md` fixes the tick model, the autoload set and the coupling rules, and the scaffold it describes is in the repository and verified: `scripts/autoload/sim.gd` drives a fixed 10 ms tick with the original's 10-slice per-frame catch-up cap, 1000 ms backlog clamp and 0.85 update multiplier, with a phase registry that enforces the `CLOCK -> FISH -> PETS -> ALIENS -> PROJECTILES -> COLLISION -> FOOD -> PARTICLES` order from SPECS §9.1 (per-entity work is `_sim_tick()`, never `_physics_process` or a per-tick signal); `game.gd` holds the mode enum, the per-mode save stems and the shared `Tank+0x94` pause gate; `screens.gd` the screen stack and the single modal dialog slot; `scenes/main.tscn` mounts the Screens and Debug layers and `main.gd` drives the P2.1 `FPS: %d` overlay. `project.godot` now encodes the contract: 640x480 viewport, `keep` stretch, nearest-filtered canvas textures, main scene and the three autoloads. Q-0034 is honoured as a single `TICKS_PER_SECOND` constant pair carrying both readings. Verified headlessly - `tests/headless_sim_check.gd` passes **17 assertions** (sub-slice frames produce no tick, an exact 10 ms slice produces one, the 10-tick cap, the 1000 ms clamp keeps pending time instead of dropping it, `flush_backlog`, phase order, re-registration order, unregister/clear, freed registrants skipped, ticks->seconds) and `--headless --quit-after 180` boots the scene with no script error. Earlier: P2.18 is **complete** - `docs/SPECS.md` now exists as the behaviour-side twin of `docs/PIPELINE.md` (D-0008), so Phase 2 is closed apart from the two optional items P2.16/P2.17. Writing it surfaced one genuine cross-system contradiction that is now tracked as **Q-0034**: P2.1 recovered a 10 ms (100 Hz) wrapper loop from the `SexyAppBase` ctor, while every gameplay timer in P2.7/P2.8/P2.9 is calibrated at **~36 Hz** (Blip 200/720 ticks = 5 s/20 s, boss arrival 300 ticks = 8.3 s, wave clock 3000 ticks = 83.3 s); at 100 Hz the same constants read as 30 s and 3 s, so either an unlocated gate makes the tank update run every ~2.78th wrapper tick or one calibration is wrong. `SPECS.md` §1.2 keeps the rate parameterised as one `TICKS_PER_SECOND` constant and forbids baking seconds into the simulation; P5.3 settles it by measurement. `SPECS.md` carries the rest of the contract: the tick model and click-handler order, the three-phase resource load (P2.15), the entity id space and spawn recipe, fish/feeding/growth/death, the single-alien-plus-kind-table model with the wave clock and attack models, the boss table, projectiles and damage formula, the economy gate order, the mode matrix with its per-mode save files, the UI screen/dialog data model, the persistence contract with its load repairs and golden-file tests, the two-mixer audio table, eight cross-system rules, a shared constant sheet (the seed of P5.1), the open-question index and a mapping onto P4.1-P4.14. Earlier: P2.15 is **complete** - EV-0150..EV-0154 decode the resource system. `properties\resources.xml` is parsed by the game's own XML tokenizer (`FUN_00418780` -> `FUN_00418420` -> `FUN_00417F10`) into three `<Resources>` groups; every id is `idprefix` + `id` and every path is the group's `SetDefaults path` + the entry's `path`, resolved through a fixed six-extension probe (`.tga`/`.jpg`/`.png`/`.gif`/`.j2k`/`.jp2`). The manifest's **326 ids partition exactly** across the three group handlers - `Init` 14, `Register` 16, `LoadingThread` 296 (232 images + 64 sounds) - which is simultaneously the strongest proof of the id rule and of the shipped binary/data pair. An `<Image>` entry is a grid (`cols`/`rows`, row-major cells) with `anim` = none/once/pingpong/loop, `framedelay` (every shipped value 2 or 4, i.e. 10 ms ticks under P2.1's clock), `begindelay`/`enddelay` and the parallel `framemap`/`perframedelay` lists; transparency is always a **second file** - implicit `_name` companions (187 images) and explicit `alphaimage` (sheet-sized) / `alphagrid` (one grid cell, tiled) - merged as alpha = the mask's blue channel. Elements are only *registered* at parse time; `FUN_00419480` loads them later, and the three typed lookups (`GetImage`/`GetSound`/`GetFont`, three separate maps) hand back deferred placeholders while the loading thread is mid-run and otherwise throw `"X resource not found: %s"`. Note `docs/analysis/notes/p2.15-resources.md` ends with the P4 resource spec; Q-0032 (`framemap` `-1`, the `framedelay` unit) and Q-0033 (grayscale tinting) stay open without blocking the port. Earlier: P2.14 is **complete** - EV-0145..EV-0149 settle the audio architecture: effects are DirectSound (`Sexy::DSoundManager`, a 256-slot pool of 28-byte records with a per-slot volume array at `+0x2408`, loaded through `Sexy::SoundRes::ResourceManager` and triggered by app vtable slot `0xD8` = `FUN_004896B0(id)` -> manager slot 8 -> instance slot 7) while music is BASS (`Sexy::BassMusicInterface`, `.\bass.dll` loaded by `FUN_00498010` with a 48-entry function-pointer table); `SexyApp::Init` preloads the three `.mo3` tracks as ids 1/3/4 and the game layer requests music through one `SetMusic(a, b)` (`FUN_0054B1A0`, 21 call sites) whose per-stage selector silences Virtual Tank; all 65 `SOUND_*` names are bound to their id globals. Open: Q-0030 (event triggers for 33/65 sounds), Q-0031 (music parameter wiring, `BASS_MusicLoad` flags, backend switches). Earlier: P2.13 is **complete** - EV-0144 decodes the whole tank save body: `FUN_00546240` is both writer and reader, and the order is header (version `0x36`, tank, level, `+0x2A5`, `+0x2A6`, entity count), entity stream (type `0x1F` skipped), optional `+0x110` object, overlay block, 24 per-pet flags, 316 scalar bytes, 12 x 17-byte store rows, then SaveGame's `__time64`. Section starts are `42+E+S` / `454+E+S` / `658+E+S` and both real samples parse with no remainder; field meanings, load-time repairs, the store `present` widget latch and the "non-Adventure saves level 5" rule are all in EV-0144 + note §6; residual unbound fields are bounded in Q-0029. Earlier: P2.13 EV-0143 settles Q-0019 - `scr%d.dat` is the bonus-shell **escrow**, 102 raw dwords gated by the `profile+0x88` random token, filled by SaveGame's `Tank+0x400` flush and cashed into the profile's Shells by `FUN_00514B00`; no header, no cipher. EV-0142 - the tank save is one file per game mode: `FUN_00505880(out, mode, slot)` formats `userdata\%s%d.dat` with `adv` (mode 0/2), `tim` (1), `snd` (3), `sur` (4) or `sim` (5), `slot` = `[profile+0x44]`, so `sim%d.dat` is the Virtual Tank save; the save chain is `FUN_005497A0` -> `FUN_00546990` and the load chain `FUN_0054CB20` -> `FUN_00546AA0`, and `FUN_005059D0` deletes `user`/`scr` plus all six mode files via `FUN_0047FBC0` = `DeleteFileA`. P2.13 EV-0141 - Q-0026 is settled: `profile+0x72..+0x77` are the six backdrop ownership flags, because the store roller's dropped blocks build a candidate vector from the clear entries and buy one backdrop as kind 3 for 15000, falling back to a random pet only when all six are owned. P2.12 is **complete** (EV-0140 closes the last semantic gap - `UserDialog`'s digits-only `"0"` box is the shells transfer amount of the "TRANSFER SHELLS" mode, and Rename/Delete read the highlighted list row; EV-0139 - the edit character filter is the edit listener's slot 2, whose default is `mov al,1; ret 8`, and `RegisterDialog` relabels the base's auto buttons to Register/Cancel; two §11.2 listener addresses fixed; the two remaining dialog loose ends are Q-0027); P2.12 EV-0138 closed Q-0018's price-getter receiver - the store price is a property of the rolled prize, whose kind sits at `+0x8C`; P2.12 dialog pass before it - the `Sexy::Dialog` base with its kind-driven built-in button row, the ten dialog ctors and their openers, five click handlers, the `MoneyDialog` naming conflict as D-0011 (EV-0137); P2.12 screen pass before it - the ctor map for all 13 screens via the RTTI/immediate scan, the per-screen click wire-up, the story-mask gate; P2.12 store pass before it - widget/screen slot maps, the stock refresh, the SOLD/price rule; P2.12 menus first pass landed before that - screen/vtable map, the mode writer, store screen and level-start flow; P2.11 modes complete; P2.10 weapons complete; P2.9 bosses complete; P2.8 aliens complete; P2.7 pets complete; P2.4 closed; P2.5 done, mode naming answered by P2.11 (EV-0126); P2.6 second pass complete except the open questions below. Object factory + type ids, spawn recipe, Tank
 save/load serializer (EV-0044); Food entity/physics/drop flow (EV-0045); money/`SpendMoney`+loan,
 store enum, BuyItem hub, spawn map (EV-0046); coin values/AddMoney/collection/spawn (EV-0047);
 click-feed, hunger counter, eating/growth pipeline, coin scheduler (EV-0048); species map, ctor
@@ -84,7 +84,18 @@ tank update, not the click handler (EV-0129); and `FUN_004D80C0` is an object-ki
 unreachable and every earlier "demo" reading of that predicate is withdrawn (EV-0130). Note
 `docs\analysis\notes\p2.11-modes.md`. New open item: Q-0024 (mode writer, `+0x19C` receiver,
 `Tank+0x4FE` writer, `+0x2DC`/`+0x2E0`, VT helpers).
-Next: P2.14 (audio: BASS usage, mo3 music playback, channel/mixing behavior). P2.13 is **complete**
+Next: **P4.3 continued** (the entity set: Fish first, then pets/aliens/coins/projectiles) - Phase 2 is
+closed by `docs/SPECS.md`, the P4.1
+scaffold and the P4.2 content registry are in place, P2.16 screensaver and P2.17 cheats stay optional,
+and P5.3 must settle Q-0034 (the 100 Hz vs 36 Hz tick rate) before tuning feel. P4.2 is **done**
+(2026-11-02: `Content` autoload + `resources/content.json` + 51-assertion
+`tests/headless_content_check.gd`). P4.1 is **done** (2026-11-02: `docs/ARCHITECTURE.md` + the
+`Sim`/`Game`/`Screens` autoloads, `scenes/main.tscn`, 17-assertion `tests/headless_sim_check.gd`). P2.18 is **complete** (2026-11-02,
+`docs/SPECS.md`; Q-0034 raised). P2.15 is **complete** (EV-0150..EV-0154; note
+`docs/analysis/notes/p2.15-resources.md`, Q-0032/Q-0033 open and non-blocking).
+P2.14 is **complete** (EV-0145..EV-0149; note
+`docs/analysis/notes/p2.14-audio.md` ends with the P4 audio spec; Q-0030/Q-0031 stay open without
+blocking the port). P2.13 is **complete**
 (EV-0144: the whole tank body is decoded and byte-verified on both samples; Q-0029 bounds the
 residual fields). Q-0018's tank-side xref is identified - `0x54782A` is the `FUN_005409B0()` call
 inside `FUN_00547610`, gated on tank 5 / `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`, i.e. the
@@ -94,7 +105,8 @@ the store roller names the six flags as backdrops (kind 3, 15000 each, EV-0141).
 dialog loose ends that stay open without blocking the port (OptionsDialog's `+0x18C` writer and the
 `manager+0x838..0x83E` screen-saver flag writers); its third item, `UserDialog`'s digits-only `"0"`
 box, closed in EV-0140 as the shells transfer amount of the "TRANSFER SHELLS" mode; Q-0025's
-`manager+0x738` writer stays open. Then P2.15 (resources) and P2.18 `SPECS.md` to close Phase 2.
+`manager+0x738` writer stays open. P2.15 (resources) is closed by EV-0150..EV-0154; P2.18
+`SPECS.md` is what remains of Phase 2.
 P2.8 residuals stay in Q-0020 (kind 1 vs 2, the gate's four sub-predicates, vtable slots 77/75, the
 Gus pellet hp cost, `FUN_005442C0` death animation, tank flag writers). P2.6 remains open
 on Q-0013 (trophy/story gate), Q-0014 (mode 2), Q-0015 (`+0x58`/`+0x50` semantics), Q-0016
@@ -103,7 +115,7 @@ EV-0135, only the normal item's call-site owner is left), Q-0028 (the save/delet
 `FUN_00537BF0()`, the `[app+0x511]` no-write byte and the
 Continue handler's pre-start delete). P2.5 leftovers: mode enum naming is **answered** (EV-0126);
 coin-hit intent Q-0010 ->
-runtime; VT beetle value. Phase 2 closes with P2.18 `docs\SPECS.md` per D-0008. 
+runtime; VT beetle value. Phase 2 is closed by `docs\SPECS.md` (P2.18, D-0008). 
 
 Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - `[!]` blocked
 
@@ -113,9 +125,9 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | --- | --- | --- | --- | --- |
 | P0 | Environment & tooling | 13 | 13 | `[x]` |
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
-| P2 | Reverse engineer game systems | 11 | 18 | `[~]` |
+| P2 | Reverse engineer game systems | 14 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
-| P4 | Godot implementation | 0 | 14 | `[ ]` |
+| P4 | Godot implementation | 2 | 14 | `[~]` |
 | P5 | Validation & polish | 0 | 5 | `[ ]` |
 
 ---
@@ -393,15 +405,52 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
   cleanup), the store `present` latch (widget-built, not "sold") and the `sim1` level 5
   (non-Adventure modes write level 5) are in EV-0144 and note §6. Residual unbound fields are
   bounded in Q-0029; they do not block the P4 model.)
-- [ ] **P2.14** Audio system: BASS usage, mo3 music playback, channel/mixing behavior
-- [ ] **P2.15** Resource system: `properties\resources.xml` semantics (image/animation/sound tables)
-- [ ] **P2.16** Screensaver variants (`Insaniquarium.scr`, `WinFish_Scr.exe`): feature deltas
-- [ ] **P2.17** Cheat codes / debug hooks (string search; document only)
+- [x] **P2.14** Audio system: BASS usage, mo3 music playback, channel/mixing behavior
+  (2026-11-01 complete: the module carries **two audio engines** - effects go
+  `Sexy::SoundRes::ResourceManager` -> `Sexy::DSoundManager` -> `IDirectSoundBuffer` (256-slot pool
+  of 28-byte records + a 256-double per-slot volume array, `DirectSoundCreate` on the default
+  device), music goes `Sexy::BassMusicInterface` -> BASS via `Sexy::BASS_INSTANCE`, which
+  `LoadLibrary(".\\bass.dll")` and resolves 48 entry points into fixed dword slots (fatal dialog
+  when both volume entries are missing); the factory `FUN_00488300` picks null/FMOD/BASS off
+  `app+0xF0`/`+0xF1` and the install ships `bass.dll` but no `fmod.dll`, so the FMOD path is dead
+  (EV-0145/EV-0146). `SexyApp::Init` preloads `music\{Alien,Lullaby,Insaniq2}.mo3` as ids 1/3/4
+  through music slot 1, which reads a `.mo3` whole into memory and calls `BASS_MusicLoad(mem=1,...)`
+  (its extension probe is wav/ogg/mp3 only); slot 2 is the looping play/seek (EV-0147). The game
+  layer has one music entry `SetMusic(a, b)` = `FUN_0054B1A0` with 21 call sites, and the per-stage
+  selector `FUN_0054B2D0` maps stage 1-4 -> (0,22)/(0,0)/(2,32)/(2,45) and never runs in Virtual
+  Tank (mode 5), i.e. VT has no music; an optional remap gated on `DAT_005e28cc` rewrites every
+  pair to music 4 with a different order (EV-0148). Effects: `FUN_00419320` allocates a free slot
+  (`"Out of free sound ids"` when full) and applies the record's default volume/pan; app vtable
+  slot `0xD8` `FUN_004896B0(id)` is the only play entry and takes the id alone (EV-0149). All 65
+  `SOUND_*` names are bound to their id globals (`docs/analysis/inputs/p2.14-sound-table.txt`), and
+  the options block stores `MusicVolume`/`SfxVolume` as percent, loaded as doubles at
+  `app+0xD0`/`+0xD8`. Note `docs/analysis/notes/p2.14-audio.md`. Open: Q-0030, Q-0031.)
+- [x] **P2.15** Resource system: `properties\resources.xml` semantics (image/animation/sound tables)
+  (2026-11-02 - EV-0150 the three-level parser and its fatal error paths, EV-0151 the `idprefix`/`path`
+  model and the six-extension probe plus the **326/326** id partition across `Init` 14 /
+  `Register` 16 / `LoadingThread` 296, EV-0152 the `<Image>` attribute set with `rows`/`cols` fields and
+  the `anim` enum (56 loop, 8 pingpong, 2 once) with all-`2`/`4` frame delays, EV-0153 the two-file alpha
+  model (`_` companion, sheet-sized `alphaimage`, cell-sized `alphagrid`, alpha = mask blue channel),
+  EV-0154 the group contents, the deferred entry loader (`FUN_00419480`, non-fatal per-asset failures,
+  `!ref:` fonts) and the three typed lookups with their deferred-placeholder rule. Note
+  `docs/analysis/notes/p2.15-resources.md` ends with the P4 spec. Ghidra could not decompile the
+  `LoadingThread` handler (`0x5073E0`, empty result twice); its 296 ids were recovered statically from
+  the `push "<id>"` sites - recorded in EV-0154 note 3. Open: Q-0032 (`framemap` `-1`,
+  `framedelay` unit), Q-0033 (grayscale tinting).)
+- [ ] **P2.16** (optional) Screensaver variants (`Insaniquarium.scr`, `WinFish_Scr.exe`): feature deltas
+- [ ] **P2.17** (optional) Cheat codes / debug hooks (string search; document only)
   (2026-10-16 partial: `FUN_005404A0` mode toggles - Wavy/Original Prego Sound/Original Breeder
   Sound/Ultra Prego Sound/Void/Space/Zombie (`DAT_005e89ce`) -> EV-0046; `Tank::SetTankIndex`
   `FUN_00538A10` 1..6.)
-- [ ] **P2.18** Write `docs\SPECS.md`: cross-system implementation contract for P4 (per-system
+- [x] **P2.18** Write `docs\SPECS.md`: cross-system implementation contract for P4 (per-system
   specs come from the P2.1-P2.17 notes; format modeled on `docs\PIPELINE.md`). (D-0008)
+  (2026-11-02 - `docs/SPECS.md` written: 14 sections covering the tick model, resource contract,
+  entity/tank/creature rules, economy and progression, the mode matrix, the UI shell, persistence,
+  audio, eight cross-system rules, a shared constant sheet seeded from every system's P4 spec, the
+  open-question index, the P4.1-P4.14 mapping and the deliberate divergences. No new binary evidence
+  (synthesis of EV-0022..EV-0154). One new question: **Q-0034**, the 100 Hz (P2.1 ctor constant) vs
+  ~36 Hz (P2.7/P2.8/P2.9 timer calibration) tick-rate conflict - parameterised in SPECS §1.2, to be
+  settled by measurement in P5.3. Phase 2 is closed except optional P2.16/P2.17.)
 
 ## P3 - Asset extraction & pipeline
 
@@ -425,12 +474,61 @@ as evidence dictates; P1.7 + resources.xml will confirm the actual rosters):
 
 ## P4 - Godot implementation
 
-Read `docs\PIPELINE.md` (asset contract) and the P2 implementation specs (`docs\SPECS.md` once
-P2.18 lands) before starting; P4 tasks below assume both exist.
+Read `docs\PIPELINE.md` (asset contract) and `docs\SPECS.md` (behaviour contract) before starting;
+both exist. Per-system detail lives in the fifteen `docs\analysis\notes\p2*.md` dossiers, each of
+which ends with its own P4 spec; `SPECS.md` §12 maps every task below onto a section + note + asset
+set.
 
-- [ ] **P4.1** Architecture doc: scenes, autoloads, signals, tick model mirroring P2.1
-- [ ] **P4.2** Resource loader mirroring resources.xml semantics (P2.15)
-- [ ] **P4.3** Core entities: Fish, Pet, Alien, Coin, Projectile, Food (state machines from P2.2-P2.10)
+- [x] **P4.1** Architecture doc: scenes, autoloads, signals, tick model mirroring P2.1
+  (2026-11-02 - `docs/ARCHITECTURE.md` plus the scaffold it describes: `Sim` autoload = the fixed
+  10 ms tick driver with the original's 10-slice catch-up cap, 1000 ms backlog clamp and 0.85
+  multiplier, plus the `CLOCK/FISH/PETS/ALIENS/PROJECTILES/COLLISION/FOOD/PARTICLES` phase registry
+  that enforces SPECS §9.1's order; `Game` = mode enum + save stems + the shared pause gate;
+  `Screens` = screen stack + single modal slot; `scenes/main.tscn` = Screens/Debug layers. Project
+  settings now encode 640x480, `keep` stretch, nearest filtering. Q-0034 is honoured as one
+  `TICK_MS`/`TICKS_PER_SECOND` constant pair with a comment stating both readings. Verified headlessly:
+  `tests/headless_sim_check.gd` passes 17 assertions (sub-slice frames, exact slice, 10-tick cap,
+  1000 ms clamp with pending time kept, `flush_backlog`, phase order, re-registration, unregister/
+  clear, freed-registrant skip, tick->seconds) and `--quit-after 180` boots the scene with no script
+  error. No binary evidence - implementation only.)
+- [x] **P4.2** Resource loader mirroring resources.xml semantics (P2.15)
+  (2026-11-02 - `tools/godot/gen_content.gd` emits the committed `resources/content.json` from the
+  three P3 manifests, enforcing the group partition (Init 14 / Register 16 / LoadingThread 296 = 326)
+  and failing on a missing asset or a different split; regeneration is byte-stable. `Content`
+  (`scripts/autoload/content.gd`, autoload #1) resolves every id once into a typed handle - `IMAGE_*`
+  -> `ImageRes` (`scripts/data/image_res.gd`: grid, SpriteFrames, `framemap` playback order, tick
+  delays, `perframedelay`), `SOUND_*` -> `AudioStream` + manifest volume + `alias` keys
+  (`SOUND_START` -> `SOUND_AWOOGA`), `FONT_*` -> `FontFile` + native size - and enforces the load
+  order: `bootstrap()` completes INIT before the first frame, `ensure_phase(REGISTER)` pulls the
+  dialog skin on demand, `start_phase(LOADING)` + `pump(budget_ms)` loads the 296 bulk resources a
+  slice at a time behind the (P4.5) loading bar. Missing ids are reported and return null rather than
+  throwing. `Main` now pumps the loading phase and the debug overlay shows `content N/326`. Verified
+  headlessly: `tests/headless_content_check.gd` passes **51 assertions** (phase table, Init-before-
+  anything, each phase exposing only its own ids, 14/16/296 partition, pump progress/budget, typed
+  handles and animation metadata incl. MERYLBLINK's `framemap` + `-1` placeholder, aliases, missing-id
+  behaviour) and `--quit-after 400` boots the real autoload path, logging Init 14 -> Register 16 ->
+  LoadingThread 296 with no script error. No binary evidence - implementation only.)
+- [~] **P4.3** Core entities: Fish, Pet, Alien, Coin, Projectile, Food (state machines from P2.2-P2.10)
+  (2026-11-02 - **base + Food landed, five entity types remain.** `SimEntity`
+  (`scripts/entities/sim_entity.gd`) is the tick seam: the tank assigns its phase, `_sim_tick()`
+  applies the pause gate and tick counter, `_advance()` is the only per-tick hook, `despawn()`
+  unregisters before the free so an entity may despawn itself mid-tick. `Tank`
+  (`scripts/tank/tank.gd`) owns them: `spawn(entity, phase)` parents to the phase's draw layer and
+  registers with `Sim` (one entity, one phase, by construction), `layer_for()` orders
+  FOOD < FISH < PETS < ALIENS < PROJECTILES < PARTICLES, `shutdown()` is the teardown (despawn all,
+  unregister, drop the backlog), `rng` is one seeded stream per level, and `is_paused()` ORs
+  `Tank.paused` (the original's `Tank+0x94`) with an injected `Game.gameplay_paused` so the checks need
+  no autoload. `Food` (`scripts/entities/food.gd`) implements P2.3 §1's decoded update: fall 1.5/tick,
+  drift `vy -2`/`vx ±2` decaying 0.05, x clamp 20..550, death at 410 (400 for a star potion, which
+  splashes and removes), the variant-2 silent removal, `lifetime`/`inedible` counters, animation wrap at
+  `cycle*10`, homing at (550,30) in sevenths, and the 120..150 bob bands. **Q-0035 raised**: nothing
+  recovered sets `landed`/`+0x190`, and step 8's remaining branch calls `FUN_004D62D0` whose effect is
+  unknown, so a dropped pellet falls (the bob is entered only for a spawned-landed pellet) and an
+  ordinary pellet is held at the death line instead of guessing a bounce or a removal. Verified
+  headlessly: `tests/headless_entity_check.gd` passes **38 assertions** (phase assignment,
+  phase-ordered ticking, layers, despawn, both pause gates, teardown, seeded-RNG reproducibility, and
+  every Food rule above). Remaining for this item: Fish (P2.2/P2.3), pets (P2.7), aliens + bosses
+  (P2.8/P2.9), coins (P2.5), projectiles (P2.10).)
 - [ ] **P4.4** Tank simulation + feeding loop (from P2.2/P2.3)
 - [ ] **P4.5** Economy & store UI (P2.5)
 - [ ] **P4.6** Egg/level/tank progression + trophy room (P2.6)
