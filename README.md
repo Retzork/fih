@@ -17,7 +17,7 @@ P2.7-P2.15 are done, P2.5 and P2.6 are substantially complete with tracked open 
 the optional P2.16 (screensaver) / P2.17 (cheats) remain. Phase 3 (assets) is complete. **Phase 4 is
 well underway:** P4.1-P4.3 are complete; P4.4-P4.14 are in progress, with P4.10/P4.11 partial.
 The playable level, store, game selector, audio layer, saves, pets, aliens and Cyrax boss are
-in, and **18 headless checks pass (938 assertions)**. The port runs the ~36 Hz reading of Q-0034.
+in, and **19 headless checks pass (956 assertions)**. The port runs the ~36 Hz reading of Q-0034.
 **Next task: P4.10/P4.11** (projectile homing/weapon follow-ups and game modes), with the remaining
 sub-items on the in-progress tasks tracked in [`docs/PLAN.md`](docs/PLAN.md).
 
@@ -81,6 +81,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 
 # the main menu: EV-0131 ids, mode writers, gates and the tail flop (37 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_menu_check.gd
+
+# the assembled path: menu -> level -> wave -> boss (18 assertions; exit 0 = pass)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . res://tests/headless_integration_check.tscn --quit-after 1200
 
 # the audio layer: buses, effect pool, music pairs (40 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_audio_check.gd

@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-11-05 (fidelity follow-up: 18/18 suites green, 938 assertions; the egg widget now completes levels on tanks 1-4 and `start_level` arms waves/composites, but threats are still invisible and several systems remain placeholders - see [AUDIT.md](AUDIT.md) §5/§5b). P4.1-P4.3 are complete; P4.4-P4.14 are all in progress, with P4.10/P4.11 partial. The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in.
+Last updated: 2026-11-05 (fidelity follow-up: 19/19 suites green, 956 assertions; the egg widget now completes levels on tanks 1-4, `start_level` arms waves/composites, and a scene-backed integration suite covers menu -> level -> wave -> boss, but threats are still invisible and several systems remain placeholders - see [AUDIT.md](AUDIT.md) §5/§5b). P4.1-P4.3 are complete; P4.4-P4.14 are all in progress, with P4.10/P4.11 partial. The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in.
 
 Next: **P4.10/P4.11** (projectile homing and weapon follow-ups, then the game modes), with the
 remaining sub-items on P4.4-P4.9/P4.12-P4.14 tracked on their lines.
@@ -700,6 +700,10 @@ set.
     unfinished blob. The cell offset and which cell is the rest pose are port placements (Q-0055);
     the flop's `anim: once`, `framemap="7,6,5,4,3,2,1,0"` and delays are recovered but no trigger
     for it is, so the port draws the rest pose and does not play the flop.
+  - The assembled path is now checked by `tests/headless_integration_check.tscn` (18 assertions):
+    it mounts `Main`, presses Adventure through the real `GameSelector`, starts 1-3 and advances
+    the production wave, then starts 5-1 through the same menu path and asserts the scheduled
+    Cyrax boss. It never calls `start_level`, `arm_wave` or `start_boss`; this closes audit G13.
 
 ## P5 - Validation & polish
 

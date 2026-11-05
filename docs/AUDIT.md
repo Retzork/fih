@@ -11,8 +11,9 @@ systems exist as entities and contract tests but are not connected to the assemb
 
 ## 1. Method and limits
 
-- Ran all 18 headless suites separately with Godot 4.7.1
-  (`C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe --headless --path . --script res://tests/...`).
+- Ran all 19 headless suites separately with Godot 4.7.1: the 18 `--script` suites plus the
+  scene-backed integration suite (`... --script res://tests/...` and
+  `... res://tests/headless_integration_check.tscn --quit-after 1200`).
 - Ran the 400-frame boot check (`--quit-after 400`) and read its full log.
 - Read the gameplay code (`scripts/`) against `PLAN.md`, `ARCHITECTURE.md` §9, `SPECS.md` and the tests.
 - Inspected the git state and the generated assets.
@@ -41,6 +42,7 @@ Limits, stated so the numbers are not over-read:
 | `headless_store_ui_check` | 34 |
 | `headless_progression_check` | 79 |
 | `headless_menu_check` | 37 |
+| `headless_integration_check` | 18 |
 | `headless_pet_check` | 66 |
 | `headless_alien_check` | 47 |
 | `headless_boss_check` | 35 |
@@ -49,10 +51,10 @@ Limits, stated so the numbers are not over-read:
 | `headless_tank_snapshot_check` | 54 |
 | `headless_audio_check` | 40 |
 | `headless_anim_check` | 18 |
-| **Total** | **938** |
+| **Total** | **956** |
 
-- All 18 suites exited 0; the per-suite counts above are the suites' own `PASS (... assertions)`
-  summaries and sum to exactly the **938** claimed in `PLAN.md` and `README.md`.
+- All 19 suites exited 0; the per-suite counts above are the suites' own `PASS (... assertions)`
+  summaries and sum to exactly the **956** claimed in `PLAN.md` and `README.md`.
 - The boot check exits 0 and resolves the three content phases: `Init` 14, `Register` 16,
   `LoadingThread` 296 (326 ids, as `SPECS.md` §2.2 requires).
 - The audit began on clean `main` at `46d5f35`; the §5b follow-up is a later commit. `resources/sprites/` holds 129 `SpriteFrames`,
@@ -72,7 +74,8 @@ Limits, stated so the numbers are not over-read:
 
 **P4 reality.** The task count ("3/14") understates how much code exists, but it overstates how much
 of the game works. The assembled path now includes menu -> Adventure level -> feeding/growth/coins ->
-store -> egg purchase -> next level; `start_level` arms the per-level wave selection, composites
+store -> egg purchase -> next level, and a scene-backed integration suite drives menu -> level ->
+wave -> boss through `Main`; `start_level` arms the per-level wave selection, composites
 compose, and the type re-rolls after each wave. What is still missing is the **visible** threat path:
 aliens, the boss and projectiles have no sprites, projectiles do not home or damage fish, and the
 boss placeholders remain. Every row of the `ARCHITECTURE.md` §9 gap table still has an open item;
@@ -127,23 +130,23 @@ unknown but a missing connection.
 
 **F5 - Green tests are machine-local (medium, reproducibility).** `assets_raw/` and the carved module
 are gitignored. A fresh clone cannot boot or run any suite until the five PowerShell extractors run
-against the owned install. This is documented, but it means the 938 assertions verify *this* checkout,
+against the owned install. This is documented, but it means the 956 assertions verify *this* checkout,
 not the repository alone.
 
-**F6 - Assertion reporting is inconsistent (low, tooling).** Fifteen suites print an `ok` line per
+**F6 - Assertion reporting is inconsistent (low, tooling).** Sixteen suites print an `ok` line per
 assertion; `headless_anim_check`, `headless_audio_check` and `headless_menu_check` print only failures,
-so a naive `grep -c '^  ok'` reports 843 instead of 938. The PASS summary is the reliable count; a
+so a naive `grep -c '^  ok'` reports 861 instead of 956. The PASS summary is the reliable count; a
 shared check harness would remove the trap.
 
 No stale count or contradiction was found in the docs: `PLAN.md`, `README.md`, `docs/README.md` and
-`ARCHITECTURE.md` all agree on 18 suites, 938 assertions, the 36 Hz tick decision and the phase
+`ARCHITECTURE.md` all agree on 19 suites, 956 assertions, the 36 Hz tick decision and the phase
 statuses. What they did not describe is the assembly gap in §5a; §5b records the follow-up fixes.
 
 ## 5a. Implementation fidelity (code-level pass)
 
 These are not open reverse-engineering questions; they are places where the code, the suites and the
 documentation describe a system but the assembled game does not exercise it. This audit itself made
-no code changes; G1/G2/G14 were fixed in the follow-up recorded in §5b.
+no code changes; G1/G2/G13/G14 were fixed in the follow-up recorded in §5b.
 
 | # | Finding | Evidence | Effect in the game |
 | --- | --- | --- | --- |
@@ -159,7 +162,7 @@ no code changes; G1/G2/G14 were fixed in the follow-up recorded in §5b.
 | G10 | saves write one fixed path and the profile is not persisted | `Level.save_path` is `userdata/adv1.dat` (`level.gd:81`); `Game.save_stem` has no caller; `Profile` has no serialization; `TankScalars.apply` restores `alien_selection` and `load_game` now arms `wave.selection` | every mode overwrites the Adventure slot; progress resets on restart; the loaded wave selection is armed, but per-mode stems and profile persistence remain |
 | G11 | most effect/audio signals have no consumer | no listener for `fish.hunger_warning`/`grew`, `coin.expired`/`banked`, `pet.cue`, `alien.cue`, `projectile.smoke_requested`/`burst_requested` or `wave.milestone` | no hunger/growth/pet/alien sounds, no smoke/burst/wave warnings; only drop/buy/click and music play |
 | G12 | progression and UI stop at the level boundary | `Main._on_level_completed` starts the next level directly (`main.gd:59`); no Hatch/Pets/Bonus/credits screens; no boss HP bar; store has no stock roller/art/tooltips; options/help/hall-of-fame absent | the Adventure loop has no between-level flow, and much of the original UI is missing |
-| G13 | the suites still skip the assembled menu flow | `headless_level_check` now starts 1-3 through `start_level` and never arms by hand; the boss suite builds a `Tank` and calls `spawn_boss` directly; store tests inject prices; no suite drives menu -> level -> wave -> boss through `Main` | green tests still do not prove the menu-to-boss flow works |
+| G13 | the assembled menu flow had no suite | `headless_level_check` starts 1-3 through `start_level`; the boss suite builds a `Tank` and calls `spawn_boss` directly; store tests inject prices; the new scene-backed suite drives menu -> level -> wave -> boss through `Main` | modules were green but the assembled flow was unproven (fixed in §5b: the integration suite) |
 | G14 | level completion was unreachable on tanks 1-4 | `buy_egg` was called only from `buy_item` for `EGG_ITEM` (`level.gd:580`), and `STORE_TABLE[11]` stocks that row only on tank 5; no egg widget existed | Adventure could not advance past level 5 of any tank in normal play (fixed in §5b: the egg widget) |
 
 Consequences worth stating plainly:
@@ -168,7 +171,8 @@ Consequences worth stating plainly:
   invisible; the egg widget now lets tanks 1-4 finish a level, but the threat path is not a game yet.
 - The "aliens + waves", "boss", "weapons" and "modes" task lines should be read as **entity and table
   work complete, integration incomplete**.
-- The 938 assertions remain real and useful, but they mostly prove modules, not flows.
+- The 956 assertions remain real and useful; the integration suite now covers the assembled menu
+  -> level -> wave -> boss flow, while the rest mostly prove modules.
 
 ## 5b. Follow-up fixes (2026-11-05)
 
@@ -180,6 +184,11 @@ Consequences worth stating plainly:
   level 2's 1750-tick start), and `WaveClock.wave_spawned` re-rolls the type after each wave per
   P2.8 §5.1. `Level._on_wave_spawn` composes 9..0xC into 1+3, 7+3, 5+6 and 3+8. The level suite starts
   1-3 through `start_level` and exercises 0x09 without arming by hand (121 assertions).
+- **G13 fixed.** `tests/headless_integration_check.tscn` mounts the real `Main`, presses Adventure
+  on the production `GameSelector`, starts 1-3 and advances the production wave, then starts 5-1
+  through the same menu path and asserts the scheduled Cyrax boss. It never calls `start_level`,
+  `arm_wave` or `start_boss`; 18 assertions. The suite is scene-backed because `--script` does not
+  expose the project autoloads that `main.gd` names.
 - Still open: sprites for aliens/boss/projectiles (G3), projectile motion/damage (G5), the boss
   placeholders/cooldown (G6), bought-fish/economy wiring (G4/G9), modes (G7), pets/persistence
   (G8/G10), cue consumers (G11), UI/screens (G12) and packaging (F1).
@@ -209,6 +218,8 @@ Get-ChildItem tests\headless_*_check.gd | ForEach-Object {
   & $godot --headless --path . --script ("res://" + $_.Name)
   "rc=$LASTEXITCODE $($_.Name)"
 }
+& $godot --headless --path . res://tests/headless_integration_check.tscn --quit-after 1200
+"rc=$LASTEXITCODE headless_integration_check.tscn"
 & $godot --headless --path . --quit-after 400
 ```
 

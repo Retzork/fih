@@ -267,6 +267,9 @@ a running remake:
 # the main menu: EV-0131 ids, mode writers, gates and the tail flop (37 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_menu_check.gd
 
+# the assembled path: menu -> level -> wave -> boss (18 assertions; exit 0 = pass)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . res://tests/headless_integration_check.tscn --quit-after 1200
+
 # the pet base, roster and six implemented pets (66 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_pet_check.gd
 
@@ -365,6 +368,12 @@ Psychosquid 400-tick rest flip, the reach boxes (Sylvester, mini, out-of-reach, 
 eating), the Diamond death rule (shot vs boss vs non-shot), and the wave clock (unarmed freeze,
 alien freeze, milestone order, spawn point range, composite double spawn at one point). The boss check (`tests/headless_boss_check.gd`) covers the Cyrax fight: the hp formula and its clamp, the spawn flags (boss alive, waves frozen, pet capacity 10), the 300-tick arrival immunity, the 15-tick intro, the 75-tick minion cadence at +40/+40, the 300-tick pulse that stays quiet while another alien is on the field, the 10-tick per-attacker hit cooldown, and death clearing `boss_alive` while unfreezing then disabling the wave clock (35 assertions).
 
+`tests/headless_integration_check.tscn` is the assembled-path suite and the only one run as a scene:
+`--script` does not expose the project autoloads, so `Main` cannot load there. It mounts the real
+`scenes/main.tscn`, waits for `Content` and `GameSelector`, presses Adventure, advances the shared
+`Sim` for the 1-3 production wave, then starts 5-1 through the same menu path and checks the
+scheduled Cyrax boss. It never calls `start_level`, `arm_wave` or `start_boss` (18 assertions).
+
 `tests/headless_save_check.gd` covers the tank-save framing: every header field, the class-`0x1F` skip, the round trip through `to_bytes()`/`from_bytes()`, the `42+E+S` / `454+E+S` / `658+E+S` section offsets, the size law, the `+0x110` object shift, and the loader's version gate (`0x34` rejected, `0x35` accepted, short/truncated files refused) - 38 assertions. `tests/headless_save_files_check.gd` covers the file layer: the per-mode stems and paths, a real write/read round trip under `user://`, the on-disk version refusal, a missing file, and the Adventure-only profile match - 21 assertions. `tests/headless_tank_snapshot_check.gd` covers the snapshot glue: capture (fish only, header stamped, store rows and pet flags preserved), the magic-tagged record in a 0x140 slot, a byte-level round trip through `TankSave`, restore into a fresh tank, the exclusion of non-fish entries, and the 316-byte scalar block (money, food levels, pet capacity, backdrop, wave selection and countdown, the `+0x440` star potion flag and the tint bytes, with the offsets the note gives and the clamps), plus the level-level pair `Level.save_game`/`load_game` through real disk (header, store table, money in the scalar block, fish count, wallet/food restore, fish replaced not merged, and a missing file returning false) - 54 assertions. Shots take their damage from `Tank.shot_damage()` (`3 * pet_capacity`, not a hard-coded multiplier), and `Level.start_level()` reads the boss from its schedule table (`Level.boss_kind_for`), so the fight is entered rather than started by hand.
 
 Golden-file tests for saves (P4.12) and the existing `verify_fonts.gd` / `gen_spriteframes.gd` tools
@@ -449,9 +458,9 @@ tests/headless_entity_check.gd    38-assertion check for the entity seam and Foo
 tests/headless_fish_check.gd      105-assertion check for Fish (P2.2-P2.4)
 tests/headless_coin_check.gd      87-assertion check for Coin (P2.5 §5)
 tests/headless_projectile_check.gd  47-assertion check for Projectile (P2.10 §5)
-tests/headless_level_check.gd     120-assertion check for the level, feeding and waves
+tests/headless_level_check.gd     121-assertion check for the level, feeding and waves
 tests/headless_store_ui_check.gd  34-assertion check for the shop screen and bar
-tests/headless_progression_check.gd  78-assertion check for P2.6 progression and completion
+tests/headless_progression_check.gd  79-assertion check for P2.6 progression and completion
 tests/headless_menu_check.gd      37-assertion check for the main menu (P4.14)
 tests/headless_pet_check.gd       66-assertion check for the pet base and six pets (P2.7)
 tests/headless_alien_check.gd     47-assertion check for aliens and the wave clock (P2.8)
@@ -461,6 +470,8 @@ tests/headless_save_files_check.gd  21-assertion check for the save file layer
 tests/headless_tank_snapshot_check.gd  54-assertion check for capture/restore
 tests/headless_audio_check.gd     40-assertion check for the audio layer (P2.14)
 tests/headless_anim_check.gd      18-assertion check for sprite playback and keying
+tests/headless_integration_check.tscn  18-assertion menu -> level -> wave -> boss integration
+tests/headless_integration_check_scene.gd  the scene-backed integration test body
 ```
 
 Next: **P4.10/P4.11** (projectile homing and weapon follow-ups, then the game modes), with the
