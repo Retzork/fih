@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-11-05 (handoff audit: P4 status, counts and docs reconciled). P4.1-P4.3 are complete; P4.4-P4.14 are all in progress, with P4.10/P4.11 partial. The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in, and all 18 headless suites pass (936 assertions).
+Last updated: 2026-11-05 (progress audit: 18/18 suites re-run green, 936 assertions verified; capability assessment and findings in [AUDIT.md](AUDIT.md)). P4.1-P4.3 are complete; P4.4-P4.14 are all in progress, with P4.10/P4.11 partial. The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in, and all 18 headless suites pass (936 assertions).
 
 Next: **P4.10/P4.11** (projectile homing and weapon follow-ups, then the game modes), with the
 remaining sub-items on P4.4-P4.9/P4.12-P4.14 tracked on their lines.

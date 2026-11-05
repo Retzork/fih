@@ -395,6 +395,7 @@ drops the backlog and a screen change must not carry old time into the next leve
 | persistence for entity bodies other than fish (coins/food/projectiles are rebuilt by design) and golden-file save fixtures | P4.12 |
 | options sliders, the battle loop (trigger unrecovered), and the rest of the per-event sound map (Q-0030/Q-0056) | P4.13 |
 | options/hall-of-fame/help screens, the menu buttons' baked bitmaps (labels are port text) and the mermaid flop trigger (Q-0050/Q-0055) | P4.14 |
+| the mermaid tail sheet and mask are loaded with `Image.load_from_file` (Godot warns this does not work on export), and `resources/content.json`'s export inclusion is still unconfirmed (AUDIT.md F1) | P5.5 |
 | renderer/packaging decisions (Forward+ kept as-is) | P5.5 |
 
 ## 10. File map (P4 output)

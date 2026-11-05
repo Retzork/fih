@@ -1,5 +1,7 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
+**Progress audit (2026-11-05):** all 18 headless suites re-run green on this checkout (936 assertions); the capability assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md).
+
 **Handover status: Phase 2 closed (2026-11-02).** Phase 0, Phase 1 and Phase 3 are complete; Phase 2
 is 14/18 with **every technical system decoded** and `SPECS.md` written - only the two optional items
 P2.16 (screensaver variants) and P2.17 (cheats) remain. **P2.18 `docs/SPECS.md` is complete**: the
@@ -303,6 +305,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
+| `AUDIT.md` | Progress audit (2026-11-05): re-run test counts, per-system capability assessment, findings and next-step priority. |
 | `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0156). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
