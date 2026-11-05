@@ -42,7 +42,7 @@ Limits, stated so the numbers are not over-read:
 | `headless_store_ui_check` | 34 |
 | `headless_progression_check` | 79 |
 | `headless_menu_check` | 37 |
-| `headless_integration_check` | 30 |
+| `headless_integration_check` | 37 |
 | `headless_pet_check` | 66 |
 | `headless_alien_check` | 61 |
 | `headless_boss_check` | 35 |
@@ -51,10 +51,10 @@ Limits, stated so the numbers are not over-read:
 | `headless_tank_snapshot_check` | 54 |
 | `headless_audio_check` | 40 |
 | `headless_anim_check` | 18 |
-| **Total** | **985** |
+| **Total** | **992** |
 
 - All 19 suites exited 0; the per-suite counts above are the suites' own `PASS (... assertions)`
-  summaries and sum to exactly the **985** claimed in `PLAN.md` and `README.md`.
+  summaries and sum to exactly the **992** claimed in `PLAN.md` and `README.md`.
 - The boot check exits 0 and resolves the three content phases: `Init` 14, `Register` 16,
   `LoadingThread` 296 (326 ids, as `SPECS.md` §2.2 requires).
 - The audit began on clean `main` at `46d5f35`; the §5b follow-up is a later commit. `resources/sprites/` holds 129 `SpriteFrames`,
@@ -98,7 +98,7 @@ task's documented scope was done, not that the system is connected or faithful.
 | modes | Adventure only; Challenge inflates prices only; Time Trial/Virtual Tank rules absent; the mode flags have no writers | `tank.gd:48-66`, G7 |
 | saves | fish-only entity records; per-mode save stem unused (always `adv1`); profile not persisted; a loaded wave selection is now armed | `level.gd:81`, `profile.gd`, G10 |
 | audio | two mixers, 256-slot pool, music pairs; most effect cues have no consumer; no battle loop | `headless_audio_check`, G11 |
-| menus/UI | game selector and shop; options/help/hall-of-fame absent; button labels are port text; loading bar is the debug pump | `headless_menu_check`, Q-0050/Q-0055 |
+| menus/UI | game selector and shop with their recovered native BMFonts; options/help/hall-of-fame absent; button labels are port text; loading bar is the debug pump | `headless_menu_check`, Q-0050/Q-0055/Q-0059 |
 | validation/packaging | absent | P5.1-P5.5 |
 
 ## 5. Findings
@@ -130,16 +130,16 @@ unknown but a missing connection.
 
 **F5 - Green tests are machine-local (medium, reproducibility).** `assets_raw/` and the carved module
 are gitignored. A fresh clone cannot boot or run any suite until the five PowerShell extractors run
-against the owned install. This is documented, but it means the 985 assertions verify *this* checkout,
+against the owned install. This is documented, but it means the 992 assertions verify *this* checkout,
 not the repository alone.
 
 **F6 - Assertion reporting is inconsistent (low, tooling).** Sixteen suites print an `ok` line per
 assertion; `headless_anim_check`, `headless_audio_check` and `headless_menu_check` print only failures,
-so a naive `grep -c '^  ok'` reports 890 instead of 985. The PASS summary is the reliable count; a
+so a naive `grep -c '^  ok'` reports 897 instead of 992. The PASS summary is the reliable count; a
 shared check harness would remove the trap.
 
 No stale count or contradiction remained after this pass: `PLAN.md`, `README.md`, `docs/README.md` and
-`ARCHITECTURE.md` all agree on 19 suites, 985 assertions, the 36 Hz tick decision and the phase
+`ARCHITECTURE.md` all agree on 19 suites, 992 assertions, the 36 Hz tick decision and the phase
 statuses. §5a records the assembly gap; §5b records the follow-up fixes.
 
 ## 5a. Implementation fidelity (code-level pass)
@@ -172,7 +172,7 @@ the egg widget lets tanks 1-4 finish a level, but inert projectiles and placehol
 mean the threat path is not a game yet.
 - The "aliens + waves", "boss", "weapons" and "modes" task lines should be read as **entity and table
   work complete, integration incomplete**.
-- The 985 assertions remain real and useful; the integration suite now covers the assembled menu
+- The 992 assertions remain real and useful; the integration suite now covers the assembled menu
   -> level -> wave -> boss flow, while the rest mostly prove modules.
 
 ## 5b. Follow-up fixes (2026-11-05)
@@ -193,13 +193,19 @@ mean the threat path is not a game yet.
   to `127 * hp / hp0` under the full `IMAGE_HEALTHBARTUBE` glass at x 10 / y box-3, always for Cyrax
   and for ordinary aliens while `Tank.show_alien_health` (`Tank+0x178`, writer unrecovered) is set
   and the tank is not 5. The alien, projectile and integration suites cover the image maps and the
-  bar (61/50/30 assertions).
+  bar (61/50/37 assertions).
 - **G13 fixed.** `tests/headless_integration_check.tscn` mounts the real `Main`, presses Adventure
   on the production `GameSelector`, starts 2-4 and advances the production wave and the Destructor's
   real missile, then starts 5-1 through the same menu path and asserts the scheduled Cyrax boss. It
   also checks the centred sprites and the HP bar (full 127-px fill, 64 px at half hp); it never calls
-  `start_level`, `arm_wave` or `start_boss`; 30 assertions. The suite is scene-backed because
+  `start_level`, `arm_wave` or `start_boss`; 37 assertions. The suite is scene-backed because
   `--script` does not expose the project autoloads that `main.gd` names.
+- **UI fonts and menu animation tidied.** `scripts/ui/ui_font.gd` applies the recovered BMFonts to
+  the menu, store, in-tank bar, egg widget and HUD at the manifest's native pixel size, instead of
+  the engine default scaled to ad-hoc sizes; the baked outline fonts no longer get a second engine
+  outline drawn over them. The menu tail also draws its rest pose during the recovered 3-tick hold
+  instead of flashing the flop's first cell for one frame. Q-0059 records the selector's 17/10 split,
+  which the decompile does not pin down.
 - Still open: projectile motion/damage (G5), the boss placeholders/cooldown (G6), bought-fish/economy
   wiring (G4/G9), modes (G7), pets/persistence (G8/G10), cue consumers (G11), UI/screens (G12) and
   packaging (F1).

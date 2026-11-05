@@ -25,9 +25,11 @@ const TAIL_CELL := Vector2(238.0, 165.0)
 ## The idle pose: cell 2 of the strip is the gentle S-curve that covers the baked tail's footprint.
 const TAIL_REST_FRAME := 2
 ## `MERYLTAIL`'s own playback (P2.15 §8.5): `anim="once"`, `framemap="7,6,5,4,3,2,1,0"`,
-## `framedelay="2"`, `begindelay="3"` - so it plays once, 20 ms a frame after a 30 ms hold, and it
-## starts when the sprite does. The port plays that flop when the menu opens and then returns to the
-## rest pose instead of holding cell 0, because the backdrop's own tail is drawn under it (Q-0055).
+## `framedelay="2"`, `begindelay="3"` - so it plays once, two ticks a frame after a three-tick hold,
+## and it starts when the sprite does. On the port's 36 Hz clock (Q-0034) that is ~56 ms a frame
+## after ~83 ms, keeping the recovered delays as integer tick counts rather than re-deriving them.
+## The port plays that flop when the menu opens and then returns to the rest pose instead of holding
+## cell 0, because the backdrop's own tail is drawn under it (Q-0055).
 const TAIL_PLAY_ORDER := [7, 6, 5, 4, 3, 2, 1, 0]
 const TAIL_FRAME_TICKS := 2
 const TAIL_BEGIN_TICKS := 3
@@ -114,9 +116,11 @@ func _ready() -> void:
 		button.add_theme_color_override("font_color", Color(1, 1, 1))
 		button.add_theme_color_override("font_hover_color", Color(1, 0.92, 0.55))
 		button.add_theme_color_override("font_pressed_color", Color(1, 0.78, 0.30))
-		button.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
-		button.add_theme_constant_override("outline_size", 4)
-		button.add_theme_font_size_override("font_size", 16 if int(id) in BIG_IDS else 13)
+		# The ctor preloads the two outline fonts (ids 0x61/0x62, P2.12 §4): the 17 px one for the
+		# art-sized slots, the 10 px one for the small text buttons. The outline is baked into the
+		# BMFont, so no engine outline is added on top (Q-0059).
+		UiFont.apply(button, UiFont.SELECTOR_BIG_FONT if int(id) in BIG_IDS
+			else UiFont.SELECTOR_SMALL_FONT)
 		button.pressed.connect(func() -> void: press(int(id)))
 		add_child(button)
 	_status = Label.new()
@@ -124,10 +128,8 @@ func _ready() -> void:
 	_status.text = ""
 	_status.position = Vector2(20.0, 452.0)
 	_status.size = Vector2(300.0, 22.0)
-	_status.add_theme_font_size_override("font_size", 14)
 	_status.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
-	_status.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
-	_status.add_theme_constant_override("outline_size", 4)
+	UiFont.apply(_status, UiFont.SELECTOR_SMALL_FONT)
 	add_child(_status)
 
 
@@ -161,7 +163,9 @@ func _add_mermaid_tail() -> void:
 	# Playback starts now, on the same clock the rest of the game uses.
 	var sim := _autoload("Sim")
 	_tail_started = sim.tick_count if sim != null else 0
-	_draw_tail(TAIL_BEGIN_TICKS)
+	# Draw the rest pose now and let `_process` start the flop after `TAIL_BEGIN_TICKS`; drawing at
+	# `TAIL_BEGIN_TICKS` here would show the first flop cell for one frame before the hold.
+	_draw_tail(_tail_started)
 
 
 ## Playback position on the strip, or -1 once the one-shot flop is over.

@@ -4002,3 +4002,28 @@ behavior or specs; follow up with a binary observation entry.
   to seed the target timer `+0x6F`; this decompile does not expose the float operand, so the P4
   placeholder uses `rand % 6`. Tracked as Q-0039.
 
+### EV-0157 - P2.15: the font globals map 1:1 to the manifest ids
+- Date: 2026-11-05
+- Type: code trace (decompile) + manifest cross-check
+- Source: `docs/evidence/p2.15-decompile-50E190.txt` (group `Register`),
+  `docs/evidence/p2.15-decompile-506EA0.txt` (group `Init`), `resources/content.json` (the 15
+  `FONT_*` entries and their native sizes)
+- Confidence: high for the global -> id mapping; medium for which of the two selector preload ids is
+  the 10 px font
+- Notes:
+  (1) Each font is loaded once and stored in a global. `FUN_0050E190` (Register) assigns:
+  `DAT_005e8a28 = FONT_BLAMBOTPRO15`, `DAT_005e8ea8 = FONT_BLAMBOTPRO8`,
+  `DAT_005e8ce4 = FONT_CONTINUUMBOLD12`, `DAT_005e8cd0 = FONT_CONTINUUMBOLD12OUTLINE`,
+  `DAT_005e8b04 = FONT_CONTINUUMBOLD14`, `DAT_005e8d1c = FONT_CONTINUUMBOLD14OUTLINE`,
+  `DAT_005e8a5c = FONT_JUNGLEFEVER12OUTLINE`, `DAT_005e8e18 = FONT_JUNGLEFEVER15OUTLINE`,
+  `DAT_005e8dac = FONT_LIDDIE12`, `DAT_005e8bbc = FONT_LIDDIE15`, `DAT_005e8a9c = FONT_LIDDIE18`,
+  `DAT_005e8c20 = FONT_TINY`, `DAT_005e8aa4 = FONT_TINYBOLD`. `FUN_00506EA0` (Init) assigns
+  `DAT_005e8cf0 = FONT_JUNGLEFEVER10OUTLINE` and `DAT_005e8e40 = FONT_JUNGLEFEVER17OUTLINE`.
+  (2) This resolves the earlier pointer citations: the StoreScreen's Shell counter font
+  `DAT_005e8CE4` (P2.12 §6) is ContinuumBold12, and the "Please Wait..." / "Click Here To Continue"
+  font `DAT_005e8a5c` (P2.12) is JungleFever12Outline.
+  (3) The `GameSelector` ctor preloads `FUN_00505BD0(0x61/0x62)` (P2.12 §4/EV-0131) but the two
+  preload ids are not resolved to a specific one of the two Init fonts, so assigning the 17 px
+  outline to the art slots and the 10 px outline to the text buttons is the port's inference,
+  recorded as Q-0059.
+

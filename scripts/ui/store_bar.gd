@@ -90,18 +90,22 @@ func setup(target: Level) -> void:
 		add_child(button)
 		_buttons.append(button)
 		var name_label := Label.new()
+		name_label.name = "Name"
 		name_label.position = Vector2(2.0, 6.0)
 		name_label.size = Vector2(rect.size.x - 4.0, 20.0)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.add_theme_font_size_override("font_size", 9)
+		# The bar is a port stand-in for `FUN_005409B0` (its item art is Q-0054), so the two recovered
+		# 8 px fonts carry the name and the price at native size.
+		UiFont.apply(name_label, UiFont.TINY_FONT)
 		button.add_child(name_label)
 		_labels.append(name_label)
 		var price_label := Label.new()
+		price_label.name = "Price"
 		price_label.position = Vector2(2.0, 24.0)
 		price_label.size = Vector2(rect.size.x - 4.0, 20.0)
 		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		price_label.add_theme_font_size_override("font_size", 11)
 		price_label.add_theme_color_override("font_color", PRICE_COLOR)
+		UiFont.apply(price_label, UiFont.SMALL_FONT)
 		button.add_child(price_label)
 		_prices.append(price_label)
 	refresh()

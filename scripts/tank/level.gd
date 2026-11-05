@@ -198,9 +198,11 @@ func _ready() -> void:
 	layer.name = "Hud"
 	add_child(layer)
 	_hud = Label.new()
+	_hud.name = "Info"
 	# The debug/HUD line clears the in-tank store bar, whose slots start at y 3 and are 58 tall.
 	_hud.position = Vector2(8.0, 66.0)
 	layer.add_child(_hud)
+	UiFont.apply(_hud, UiFont.HUD_FONT)
 	# The in-tank store bar (`FUN_005409B0`, Q-0018): the row of buy buttons above the tank.
 	store_bar = StoreBar.new()
 	store_bar.name = "StoreBar"

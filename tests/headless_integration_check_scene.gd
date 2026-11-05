@@ -30,7 +30,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	var main = await _start_from_menu(2, 4)
+	var main = await _start_from_menu(2, 4, true)
 	if main == null or main._level == null:
 		_teardown(main)
 		_finish()
@@ -83,6 +83,24 @@ func _run() -> void:
 	_expect(shot_sprite != null and shot_sprite.centered,
 		"the missile sprite is centred on its 80x80 box")
 
+	# Every UI surface must use the game's own BMFonts at their native pixel size (P2.15 §6), not
+	# the engine default scaled to a made-up size.
+	var shop: StoreScreen = StoreScreen.new()
+	shop.name = "ShopProbe"
+	shop.setup(level)
+	add_child(shop)
+	_expect(_uses_font(shop.get_node_or_null("Shells"), UiFont.STORE_FONT),
+		"the store shell counter uses ContinuumBold12 (P2.12 §6)")
+	_expect(_uses_font(shop.get_node_or_null("Price0"), UiFont.STORE_FONT),
+		"the store price line uses the store font")
+	shop.queue_free()
+	_expect(_uses_font(level.store_bar.get_node_or_null("Slot0/Price"), UiFont.SMALL_FONT),
+		"the in-tank bar price uses the 8 px bold font")
+	_expect(_uses_font(level.egg_widget.get_node_or_null("Buy/Price"), UiFont.LABEL_FONT),
+		"the egg price uses Liddie12")
+	_expect(_uses_font(level.get_node_or_null("Hud/Info"), UiFont.HUD_FONT),
+		"the tank HUD uses Liddie15")
+
 	_teardown(main)
 	await get_tree().process_frame
 
@@ -116,7 +134,7 @@ func _run() -> void:
 
 
 ## Mount the real Main scene and press Adventure. Returns Main with `_level` set, or null.
-func _start_from_menu(tank_no: int, level_no: int):
+func _start_from_menu(tank_no: int, level_no: int, check_fonts := false):
 	Game.profile = Profile.new()
 	Game.profile.tank = tank_no
 	Game.profile.level = level_no
@@ -131,6 +149,11 @@ func _start_from_menu(tank_no: int, level_no: int):
 	if main._selector == null:
 		return main
 	_expect(main._selector is GameSelector, "the mounted menu is a GameSelector")
+	if check_fonts:
+		_expect(_uses_font(main._selector.get_node_or_null("Button1"), UiFont.SELECTOR_BIG_FONT),
+			"the art-slot buttons use the 17 px JungleFever outline font")
+		_expect(_uses_font(main._selector.get_node_or_null("Button3"), UiFont.SELECTOR_SMALL_FONT),
+			"the small text buttons use the 10 px JungleFever outline font")
 	main._selector.press(1, {})
 	_expect(main._level != null, "pressing Adventure starts a level through Main")
 	return main
@@ -163,6 +186,14 @@ func _visual_source(entity) -> String:
 	if visual == null:
 		return ""
 	return String(visual.get_meta("source", ""))
+
+
+## A control uses `id` and the manifest's native pixel size (no scaled bitmap glyphs).
+func _uses_font(control, id: String) -> bool:
+	if control == null:
+		return false
+	return UiFont.applied_id(control) == id \
+		and int(control.get_theme_font_size("font_size")) == int(Content.font_size(id))
 
 
 func _visual_node(entity) -> Sprite2D:

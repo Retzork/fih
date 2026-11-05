@@ -1,6 +1,6 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Progress audit (2026-11-05):** all 19 headless suites re-run green on this checkout (985 assertions; the scene-backed integration suite covers menu -> level -> wave -> boss and the alien/boss HP bars); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md).
+**Progress audit (2026-11-05):** all 19 headless suites re-run green on this checkout (992 assertions; the scene-backed integration suite covers menu -> level -> wave -> boss, the alien/boss HP bars and the native UI fonts); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md).
 
 **Handover status: Phase 2 closed (2026-11-02).** Phase 0, Phase 1 and Phase 3 are complete; Phase 2
 is 14/18 with **every technical system decoded** and `SPECS.md` written - only the two optional items
@@ -43,7 +43,7 @@ partial). The playable level, store, menu, audio, saves, pets, aliens and Cyrax 
 | P1 target identity | Complete (10/10) |
 | P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In progress (3/14 complete): P4.1 architecture, P4.2 content registry, P4.3 entity set; P4.4-P4.14 in progress (P4.10/P4.11 partial). Playable level, store, menu, audio, saves, pets, aliens and Cyrax boss in; 19 headless checks green (985 assertions) |
+| P4 Godot implementation | In progress (3/14 complete): P4.1 architecture, P4.2 content registry, P4.3 entity set; P4.4-P4.14 in progress (P4.10/P4.11 partial). Playable level, store, menu, audio, saves, pets, aliens and Cyrax boss in; 19 headless checks green (992 assertions) |
 | P5 validation / polish | Not started (0/5) |
 
 - **P2.12 menus & UI flow (2026-10-29, first pass):** every screen class is a widget container plus

@@ -267,7 +267,7 @@ a running remake:
 # the main menu: EV-0131 ids, mode writers, gates and the tail flop (37 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_menu_check.gd
 
-# the assembled path: menu -> level -> wave -> boss (30 assertions; exit 0 = pass)
+# the assembled path: menu -> level -> wave -> boss + UI fonts (37 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . res://tests/headless_integration_check.tscn --quit-after 1200
 
 # the pet base, roster and six implemented pets (66 assertions; exit 0 = pass)
@@ -375,7 +375,9 @@ composite double spawn at one point). The boss check (`tests/headless_boss_check
 `Sim` for the 2-4 production wave and the Destructor's 75-tick missile, then starts 5-1 through the
 same menu path and checks the scheduled Cyrax boss and its sprite. It never calls `start_level`,
 `arm_wave` or `start_boss`. It also checks that the alien and missile sprites are centred on their
-boxes and that the Destructor's HP bar is the full 127-px fill at 150 hp and 64 px at 75 (30 assertions).
+boxes, the Destructor's HP bar is the full 127-px fill at 150 hp and 64 px at 75, and the menu,
+store, in-tank bar, egg widget and HUD each use their recovered bitmap font at the manifest's native
+size (37 assertions).
 
 `tests/headless_save_check.gd` covers the tank-save framing: every header field, the class-`0x1F` skip, the round trip through `to_bytes()`/`from_bytes()`, the `42+E+S` / `454+E+S` / `658+E+S` section offsets, the size law, the `+0x110` object shift, and the loader's version gate (`0x34` rejected, `0x35` accepted, short/truncated files refused) - 38 assertions. `tests/headless_save_files_check.gd` covers the file layer: the per-mode stems and paths, a real write/read round trip under `user://`, the on-disk version refusal, a missing file, and the Adventure-only profile match - 21 assertions. `tests/headless_tank_snapshot_check.gd` covers the snapshot glue: capture (fish only, header stamped, store rows and pet flags preserved), the magic-tagged record in a 0x140 slot, a byte-level round trip through `TankSave`, restore into a fresh tank, the exclusion of non-fish entries, and the 316-byte scalar block (money, food levels, pet capacity, backdrop, wave selection and countdown, the `+0x440` star potion flag and the tint bytes, with the offsets the note gives and the clamps), plus the level-level pair `Level.save_game`/`load_game` through real disk (header, store table, money in the scalar block, fish count, wallet/food restore, fish replaced not merged, and a missing file returning false) - 54 assertions. Shots take their damage from `Tank.shot_damage()` (`3 * pet_capacity`, not a hard-coded multiplier), and `Level.start_level()` reads the boss from its schedule table (`Level.boss_kind_for`), so the fight is entered rather than started by hand.
 
@@ -449,6 +451,7 @@ scripts/tank/wave_clock.gd        wave clock: 3000-tick gate, milestones, spawn 
 scripts/tank/tank.gd              tank host: spawn/despawn, layers, seeded RNG, pause
 scripts/tank/level.gd             level: feeding clicks, pickups, money, store, sprites, HUD
 scripts/tank/sprite_key.gd        black colour-keying for the extracted sheets, per cell
+scripts/ui/ui_font.gd             applies the recovered BMFonts at their native pixel sizes
 scripts/ui/game_selector.gd       main menu: EV-0131 dispatch, gates, mermaid tail (P4.14)
 scripts/ui/store_screen.gd        shop screen: shelves, price lines, Shell plate (P4.5)
 scripts/ui/store_bar.gd           in-tank store bar: eight buy slots (FUN_005409B0)

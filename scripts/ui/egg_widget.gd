@@ -62,18 +62,14 @@ func setup(source) -> void:
 	_name.name = "Pieces"
 	_name.position = Vector2(54.0, 4.0)
 	_name.size = Vector2(70.0, 20.0)
-	_name.add_theme_font_size_override("font_size", 12)
-	_name.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	_name.add_theme_constant_override("outline_size", 3)
+	UiFont.apply(_name, UiFont.TINY_FONT)
 	_button.add_child(_name)
 
 	_price = Label.new()
 	_price.name = "Price"
 	_price.position = Vector2(54.0, 26.0)
 	_price.size = Vector2(70.0, 20.0)
-	_price.add_theme_font_size_override("font_size", 13)
-	_price.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	_price.add_theme_constant_override("outline_size", 3)
+	UiFont.apply(_price, UiFont.LABEL_FONT)
 	_button.add_child(_price)
 
 	refresh()

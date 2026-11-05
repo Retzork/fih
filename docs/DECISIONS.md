@@ -1156,3 +1156,18 @@ tank-5 suppression. If the writer is found, drive the flag from that path and dr
 and `Boss.initial_hp()` returns the profile-scaled maximum. The glass is drawn over the fill so the
 red empties from the right; the recovered call order in the note (`0x455E40` then `0x455D20`) is kept
 in the note, while the port's layer order is a presentation choice.
+
+### Q-0059 - UI fonts: the globals map cleanly, the selector's 17/10 split is an inference
+
+EV-0157 maps every font global of `FUN_0050E190`/`FUN_00506EA0` to its manifest id, so the store's
+Shell counter (`DAT_005e8CE4`) is `FONT_CONTINUUMBOLD12` and the two notifier strings are
+`FONT_JUNGLEFEVER12OUTLINE`. `scripts/ui/ui_font.gd` applies those fonts at the manifest's native
+pixel size to every UI surface (menu, store, in-tank bar, egg widget, HUD); the outline fonts keep
+their baked outline and no engine outline is added. The HUD, in-tank bar and egg widget fonts are port
+choices because P2.12 does not bind a font to them (Q-0054/Q-0053).
+
+Open: `GameSelector` preloads font ids `0x61`/`0x62`, and the decompile does not say which id is the
+10 px outline and which the 17 px. The port assigns 17 px to the art-sized slots and 10 px to the
+small text buttons; swapping them is a two-constant change (`UiFont.SELECTOR_BIG_FONT`/
+`SELECTOR_SMALL_FONT`). The menu tail still plays on the 36 Hz tick clock (Q-0034) as integer tick
+counts; only the erroneous "20 ms/30 ms" comment was corrected, not the recovered delays.

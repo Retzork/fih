@@ -230,11 +230,11 @@ func _add_slot(index: int) -> void:
 	var name_label := Label.new()
 	name_label.name = "Name%d" % index
 	name_label.position = rect.position + NAME_OFFSET
-	name_label.size = Vector2(rect.size.x, 18.0)
+	name_label.size = Vector2(rect.size.x, 22.0)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 12)
-	name_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	name_label.add_theme_constant_override("outline_size", 3)
+	# The name line is a port addition (the original carries it on the tooltip), so it uses the
+	# outline cut of the recovered store font to stay readable over the shelf art.
+	UiFont.apply(name_label, UiFont.STORE_OUTLINE_FONT)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(name_label)
 	_names.append(name_label)
@@ -242,9 +242,7 @@ func _add_slot(index: int) -> void:
 	price_label.name = "Price%d" % index
 	price_label.position = price_origin(rect) + Vector2(PRICE_ICON_OFFSET.x + 25.0, 0.0)
 	price_label.size = Vector2(rect.size.x - 40.0, 20.0)
-	price_label.add_theme_font_size_override("font_size", 15)
-	price_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	price_label.add_theme_constant_override("outline_size", 3)
+	UiFont.apply(price_label, UiFont.STORE_FONT)
 	price_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(price_label)
 	_prices.append(price_label)
@@ -267,10 +265,9 @@ func _add_shell() -> void:
 	_shell.size = SHELL_RECT.size
 	_shell.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_shell.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_shell.add_theme_font_size_override("font_size", 18)
 	_shell.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	_shell.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	_shell.add_theme_constant_override("outline_size", 4)
+	# `FUN_0050E190` maps the StoreScreen's counter font `DAT_005e8CE4` to ContinuumBold12.
+	UiFont.apply(_shell, UiFont.STORE_FONT)
 	_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_shell)
 
@@ -282,9 +279,7 @@ func _add_thanks() -> void:
 	_thanks.position = THANKS_RECT.position
 	_thanks.size = THANKS_RECT.size
 	_thanks.visible = false
-	_thanks.add_theme_font_size_override("font_size", 14)
 	_thanks.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	_thanks.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
-	_thanks.add_theme_constant_override("outline_size", 4)
+	UiFont.apply(_thanks, UiFont.LABEL_FONT)
 	_thanks.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_thanks)
