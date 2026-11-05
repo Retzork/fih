@@ -204,7 +204,7 @@ func _init() -> void:
 func _ticks(sim: Node, count: int) -> void:
 	sim.flush_backlog()
 	for i in count:
-		sim.advance(10.0)
+		sim.advance(SimScript.TICK_MS)
 
 
 func _expect(condition: bool, what: String) -> void:

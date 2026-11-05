@@ -41,7 +41,9 @@ func _init() -> void:
 	_test_star_and_breeding()
 	_test_coin_scheduler()
 	_test_species_defaults()
+	_test_state_round_trip()
 	_test_rng_reproducibility()
+	_test_hungry_art()
 
 	tank.shutdown()
 	sim.free()
@@ -111,23 +113,14 @@ func _test_hunger_and_death() -> void:
 	_step(1)
 	_expect(warnings == [1, 2, 3], "hints fire at -1/-200/-400, got %s" % [warnings])
 
-	# Stage 0 corpses are removed silently: no successor request.
-	var successors: Array = []
-	hungry.successor_requested.connect(func(_s, _st, _at, _fa) -> void: successors.append(true))
+	# Death is terminal for the fish: it reports it once and leaves the corpse to the level.
+	var deaths: Array = []
+	hungry.died.connect(func(_f) -> void: deaths.append(true))
 	hungry.fullness = -499
 	_step(1)
 	_expect(hungry.dead, "hunger below -499 kills the fish")
-	_expect(successors.is_empty(), "a stage-0 corpse requests no successor")
-
-	# A grown fish leaves a same-species/stage successor request.
-	var grown: Fish = _quiet_fish(Vector2(300.0, 200.0), 2)
-	var grown_successor: Array = []
-	grown.successor_requested.connect(func(species, stage, _at, _fa) -> void:
-		grown_successor.append([species, stage]))
-	grown.fullness = -499
-	_step(1)
-	_expect(grown.dead and grown_successor == [[GUPPY, 2]],
-		"a stage-2 death requests a live stage-2 successor")
+	_expect(deaths.size() == 1, "the death is reported once")
+	_expect(not tank.entities.has(hungry), "a dead fish leaves the tank")
 
 
 func _test_swim_machine() -> void:
@@ -456,6 +449,29 @@ func _test_species_defaults() -> void:
 	_expect(bi.stage == 0 and bi.sprite_box == 80, "bilaterus starts at stage 0 with an 80x80 box")
 
 
+## P2.13 note #11: fish keep their tier, position and hunger; coins/food are rebuilt on load.
+func _test_state_round_trip() -> void:
+	tank.shutdown()
+	var fish: Fish = tank.spawn_fish(FishScript.Species.GUPPY, Vector2(200.0, 250.0), 1, -1)
+	fish.fullness = 123
+	fish.food_points = 2
+	var state := fish.to_state()
+	_expect(int(state["species"]) == FishScript.Species.GUPPY, "the record carries the species")
+	_expect(int(state["stage"]) == 1, "the record carries the stage")
+	_expect(not state.has("coins") and not state.has("food"), "the record leaves out rebuildable state")
+	tank.despawn(fish)
+	var restored: Fish = FishScript.from_state(tank, state)
+	_expect(restored != null, "the state rebuilds a fish")
+	if restored == null:
+		return
+	_expect(restored.phase == SimScript.Phase.FISH, "the rebuilt fish is in the FISH phase")
+	_expect(restored.position == Vector2(200.0, 250.0), "the position survives")
+	_expect(restored.stage == 1 and restored.fullness == 123 and restored.food_points == 2,
+		"the stage, hunger and growth points survive")
+	_expect(restored.facing == -1, "the facing survives")
+	_expect(restored.to_state() == state, "the record is stable across the round trip")
+
+
 func _test_rng_reproducibility() -> void:
 	var a: Tank = TankScript.new()
 	var b: Tank = TankScript.new()
@@ -515,7 +531,7 @@ func _set_swim(fish: Fish, mode: int, timer: int) -> void:
 func _step(count: int) -> void:
 	sim.flush_backlog()
 	for i in count:
-		sim.advance(10.0)
+		sim.advance(SimScript.TICK_MS)
 
 
 func _expect(condition: bool, what: String) -> void:
@@ -525,3 +541,18 @@ func _expect(condition: bool, what: String) -> void:
 	else:
 		_failures += 1
 		printerr("  FAIL ", what)
+
+
+## `FUN_004D6F30`: hungry art below 301 fullness, and never at stage 3 or above.
+func _test_hungry_art() -> void:
+	var fish: Fish = _quiet_fish(Vector2(200.0, 200.0), 0, 500)
+	fish.fullness = 500
+	_expect(not fish.uses_hungry_art(), "a fed stage-0 fish keeps its normal art")
+	fish.fullness = 300
+	_expect(fish.uses_hungry_art(), "below 301 fullness the hungry art is used")
+	fish.fullness = 301
+	_expect(not fish.uses_hungry_art(), "301 is the boundary and stays normal")
+	fish.fullness = 0
+	fish.stage = 3
+	_expect(not fish.uses_hungry_art(), "stage 3 never shows the hungry art")
+	fish.stage = 0

@@ -30,6 +30,10 @@ signal mode_changed(mode: int)
 ## Active mode. Written only by the main-menu buttons and the level-start dispatcher.
 var mode: int = Mode.ADVENTURE
 
+## The Adventure profile (P4.6): tank/level, Shells, owned pets and the menu gates. Levels read
+## it through `Level.profile`, so a headless check can hand a Level its own without the autoload.
+var profile := Profile.new()
+
 ## Shared pause gate - the original's `Tank+0x94`. Pets and alien actions read this; it is not a
 ## scene-tree pause, because the UI and screens keep updating while gameplay is held.
 var gameplay_paused := false
@@ -39,6 +43,10 @@ func set_mode(new_mode: int) -> void:
 	if new_mode == mode:
 		return
 	mode = new_mode
+	# Virtual Tank plays no music, so the mode gate is honoured at the switch, not at level start.
+	var audio := get_node_or_null("/root/Audio")
+	if audio != null and silences_music():
+		audio.stop_music()
 	mode_changed.emit(mode)
 
 

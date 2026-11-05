@@ -155,15 +155,39 @@ const COIN_DIFFICULTY_STEP := -0x21C
 signal hunger_warning(level: int)
 ## Emitted once when the fish dies (hunger, star potion, later predation).
 signal died(fish)
-## Death side: the corpse/successor system spawns the same species/stage after the corpse animation.
-## The original's corpse id is the fish's stage; stage 0 corpses are removed silently (P2.4 §4).
-signal successor_requested(species: int, stage: int, at: Vector2, facing: int)
 ## A breeding pellet (Food.variant 2) turn: the level spawns a new Guppy (P2.3 §7.5).
 signal breed_requested(species: int, at: Vector2, facing: int)
 ## A stage change; `stage` is the new value (also covers the star-potion 2 -> 3 promotion).
 signal grew(fish, stage: int)
 ## The drop counter matured. The coin system owns the stage -> kind/value mapping (Q-0036).
 signal coin_due(fish)
+
+## Persistable state (P2.13 implementation note #11): only what cannot be rebuilt. Food, coins,
+## projectiles and particles are deliberately absent - a load rebuilds them.
+func to_state() -> Dictionary:
+	return {
+		"species": species,
+		"stage": stage,
+		"x": position.x,
+		"y": position.y,
+		"facing": facing,
+		"fullness": fullness,
+		"food_points": food_points,
+	}
+
+
+## Rebuild a fish from `to_state()`. `Tank.spawn_fish` keeps registration ownership, so the entity
+## still never registers itself.
+static func from_state(tank_node, state: Dictionary) -> Fish:
+	var species_id := int(state["species"])
+	var facing_id := int(state["facing"])
+	var fish: Fish = tank_node.spawn_fish(species_id,
+		Vector2(float(state["x"]), float(state["y"])), int(state["stage"]), facing_id)
+	if fish != null:
+		fish.fullness = int(state["fullness"])
+		fish.food_points = int(state["food_points"])
+	return fish
+
 
 var species := Species.GUPPY
 var stage := 0
@@ -341,14 +365,21 @@ func _tick_hunger() -> void:
 		die()
 
 
-## Death entry (slot 88's shared body). The corpse itself is P4.4; this only reports the side
-## effects the corpse/successor system needs. Stage 0 corpses are removed without a successor.
+## Hungry-alt art (`FUN_004D6F30`, P2.3 §6): `[0x9C] < 301` and `[0x148] < 3` (stage 3 and up never
+## show it). The original also requires `[0xA0] == 0` and `Tank+0x4FF` for the stage half - the tank
+## flag is unbound, so it is treated as clear rather than guessed.
+## `[0xA0]` (hit flash) is not modelled in the port yet, so that clause is omitted.
+func uses_hungry_art() -> bool:
+	return fullness < 301 and stage < 3
+
+
+## Death entry (slot 88's shared body). Death leaves a corpse and **nothing else**: the corpse
+## sinks and is removed silently, so a starved fish is gone (P2.4 §4, EV-0053). The live successor
+## belongs to the corpse's revive branch, whose trigger is unrecovered (Q-0043).
 func die() -> void:
 	if dead:
 		return
 	died.emit(self)
-	if stage >= 1:
-		successor_requested.emit(species, stage, position, facing)
 	despawn()
 
 

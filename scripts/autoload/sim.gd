@@ -2,12 +2,13 @@ extends Node
 ## Sim - the fixed-timestep simulation driver.
 ##
 ## Mirrors the original's loop (SPECS.md §1.1, P2.1/EV-0034): the wrapper accumulates real time and
-## runs whole 10 ms logic slices, at most MAX_TICKS_PER_FRAME of them per rendered frame, with the
+## runs whole logic slices, at most MAX_TICKS_PER_FRAME of them per rendered frame, with the
 ## backlog clamped to MAX_BACKLOG_MS so a stall cannot produce a spiral of catch-up work.
 ##
-## Q-0034 is unresolved: P2.1 read a 10 ms interval from the SexyAppBase ctor (100 Hz) while every
-## gameplay timer in P2.7-P2.9 calibrates at ~36 Hz. TICK_MS is therefore THE single place the rate
-## is defined - change it here (and TICKS_PER_SECOND with it), never in a subsystem.
+## Q-0034 pitted P2.1's 10 ms wrapper interval (100 Hz) against every gameplay timer in P2.7-P2.9,
+## which calibrates at ~36 Hz; the port runs the 36 Hz reading (see TICK_MS below). TICK_MS is THE
+## single place the rate is defined - change it here (and TICKS_PER_SECOND with it), never in a
+## subsystem.
 ##
 ## Systems do not use Godot's _physics_process. They register a phase and implement:
 ##
@@ -30,8 +31,12 @@ enum Phase {
 	COUNT,
 }
 
-## One logic slice. Q-0034: 10.0 = the ctor constant (100 Hz); 27.78 would be the ~36 Hz reading.
-const TICK_MS := 10.0
+## One logic slice. Q-0034 left two readings: the wrapper's 10 ms interval (100 Hz) against every
+## gameplay timer calibrated against wiki seconds (Blip 200 ticks = 5 s, wave clock 3000 = 83.3 s,
+## boss arrival 300 = 8.3 s, Meryl 1400 = 39 s, Shrapnel 633..652 = 18 s) plus the pellet tumbler,
+## which only reads at a sane speed at that cadence. The port runs **36 Hz** - the rate those timers
+## were calibrated at - so tick counts and seconds agree; switching back is this one constant.
+const TICK_MS := 1000.0 / 36.0
 const TICKS_PER_SECOND := 1000.0 / TICK_MS
 ## The original pumps at most 10 single-tick updates per Process() call (P2.1).
 const MAX_TICKS_PER_FRAME := 10
@@ -123,11 +128,11 @@ func _tick() -> void:
 	tick_count += 1
 	for phase in Phase.COUNT:
 		var bucket: Array = _phases[phase]
-		# Indexed loop: `_sim_tick()` may despawn entities (level teardown, sells, transforms).
-		# The element is deliberately untyped - assigning a freed instance to a typed `Node`
-		# variable is an error, and a freed registrant must simply be skipped.
-		for i in bucket.size():
-			var node = bucket[i]
+		# `_sim_tick()` may despawn entities (death, eating, sells, level teardown), and a despawn
+		# removes the entity from this very bucket - so walk a copy. The element stays untyped:
+		# assigning a freed instance to a typed `Node` variable is an error, and a freed registrant
+		# must simply be skipped.
+		for node in bucket.duplicate():
 			if is_instance_valid(node):
 				node._sim_tick()
 	ticked.emit(tick_count)

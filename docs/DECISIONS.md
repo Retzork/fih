@@ -609,7 +609,7 @@
   - **(b) `framedelay` unit.** The parser stores it with `atol` into `entry+0xE4` and the value is
     passed on; every shipped value is `2` or `4`. With P2.1's 10 ms logic tick that is 20/40 ms
     (50/25 fps), which is plausible for a swim cycle, but the countdown site that would prove
-    "ticks, not milliseconds" is in the animation update (P2.2). P4 starts from `1 unit = 10 ms`.
+    "ticks, not milliseconds" is in the animation update (P2.2). P4 starts from `1 unit = one logic tick` (10 ms under the wrapper, 27.8 ms at the ported ~36 Hz).
 - What is missing: one trace from the animated-image frame timer to its delay field.
 - Non-blocking: both readings are visually safe (one 10 ms step; two candidate frame durations);
   the committed `SpriteFrames` deliberately bake neither delay nor `-1` handling, and the raw
@@ -652,6 +652,14 @@
 - Non-blocking: every P2 note already stores timers as **integer ticks**, so P4 can be written now
   against a single `TICKS_PER_SECOND` constant and re-tuned once. `docs/SPECS.md` §1.2 is the
   contract: keep the rate parameterised, do not bake seconds anywhere in the simulation.
+
+**Port status (2026-11-04).** The remake adopts the **36 Hz** reading (`Sim.TICK_MS = 1000/36`, the
+one place the rate lives). Rationale: six independent wiki-second calibrations (Blip 200/720, Prego
+930, Meryl 1400, Shrapnel 633..652, boss arrival 300 = 8.3 s, wave clock 3000 = 83.3 s) and the
+pellet tumbler's ten-column row (Q-0051: ten rotations a second at 100 Hz against 3.6 at 36 Hz) all
+agree, whereas the 100 Hz reading rests on one ctor constant whose consumer in the tank path is
+still unfound. The question stays open for that call site - a frame counter or a second interval that
+gates `Tank::Update` - and the ported rate is a single constant to change once it is located.
 
 ### Q-0035 - Food: nothing sets the landed flag, and `FUN_004D62D0`'s bottom behaviour is unrecovered
 - OPEN (2026-11-02, raised while writing `scripts/entities/food.gd` for P4.3; source P2.3 §1,
@@ -730,3 +738,408 @@
   after a mode entry.
 - Non-blocking: the timer only feeds animation/oscillator timing; it does not affect hunger,
   growth, death or the coin counter.
+
+### Q-0040 - Coin internals: four fields and one pairing are not in the decompile
+- OPEN (2026-11-03, raised by `scripts/entities/coin.gd` for P4.3; source EV-0047, P2.5 §5).
+- `Coin::Update` (`FUN_004F5050`) is recovered step by step, but nothing in the note pins these:
+  1. the animation-frame function `f(+0x16C, kind, virtual)` - the timer wraps at 79 and the sheets
+     are 8 cells, so P4 uses `timer / 10 % 8` (10 ticks per frame);
+  2. the `+0x1C0` base that `FUN_004D53A0` multiplies in Virtual Tank - P4 defaults it to the normal
+     value so a Virtual Tank coin is not worth zero;
+  3. the kind-0x10 branch (targets y 50 or -50 by `+0x68`, "remove unless rising") - P4 does not
+     implement it, so kind 0x10 behaves like an ordinary coin worth 0;
+  4. the HUD flight destination `FUN_00538CD0` after Virtual Tank homing - P4 emits `banked` at
+     (550, 30) instead of inventing the follow-up path;
+  plus the pairing itself: coins are landed at y 370 and then use Food's staged 120..150 rise table,
+  which makes a landed coin climb for ~30 ticks before it oscillates in the band. Both facts are
+  implemented as written; that they belong to the same branch is unverified.
+- What is missing: a read of `FUN_004D5360`'s callers, the `+0x1C0` writer, and the coin draw/anim
+  helper (slot 26, `0x4DD7A0`, unanalyzed).
+- Non-blocking: values, landing, expiry, collection and the Virtual Tank flight all match the note
+  without any of these; only the coin's animation cadence and the special kind stay approximate.
+
+### Q-0041 - The homing body `FUN_004FF4E0` is missing, so a shot starts still
+- OPEN (2026-11-03, raised by `scripts/entities/projectile.gd` for P4.3/P4.10; source EV-0130,
+  P2.10 §5.2-§5.3).
+- The ctor's random-velocity branch is dead code: it tests the object's own `+0x19C`, which is the
+  kind (0/1/2), so retail projectiles spawn with `vx = vy = 0` and are moved entirely by
+  `FUN_004FF4E0` - a body the note marks "not decompiled". P4 implements everything else and leaves
+  `_steer()` an explicit no-op.
+- What is missing: the body of `FUN_004FF4E0` (homing acceleration, its cap, and whether it also
+  handles the missile's z-order or trail).
+- Non-blocking: expiry, bounds, gravity, immunity, hit-tests and the lock are all decodable now, and
+  P4.10's click routing can be wired before the steering exists.
+
+### Q-0042 - Fish sprite assembly: ids, stage rows and the 40x40 art inside the 80x80 box
+- OPEN (2026-11-03, raised by `scripts/tank/level.gd` for P4.4; source P2.2 §5, P3 asset pass).
+- The level draws a stage-0 guppy from the three separate images `IMAGE_SIMSWIM1..3` (three cells each,
+  `SIMSWIM1..3` are separate files, not one sheet), positions the art at +20/+20 inside the 80x80 bounds
+  box and mirrors it with `flip_h`. The consumes (`SIMEAT1..3`) and turns (`SIMTURN1..3`) are not wired
+  yet, and the carnivore/boss sprite ids per stage (`OSCAR`, `ULTRA`, `GEKKO`, `SYLV`, `BALLS`,
+  `BILATERUS`) have no verified stage -> id/animation table.
+- What is missing: the fish draw slot's frame-selection code (P2.2 never decompiled slot 26) or a
+  runtime trace of which image id a stage-2 Oscar draws.
+- Non-blocking: gameplay does not read sprites; only the visual pick per species/stage is approximate,
+  and P4.4 draws guppies only.
+
+### Q-0043 - The corpse's revive branch has no trigger, and its art/divisor stay approximate
+- OPEN (2026-11-03, amended 2026-11-04 after `EV-0053` was re-read for the death pass; source
+  EV-0052/EV-0053, P2.4 §4).
+- Settled by the amendment: the natural death path is **terminal and silent**. The corpse is inert
+  (`FUN_00542EE0(obj, 0)`), its own stage counter `+0x1A0` starts at 125 and drops a step per tick once
+  `stage > 0x69` or the sink line is passed (y > 300 for id 6, 365 for ids 8/9, 370 otherwise), and at
+  `stage < 1` it detaches with no sound and no successor. The frames come from `+0x1A4` (the dying
+  fish's stage) and the falling counter, and the drift subtracted from the fish's vy is 1.0 when the
+  spawn y is below 115 or vy is already below -3.0, else 2.0. The port now reproduces all of that; the
+  earlier reading - successor after the sink - was the other branch and is gone.
+- Settled since: the writer is **Angie** (Q-0009, EV-0099). `FUN_004D5630` sets a corpse's `+0x190`
+  from 100 to 10 on contact, after which the corpse counts 10..1 while its revive cells play and at 0
+  runs the branch (detach + live successor by `+0x1A4` through the 5/6/7/8/9/10-12 table). The port
+  has both halves: `DeadFish.reviving` countdown and `Pet._angie_revive()` with the recovered target
+  (`+0x1A0 > 0x5F`) and contact ranges (30 px, 60 for id 6), covered by `headless_pet_check`.
+- Also unbound: the corpse's death-sound id `0x125` has no `SOUND_*` name binding (Q-0030), the exact
+  cell the 1..10 counter maps to (the port uses `phase - 1`, descending, inside the row), and the
+  sheet the rule indexes (drawn from `SMALLDIE`, row = the dying stage). Angie's own steering speed is
+  the unrecovered `FishTypePet` default, so she revives only what drifts into reach (Q-0044); the
+  corpse's speed divisor stays the 0.8 shared with the fish family.
+- Non-blocking: the sink, the drift, the per-tick counter, the frames rule, the silent removal, the
+  Angie handoff and the ten-tick revive are all reproduced; only the art mapping and Angie's movement
+  stay approximate/absent.
+
+### Q-0044 - 18 of the 24 pet bodies, and their speeds, are not written yet
+- OPEN (2026-11-03, raised by `scripts/entities/pet.gd` for P4.7; source EV-0077..EV-0100, P2.7).
+- The roster, the family split and the gate order are recovered, and six slot-81 bodies are ported
+  (Stinky, Niko, Vert, Shrapnel, Nostradamus, Angie). Everything else idles: `DEFS` carries `speed = 0` and
+  `period = 0` for pets whose tuning or period the note does not pin, rather than plausible-looking
+  values.
+- Recovered periods still without a body (Prego 930, Zorf 65, Meryl 1400, Amp 3000, Gash 1570,
+  Stanley 100) are recorded in `DEFS` but nothing acts on them. Nostradamus' "Sneeze of Power" and
+  clone behaviour stay unimplemented (EV-0106 recovered only the snot timer).
+- Rendering: every pet draws from its own `IMAGE_<NAME>` sheet (80x80 cells) and the sheet's own
+  `loop`/`pingpong`/`framedelay` metadata via `AnimState`; the pet entity does not pick a column, so a
+  per-pet animation state (Stinky's shell frames, Niko's open/closed) is not modelled yet.
+- Left out of Vert/Shrapnel on purpose: Vert's `FUN_004D70B0` Virtual Tank branch (it reads the
+  avatar-screen state the port does not model) and Shrapnel's `+0x258` pre-drop flash (no recovered
+  tick length) and `0x143` sound (no `SOUND_*` name, Q-0030).
+- What is missing: each pet's slot-81/slot-84/86 body and its ctor tuning (speed, fixed-y, box),
+  Presto's transform, Walter's glove entity, and the cleanup hooks (hidden Wadsworth, Meryl song flag).
+- Non-blocking: the base, the gates and two pets are faithful; the remaining bodies are additive.
+
+### Q-0045 - Alien wander target, bottom lane and two hp cells are not pinned
+- OPEN (2026-11-03, raised by `scripts/entities/alien.gd` for P4.8; source P2.8 §3/§11, EV-0124).
+- Recovered and implemented: hp/speed per kind, the full/mini bands, 0.1 steering with the
+  20-tick/10 % re-roll, the 7-tick ±3 intro, the attack timers, the reach boxes and the death rule.
+- Not in the note: how the "quadrant wander" picks its target (P4 uses a random point inside the
+  band), the bottom lane's y for kinds 5/6 (P4 uses the band's lower quarter), Bilaterus' own hp (its
+  two heads are 100 each; `DEFS` carries 0), Cyrax's profile-scaled hp (P4 uses the maximum 5000) and
+  the `balls_2` period (P4 reuses the 75 + rand%50+150 shape).
+- Non-blocking: movement, attacks as spawn requests, eating and death are faithful; only the wander
+  flavour and those four cells are approximate.
+
+### Q-0046 - Alien click box, composite recipes and the wave schedule are placeholders
+- OPEN (2026-11-03, raised by `scripts/tank/level.gd` for P4.8; source P2.8 §11, P2.10 §6.1).
+- The level shoots whatever alien is under an 80x80 box at its position. P2.10 has no per-kind hit box
+  in the recovered code (the click handler tests the object's own `HitTest`), so the box is a port
+  choice, flagged here rather than presented as recovered.
+- Composite selections 9..0xC are recipes whose member kinds the note does not enumerate; the level
+  skips them instead of spawning a guess. When the recipes are read, `Level._on_wave_spawn` is the one
+  place that needs the member list.
+- The level's own wave schedule (which selection, when) is level data from P2.6/P4.6; `arm_wave()` is
+  the hook, and nothing arms it automatically yet.
+
+
+**Sheet row layout (2026-11-04, measured).** Row extents were measured per sheet (opaque bounding box
+of the first column), to see whether "row = growth stage" holds everywhere it is needed:
+
+| sheet | rows | bbox per row | reading |
+|---|---|---|---|
+| `smallswim` / `hungryswim` | 5 | 32, 48, 65, 67, 71 px | **rows grow: stages** - the guppy body |
+| `breeder` | 9 | 43, 45, 45, 53, 57, 57, 68, 71, 71 | three sizes x three variants, not nine stages |
+| `gekko` | 7 | 66..69 px throughout | not growth; rows are poses/directions |
+| `bilaterus` | 8 | 48, 48, 47, 65, 65, 66, 32, 32 | mixed, not growth |
+| `ultravore` | 4 | 148..146 px | not growth |
+| `balls` | 4 | 28, 46, 38, 38 | not growth |
+
+So `row = stage` is only proven for the guppy body sheets. Wiring Oscar, Gekko, Ultra or the balls to
+their sheets would need the actual row meaning, which is not recovered; they keep their old images.
+`HUNGRYSWIM` is structurally the starving twin of `SMALLSWIM` (same five stage rows, same extents), but
+`Fish` has no starving state to switch on, so the port never selects it yet.
+
+**Update (2026-11-04, measured).** The sheets were measured directly rather than guessed at:
+
+- `smallswim.png` / `hungryswim.png` are 800x400 = 5 rows of ten 80x80 cells - **rows are growth stages**,
+  columns are animation frames. This is the body layer, and the port now draws row `stage` of
+  `smallswim.png` for a guppy (`Level.BODY_IMAGE`).
+- `guppy_swim1..3.png` are 800x240 = 3 rows of ten cells and contain **eyes only** (about 98% of each
+  cell is the black colour key; the surviving pixels are the eye). So `SIMSWIM1..3` are eye layers, not
+  fish sprites, which is why drawing them alone produced floating eyes.
+- Which eye cell belongs on which body was tested by comparing bright-pixel centroids per cell. For
+  stages 0-3 the closest cell is sheet 3 (2-5 px off, shifting by row); sheet 2 sits 10-18 px to the
+  right, sheet 1 7-21 px to the left. **No cell matches exactly**, and every candidate lands a few
+  pixels away from the eye already painted in the body art, so overlaying one would draw a second,
+  slightly offset eye. The layers are therefore *not* composited: a guppy draws its body only, and the
+  remaining question is the eye-offset rule (or whether these sheets are a blink/expression set keyed by
+  something not yet identified) - not something to fake.
+
+### Q-0047 - the boss fight's three gaps
+
+P2.9 and SPECS §3.6 settle Cyrax's numbers, and `scripts/entities/boss.gd` implements exactly those. Three things are not in the note, so the port keeps them as placeholders rather than guesses:
+
+- the **minion kind** is unnamed; the level spawns a Sylvester (0x01) for the minion and for the pulse (`Level._on_boss_minion`, `_on_boss_pulse`);
+- the **pulse content** is likewise unnamed, so it is the same single Sylvester;
+- the **HP bar** is a draw rule, not a simulation rule, so it belongs to P4.5 (the boss bar is always drawn; other aliens only when the tank's flag is set and the tank is not 5).
+
+`tests/headless_boss_check.gd` covers the recovered parts (35 assertions).
+
+### Q-0048 - not assigned
+
+No decision or question record uses this id: the ledger runs from Q-0047 to Q-0049. IDs are
+append-only and are never renumbered (AGENTS.md hard rule 3), so the gap is retained rather than
+filled retroactively.
+
+### Q-0049 - the store items without an effect
+
+`scripts/economy/store.gd` carries all twelve recovered item ids, but five cannot be honoured yet, so `Level.buy_item` refuses them instead of charging for nothing: the **breeder**, the **three pet purchases** (only Stinky and Niko have bodies), and the **egg piece / random pet / end-level row** (needs P4.6 progression and the `manager+0x87C` latch). Prices come from the wiki figures of EV-0060 because the binary's own price arrays were never located (P2.5 §3), and mode-4 inflation (`+0x374`) is not applied. The **star potion** was implemented after this entry was written: the purchase arms `Level.star_potion_armed` (`Tank+0x440`), the next manual drop is a quality-3 pellet, and `Fish` already applies the quality-3 rules.
+
+### Q-0050 - the menu screens that are not built yet
+
+`scripts/ui/game_selector.gd` carries EV-0131's dispatch: ids 1/2/8/9 pick a mode (with the tank-2
+and adventure-finished gates returning "Not Yet!" and changing nothing), 4 quits, and 3/6/7 are
+recognised but only report "not ported yet". The **options dialog (id 3), the hall of fame (id 6)
+and help (id 7)** have no screen: P2.12 names the buttons and the gates, but the contents of those
+three screens (option rows, defaults, hall layout, help pages) were never recovered, so nothing is
+drawn for them rather than invented. `Main` mounts the selector before the level, so
+the menu is the entry point and its choice reaches `Level.game_mode`.
+
+`tests/headless_menu_check.gd` covers the dispatch and both gates (37 assertions).
+
+### Q-0051 - the pellet animation: which sheet row a pellet draws, and what the frame unit really is
+
+`Food::Update` (`FUN_004F8AA0`, P2.3 §1 step 2) advances `[0x5E]` every tick and wraps it at
+`[0x5F] * 10 - 1`, where `[0x5F] = (rand & 1) + 3`, i.e. 30 or 40. The extracted `FOOD` sheet is
+10x5 and its five rows are *food kinds*, not animation phases: row 0 brown pellets, 1 green
+capsules, 2 red/white pills, 3 green flasks, 4 yellow droplets. Each row's ten columns are one
+rotation of a tumbler.
+
+Two things therefore stay open:
+
+- **Row binding.** The draw code that turns a pellet's quality `+0x188` / variant `+0x194` into a
+  row was not decompiled. The port follows the sheet's own order instead - row 0 brown (quality 0),
+  1 green, 2 red, 3 the star-potion flask, 4 the breeding droplet (`Level._food_row`) - which is an
+  inference from the art plus the recovered quality values (3 = star potion, variant 2 = breeding
+  pellet), not a traced constant. Row 0 for a plain drop and row 3 for a potion are the two the port
+  can actually produce today; the green/red rows are only reachable through other droppers.
+- **Frame unit.** With the wrap at `cycle * 10` and ten columns per row, the only reading that uses
+  the whole row is one tick per column, looping the ten-frame tumbler `cycle` times - a held frame
+  of ten ticks would show just three columns. That fixes the counter's meaning but makes the
+  tumbler run at the wrapper's 100 Hz, i.e. ten rotations a second. At the ~36 Hz gameplay rate the
+  P2.7/P2.8/P2.9 timers imply (Q-0034) it is 3.6/s, which is what the pellet should look like.
+
+So the pellet tumbler is an independent argument for the 36 Hz reading of Q-0034, and an easy one
+to settle by eye: at 100 Hz the pellet blurs, at 36 Hz it spins at a readable rate. The port runs the 36 Hz reading (Q-0034's port decision) and draws `anim_frame % 10` inside row 0 (`Level._food_frame`).
+
+`tests/headless_level_check.gd` pins the column arithmetic (frames 25 -> 5, 29 -> 9).
+
+### Q-0052 - the store screen: geometry is recovered, the stock roller and the item art binding are not
+
+`FUN_0052B2D0` (EV-0133) hands us the door, the eight shelf rects, the price line's offsets and the
+Shell counter widget; `FUN_0052FEA0`/`FUN_0052F0D0` (EV-0135) is the stock roller and it is **not**
+ported. So the screen draws what the level already owns: the `tank_store` rows the save is shaped
+around, one row per shelf, with the recovered price line, greyed prices when the purse is short and
+"Sold out" for every row whose effect has no body yet (Q-0049 stands: those refuse without charging).
+
+Still unrecovered, and therefore not drawn:
+
+- the stock roller itself (what each shelf offers, the one-off unlocks at `profile+0x90`/`+0x94`/
+  `DAT_005e89dc`, the coin flips), so the level's own row table decides the stock;
+- the widget's kind byte `+0x14C` and its five drawing branches, so per-item art is not drawn. The
+  kind table itself **is** recovered: 0 sold out, 1 a pet/egg (the slot hosts the prize object and
+  forwards to it), 2 the Bubbulator icon, 3 a backdrop scaled by `+0x158`, 4 the alien-attractor icon,
+  5 the food-upgrade digit; `FUN_00537230(kind, id, price)`, `FUN_00537290` (kind 1) and
+  `FUN_005372F0` (kind 0) write it. What is missing is the *port's* stock on those kinds: the original
+  sells pets, the Bubbulator, backdrops, the alien attractor and food upgrades, while the port's
+  `Store.ITEMS` is the P2.5 buy hub's twelve item ids, so no row can carry a kind until the roller
+  runs;
+- the tooltip table (`FUN_0051B9E0`) is recovered text but keyed by that same kind byte;
+- the refresh timer `+0x1CC` and the three paging arrows, and the store's own close control.
+
+The price line's three states are now the recovered ones: `"%d"` of the price (`FUN_00536350`),
+the four-character literal `SOLD` for an unavailable row (`FUN_005372F0`), and `?` for an item whose
+figure the table never recovered. A 0 in `Store.ITEMS` is that marker rather than a free price, so
+`Store.price_known(row)` refuses the sale.
+
+Port-only decisions: the shop opens with `S` and closes with Escape (the original's tank-screen store
+button is not reconstructed), the item's name is drawn above the price line at the widget's `y + 84`
+(the original shows names in the tooltip), the Shell count sits on the art's bottom plate because the
+counter's ctor rect (250,155,150,255) is a label layout box rather than that plate, and the
+"Thanks for shopping at the Fish Emporium!" blurb - whose `+0xBA0` period is unrecovered - stays up
+for two seconds.
+
+`tests/headless_store_ui_check.gd` pins the shelf rects, the price offsets, the row states and the
+three price-line states (34 assertions).
+### Q-0053 - progression: the tables and the completion path are in, the screens around them are not
+
+P2.6 is the one phase note that reads like an implementation spec, so its tables went in whole:
+`scripts/progression/progression.gd` carries §3's per-tank store table (item, store slot, price, the
+level-1/2 hiding lists), the egg price per tank and level with Challenge's flat 5000/15000/25000 and
+Time Trial's 100, the tank-5 free egg at slot 6, §5's award formula, §10.4's advance and the 24-name
+pet table with card 999. `scripts/persistence/profile.gd` carries the profile fields the rest of the
+port already needed (tank/level, Shells, owned/selected bytes, Challenge unlocks, the Bonus Adventure
+flag, the session counter) and `Game.profile` is the live instance.
+
+What that buys today: `Level.start_level(tank, level)` stocks the shop from the tank's own table, sets
+the egg counter and price, and `Level.buy_egg()` completes the level on the fourth piece (tank 5: the
+first). Completion grants the awarded pet, pays Presto's 5000 Shells, advances the profile - into the
+level-6 sentinel on a level-5 win - and emits `level_completed`, which `Main` uses to start the next
+level. A start on the sentinel resolves to the next tank's level 1.
+
+Still missing, in dependency order:
+
+- the bonus rounds: the 160-frame wait, `FUN_00537F40`'s start, the timer, the payout switch and the
+  BonusScreen. `Progression.resolve_start` therefore walks the sentinel immediately, which is a port
+  shortcut, not the original sequence;
+- the Hatch and Pets screens (`FUN_0054BE80`, `FUN_005289F0`): the award is recorded and the pet is
+  owned, but nothing shows the card, and pet selection is not written back;
+- the tank's egg widget: `buy_egg()` is reachable from the shop on tank 5 and from tests, but no egg
+  object is drawn in the tank, so on tanks 1-4 there is no in-game way to buy a piece yet;
+- the score records (`FUN_00514510`, `FUN_005144C0`), `Tank+0x3FC` elapsed seconds, the coin sweep at
+  completion, and the challenge record's storage in the profile;
+- the credits, story and trophy screens (Q-0013/Q-0016 still open, so no trigger is invented).
+
+Port decisions recorded here: the per-tank store table replaces the id-order stock the shop used
+before, so tank 1 level 1 now shows a single shelf (the guppy) exactly as §3 says, and the level's
+`tank_store` rows carry the table's `shelf` field for ordering; a row whose 0 is a recovered price
+(tank 5's egg) is marked `free` so `Store.price_known` sells it, while every other 0 still means
+"figure not recovered" and refuses.
+
+`tests/headless_progression_check.gd` pins the tables, the award map, the advance transitions, the
+profile's clamps and both completion paths (78 assertions).
+### Q-0054 - the in-tank store bar: geometry recovered, slot 7's x and the item art are not
+
+`FUN_005409B0` (EV-0150, `docs/evidence/p2.13-decompile-5409B0.txt`) is the tank's item-cache builder:
+it resolves the row's store slot (`Tank+0x2E4[item]`, negative = not for sale), returns the cached
+widget at `Tank+0x404 + slot*4` if one exists, and otherwise builds a `StoreButtonWidget` at
+`Rect(x[slot], 3, 60, 58)`. The x table is the seven constants pushed before the call:
+`0x12, 0x57, 0x90, 0xD9, 0x122, 0x16B, 0x1B4` - 18, 87, 144, 217, 290, 363, 436 in the 640-wide tank.
+That is what `scripts/ui/store_bar.gd` draws, using the same row -> slot mapping (`shelf`) the
+progression table carries and the same `SOLD` / price / grey rules as the StoreScreen (Q-0052).
+
+Unrecovered, therefore recorded rather than guessed:
+
+- **slot 7's x**: the decompile pushes the eighth element of the table from the stack (`local_3c[7] =
+  &iStack_68`), so no constant for it exists in the evidence. The port draws nothing on that slot and
+  `slot_rect(7)` answers an empty rect; a byte dump around 0x5409F0 would fill it in one line.
+- **the per-kind widget art** (`+0x14C`, Q-0052): the buttons are flat with the item's name and price
+  instead of the fish/upgrade icons, because the item ids the port sells are the P2.5 buy hub's while
+  the art is keyed by the store kind the roller sets.
+- the tooltips, keyed by the same kind byte, and the widget's pressed state.
+
+Port decisions: the bar is a `CanvasLayer` Control over the tank rather than tank-space widgets, the
+name line above the price is port text (the original draws only the price and the icon), and the
+level's debug HUD line moved below the bar so the two stop overlapping. `Level.buy_item` is the single
+purchase path for both the bar and the StoreScreen.
+
+`tests/headless_store_ui_check.gd` pins the slot rects, the row -> slot mapping, the empty slot 7 and
+a bar purchase (34 assertions).
+### Q-0055 - the menu mermaid's tail: the sprite and its mask are recovered, its placement is not
+
+`resources.xml` gives the menu mermaid a tail of her own: `MERYLTAIL` (`tailflop.png`, 8 cells of
+238x165, `anim: once`, `framemap="7,6,5,4,3,2,1,0"`, `framedelay=2`, `begindelay=3`). The backdrop
+art (`selectorback.png`) also carries a mermaid with a tail - and that baked tail is a pale, flat
+shape that reads as unfinished, which is what "the tail isn't proper" was looking at.
+
+`MERYLTAIL` has no transparency (P3.3: 243 of 246 base GIFs are opaque and a grayscale mask companion
+supplies the alpha). `masks/tailflop_.png` is that companion: white is the tail, black is clear. So
+`scripts/data/mask_alpha.gd` composes it onto the base sheet and `GameSelector` draws the rest frame
+over the backdrop's tail, which is how the game composites this sprite at all.
+
+Port decisions, recorded because the note does not recover them:
+
+- **which cell is the rest pose** (cell 2, the gentle S-curve that covers the baked tail's footprint)
+  and **where the cell sits** ((114, 274) in the 640x480 canvas). `FUN_0052E070` places the eight
+  buttons; nothing recovered places Meryl's parts. The offset was chosen against the art: the tail's
+  base meets her waist and its tip lands on the sand before the button panel instead of crossing it;
+- ~~the flop is **not played**~~ **superseded**: the resource declares `anim="once"`, which is how
+  the original's sprite system starts a one-shot (it begins when the sprite is created), so the port
+  plays it on menu open - framemap `7,6,5,4,3,2,1,0`, a 3-tick hold, then 2 ticks a frame. It returns
+  to the rest pose afterwards instead of holding cell 0, because the backdrop's own tail is under it;
+- `MERYLLIPS`/`MERYLBLINK` overlays are not drawn: the baked art already has her mouth and eyes, and
+  layering the overlays needs the same missing placement plus their own trigger (blink is `once`).
+
+General note for the asset layer: any *other* sprite drawn straight from a masked sheet is a solid
+rectangle until it goes through `MaskAlpha.apply`. The fish sheets avoid it because their base art is
+on black and `sprite_key.gd` keys that; masked sheets on a coloured field (this tail is on green)
+need the mask.
+
+`tests/headless_menu_check.gd` pins the cell size, the rest cell, the offset, both asset paths and the
+alpha composite (37 assertions with the flop timing).
+### Q-0056 - audio: which track a `SetMusic` pair names, the battle loop, and the default volumes
+
+P4.13 ports the *mechanism* of P2.14 but three parts of it are not recovered, so they are recorded
+here rather than guessed:
+
+- **pair -> file.** `SetMusic(a, b)` (`FUN_0054B1A0`) stores both numbers and calls the music
+  interface's play slot; all 21 call sites, the per-stage selector and the optional remap are
+  recovered (EV-0148), but nothing in the binary says which of the three loaded modules a pair
+  resolves to. The port plays `Insaniq2` (id 4) for every recovered pair: §4.2's remap rewrites
+  **every** pair to `a = 4`, and the `SexyApp::Init` site - the state the main theme plays in - is
+  `(2, 45)`, the same pair stage 4 asks for. `tests/headless_audio_check.gd` pins that choice
+  (`TRACK_MAIN`) so a later correction is one constant.
+- **the battle loop has no trigger.** `Alien` (10 s) is unmistakably battle music, but no recovered
+  call site ties a `SetMusic` to a wave, an alien's arrival or the boss; the 21 sites are the
+  startup, the stage selector, level complete and screens. The port therefore loads it (as
+  `SexyApp::Init` does) and never plays it. Wiring it to "a wave started" would be an invented
+  mapping - Q-0030/Q-0031b stay open on it.
+- **event -> sound.** Two triggers are grounded and wired: `SOUND_BUTTONCLICK` (14 UI read sites,
+  and the Init-phase click sound every screen's handler uses) and `SOUND_BUY` (the read at
+  `0x520836`, next to the money subtraction). The rest of the 65 ids wait on Q-0030; the per-event
+  `FUN_00538230(0x1NN, ...)` calls in the entity notes name **numeric ids**, and no recovered
+  mapping turns those numbers into `SOUND_*` names, so wiring them by name would be a guess.
+- **default volumes.** The config keys are `MusicVolume`/`SfxVolume` as integer percent; the port
+  starts both at 1.0 (100 %) because the shipped default is not in evidence. The Options dialog's
+  two sliders (P4.14) are the place this becomes user-visible; applying a value is already instant
+  because it writes the bus.
+- **voice count.** Only the *slots* are capped at 256 (the original's table of loaded sound ids);
+  playback allocates a voice per call with no cap, which is what `DSoundInstance` per play does.
+  `"Out of free sound ids"` is emitted for a new id when all 256 slots are taken, matching
+  `FUN_00419320`'s failure path.
+- **`.ogg` transcode caveat.** Several shipped `.ogg` files carry a non-conforming Vorbis comment
+  (`"Sonic Foundry Ogg Vorbis 1.0 Final"`, no `=`), so Godot logs a warning per file as the
+  LoadingThread phase loads it. They decode and play; the files are P3.6's 1:1 copies and are not
+  rewritten.
+### Q-0057 - sprite playback: what the resource data recovers, and the two sheets it does not
+
+"Animation is not proper" had three causes, only one of which was a missing feature:
+
+1. **A frozen-frame bug.** `SpriteKey.keyed()` cached keyed frames on `Texture2D.get_rid()`, and an
+   `AtlasTexture` answers with its **atlas's** RID - so the first cell keyed for a sheet was returned
+   for every cell of that sheet. Every fish, pellet and coin drew cell 0 forever; the earlier
+   `AnimatedSprite2D` clock was advancing through frames that all looked identical. The cache key now
+   carries the atlas region (`atlas rid | x,y,w,h`), pinned by `tests/headless_anim_check.gd`.
+2. **One global clock.** Every sprite was an `AnimatedSprite2D` started together at a hardcoded 10 fps,
+   which ignored the recovered metadata (`anim`, `framedelay`, `perframedelay`, `begindelay`,
+   `enddelay`, framemap order - P2.15 §8.5) and had no pingpong or one-shot. `scripts/data/anim_state.gd`
+   now computes the playback position from the logic tick and that metadata, starting at the tick its
+   entity spawned.
+3. **An invented presentation rule.** The level scaled `speed_scale` with a fish's displacement
+   ("presentation only"), so a darting fish animated up to 2x faster. Removed: the original advances
+   the frame column from the entity's own counter (`+0x1C0`), not from velocity.
+
+Still **not recovered**, and therefore port defaults:
+
+- **which slot advances the column** for entity-driven sheets. `+0x1C0` is the frame column and P2.2
+  names slots 81 (`0x4F1400`, called when `FUN_004da780() == 0`) and 89 (`0x4DE840`, every Update tail)
+  as candidates, without proving either. The cadence is therefore `anim_state.gd`'s
+  `SHEET_FRAME_TICKS = 5` (20 fps at the 100 Hz tick). It applies to the sheets that declare no
+  `anim`: the fish body (`SMALLSWIM`/`HUNGRYSWIM`), `SIMSWIM1..3`, `FOOD` and `MONEY`.
+- **the coin sheet's row.** `MONEY` is 10x6 - presumably ten animation columns per coin type - but no
+  recovered table maps coin kind to row, so the port cycles the sheet's first row for every coin
+  (`COIN_COLUMNS`, `_draw_entity_frame`). This is visible: all coins look alike apart from their
+  motion. Q-0040 keeps the coin's own unlocated internals.
+- **the fish body's row** is the growth stage (0..4), which the art supports and P2.2 §Render notes.
+- **the food pellet** keeps the simulation's `anim_frame` (one column per tick, wrapped at
+  `anim_cycle * 10 - 1`), which its note states outright - that one is recovered, so it is not on
+  this clock.
+
+The menu mermaid's tail now plays its recovered one-shot flop when the menu opens and returns to the
+rest pose; Q-0055 records why the return is a port choice rather than holding the last cell.

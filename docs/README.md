@@ -6,16 +6,15 @@ P2.16 (screensaver variants) and P2.17 (cheats) remain. **P2.18 `docs/SPECS.md` 
 behaviour-side contract for P4, twin of `PIPELINE.md` (D-0008), and the first thing to read before any
 Phase 4 task. It also raises **Q-0034**, the one genuine cross-system contradiction found while
 writing it: P2.1's wrapper loop is 10 ms (100 Hz) but P2.7-P2.9's gameplay timers calibrate at ~36 Hz
-(the ratio is 100/36 ≈ 2.78), so the effective simulation rate is parameterised until P5.3 measures
-it. P2.1-P2.4, P2.7-P2.15 and P2.18 are closed, P2.5 and P2.6 are substantially complete with
-tracked open questions, and
-P2.12 has its screen and dialog passes done (screen map, mode writer, store screen and stock
-refresh, level-start flow, all 13 screen constructors and their click handlers, the dialog base
-plus all ten dialog ctors and their click handlers); what is left there are the tracked open
-questions.
-**Phase 4 is in progress:** P4.1 (tick/scene scaffold) and P4.2 (content registry) are complete and
-P4.3 is partial - `SimEntity`, the `Tank` host, `Food` and `Fish` (all seven species) are implemented
-and green headlessly; pets, aliens, coins and projectiles remain. The next task is the rest of P4.3.
+(the ratio is 100/36 ≈ 2.78). The remake runs the 36 Hz reading (2026-11-04) and keeps the rate in
+one constant until P5.3 measures the original. P2.1-P2.4, P2.7-P2.15 and P2.18 are closed, P2.5 and
+P2.6 are substantially complete with tracked open questions, and P2.12 has its screen and dialog
+passes done (screen map, mode writer, store screen and stock refresh, level-start flow, all 13 screen
+constructors and their click handlers, the dialog base plus all ten dialog ctors and their click
+handlers); what is left there are the tracked open questions.
+**Phase 4 is in progress:** P4.1-P4.3 are complete; P4.4-P4.14 are in progress (P4.10/P4.11
+partial). The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in, and all
+18 headless checks pass. The next task is the P4.10/P4.11 follow-up.
 `PLAN.md` is the source of truth for progress.
 
 ## Start here
@@ -24,9 +23,9 @@ and green headlessly; pets, aliens, coins and projectiles remain. The next task 
    session-end checklist in `AGENTS.md`.
 2. **Want the current state quickly?** Read `SPECS.md` (the behaviour contract - it summarises every
    system and maps the P4 tasks), then the newest note `analysis/notes/p2.15-resources.md` (EV-0150..
-   EV-0154), then `analysis/notes/p2.12-menus.md` for the screen/vtable map, the dialog layer and
-   store population (EV-0131..EV-0140) and `analysis/notes/p2.13-saves.md` for the save bodies
-   (EV-0144).
+   EV-0154; latest corrections EV-0155/EV-0156), then `analysis/notes/p2.12-menus.md` for the
+   screen/vtable map, the dialog layer and store population (EV-0131..EV-0140) and
+   `analysis/notes/p2.13-saves.md` for the save bodies (EV-0144).
 3. **Need to run analysis?** Read the REA section below and the matching section of
    `../AGENTS.md`; the game install is read-only.
 4. **Need asset details?** Read `PIPELINE.md` before touching assets or starting P4.
@@ -42,7 +41,7 @@ and green headlessly; pets, aliens, coins and projectiles remain. The next task 
 | P1 target identity | Complete (10/10) |
 | P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In progress (2/14 + P4.3 partial): P4.1 architecture tick/scene scaffold, P4.2 content registry (326 ids, three load phases), P4.3 entity base + tank host + Food + Fish; four headless checks green |
+| P4 Godot implementation | In progress (3/14 complete): P4.1 architecture, P4.2 content registry, P4.3 entity set; P4.4-P4.14 in progress (P4.10/P4.11 partial). Playable level, store, menu, audio, saves, pets, aliens and Cyrax boss in; 18 headless checks green (936 assertions) |
 | P5 validation / polish | Not started (0/5) |
 
 - **P2.12 menus & UI flow (2026-10-29, first pass):** every screen class is a widget container plus
@@ -223,20 +222,19 @@ and green headlessly; pets, aliens, coins and projectiles remain. The next task 
   that return deferred placeholders during the loading thread and otherwise throw
   `"X resource not found: %s"`. Evidence EV-0150..EV-0154; note `analysis/notes/p2.15-resources.md`;
   open Q-0032/Q-0033 (non-blocking).
-- **Next planned task:** P2.18 `SPECS.md` to close Phase 2 (P2.16 screensaver deltas and P2.17 cheats
-  stay optional). P2.15 is closed (EV-0150..EV-0154); P2.14 is closed (EV-0145..EV-0149); P2.13 is
-  closed (EV-0144);
-  P2.12 itself is closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends tracked.
-  Q-0018's tank-side call site is identified (`0x54782A` = `FUN_005409B0()` inside `FUN_00547610`,
-  gated on tank 5 / `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`); the tutorial-loop owner and
-  the `prize+0x1D0/+0x1D1` writers stay open.
-- **Phase 2 close-out:** P2.18 `SPECS.md`, the cross-system P4 contract (D-0008).
+- **Phase 2 close-out:** P2.18 `SPECS.md` is complete (the cross-system P4 contract, D-0008);
+  P2.16 (screensaver deltas) and P2.17 (cheats) stay optional. P2.15 is closed
+  (EV-0150..EV-0154); P2.14 is closed (EV-0145..EV-0149); P2.13 is closed (EV-0144). P2.12 is
+  closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends tracked. Q-0018's tank-side
+  call site is identified (`0x54782A` = `FUN_005409B0()` inside `FUN_00547610`, gated on tank 5 /
+  `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`); the tutorial-loop owner and the
+  `prize+0x1D0/+0x1D1` writers stay open.
 
 ## What is in the repository
 
 | Path | Content |
 | --- | --- |
-| `project.godot`, `icon.svg` | Godot 4.7.1 project shell (Forward Plus, `canvas_items` stretch, Jolt configured; 2D game). No gameplay scenes/scripts yet. |
+| `project.godot`, `icon.svg` | Godot 4.7.1 project shell (Forward Plus, `canvas_items` stretch, Jolt configured; 2D game), five autoloads and the 640x480 settings. `scenes/main.tscn` boots the selector; `scripts/` holds the gameplay (level, entities, UI, persistence). |
 | `resources/sprites/` | 129 committed `SpriteFrames` (`.tres`) generated from the extracted sheets. |
 | `assets_raw/` | **Gitignored, regenerate with P3 tools:** images, masks, sliced frames, sounds, music, fonts. Personal use only (Q-0006). |
 | `tools/` | PowerShell extraction/REA wrappers + `tools/godot/` verification/generation scripts. |
@@ -251,20 +249,22 @@ and green headlessly; pets, aliens, coins and projectiles remain. The next task 
 git status
 git log -1 --oneline
 
-# verify the Godot project still imports (exits 0)
-& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --import
-
-# optional: regenerate extracted assets (read-only install -> assets_raw/)
+# required for a usable checkout: extract the owned game's assets (read-only install -> assets_raw/)
+# content.json and every SpriteFrames resource reference these files; the folder is gitignored.
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\parse-resources.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\extract-assets.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\extract-audio.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\decode-music.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
+
+# then verify the Godot project imports (exits 0)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --import
 ```
 
-There is no playable scene yet. P4.1 (architecture doc/scenes/autoloads/tick model) is the first
-implementation task; read `SPECS.md` (behaviour contract, §12 maps each P4 task onto its section,
-note and asset set) and `PIPELINE.md` (asset contract) before starting it.
+The playable level is in `scripts/tank/level.gd`: it mounts the tank, feeds fish, collects coins,
+runs the store and the wave clock, and is entered from the game selector. `PLAN.md` is the source
+of truth for what remains; read `SPECS.md` (behaviour contract, §12 maps each P4 task onto its
+section, note and asset set) and `PIPELINE.md` (asset contract) before starting new work.
 
 ## Analysis toolchain
 
@@ -303,7 +303,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0154). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0156). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `SPECS.md` | Behaviour contract for P4 (P2.18 output): tick model, resource contract, entity rules, economy, modes, UI, persistence, audio, cross-system rules, shared constant sheet, open-question index. Read before any P4 task. |
@@ -318,8 +318,8 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
 - [ ] Read `SPECS.md` and the latest EVIDENCE entries; the newest system note is
   `p2.15-resources.md`.
-- [ ] Pick the next task from `PLAN.md` (P4.1, Phase 4); check the open questions first
-  (Q-0018, Q-0028..Q-0034 - Q-0034 the tick rate affects everything timed).
+- [ ] Pick the next task from `PLAN.md` (currently the P4.10/P4.11 follow-up); check the open
+  questions first - Q-0034 (tick rate) affects everything timed.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended
   `EVIDENCE.md`, `DECISIONS.md` questions, note's P4 spec, saved raw output, and a commit.

@@ -60,6 +60,12 @@ the outstanding item in its pass.
 and settle the value by measurement (P5.3) before tuning feel. P4's animation delays are affected by
 the same constant (P2.15: `framedelay` values are 2 and 4).
 
+**Port decision (2026-11-04).** The remake runs the **~36 Hz** reading: `Sim.TICK_MS = 1000/36`. Every
+gameplay timer recovered as a tick count was calibrated against wiki seconds at that cadence (and the
+pellet tumbler only spins at a readable rate there - Q-0051), while the wrapper's `10` is a loop
+interval whose consumer in the tank path was never located. Q-0034 stays open for that missing gate;
+changing the rate back is one constant.
+
 ### 1.3 Space, bounds and layers
 
 - Coordinate space: 640x480 logical, integer scaling, nearest filtering (Q-0005).
@@ -155,8 +161,10 @@ Hunger (P2.3 §10): `fullness` starts 0, `-1` per tick while no effect is active
 
 Growth and death (P2.4 §8): feed points vs per-stage threshold; stage-up restarts points and plays
 the grow animation; overshoot (8 in Virtual Tank, 15 otherwise) jumps to the diminutive stage; death
-plays the death sound, leaves a corpse that sinks and is removed silently, and spawns a **live**
-successor object from the id table. Reviving a corpse is Angie's job (P2.7), not the death path.
+leaves an inert corpse that sinks while its own stage counter falls and is removed silently when it
+reaches 0 - the fish is gone, there is no replacement. The death sound and the **live** successor
+from the id table belong to the corpse's uncalled `phase < 1` revive branch (trigger unrecovered,
+Q-0043); reviving a corpse is Angie's job (P2.7), not the death path.
 
 ### 3.2 Food
 

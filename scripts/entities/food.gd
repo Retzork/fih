@@ -29,8 +29,11 @@ const STAR_DEATH_Y := 400.0
 const HOMING_TARGET := Vector2(550.0, 30.0)
 const HOMING_DIVISOR := 7.0
 const SUCK_OUT_X := 40.0
-## Step 2: the frame index wraps at `anim_cycle * 10` so a frame lasts 10 ticks.
-const ANIM_TICKS_PER_FRAME := 10
+## Step 2: `[0x5E]` is the sheet frame itself - it advances one frame per tick and wraps at
+## `[0x5F] * 10 - 1`, so the 10 is the sheet's column count, not a tick delay per frame. The pellet
+## sheet is 10x5: cycle 3 uses rows 0-2 (30 frames), cycle 4 rows 0-3 (40), which is exactly the
+## wrap range.
+const ANIM_FRAMES_PER_CYCLE := 10
 ## Quality 3 = star potion (splashes on death); variant 2 = breeding pellet (removed silently).
 const QUALITY_STAR := 3
 const VARIANT_BREEDING := 2
@@ -106,7 +109,7 @@ func death_line() -> float:
 
 func _advance() -> void:
 	# Step 2: animation and the inedible countdown.
-	anim_frame = (anim_frame + 1) % maxi(anim_cycle * ANIM_TICKS_PER_FRAME, 1)
+	anim_frame = (anim_frame + 1) % maxi(anim_cycle * ANIM_FRAMES_PER_CYCLE, 1)
 	if inedible > 0:
 		inedible -= 1
 

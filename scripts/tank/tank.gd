@@ -18,6 +18,19 @@ signal entity_despawned(entity: SimEntity)
 
 ## Typed spawn helper; preloaded so `Tank` does not depend on global class registration order.
 const FishScript := preload("res://scripts/entities/fish.gd")
+## Coin spawner helper, preloaded for the same reason.
+const CoinScript := preload("res://scripts/entities/coin.gd")
+## Projectile spawner helper, preloaded for the same reason.
+const ProjectileScript := preload("res://scripts/entities/projectile.gd")
+## Corpse spawner helper (dead-fish bodies, P2.4 §4).
+const DeadFishScript := preload("res://scripts/entities/dead_fish.gd")
+## Pet spawner helper (P2.7).
+const PetScript := preload("res://scripts/entities/pet.gd")
+## Alien spawners (P2.8).
+const AlienScript := preload("res://scripts/entities/alien.gd")
+const WaveClockScript := preload("res://scripts/tank/wave_clock.gd")
+## The boss (Cyrax) spawner.
+const BossScript := preload("res://scripts/entities/boss.gd")
 
 ## The Sim driver (injected, so headless checks can pass their own instance).
 var sim: Node = null
@@ -37,6 +50,28 @@ var virtual_tank := false
 var coin_difficulty_value := 0
 ## The original's `Tank+0x500` pacing gate; only meaningful in Virtual Tank.
 var coin_pacing_gate_value := false
+## Demo mode: coins expire after 108 ticks instead of 20 (P2.5 §5); P4.11 sets it.
+var demo_mode := false
+## `FUN_00537B80` hint flag: a hinted tank holds coins 150 ticks.
+var coin_hint_active := false
+## `Tank+0x16C`; purpose open, only the coin expiry reads it (200 ticks).
+var tank_flag_16c := false
+## `Tank+0x3C8`: tank index; 5 is the boss tank, whose slot-81 pet action is skipped.
+var tank_index := 0
+## Hostile aliens on the field: they freeze every pet's slot-81 action except Stanley's.
+var aliens_present := false
+## `Tank+0xD0` (Penta list) non-empty: Stinky/Clyde stop taking star coins.
+var penta_present := false
+## `Tank+0xB8`/`+0xF4` non-empty: the coin sources Stinky's hide counter watches.
+var pet_sources_busy := false
+## A boss is alive: it freezes the wave clock and suppresses alien death Diamonds.
+var boss_alive := false
+## Pet slots (2 normally); the boss forces 10, which also sets the shot damage (P2.9 §10).
+var pet_capacity := 2
+## A live boss freezes the wave clock.
+var wave_frozen := false
+## After the boss dies, waves never resume.
+var waves_disabled := false
 
 var _layers: Dictionary = {}
 
@@ -82,6 +117,89 @@ func spawn_fish(species: int, position: Vector2, stage: int = -1, facing: int = 
 	return spawn_at(fish, Sim.Phase.FISH, position) as Fish
 
 
+## Spawn a coin. Coins ride the contact phase (see `Coin` header) and draw above the particles.
+func spawn_coin(kind: int, position: Vector2) -> Coin:
+	var coin: Coin = CoinScript.create(kind, position)
+	return spawn_at(coin, Sim.Phase.COLLISION, position) as Coin
+
+
+## Spawn an alien projectile. `target` is the homing victim, which receives the `+0x98`
+## back-pointer when it supports `lock_projectile()` (P2.10 §5.1).
+func spawn_projectile(kind: int, position: Vector2, target: Node2D = null) -> Projectile:
+	var shot: Projectile = ProjectileScript.create(kind, position, target)
+	spawn_at(shot, Sim.Phase.PROJECTILES, position)
+	if target != null and target.has_method("lock_projectile"):
+		target.lock_projectile(shot)
+	return shot
+
+
+## Spawn the corpse a dead fish leaves (P2.4 §4). It sinks in the PARTICLES phase and emits
+## `successor_requested` when its death animation ends; the level spawns the live successor.
+## `corpse_id` is the dying fish's stage (`+0x1A4`); the corpse starts with its own stage counter
+## at 125 and sinks until that reaches 0 (EV-0052/EV-0053).
+func spawn_dead_fish(
+	species: int,
+	corpse_id: int,
+	position: Vector2,
+	facing: int = 1,
+	vx: float = 0.0,
+	vy: float = 0.0,
+	speed: float = DeadFishScript.SPEED_DIVISOR
+) -> DeadFish:
+	var corpse: DeadFish = DeadFishScript.create(species, corpse_id, position, facing, vx, vy, speed)
+	return spawn_at(corpse, Sim.Phase.PARTICLES, position) as DeadFish
+
+
+## Spawn a pet. Stinky's fixed lane is applied by the ctor, so the spawn keeps its own y.
+func spawn_pet(index: int, position: Vector2) -> Pet:
+	var pet: Pet = PetScript.create(index, position)
+	return spawn_at(pet, Sim.Phase.PETS, pet.position) as Pet
+
+
+## Spawn an alien of `kind` (P2.8). The wave clock only asks; the level calls this.
+func spawn_alien(kind: int, position: Vector2) -> Alien:
+	var alien: Alien = AlienScript.create(kind, position)
+	return spawn_at(alien, Sim.Phase.ALIENS, position) as Alien
+
+
+## Spawn the wave clock (one per level).
+func spawn_wave_clock() -> WaveClock:
+	var clock: WaveClock = WaveClockScript.new()
+	return spawn_at(clock, Sim.Phase.CLOCK, Vector2.ZERO) as WaveClock
+
+
+func alien_count() -> int:
+	var live := 0
+	for entity in entities:
+		if is_instance_valid(entity) and not entity.dead and entity.phase == Sim.Phase.ALIENS:
+			live += 1
+	return live
+
+
+func projectile_count() -> int:
+	var live := 0
+	for entity in entities:
+		if is_instance_valid(entity) and not entity.dead and entity.phase == Sim.Phase.PROJECTILES:
+			live += 1
+	return live
+
+
+## Shot damage: `3 * pet_capacity` (6 normally, 30 at the boss's forced 10 - SPECS §3.6).
+func shot_damage() -> int:
+	return 3 * pet_capacity
+
+
+## Spawn the Cyrax boss with `hp = 5000 - 125 * clamp(counter - 1, 0, 20)`, freeze the waves and
+## force the pet capacity to 10 (P2.9 §10).
+func spawn_boss(counter: int, position: Vector2) -> Boss:
+	var boss: Boss = BossScript.create(counter, position)
+	var spawned := spawn_at(boss, Sim.Phase.ALIENS, boss.position) as Boss
+	boss_alive = true
+	wave_frozen = true
+	pet_capacity = BossScript.FORCED_PET_CAPACITY
+	return spawned
+
+
 ## Unregister and free. Called by `SimEntity.despawn()`; safe to call directly.
 func despawn(entity: SimEntity) -> void:
 	entity.dead = true
@@ -116,6 +234,11 @@ func shutdown() -> void:
 	for entity in entities.duplicate():
 		despawn(entity)
 	entities.clear()
+	# The boss is gone with the rest, so its fight flags go too (a stray boss_alive would keep the
+	# wave clock frozen forever).
+	boss_alive = false
+	wave_frozen = false
+	pet_capacity = 2
 	if sim != null:
 		sim.flush_backlog()
 
@@ -159,6 +282,33 @@ func food_count() -> int:
 
 
 ## One roll from the tank stream in `rand%limit` shape, for entities that must not hold the RNG.
+## Live coins, for collectors and the level-end "collect all" sweep (P2.5 §5).
+## Every live corpse (P2.4 §4). Angie targets these (P2.7 §4.19).
+func corpses() -> Array[DeadFish]:
+	var found: Array[DeadFish] = []
+	for entity in entities:
+		if not is_instance_valid(entity) or entity.dead:
+			continue
+		var corpse := entity as DeadFish
+		if corpse != null:
+			found.append(corpse)
+	return found
+
+
+func coins() -> Array[Coin]:
+	var found: Array[Coin] = []
+	for entity in entities:
+		if is_instance_valid(entity) and not entity.dead and entity.phase == Sim.Phase.COLLISION:
+			var coin := entity as Coin
+			if coin != null:
+				found.append(coin)
+	return found
+
+
+func coin_count() -> int:
+	return coins().size()
+
+
 func randi_below(limit: int) -> int:
 	if limit <= 1:
 		return 0
@@ -190,4 +340,7 @@ func _layer_order() -> Array:
 		Sim.Phase.ALIENS,
 		Sim.Phase.PROJECTILES,
 		Sim.Phase.PARTICLES,
+		# Coins tick in the contact phase and draw last: they are clickable, and the original draws
+		# them after the tank contents.
+		Sim.Phase.COLLISION,
 	]
