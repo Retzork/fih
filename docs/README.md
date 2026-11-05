@@ -1,6 +1,6 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Progress audit (2026-11-05):** all 18 headless suites re-run green on this checkout (936 assertions); the capability assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md).
+**Progress audit (2026-11-05):** all 18 headless suites re-run green on this checkout (936 assertions); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md).
 
 **Handover status: Phase 2 closed (2026-11-02).** Phase 0, Phase 1 and Phase 3 are complete; Phase 2
 is 14/18 with **every technical system decoded** and `SPECS.md` written - only the two optional items

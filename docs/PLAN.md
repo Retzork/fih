@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-11-05 (progress audit: 18/18 suites re-run green, 936 assertions verified; capability assessment and findings in [AUDIT.md](AUDIT.md)). P4.1-P4.3 are complete; P4.4-P4.14 are all in progress, with P4.10/P4.11 partial. The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in, and all 18 headless suites pass (936 assertions).
+Last updated: 2026-11-05 (fidelity audit: 18/18 suites green, but the assembled wave/alien/boss path is unwired, level completion is API-only on tanks 1-4, and several systems are placeholders - see [AUDIT.md](AUDIT.md) §5a). P4.1-P4.3 are complete; P4.4-P4.14 are all in progress, with P4.10/P4.11 partial. The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in, and all 18 headless suites pass (936 assertions).
 
 Next: **P4.10/P4.11** (projectile homing and weapon follow-ups, then the game modes), with the
 remaining sub-items on P4.4-P4.9/P4.12-P4.14 tracked on their lines.
@@ -640,7 +640,7 @@ set.
   spawn point reused by a composite selection, and asks the level to spawn rather than spawning.
   `Tank` gained `spawn_alien`, `spawn_wave_clock`, `alien_count`, `projectile_count` and `boss_alive`.
   `tests/headless_alien_check.gd` passes **47 assertions**. The playable level now arms the clock
-  (`Level.arm_wave`), spawns the requested alien, wires its attack requests to the tank's projectile
+  (`Level.arm_wave`, which `start_level` does not call yet - AUDIT G1), spawns the requested alien when armed, wires its attack requests to the tank's projectile
   spawner and its death to the pet gate, and routes clicks in P2.10 §6.1 order (projectile, alien,
   coin, feed); `try_shoot` does `3 * weapon_level`. Remaining: the
   composite recipes' two-entity composition at the level, and the projectiles' homing (Q-0041).)

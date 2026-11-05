@@ -386,7 +386,7 @@ drops the backlog and a screen change must not carry old time into the next leve
 | --- | --- |
 | the level HUD is a placeholder; no gore/splat particles; the coin kind uses the placeholder table (Q-0036) | P4.4/P4.5 |
 | boss HP bar, per-item store art, stock roller/tooltips/paging, the binary's own price arrays (Q-0047/Q-0052) | P4.5 |
-| bonus rounds and their wait, Hatch/Pets screens, pre-bonus store, elapsed-time and Challenge score records, credits/trophy screens, a clickable egg widget (Q-0053) | P4.6 |
+| bonus rounds and their wait, Hatch/Pets screens, pre-bonus store, elapsed-time and Challenge score records, credits/trophy screens, a clickable egg widget (Q-0053; `buy_egg` has no UI entry point on tanks 1-4, AUDIT.md G14) | P4.6 |
 | 18 of the 24 pet bodies idle; Stinky, Niko, Angie, Vert, Shrapnel and Nostradamus are implemented (Q-0044) | P4.7 |
 | composite wave recipes' two-entity composition | P4.8 |
 | Cyrax's minion kind and pulse content are placeholders (Q-0047) | P4.9 |
@@ -396,6 +396,10 @@ drops the backlog and a screen change must not carry old time into the next leve
 | options sliders, the battle loop (trigger unrecovered), and the rest of the per-event sound map (Q-0030/Q-0056) | P4.13 |
 | options/hall-of-fame/help screens, the menu buttons' baked bitmaps (labels are port text) and the mermaid flop trigger (Q-0050/Q-0055) | P4.14 |
 | the mermaid tail sheet and mask are loaded with `Image.load_from_file` (Godot warns this does not work on export), and `resources/content.json`'s export inclusion is still unconfirmed (AUDIT.md F1) | P5.5 |
+| production wave arming, composite-member resolution, and sprites for aliens/boss/projectiles (AUDIT.md G1-G3) | P4.8/P4.10 |
+| shop-bought fish event wiring, stage -> coin-kind mapping, and the Tank mode-flag writers (AUDIT.md G4/G7/G9) | P4.4/P4.5/P4.11 |
+| per-mode save stems, profile persistence, and arming a restored wave selection (AUDIT.md G10) | P4.12 |
+| consumers for the hunger/growth/coin/pet/alien/projectile/wave cue signals (AUDIT.md G11) | P4.13 |
 | renderer/packaging decisions (Forward+ kept as-is) | P5.5 |
 
 ## 10. File map (P4 output)
