@@ -1,6 +1,6 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-11-05 (fidelity follow-up: 19/19 suites green, 956 assertions; the egg widget now completes levels on tanks 1-4, `start_level` arms waves/composites, and a scene-backed integration suite covers menu -> level -> wave -> boss, but threats are still invisible and several systems remain placeholders - see [AUDIT.md](AUDIT.md) §5/§5b). P4.1-P4.3 are complete; P4.4-P4.14 are all in progress, with P4.10/P4.11 partial. The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in.
+Last updated: 2026-11-05 (fidelity follow-up: 19/19 suites green, 985 assertions; the egg widget now completes levels on tanks 1-4, `start_level` arms waves/composites, a scene-backed integration suite covers menu -> level -> wave -> boss, aliens, Cyrax and projectiles draw their recovered sheets, and aliens/Cyrax draw the recovered HP bar; projectiles are still inert and the boss placeholders remain - see [AUDIT.md](AUDIT.md) §5/§5b). P4.1-P4.3 are complete; P4.4-P4.14 are all in progress, with P4.10/P4.11 partial. The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in.
 
 Next: **P4.10/P4.11** (projectile homing and weapon follow-ups, then the game modes), with the
 remaining sub-items on P4.4-P4.9/P4.12-P4.14 tracked on their lines.
@@ -641,19 +641,21 @@ set.
   shot death with no boss). `WaveClock` runs the 3000-tick gate, the fixed milestone order, one rolled
   spawn point reused by a composite selection, and asks the level to spawn rather than spawning.
   `Tank` gained `spawn_alien`, `spawn_wave_clock`, `alien_count`, `projectile_count` and `boss_alive`.
-  `tests/headless_alien_check.gd` passes **47 assertions**. `start_level` now arms the clock from
+  `tests/headless_alien_check.gd` passes **61 assertions**. `Alien.IMAGE_BY_KIND` binds every kind to its recovered sheet (SYLV/BALROG/GUS/DESTRUCTOR/ULYSSES/PSYCHOSQUID/BILATERUS/MINISYLV/BOSS), and `box_size`/`initial_hp` feed the HP bar (160x160 box except the 80x80 mini; Bilaterus has no body hp, so no bar). `start_level` now arms the clock from
   P2.6 §8's per-level selection (tank 1 level 2 starts at 1750 ticks), spawns the requested alien,
   composes 9..0xC into their recovered member pairs (1+3, 7+3, 5+6, 3+8), and re-rolls the type after
   each wave per P2.8 §5.1; the level wires attacks to the tank's projectile spawner and death to the
   pet gate, and routes clicks in P2.10 §6.1 order (projectile, alien, coin, feed); `try_shoot` does
   `3 * weapon_level`. Remaining: the projectiles' homing (Q-0041).)
 - [~] **P4.9** Bosses (P2.9)
-  - Cyrax is in (`scripts/entities/boss.gd`): the hp formula and clamp, the 300-tick arrival that cannot be hit, the 15-tick intro, minions every 75 ticks at `+40,+40`, the 300-tick pulse only while no other alien is on the field, the 10-tick per-attacker damage cooldown, and death clearing `boss_alive` then unfreezing and permanently disabling the wave clock. `Tank.spawn_boss` freezes the clock and forces pet capacity 10 (so a shot does 30); `Level.start_boss` wires the minion and pulse signals, `Level.start_level` starts him from the schedule table (`Level.boss_kind_for`: tank 5 level 1 is Cyrax, nothing else has a boss), and shots now go through `Tank.shot_damage()` (`3 * pet_capacity`: 6 normally, 30 against the boss). `tests/headless_boss_check.gd` passes **35 assertions**; Q-0047 tracks the unnamed minion kind/pulse content and the HP bar that belongs to P4.5.
+  - Cyrax is in (`scripts/entities/boss.gd`): the hp formula and clamp, the 300-tick arrival that cannot be hit, the 15-tick intro, minions every 75 ticks at `+40,+40`, the 300-tick pulse only while no other alien is on the field, the 10-tick per-attacker damage cooldown, and death clearing `boss_alive` then unfreezing and permanently disabling the wave clock. `Tank.spawn_boss` freezes the clock and forces pet capacity 10 (so a shot does 30); `Level.start_boss` wires the minion and pulse signals, `Level.start_level` starts him from the schedule table (`Level.boss_kind_for`: tank 5 level 1 is Cyrax, nothing else has a boss), and shots now go through `Tank.shot_damage()` (`3 * pet_capacity`: 6 normally, 30 against the boss). Cyrax now draws `IMAGE_BOSS` through the same entity visual path and always draws the recovered HP bar (P2.9 §5, `IMAGE_HEALTHBAR` under `IMAGE_HEALTHBARTUBE`). `tests/headless_boss_check.gd` passes **35 assertions**; Q-0047 tracks the unnamed minion kind/pulse content.
 - [~] **P4.10** Weapons/projectiles (P2.10)
   - The projectile entities and the weapon damage/hold-fire path are in (see P4.3/P4.5): three
-    projectile kinds, click hit-tests, `Tank.shot_damage()` and level-12 hold-to-fire. Not done:
-    the homing body `FUN_004FF4E0` (Q-0041), the `Larva` object, the laser draw/frame binding and
-    the weapon HUD (Q-0023).
+    projectile kinds, click hit-tests, `Tank.shot_damage()` and level-12 hold-to-fire. The kinds
+    draw their recovered sheets (`IMAGE_MISSILE`, `IMAGE_ENERGYBALL`, `IMAGE_BALLS`), and the
+    integration suite covers a real Destructor missile. Not done: the homing body
+    `FUN_004FF4E0` (Q-0041), the `Larva` object, the laser draw/frame binding and the weapon HUD
+    (Q-0023).
 - [~] **P4.11** Modes: Adventure, Challenge, Time Trial, Virtual Tank (P2.11)
   - The mode value, selector dispatch, Challenge's price inflation, Virtual Tank's music silence
     and the per-mode save stems are in (P4.14/P4.5/P4.12). Not done: the Time Trial clock and
@@ -700,10 +702,12 @@ set.
     unfinished blob. The cell offset and which cell is the rest pose are port placements (Q-0055);
     the flop's `anim: once`, `framemap="7,6,5,4,3,2,1,0"` and delays are recovered but no trigger
     for it is, so the port draws the rest pose and does not play the flop.
-  - The assembled path is now checked by `tests/headless_integration_check.tscn` (18 assertions):
-    it mounts `Main`, presses Adventure through the real `GameSelector`, starts 1-3 and advances
-    the production wave, then starts 5-1 through the same menu path and asserts the scheduled
-    Cyrax boss. It never calls `start_level`, `arm_wave` or `start_boss`; this closes audit G13.
+  - The assembled path is now checked by `tests/headless_integration_check.tscn` (30 assertions):
+    it mounts `Main`, presses Adventure through the real `GameSelector`, starts 2-4, advances the
+    production wave and the Destructor's real missile, then starts 5-1 through the same menu path
+    and asserts the scheduled Cyrax boss. It also checks the centred alien/missile sprites and the
+    HP bar (full 127-px fill, cut to 64 px at half hp). It never calls `start_level`, `arm_wave` or
+    `start_boss`; this closes audit G13.
 
 ## P5 - Validation & polish
 

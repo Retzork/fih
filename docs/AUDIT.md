@@ -37,24 +37,24 @@ Limits, stated so the numbers are not over-read:
 | `headless_entity_check` | 38 |
 | `headless_fish_check` | 105 |
 | `headless_coin_check` | 87 |
-| `headless_projectile_check` | 47 |
+| `headless_projectile_check` | 50 |
 | `headless_level_check` | 121 |
 | `headless_store_ui_check` | 34 |
 | `headless_progression_check` | 79 |
 | `headless_menu_check` | 37 |
-| `headless_integration_check` | 18 |
+| `headless_integration_check` | 30 |
 | `headless_pet_check` | 66 |
-| `headless_alien_check` | 47 |
+| `headless_alien_check` | 61 |
 | `headless_boss_check` | 35 |
 | `headless_save_check` | 38 |
 | `headless_save_files_check` | 21 |
 | `headless_tank_snapshot_check` | 54 |
 | `headless_audio_check` | 40 |
 | `headless_anim_check` | 18 |
-| **Total** | **956** |
+| **Total** | **985** |
 
 - All 19 suites exited 0; the per-suite counts above are the suites' own `PASS (... assertions)`
-  summaries and sum to exactly the **956** claimed in `PLAN.md` and `README.md`.
+  summaries and sum to exactly the **985** claimed in `PLAN.md` and `README.md`.
 - The boot check exits 0 and resolves the three content phases: `Init` 14, `Register` 16,
   `LoadingThread` 296 (326 ids, as `SPECS.md` §2.2 requires).
 - The audit began on clean `main` at `46d5f35`; the §5b follow-up is a later commit. `resources/sprites/` holds 129 `SpriteFrames`,
@@ -76,9 +76,9 @@ Limits, stated so the numbers are not over-read:
 of the game works. The assembled path now includes menu -> Adventure level -> feeding/growth/coins ->
 store -> egg purchase -> next level, and a scene-backed integration suite drives menu -> level ->
 wave -> boss through `Main`; `start_level` arms the per-level wave selection, composites
-compose, and the type re-rolls after each wave. What is still missing is the **visible** threat path:
-aliens, the boss and projectiles have no sprites, projectiles do not home or damage fish, and the
-boss placeholders remain. Every row of the `ARCHITECTURE.md` §9 gap table still has an open item;
+compose, and the type re-rolls after each wave. The threat path is now visible: aliens, Cyrax and
+projectiles draw their recovered sheets, and aliens/Cyrax carry the recovered HP bar. What is still
+missing is their behaviour: projectiles do not home or damage fish, and the boss placeholders remain. Every row of the `ARCHITECTURE.md` §9 gap table still has an open item;
 several rows are scaffolds with their wiring missing, not partially faithful systems. `[x]` means the
 task's documented scope was done, not that the system is connected or faithful.
 
@@ -89,12 +89,12 @@ task's documented scope was done, not that the system is connected or faithful.
 | tick driver, phases, pause, seeded RNG | done | `headless_sim_check`, `headless_entity_check` |
 | content registry, typed handles, load phases | done | `headless_content_check` |
 | feeding, hunger, growth, death/corpses, coins | done for guppies; other species share the guppy art; shop-bought fish are unwired (G4) | `headless_fish_check`, `headless_coin_check`, `headless_level_check` |
-| store UI + in-tank bar | partial: 7 of 12 items available; fixed table, no stock roller/art/tooltips; no boss HP bar | `Store.ITEMS`, `headless_store_ui_check`, Q-0047/Q-0049/Q-0052 |
+| store UI + in-tank bar | partial: 7 of 12 items available; fixed table, no stock roller/art/tooltips | `Store.ITEMS`, `headless_store_ui_check`, Q-0047/Q-0049/Q-0052 |
 | progression | partial: the egg widget buys pieces and completion advances on tanks 1-4; no bonus rounds, Hatch/Pets screens or credits | `headless_progression_check`, Q-0053, G12 |
 | pets | partial: 6 of 24 bodies; only Stinky steers/collects; all owned pets spawn rather than the selected slots; two ctors use the global RNG | `pet.gd:150/152/289`, Q-0044, G8 |
-| aliens + waves | wired: `start_level` arms the per-level type (with tank 1 level 2's 1750-tick start), 9..0xC compose 1+3/7+3/5+6/3+8, and the type re-rolls after each wave; aliens are still invisible | `headless_level_check`, G1-G3 |
-| Cyrax boss | code-only: invisible, placeholder minions/pulse, 10-tick cooldown bypassed, HP never scaled, no HP bar | `level.gd:447`, `boss.gd`, G6 |
-| weapons/projectiles | inert: damage and click tests exist, but `_steer()` is a no-op, there is no collision/damage path and no sprite; no `Larva`, laser binding or weapon HUD | `projectile.gd:123`, G5 |
+| aliens + waves | wired and visible: `start_level` arms the per-level type (with tank 1 level 2's 1750-tick start), 9..0xC compose 1+3/7+3/5+6/3+8, the type re-rolls after each wave, and each kind draws its recovered sheet plus the HP bar | `headless_level_check`, `headless_alien_check`, G1-G3 |
+| Cyrax boss | partial: sprite and always-on HP bar draw, but placeholder minions/pulse, 10-tick cooldown bypassed and HP never scaled | `level.gd:447`, `boss.gd`, G6 |
+| weapons/projectiles | visible but inert: the three sheets draw, but `_steer()` is a no-op and there is no collision/damage path; no `Larva`, laser binding or weapon HUD | `projectile.gd:123`, G5 |
 | modes | Adventure only; Challenge inflates prices only; Time Trial/Virtual Tank rules absent; the mode flags have no writers | `tank.gd:48-66`, G7 |
 | saves | fish-only entity records; per-mode save stem unused (always `adv1`); profile not persisted; a loaded wave selection is now armed | `level.gd:81`, `profile.gd`, G10 |
 | audio | two mixers, 256-slot pool, music pairs; most effect cues have no consumer; no battle loop | `headless_audio_check`, G11 |
@@ -130,48 +130,49 @@ unknown but a missing connection.
 
 **F5 - Green tests are machine-local (medium, reproducibility).** `assets_raw/` and the carved module
 are gitignored. A fresh clone cannot boot or run any suite until the five PowerShell extractors run
-against the owned install. This is documented, but it means the 956 assertions verify *this* checkout,
+against the owned install. This is documented, but it means the 985 assertions verify *this* checkout,
 not the repository alone.
 
 **F6 - Assertion reporting is inconsistent (low, tooling).** Sixteen suites print an `ok` line per
 assertion; `headless_anim_check`, `headless_audio_check` and `headless_menu_check` print only failures,
-so a naive `grep -c '^  ok'` reports 861 instead of 956. The PASS summary is the reliable count; a
+so a naive `grep -c '^  ok'` reports 890 instead of 985. The PASS summary is the reliable count; a
 shared check harness would remove the trap.
 
-No stale count or contradiction was found in the docs: `PLAN.md`, `README.md`, `docs/README.md` and
-`ARCHITECTURE.md` all agree on 19 suites, 956 assertions, the 36 Hz tick decision and the phase
-statuses. What they did not describe is the assembly gap in §5a; §5b records the follow-up fixes.
+No stale count or contradiction remained after this pass: `PLAN.md`, `README.md`, `docs/README.md` and
+`ARCHITECTURE.md` all agree on 19 suites, 985 assertions, the 36 Hz tick decision and the phase
+statuses. §5a records the assembly gap; §5b records the follow-up fixes.
 
 ## 5a. Implementation fidelity (code-level pass)
 
 These are not open reverse-engineering questions; they are places where the code, the suites and the
 documentation describe a system but the assembled game does not exercise it. This audit itself made
-no code changes; G1/G2/G13/G14 were fixed in the follow-up recorded in §5b.
+no code changes; G1/G2/G3/G13/G14 were fixed in the follow-up recorded in §5b.
 
 | # | Finding | Evidence | Effect in the game |
 | --- | --- | --- | --- |
 | G1 | the wave clock was never armed | `Level.arm_wave` (`level.gd:262`) was called only from tests; `start_level` did not arm it and no schedule set a selection | no alien waves in normal play (fixed in §5b) |
 | G2 | composite waves were dropped | `WaveClock` emitted selections 9..0xC; `_on_wave_spawn` returned unless `Alien.DEFS.has(selection)`, and `DEFS` has no 9..0xC | an armed composite wave spawned nothing (fixed in §5b: 1+3, 7+3, 5+6, 3+8) |
-| G3 | aliens, boss and projectiles have no sprite | `_make_visual` (`level.gd:762`) handles Fish/Food/Coin/Pet/DeadFish and returns null otherwise; `alien.gd`, `boss.gd` and `projectile.gd` contain no `Sprite2D` | invisible threats and shots; only their 80x80 click box reveals them |
+| G3 | aliens, boss and projectiles had no sprite | `_make_visual` (`level.gd:762`) handled Fish/Food/Coin/Pet/DeadFish and returned null otherwise; `alien.gd`, `boss.gd` and `projectile.gd` contained no `Sprite2D` | invisible threats and shots (fixed in §5b: recovered sheets, centred on their boxes, plus the HP bar) |
 | G4 | shop-bought fish are not wired to the level | `buy_item` (`level.gd:574`) calls `tank.spawn_fish(...)` directly; initial and bred fish go through `_wire()` | bought fish never emit `died`/`coin_due`/`breed_requested`: no coins, no corpse, no breeding |
-| G5 | projectiles are inert and cannot damage fish | `Projectile._steer()` is `pass` (`projectile.gd:123`); `_advance` has no fish/alien collision, only a click hit-test | alien attacks produce stationary, harmless, invisible shots |
-| G6 | Cyrax is a placeholder and its damage cooldown is bypassed | `_on_boss_minion`/`_on_boss_pulse` both spawn kind `0x01` (`level.gd:447-452`); `try_shoot` calls `hit(damage, true)` without an attacker (`level.gd:296`), skipping `Boss.hit`'s 10-tick cooldown; `Main` starts the level without the profile counter (`main.gd:51`), so HP is always 5000 | placeholder fight; click-spam damage; no HP scaling or HP bar |
+| G5 | projectiles are inert and cannot damage fish | `Projectile._steer()` is `pass` (`projectile.gd:123`); `_advance` has no fish/alien collision, only a click hit-test | alien attacks produce stationary, harmless shots (now drawn) |
+| G6 | Cyrax is a placeholder and its damage cooldown is bypassed | `_on_boss_minion`/`_on_boss_pulse` both spawn kind `0x01` (`level.gd:447-452`); `try_shoot` calls `hit(damage, true)` without an attacker (`level.gd:296`), skipping `Boss.hit`'s 10-tick cooldown; `Main` starts the level without the profile counter (`main.gd:51`), so HP is always 5000 | placeholder fight; click-spam damage; the bar draws but HP never scales |
 | G7 | every mode flag except Challenge inflation is dead | `Tank.virtual_tank`, `demo_mode`, `coin_difficulty_value`, `coin_pacing_gate_value`, `coin_hint_active`, `tank_flag_16c`, `penta_present`, `pet_sources_busy` are declared and read but never written (`tank.gd:48-66`) | Virtual Tank growth/coin rules unreachable; Stinky never hides; Penta coin exclusion inert; only Challenge inflation does anything |
 | G8 | pets: only Stinky moves; all owned pets spawn; two ctors use the global RNG | `Pet._steer` (`pet.gd:289`) returns unless `index == STINKY`; `spawn_owned_pets` loops every owned flag, not `Profile.selected_pets`; `Pet.create` calls global `randi_range` (`pet.gd:150/152`) | up to 24 pets stand still; Angie cannot reach a corpse; runs are not reproducible |
 | G9 | coin production is a single placeholder | `_on_coin_due` (`level.gd:490`) always spawns kind 1 (15 shells); the stage -> kind table is Q-0036 | high-value fish and stages pay the same 15; the economy is flat |
 | G10 | saves write one fixed path and the profile is not persisted | `Level.save_path` is `userdata/adv1.dat` (`level.gd:81`); `Game.save_stem` has no caller; `Profile` has no serialization; `TankScalars.apply` restores `alien_selection` and `load_game` now arms `wave.selection` | every mode overwrites the Adventure slot; progress resets on restart; the loaded wave selection is armed, but per-mode stems and profile persistence remain |
 | G11 | most effect/audio signals have no consumer | no listener for `fish.hunger_warning`/`grew`, `coin.expired`/`banked`, `pet.cue`, `alien.cue`, `projectile.smoke_requested`/`burst_requested` or `wave.milestone` | no hunger/growth/pet/alien sounds, no smoke/burst/wave warnings; only drop/buy/click and music play |
-| G12 | progression and UI stop at the level boundary | `Main._on_level_completed` starts the next level directly (`main.gd:59`); no Hatch/Pets/Bonus/credits screens; no boss HP bar; store has no stock roller/art/tooltips; options/help/hall-of-fame absent | the Adventure loop has no between-level flow, and much of the original UI is missing |
+| G12 | progression and UI stop at the level boundary | `Main._on_level_completed` starts the next level directly (`main.gd:59`); no Hatch/Pets/Bonus/credits screens; store has no stock roller/art/tooltips; options/help/hall-of-fame absent | the Adventure loop has no between-level flow, and much of the original UI is missing |
 | G13 | the assembled menu flow had no suite | `headless_level_check` starts 1-3 through `start_level`; the boss suite builds a `Tank` and calls `spawn_boss` directly; store tests inject prices; the new scene-backed suite drives menu -> level -> wave -> boss through `Main` | modules were green but the assembled flow was unproven (fixed in §5b: the integration suite) |
 | G14 | level completion was unreachable on tanks 1-4 | `buy_egg` was called only from `buy_item` for `EGG_ITEM` (`level.gd:580`), and `STORE_TABLE[11]` stocks that row only on tank 5; no egg widget existed | Adventure could not advance past level 5 of any tank in normal play (fixed in §5b: the egg widget) |
 
 Consequences worth stating plainly:
 
-- The playable game is still a feeding/economy sandbox whose aliens, boss and projectiles are
-  invisible; the egg widget now lets tanks 1-4 finish a level, but the threat path is not a game yet.
+- The playable game is still a feeding/economy sandbox: the threats and shots are now visible, and
+the egg widget lets tanks 1-4 finish a level, but inert projectiles and placeholder boss actions
+mean the threat path is not a game yet.
 - The "aliens + waves", "boss", "weapons" and "modes" task lines should be read as **entity and table
   work complete, integration incomplete**.
-- The 956 assertions remain real and useful; the integration suite now covers the assembled menu
+- The 985 assertions remain real and useful; the integration suite now covers the assembled menu
   -> level -> wave -> boss flow, while the rest mostly prove modules.
 
 ## 5b. Follow-up fixes (2026-11-05)
@@ -184,30 +185,38 @@ Consequences worth stating plainly:
   level 2's 1750-tick start), and `WaveClock.wave_spawned` re-rolls the type after each wave per
   P2.8 §5.1. `Level._on_wave_spawn` composes 9..0xC into 1+3, 7+3, 5+6 and 3+8. The level suite starts
   1-3 through `start_level` and exercises 0x09 without arming by hand (121 assertions).
+- **G3 fixed.** `Alien.IMAGE_BY_KIND` binds every kind to its recovered sheet and
+  `Projectile.IMAGE_BY_KIND` does the same for the three shot kinds; `Level._make_visual` creates one
+  `Sprite2D` per alien/boss/shot, centred on the entity position (the box centre, P2.8 §2.1), and
+  `_draw_entity_frame` plays the sheet's own metadata (Bilaterus draws its first cell, the shots
+  their base cell, Q-0041/Q-0057). Each alien also gets the P2.9 §5 HP bar: `IMAGE_HEALTHBAR` clipped
+  to `127 * hp / hp0` under the full `IMAGE_HEALTHBARTUBE` glass at x 10 / y box-3, always for Cyrax
+  and for ordinary aliens while `Tank.show_alien_health` (`Tank+0x178`, writer unrecovered) is set
+  and the tank is not 5. The alien, projectile and integration suites cover the image maps and the
+  bar (61/50/30 assertions).
 - **G13 fixed.** `tests/headless_integration_check.tscn` mounts the real `Main`, presses Adventure
-  on the production `GameSelector`, starts 1-3 and advances the production wave, then starts 5-1
-  through the same menu path and asserts the scheduled Cyrax boss. It never calls `start_level`,
-  `arm_wave` or `start_boss`; 18 assertions. The suite is scene-backed because `--script` does not
-  expose the project autoloads that `main.gd` names.
-- Still open: sprites for aliens/boss/projectiles (G3), projectile motion/damage (G5), the boss
-  placeholders/cooldown (G6), bought-fish/economy wiring (G4/G9), modes (G7), pets/persistence
-  (G8/G10), cue consumers (G11), UI/screens (G12) and packaging (F1).
+  on the production `GameSelector`, starts 2-4 and advances the production wave and the Destructor's
+  real missile, then starts 5-1 through the same menu path and asserts the scheduled Cyrax boss. It
+  also checks the centred sprites and the HP bar (full 127-px fill, 64 px at half hp); it never calls
+  `start_level`, `arm_wave` or `start_boss`; 30 assertions. The suite is scene-backed because
+  `--script` does not expose the project autoloads that `main.gd` names.
+- Still open: projectile motion/damage (G5), the boss placeholders/cooldown (G6), bought-fish/economy
+  wiring (G4/G9), modes (G7), pets/persistence (G8/G10), cue consumers (G11), UI/screens (G12) and
+  packaging (F1).
 
 ## 6. Priority for the next sessions
 
-1. **Make threats visible** (G3): sprites for aliens, the boss and projectiles, plus the HP bar. Until
-   this exists, no combat claim can be checked visually.
-2. **Give projectiles their behaviour** (G5): the homing body, then collision/damage against fish;
-   only then does alien fire mean anything.
-3. **Fix the boss fight** (G6): pass the attacker for the 10-tick cooldown, pass the profile counter
+1. **Give projectiles their behaviour** (G5): the homing body, then collision/damage against fish;
+   only then does alien fire mean anything. The sprites and the HP bar now make the path visible.
+2. **Fix the boss fight** (G6): pass the attacker for the 10-tick cooldown, pass the profile counter
    for HP scaling, and replace the Sylvester minion/pulse placeholders.
-4. **Fix the economy wiring** (G4/G9): use `_wire()` for shop-bought fish and recover the stage ->
+3. **Fix the economy wiring** (G4/G9): use `_wire()` for shop-bought fish and recover the stage ->
    coin-kind table (or keep the placeholder explicit in the store/UI).
-5. **Implement the mode flags** (G7): `start_level` must set `virtual_tank`, demo/hint/pacing flags
+4. **Implement the mode flags** (G7): `start_level` must set `virtual_tank`, demo/hint/pacing flags
    from the mode, or the mode lines should say "selection only".
-6. **Pets and persistence** (G8/G10): selected-slot spawning, movement for the implemented pets,
+5. **Pets and persistence** (G8/G10): selected-slot spawning, movement for the implemented pets,
    per-tank RNG for the pet ctors, per-mode save stems and profile serialization.
-7. **Effects, UI and packaging** (G11/G12/F1): connect the cue signals, then the Hatch/Bonus/Pets
+6. **Effects, UI and packaging** (G11/G12/F1): connect the cue signals, then the Hatch/Bonus/Pets
    screens, options/help, and the export-safe asset loading.
 
 ## 7. Reproduction

@@ -46,6 +46,13 @@ const FOOD_IMAGE := "IMAGE_FOOD"
 const COIN_IMAGE := "IMAGE_MONEY"
 ## The coin sheet's animation columns (`MONEY` is 10x6).
 const COIN_COLUMNS := 10
+## The alien/boss HP bar (P2.9 §5): the `HEALTHBARTUBE` glass over the `HEALTHBAR` fill, both
+## 127x15, inside the alien's own box at x 10 and y = box height - 3. The fill is clipped to
+## `tube_w * hp / hp0`.
+const HEALTH_BAR_FILL_IMAGE := "IMAGE_HEALTHBAR"
+const HEALTH_BAR_TUBE_IMAGE := "IMAGE_HEALTHBARTUBE"
+const HEALTH_BAR_X := 10.0
+const HEALTH_BAR_BOTTOM_INSET := 3.0
 
 const TankSaveScript := preload("res://scripts/persistence/tank_save.gd")
 const SaveFilesScript := preload("res://scripts/persistence/save_files.gd")
@@ -914,6 +921,12 @@ func _make_visual(entity: SimEntity) -> Sprite2D:
 			return null
 		source_id = DEATH_IMAGE
 		body_row = clampi(corpse.corpse_id, 0, GUPPY_ROWS - 1)
+	elif entity is Alien:
+		# P2.8 §3: the kind -> image binding includes Cyrax (BOSS) and the 80x80 minis/Bilaterus.
+		source_id = (entity as Alien).image_id()
+	elif entity is Projectile:
+		# P2.10 §5: the three projectile kinds bind the missile, energy-ball and balls sheets.
+		source_id = (entity as Projectile).image_id()
 	else:
 		return null
 	if _content == null or not _content.has_image(source_id):
@@ -924,7 +937,8 @@ func _make_visual(entity: SimEntity) -> Sprite2D:
 
 	var sprite := Sprite2D.new()
 	sprite.name = "Visual"
-	# A fish, corpse or pet position is the top-left corner of its 80x80 box.
+	# Fish, corpses and pets draw from the top-left corner of their bounds box; aliens and shots
+	# fill their box, and the entity position is its centre (P2.8 §2.1), so those are centred.
 	sprite.centered = not (entity is Fish or entity is DeadFish or entity is Pet)
 	var anim := AnimState.new()
 	anim.setup(res, _sim_tick())
@@ -934,6 +948,8 @@ func _make_visual(entity: SimEntity) -> Sprite2D:
 	sprite.set_meta("hungry", entity is Fish and (entity as Fish).uses_hungry_art())
 	_draw_entity_frame(entity, sprite, anim)
 	entity.add_child(sprite)
+	if entity is Alien:
+		_make_health_bar(entity as Alien)
 	return sprite
 
 
@@ -970,6 +986,22 @@ func _draw_entity_frame(entity: SimEntity, sprite: Sprite2D, anim: AnimState) ->
 		# not pick a column itself (Q-0044 keeps the per-pet animation cells open).
 		sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")), anim.frame_at(_sim_tick()))
 		return
+	if entity is Alien:
+		# Alien sheets declare their own loop. Bilaterus is the exception: its sheet has no `anim`
+		# metadata, so use its first cell rather than cycling unrelated body/head cells (P2.8 §3).
+		var alien := entity as Alien
+		var source := String(sprite.get_meta("source", ""))
+		if anim.res != null and anim.res.anim == "":
+			sprite.texture = _keyed_cell(source, 0)
+		else:
+			sprite.texture = _keyed_cell(source, anim.frame_at(_sim_tick()))
+		_update_health_bar(alien)
+		return
+	if entity is Projectile:
+		# The projectile sheets have no recovered playback metadata; the first cell is their base
+		# art. The missing homing body still owns the direction/animation choice (Q-0041).
+		sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")), 0)
+		return
 	if entity is Food:
 		# The simulation counter picks the frame; `anim_cycle` 3/4 means the first 3/4 rows.
 		var food := entity as Food
@@ -978,6 +1010,59 @@ func _draw_entity_frame(entity: SimEntity, sprite: Sprite2D, anim: AnimState) ->
 	# Coins cycle the sheet's first row: which row belongs to which kind is not recovered (Q-0057).
 	sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")),
 		AnimState.column_at(anim.started, _sim_tick(), COIN_COLUMNS))
+
+
+## The bar is a pair of sprites inside the alien's box: the red fill (width-clipped to hp) under
+## the full-length glass tube. It is created once per alien and only re-cut per frame.
+func _make_health_bar(alien: Alien) -> Node2D:
+	var existing := alien.get_node_or_null("HealthBar") as Node2D
+	if existing != null:
+		return existing
+	var bar := Node2D.new()
+	bar.name = "HealthBar"
+	var box := alien.box_size()
+	var half := box * 0.5
+	# P2.9 §5: x = 10, y = box height - 3, both inside the box's own top-left corner.
+	bar.position = Vector2(-half + HEALTH_BAR_X, -half + box - HEALTH_BAR_BOTTOM_INSET)
+	var fill := Sprite2D.new()
+	fill.name = "Fill"
+	fill.centered = false
+	fill.texture = _keyed_cell(HEALTH_BAR_FILL_IMAGE, 0)
+	var tube := Sprite2D.new()
+	tube.name = "Tube"
+	tube.centered = false
+	tube.texture = _keyed_cell(HEALTH_BAR_TUBE_IMAGE, 0)
+	bar.add_child(fill)
+	bar.add_child(tube)
+	alien.add_child(bar)
+	_update_health_bar(alien)
+	return bar
+
+
+## The recovered draw gate (P2.9 §5): Cyrax always has a bar; ordinary aliens only when
+## `Tank+0x178` is set and the tank is not tank 5.
+func _alien_health_visible(alien: Alien) -> bool:
+	if alien.kind == int(BOSS_KINDS["cyrax"]):
+		return true
+	return tank.show_alien_health and int(tank.tank_index) != 5
+
+
+## Cut the fill to `tube_w * hp / hp0` (clamped), and show/hide the whole bar from the draw gate.
+func _update_health_bar(alien: Alien) -> void:
+	var bar := alien.get_node_or_null("HealthBar") as Node2D
+	if bar == null:
+		return
+	var max_hp := alien.initial_hp()
+	bar.visible = max_hp > 0 and _alien_health_visible(alien)
+	if not bar.visible:
+		return
+	var fill := bar.get_node_or_null("Fill") as Sprite2D
+	if fill == null or fill.texture == null:
+		return
+	var ratio := clampf(float(alien.hp) / float(max_hp), 0.0, 1.0)
+	fill.region_enabled = true
+	fill.region_rect = Rect2(0.0, 0.0, roundf(fill.texture.get_width() * ratio),
+		fill.texture.get_height())
 
 
 ## One keyed cell of a sheet, built once and kept for the session.

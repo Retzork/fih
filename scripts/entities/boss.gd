@@ -63,6 +63,11 @@ func is_arriving() -> bool:
 	return arrival_timer > 0
 
 
+## The HP bar's denominator is this spawn's scaled maximum, not the table's 5000 (P2.9 §5).
+func initial_hp() -> int:
+	return max_hp
+
+
 ## While arriving the boss cannot be hit and does nothing; then a 15-tick intro, then the fight.
 func _advance() -> void:
 	if arrival_timer > 0:

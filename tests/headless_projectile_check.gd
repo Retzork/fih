@@ -41,6 +41,7 @@ func _init() -> void:
 	tank.setup(sim, 31337)
 
 	_test_ctor_constants()
+	_test_images()
 	_test_spawn_and_phase()
 	_test_immunity()
 	_test_expiry()
@@ -80,6 +81,12 @@ func _test_ctor_constants() -> void:
 	_expect(falling.box == ProjectileScript.BOX_SMALL, "kind 2 is 50x50")
 	_expect(falling.speed_divisor == ProjectileScript.SPEED_DIVISOR_SMALL, "kind 2 divides speed by 0.4")
 	falling.free()
+
+
+func _test_images() -> void:
+	_expect(ProjectileScript.image_id_for(MISSILE) == "IMAGE_MISSILE", "kind 0 draws IMAGE_MISSILE")
+	_expect(ProjectileScript.image_id_for(BALL) == "IMAGE_ENERGYBALL", "kind 1 draws IMAGE_ENERGYBALL")
+	_expect(ProjectileScript.image_id_for(FALLING) == "IMAGE_BALLS", "kind 2 draws IMAGE_BALLS")
 
 
 func _test_spawn_and_phase() -> void:

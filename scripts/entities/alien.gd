@@ -27,6 +27,20 @@ const DEFS := {
 	0x15: {"hp": 5000, "speed": 2.0, "band": "full", "attack": "boss"},
 }
 
+## The image each kind binds in `FUN_004DAE20` (P2.8 §3). Kinds 1 and 2 share the Sylvester sheet;
+## Cyrax uses `IMAGE_BOSS`, not the Sylvester row. `Bilaterus` has no playback metadata, so the
+## level draws its first cell rather than cycling all 80 cells.
+const IMAGE_BY_KIND := {
+	0x01: "IMAGE_SYLV", 0x02: "IMAGE_SYLV", 0x03: "IMAGE_BALROG", 0x04: "IMAGE_GUS",
+	0x05: "IMAGE_DESTRUCTOR", 0x06: "IMAGE_ULYSSES", 0x07: "IMAGE_PSYCHOSQUID",
+	0x08: "IMAGE_BILATERUS", 0x14: "IMAGE_MINISYLV", 0x15: "IMAGE_BOSS",
+}
+
+## The drawn box (`+0x38/+0x3C`, P2.8 §2.1): 160x160, except Minisylvester's 80x80. The entity
+## position is the box centre, so a sprite of this size is centred on it.
+const BOX_LARGE := 160.0
+const BOX_MINI := 80.0
+
 ## Bands: full x -10..490 / y 85..290; the mini variant 10..540 / 95..370 (SPECS §3.5).
 const BAND_FULL := Rect2(-10.0, 85.0, 500.0, 205.0)
 const BAND_MINI := Rect2(10.0, 95.0, 530.0, 275.0)
@@ -97,6 +111,14 @@ static func create(kind_: int, pos: Vector2) -> Alien:
 	return alien
 
 
+static func image_id_for(kind_: int) -> String:
+	return String(IMAGE_BY_KIND.get(kind_, "IMAGE_SYLV"))
+
+
+func image_id() -> String:
+	return image_id_for(kind)
+
+
 func def() -> Dictionary:
 	return DEFS[kind]
 
@@ -107,6 +129,17 @@ func attack() -> String:
 
 func is_mini() -> bool:
 	return int(DEFS[kind]["hp"]) == 1
+
+
+## Drawn box size (P2.8 §2.1), used to centre the sprite and place the HP bar.
+func box_size() -> float:
+	return BOX_MINI if is_mini() else BOX_LARGE
+
+
+## `+0x1F8`, the hp copied at spawn: the HP-bar denominator (P2.9 §5). Bilaterus' body has none
+## (its two heads each carry 100), so it is 0 and no bar is drawn.
+func initial_hp() -> int:
+	return int(DEFS[kind]["hp"])
 
 
 ## The movement band for this kind (Q-0045 on the bottom lane's height).

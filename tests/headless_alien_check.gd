@@ -30,6 +30,8 @@ func _init() -> void:
 	tank.setup(sim, 424242)
 
 	_test_table()
+	_test_images()
+	_test_boxes_and_hp()
 	_test_spawn_and_bands()
 	_test_attacks()
 	_test_eating()
@@ -59,6 +61,33 @@ func _test_table() -> void:
 			"kind 0x%X is hp %d / speed %.1f" % [kind, expected[kind][0], expected[kind][1]])
 	_expect(not AlienScript.DEFS.has(0x09), "kinds 9..0xC are recipes, not entities")
 	_expect(not AlienScript.DEFS.has(0x0C), "kind 0xC is a recipe too")
+
+
+func _test_images() -> void:
+	var expected := {
+		0x01: "IMAGE_SYLV", 0x02: "IMAGE_SYLV", 0x03: "IMAGE_BALROG", 0x04: "IMAGE_GUS",
+		0x05: "IMAGE_DESTRUCTOR", 0x06: "IMAGE_ULYSSES", 0x07: "IMAGE_PSYCHOSQUID",
+		0x08: "IMAGE_BILATERUS", 0x14: "IMAGE_MINISYLV", 0x15: "IMAGE_BOSS",
+	}
+	for kind: int in expected:
+		_expect(AlienScript.image_id_for(kind) == expected[kind],
+			"kind 0x%X draws %s" % [kind, expected[kind]])
+
+
+## P2.9 §5's HP bar divides by the spawn hp (`+0x1F8`) inside the alien's own box, so both values
+## come from the entity: 160 box for every kind except the 80x80 Minisylvester, and 0 hp for
+## Bilaterus, whose body has none (its two heads carry 100 each).
+func _test_boxes_and_hp() -> void:
+	var sylvester: Alien = AlienScript.create(SYLVESTER, Vector2.ZERO)
+	var mini: Alien = AlienScript.create(MINI, Vector2.ZERO)
+	var bilaterus: Alien = AlienScript.create(0x08, Vector2.ZERO)
+	_expect(sylvester.box_size() == 160.0, "the alien box is 160x160")
+	_expect(mini.box_size() == 80.0, "the Minisylvester box is 80x80")
+	_expect(sylvester.initial_hp() == 50, "the HP bar divides by the spawn hp (50)")
+	_expect(bilaterus.initial_hp() == 0, "Bilaterus has no body hp, so it gets no bar")
+	sylvester.free()
+	mini.free()
+	bilaterus.free()
 
 
 func _test_spawn_and_bands() -> void:

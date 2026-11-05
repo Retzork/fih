@@ -885,7 +885,7 @@ P2.9 and SPECS §3.6 settle Cyrax's numbers, and `scripts/entities/boss.gd` impl
 
 - the **minion kind** is unnamed; the level spawns a Sylvester (0x01) for the minion and for the pulse (`Level._on_boss_minion`, `_on_boss_pulse`);
 - the **pulse content** is likewise unnamed, so it is the same single Sylvester;
-- the **HP bar** is a draw rule, not a simulation rule, so it belongs to P4.5 (the boss bar is always drawn; other aliens only when the tank's flag is set and the tank is not 5).
+- the **HP bar** is a draw rule, not a simulation rule (the boss bar is always drawn; other aliens only when the tank's flag is set and the tank is not 5). It is now implemented; Q-0058 records the missing flag writer and the remake's default.
 
 `tests/headless_boss_check.gd` covers the recovered parts (35 assertions).
 
@@ -1141,3 +1141,18 @@ Still **not recovered**, and therefore port defaults:
 
 The menu mermaid's tail now plays its recovered one-shot flop when the menu opens and returns to the
 rest pose; Q-0055 records why the return is a port choice rather than holding the last cell.
+
+### Q-0058 - `Tank+0x178` has no located writer, so the remake shows alien HP bars by default
+
+P2.9 §5 recovers the HP bar down to the draw instruction: `IMAGE_HEALTHBAR` clipped to
+`round(127 * hp / hp0)` under the full `IMAGE_HEALTHBARTUBE` glass, at x 10 and y box height - 3;
+Cyrax (kind 0x15) always draws it, ordinary aliens only when `Tank+0x178` is set and the tank index
+is not 5. The flag's writer was never located (bounded negative, EV-0118), so the remake adds
+`Tank.show_alien_health` (default `true`) instead of leaving ordinary aliens barless, and keeps the
+tank-5 suppression. If the writer is found, drive the flag from that path and drop the default.
+
+`Level` builds the bar once per alien (`_make_health_bar`) and re-cuts the fill every frame from
+`hp / initial_hp()`; `Alien.initial_hp()` is the spawn copy (`+0x1F8`, 0 for Bilaterus, so no bar),
+and `Boss.initial_hp()` returns the profile-scaled maximum. The glass is drawn over the fill so the
+red empties from the right; the recovered call order in the note (`0x455E40` then `0x455D20`) is kept
+in the note, while the port's layer order is a presentation choice.

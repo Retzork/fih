@@ -17,6 +17,14 @@ extends SimEntity
 ## `+0x19C`: 0 missile, 1 energy ball, 2 third variant.
 enum Kind { MISSILE, BALL, FALLING }
 
+## The three recovered projectile sheets (P2.10 §5). The dimensions match the kind's box: the
+## missile and energy ball are 80x80, the falling shot is the 50x50 `BALLS` sheet.
+const IMAGE_BY_KIND := {
+	Kind.MISSILE: "IMAGE_MISSILE",
+	Kind.BALL: "IMAGE_ENERGYBALL",
+	Kind.FALLING: "IMAGE_BALLS",
+}
+
 ## Ctor: 80x80 box and speed divisor 0.8, or 50x50 and 0.4 for kind 2.
 const BOX_LARGE := 80.0
 const BOX_SMALL := 50.0
@@ -84,6 +92,14 @@ static func create(kind_: int, pos: Vector2, target_: Node2D = null) -> Projecti
 func begin_expiry() -> void:
 	if expiry == 0:
 		expiry = 1
+
+
+static func image_id_for(kind_: int) -> String:
+	return String(IMAGE_BY_KIND.get(kind_, "IMAGE_MISSILE"))
+
+
+func image_id() -> String:
+	return image_id_for(kind)
 
 
 func is_deflected() -> bool:

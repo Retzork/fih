@@ -12,11 +12,13 @@ extends Node
 ## profile start, builds the level and calls `start_level`. The wave is advanced through the shared
 ## `Sim`, and tank 5 level 1's scheduled boss is spawned by that same `start_level` call.
 ##
-## Tank 5 level 1 starts with Cyrax, so there is no wave in that level. The wave leg uses tank 1
-## level 3 (selection 2) and the boss leg uses tank 5 level 1; both start from the menu.
+## Tank 5 level 1 starts with Cyrax, so there is no wave in that level. The wave leg uses tank 2
+## level 4 (selection 5, a Destructor whose real attack produces a missile) and the boss leg uses
+## tank 5 level 1; both start from the menu.
 
 const MainScene := preload("res://scenes/main.tscn")
 const WaveClockScript := preload("res://scripts/tank/wave_clock.gd")
+const AlienScript := preload("res://scripts/entities/alien.gd")
 const BossScript := preload("res://scripts/entities/boss.gd")
 
 var _checks := 0
@@ -28,26 +30,58 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	var main = await _start_from_menu(1, 3)
+	var main = await _start_from_menu(2, 4)
 	if main == null or main._level == null:
 		_teardown(main)
 		_finish()
 		return
 	var level = main._level
-	_expect(level.tank_index == 1 and level.level_index == 3,
-		"the menu starts the profile's level 1-3 (got %d-%d)" % [level.tank_index, level.level_index])
+	_expect(level.tank_index == 2 and level.level_index == 4,
+		"the menu starts the profile's level 2-4 (got %d-%d)" % [level.tank_index, level.level_index])
 	_expect(level.game_mode == Game.Mode.ADVENTURE,
 		"the menu writes adventure mode into the level")
 	# `start_level` must have armed the wave from the recovered table; the test does not call it.
-	_expect(level.alien_selection == 2,
-		"the production start arms 1-3's wave selection 2 (got %d)" % level.alien_selection)
+	_expect(level.alien_selection == 5,
+		"the production start arms 2-4's wave selection 5 (got %d)" % level.alien_selection)
 	_step(WaveClockScript.WAVE_TICKS)
 	_expect(level.tank.alien_count() == 1,
 		"one wave alien spawned after %d ticks (got %d)" % [WaveClockScript.WAVE_TICKS, level.tank.alien_count()])
 	_expect(level.tank.aliens_present, "the spawned wave raises the tank's aliens-present flag")
 	var alien: Alien = _first_alien(level.tank)
-	_expect(alien != null and alien.kind == 2,
-		"the wave used the level's kind 2 (got %s)" % (str(alien.kind) if alien != null else "none"))
+	_expect(alien != null and alien.kind == 5,
+		"the wave used the level's kind 5 (got %s)" % (str(alien.kind) if alien != null else "none"))
+	_expect(alien != null and _visual_source(alien) == "IMAGE_DESTRUCTOR",
+		"the Destructor carries its recovered sprite")
+	var alien_sprite := _visual_node(alien)
+	_expect(alien_sprite != null and alien_sprite.centered,
+		"the alien sprite is centred on its 160x160 box")
+	var alien_bar := _health_bar(alien)
+	_expect(alien_bar != null and alien_bar.visible,
+		"the Destructor draws an HP bar")
+	_expect(alien_bar != null and alien_bar.position == Vector2(-70.0, 77.0),
+		"the bar sits at x 10 / y box-3 inside the box (got %s)" % [_bar_position(alien)])
+	_expect(_health_fill(alien) != null and _health_fill(alien).texture != null
+		and roundf(_health_fill(alien).region_rect.size.x) == 127.0,
+		"a full bar keeps the whole 127-px fill")
+	# The bar is a draw rule over `hp / hp0`: 75 of 150 leaves half the fill.
+	if alien != null:
+		alien.hit(75)
+	# Drive the render pass explicitly: `process_frame` resumes before `Level._process` runs.
+	level._process(0.0)
+	_expect(_health_fill(alien) != null and roundf(_health_fill(alien).region_rect.size.x) == 64.0,
+		"at half hp the fill is cut to 64 px (got %s)" % [_fill_width(alien)])
+
+	# The Destructor's own 75-tick timer asks the tank for a missile; the spawn path builds its
+	# sprite. Its 7-tick intro runs before the attack timer starts counting down.
+	_step(AlienScript.INTRO_TICKS + AlienScript.MISSILE_PERIOD)
+	_expect(level.tank.projectile_count() == 1,
+		"the Destructor's attack spawned one projectile (got %d)" % level.tank.projectile_count())
+	var shot: Projectile = _first_projectile(level.tank)
+	_expect(shot != null and _visual_source(shot) == "IMAGE_MISSILE",
+		"the missile carries its recovered sprite")
+	var shot_sprite := _visual_node(shot)
+	_expect(shot_sprite != null and shot_sprite.centered,
+		"the missile sprite is centred on its 80x80 box")
 
 	_teardown(main)
 	await get_tree().process_frame
@@ -69,6 +103,12 @@ func _run() -> void:
 		"the boss entity is Cyrax (got %s)" % (str(boss.kind) if boss != null else "none"))
 	_expect(boss != null and boss.hp == BossScript.MAX_HP,
 		"the first boss spawn uses 5000 hp (got %s)" % (str(boss.hp) if boss != null else "none"))
+	_expect(boss != null and _visual_source(boss) == "IMAGE_BOSS",
+		"Cyrax carries the recovered boss sprite")
+	var boss_bar := _health_bar(boss)
+	_expect(boss_bar != null and boss_bar.visible, "Cyrax always draws an HP bar")
+	_expect(boss_bar != null and boss_bar.position == Vector2(-70.0, 77.0),
+		"the boss bar uses the same box rule (got %s)" % [_bar_position(boss)])
 
 	_teardown(boss_main)
 	await get_tree().process_frame
@@ -108,6 +148,50 @@ func _first_boss(tank) -> Boss:
 		if entity is Boss and not entity.dead:
 			return entity as Boss
 	return null
+
+
+func _first_projectile(tank) -> Projectile:
+	for entity in tank.entities:
+		if entity is Projectile and not entity.dead:
+			return entity as Projectile
+	return null
+
+
+## The sprite's content id, or "" when the entity has no visual (rendering off or image missing).
+func _visual_source(entity) -> String:
+	var visual := _visual_node(entity)
+	if visual == null:
+		return ""
+	return String(visual.get_meta("source", ""))
+
+
+func _visual_node(entity) -> Sprite2D:
+	if entity == null:
+		return null
+	return entity.get_node_or_null("Visual") as Sprite2D
+
+
+func _health_bar(entity) -> Node2D:
+	if entity == null:
+		return null
+	return entity.get_node_or_null("HealthBar") as Node2D
+
+
+func _health_fill(entity) -> Sprite2D:
+	var bar := _health_bar(entity)
+	if bar == null:
+		return null
+	return bar.get_node_or_null("Fill") as Sprite2D
+
+
+func _bar_position(entity) -> String:
+	var bar := _health_bar(entity)
+	return str(bar.position) if bar != null else "none"
+
+
+func _fill_width(entity) -> String:
+	var fill := _health_fill(entity)
+	return str(fill.region_rect.size.x) if fill != null else "none"
 
 
 func _step(count: int) -> void:
