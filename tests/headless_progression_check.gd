@@ -160,13 +160,18 @@ func _test_level_completion() -> void:
 	_expect(level.egg_pieces == 1 and level.egg_price == 150, "1-1 opens with one piece at 150")
 	_expect(level.tank_store.size() == 1, "1-1's shop has the guppy alone")
 	level.money = 1000
-	_expect(level.buy_egg(), "the first egg piece is bought")
+	_expect(level.egg_widget != null, "the tank has an egg widget")
+	if level.egg_widget == null:
+		level.tank.shutdown()
+		level.free()
+		return
+	_expect(level.egg_widget.press(), "the egg widget buys the first piece")
 	_expect(level.money == 850 and level.egg_pieces == 2, "150 comes out of the shells per piece")
 	_expect(not level.completed and seen.is_empty(), "two pieces do not complete the level")
-	_expect(level.buy_egg() and level.buy_egg(), "the second and third pieces are bought")
+	_expect(level.egg_widget.press() and level.egg_widget.press(), "the second and third pieces are bought")
 	_expect(level.completed, "the fourth piece completes the level")
 	_expect(level.money == 550, "three pieces cost 450")
-	_expect(not level.buy_egg(), "a completed level refuses another piece")
+	_expect(not level.egg_widget.press(), "a completed level refuses another piece")
 	_expect(seen.size() == 1 and int(seen[0][2]) == 0, "the completion awards Stinky")
 	_expect(profile.owns_pet(0), "the profile records the pet")
 	_expect(profile.tank == 1 and profile.level == 2, "the profile advances to 1-2")

@@ -23,6 +23,8 @@ const MILESTONES := ["message", "warp", "sound", "warning", "event"]
 
 signal milestone(name: String)
 signal alien_spawn_requested(selection: int, at: Vector2)
+## Emitted once after all members of a wave have been requested; the level re-rolls its stored type.
+signal wave_spawned(selection: int)
 
 var timer := 0
 ## The tank's stored spawn selection (not the instance's kind).
@@ -61,6 +63,7 @@ func _start_wave() -> void:
 	var members := 2 if composite() else 1
 	for i in members:
 		alien_spawn_requested.emit(selection, at)
+	wave_spawned.emit(selection)
 
 
 ## One roll, reused by both members of a composite wave.

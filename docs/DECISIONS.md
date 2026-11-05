@@ -836,16 +836,14 @@ gates `Tank::Update` - and the ported rate is a single constant to change once i
 - Non-blocking: movement, attacks as spawn requests, eating and death are faithful; only the wander
   flavour and those four cells are approximate.
 
-### Q-0046 - Alien click box, composite recipes and the wave schedule are placeholders
-- OPEN (2026-11-03, raised by `scripts/tank/level.gd` for P4.8; source P2.8 §11, P2.10 §6.1).
+### Q-0046 - Alien click box is a placeholder; composites and the wave schedule are now wired
+- OPEN for the click box only (2026-11-03, raised by `scripts/tank/level.gd` for P4.8; source P2.8 §11, P2.10 §6.1).
 - The level shoots whatever alien is under an 80x80 box at its position. P2.10 has no per-kind hit box
   in the recovered code (the click handler tests the object's own `HitTest`), so the box is a port
   choice, flagged here rather than presented as recovered.
-- Composite selections 9..0xC are recipes whose member kinds the note does not enumerate; the level
-  skips them instead of spawning a guess. When the recipes are read, `Level._on_wave_spawn` is the one
-  place that needs the member list.
-- The level's own wave schedule (which selection, when) is level data from P2.6/P4.6; `arm_wave()` is
-  the hook, and nothing arms it automatically yet.
+- Composite selections 9..0xC are now composed by `Level._on_wave_spawn`: 1+3, 7+3, 5+6 and 3+8, at
+  the one rolled point. `start_level` arms P2.6 §8's per-level type (tank 1 level 2 at 1750 ticks)
+  and `WaveClock.wave_spawned` re-rolls it per P2.8 §5.1 after each wave.
 
 
 **Sheet row layout (2026-11-04, measured).** Row extents were measured per sheet (opaque bounding box
@@ -991,7 +989,9 @@ What that buys today: `Level.start_level(tank, level)` stocks the shop from the 
 the egg counter and price, and `Level.buy_egg()` completes the level on the fourth piece (tank 5: the
 first). Completion grants the awarded pet, pays Presto's 5000 Shells, advances the profile - into the
 level-6 sentinel on a level-5 win - and emits `level_completed`, which `Main` uses to start the next
-level. A start on the sentinel resolves to the next tank's level 1.
+level. A start on the sentinel resolves to the next tank's level 1. The tank's egg widget is in
+(`scripts/ui/egg_widget.gd`): the recovered `EggPieces` art and a click call `buy_egg()` on tanks 1-4
+(tank 5 keeps its free store row); its rect is port-placed because the original's was not recovered.
 
 Still missing, in dependency order:
 
@@ -1000,8 +1000,6 @@ Still missing, in dependency order:
   shortcut, not the original sequence;
 - the Hatch and Pets screens (`FUN_0054BE80`, `FUN_005289F0`): the award is recorded and the pet is
   owned, but nothing shows the card, and pet selection is not written back;
-- the tank's egg widget: `buy_egg()` is reachable from the shop on tank 5 and from tests, but no egg
-  object is drawn in the tank, so on tanks 1-4 there is no in-game way to buy a piece yet;
 - the score records (`FUN_00514510`, `FUN_005144C0`), `Tank+0x3FC` elapsed seconds, the coin sweep at
   completion, and the challenge record's storage in the profile;
 - the credits, story and trophy screens (Q-0013/Q-0016 still open, so no trigger is invented).
@@ -1013,7 +1011,7 @@ before, so tank 1 level 1 now shows a single shelf (the guppy) exactly as §3 sa
 "figure not recovered" and refuses.
 
 `tests/headless_progression_check.gd` pins the tables, the award map, the advance transitions, the
-profile's clamps and both completion paths (78 assertions).
+profile's clamps and both completion paths (79 assertions).
 ### Q-0054 - the in-tank store bar: geometry recovered, slot 7's x and the item art are not
 
 `FUN_005409B0` (EV-0150, `docs/evidence/p2.13-decompile-5409B0.txt`) is the tank's item-cache builder:

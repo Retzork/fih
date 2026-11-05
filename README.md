@@ -17,7 +17,7 @@ P2.7-P2.15 are done, P2.5 and P2.6 are substantially complete with tracked open 
 the optional P2.16 (screensaver) / P2.17 (cheats) remain. Phase 3 (assets) is complete. **Phase 4 is
 well underway:** P4.1-P4.3 are complete; P4.4-P4.14 are in progress, with P4.10/P4.11 partial.
 The playable level, store, game selector, audio layer, saves, pets, aliens and Cyrax boss are
-in, and **18 headless checks pass (936 assertions)**. The port runs the ~36 Hz reading of Q-0034.
+in, and **18 headless checks pass (938 assertions)**. The port runs the ~36 Hz reading of Q-0034.
 **Next task: P4.10/P4.11** (projectile homing/weapon follow-ups and game modes), with the remaining
 sub-items on the in-progress tasks tracked in [`docs/PLAN.md`](docs/PLAN.md).
 
@@ -70,13 +70,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 # the Projectile entity (47 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_projectile_check.gd
 
-# the playable level: feeding, waves, shooting, pets (120 assertions; exit 0 = pass)
+# the playable level: feeding, waves, shooting, pets (121 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_level_check.gd
 
 # the shop screen's shelves, prices and states (34 assertions; exits 0 on pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_store_ui_check.gd
 
-# P2.6 progression: store tables, egg prices, pet awards, advance (78 assertions)
+# P2.6 progression: store tables, egg prices, pet awards, advance (79 assertions)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_progression_check.gd
 
 # the main menu: EV-0131 ids, mode writers, gates and the tail flop (37 assertions; exit 0 = pass)

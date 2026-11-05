@@ -255,13 +255,13 @@ a running remake:
 # the Projectile entity (47 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_projectile_check.gd
 
-# the level: feeding loop, wave wiring, shooting, pet session (120 assertions; exit 0 = pass)
+# the level: feeding loop, wave wiring, shooting, pet session (121 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_level_check.gd
 
 # the store screen and bar (34 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_store_ui_check.gd
 
-# progression, eggs and level completion (78 assertions; exit 0 = pass)
+# progression, eggs and level completion (79 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_progression_check.gd
 
 # the main menu: EV-0131 ids, mode writers, gates and the tail flop (37 assertions; exit 0 = pass)
@@ -386,9 +386,8 @@ drops the backlog and a screen change must not carry old time into the next leve
 | --- | --- |
 | the level HUD is a placeholder; no gore/splat particles; the coin kind uses the placeholder table (Q-0036) | P4.4/P4.5 |
 | boss HP bar, per-item store art, stock roller/tooltips/paging, the binary's own price arrays (Q-0047/Q-0052) | P4.5 |
-| bonus rounds and their wait, Hatch/Pets screens, pre-bonus store, elapsed-time and Challenge score records, credits/trophy screens, a clickable egg widget (Q-0053; `buy_egg` has no UI entry point on tanks 1-4, AUDIT.md G14) | P4.6 |
+| bonus rounds and their wait, Hatch/Pets screens, pre-bonus store, elapsed-time and Challenge score records, credits/trophy screens (Q-0053) | P4.6 |
 | 18 of the 24 pet bodies idle; Stinky, Niko, Angie, Vert, Shrapnel and Nostradamus are implemented (Q-0044) | P4.7 |
-| composite wave recipes' two-entity composition | P4.8 |
 | Cyrax's minion kind and pulse content are placeholders (Q-0047) | P4.9 |
 | the projectile homing body, the `Larva` object, the laser draw/frame binding and the weapon HUD (Q-0023/Q-0041) | P4.10 |
 | the Time Trial clock and collect-all finish, Challenge scoring/records, and the Virtual Tank spawner and rules | P4.11 |
@@ -396,9 +395,9 @@ drops the backlog and a screen change must not carry old time into the next leve
 | options sliders, the battle loop (trigger unrecovered), and the rest of the per-event sound map (Q-0030/Q-0056) | P4.13 |
 | options/hall-of-fame/help screens, the menu buttons' baked bitmaps (labels are port text) and the mermaid flop trigger (Q-0050/Q-0055) | P4.14 |
 | the mermaid tail sheet and mask are loaded with `Image.load_from_file` (Godot warns this does not work on export), and `resources/content.json`'s export inclusion is still unconfirmed (AUDIT.md F1) | P5.5 |
-| production wave arming, composite-member resolution, and sprites for aliens/boss/projectiles (AUDIT.md G1-G3) | P4.8/P4.10 |
+| sprites for aliens/boss/projectiles (AUDIT.md G3) | P4.8/P4.10 |
 | shop-bought fish event wiring, stage -> coin-kind mapping, and the Tank mode-flag writers (AUDIT.md G4/G7/G9) | P4.4/P4.5/P4.11 |
-| per-mode save stems, profile persistence, and arming a restored wave selection (AUDIT.md G10) | P4.12 |
+| per-mode save stems and profile persistence (AUDIT.md G10) | P4.12 |
 | consumers for the hunger/growth/coin/pet/alien/projectile/wave cue signals (AUDIT.md G11) | P4.13 |
 | renderer/packaging decisions (Forward+ kept as-is) | P5.5 |
 

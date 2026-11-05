@@ -372,13 +372,23 @@ func _test_pause() -> void:
 
 func _test_wave_spawn() -> void:
 	level.tank.shutdown()
-	level.arm_wave(AlienScript.DEFS.keys()[0])
+	# The production start arms the clock from the level's own table (P2.6 §8): tank 1 level 3 is
+	# kind 2, with no `arm_wave` call from the test.
+	level.start_level(1, 3)
 	_step(WaveClockScript.WAVE_TICKS)
 	_expect(level.tank.alien_count() == 1, "a completed wave spawns one alien")
 	_expect(level.tank.aliens_present, "the level flags aliens as present")
 	if level.tank.alien_count() == 1:
 		var alien: Alien = level.tank.entities_in(SimPhaseALIENS())[0] as Alien
-		_expect(alien.kind == AlienScript.DEFS.keys()[0], "the wave uses the armed selection")
+		_expect(alien.kind == 2, "the production wave uses the level's selection")
+	# Composite recipes compose their member kinds at the one rolled point (P2.8 §4).
+	level.tank.shutdown()
+	level.arm_wave(0x09)
+	_step(WaveClockScript.WAVE_TICKS)
+	var kinds: Array[int] = []
+	for entity: SimEntity in level.tank.entities_in(SimPhaseALIENS()):
+		kinds.append((entity as Alien).kind)
+	_expect(level.tank.alien_count() == 2 and kinds.has(1) and kinds.has(3), "0x09 composes kinds 1 and 3")
 	level.arm_wave(0)
 
 

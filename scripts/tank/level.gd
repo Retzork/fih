@@ -19,6 +19,7 @@ const FishScript := preload("res://scripts/entities/fish.gd")
 const FoodScript := preload("res://scripts/entities/food.gd")
 const AlienScript := preload("res://scripts/entities/alien.gd")
 const PetScript := preload("res://scripts/entities/pet.gd")
+const EggWidgetScript := preload("res://scripts/ui/egg_widget.gd")
 
 ## `Tank::AddMoney` clamps the wallet at 9,999,999 (P2.5 §5).
 const MONEY_MAX := 9999999
@@ -114,7 +115,21 @@ var weapon_level: int:
 			tank.pet_capacity = clampi(value, 2, Store.WEAPON_MAX)
 ## The stored alien selection the wave clock reads; 0 disarms it.
 var alien_selection := 0
+## The stored alien selection the wave clock reads; 0 disarms it.
 var wave: WaveClock = null
+## The clickable egg-piece widget (P4.6); tank 5 sells the egg as a store row instead.
+var egg_widget = null
+## How many waves have spawned this session (the original's `Tank+0x45C`).
+var waves_spawned := 0
+## Composite recipes spawn two member kinds at one point; the clock emits the recipe twice.
+const COMPOSITE_MEMBERS := {
+	0x09: [0x01, 0x03],
+	0x0A: [0x07, 0x03],
+	0x0B: [0x05, 0x06],
+	0x0C: [0x03, 0x08],
+}
+var _composite_pending: Array[int] = []
+var _composite_selection := -1
 ## Click box for an alien (P2.10 has no recovered per-kind hit box; Q-0046).
 const ALIEN_CLICK_BOX := 80.0
 ## Render sprites and the HUD. False for headless checks (no Content access, no sprites).
@@ -152,8 +167,13 @@ func setup(sim_node: Node, seed_value: int = 4242) -> void:
 	_sim = sim_node
 	tank.setup(sim_node, seed_value)
 	tank.entity_spawned.connect(_on_entity_spawned)
-	wave = tank.spawn_wave_clock()
-	wave.alien_spawn_requested.connect(_on_wave_spawn)
+	_ensure_wave()
+	# The egg widget is built even when rendering is off, so the headless checks can drive the same
+	# click path the game uses (P4.6, G14).
+	egg_widget = EggWidgetScript.new()
+	egg_widget.name = "EggWidget"
+	add_child(egg_widget)
+	egg_widget.setup(self)
 	for i in STARTING_FISH:
 		spawn_guppy(_random_spawn_point())
 	if _sim != null and _sim.has_signal("ticked"):
@@ -179,6 +199,8 @@ func _ready() -> void:
 	store_bar.name = "StoreBar"
 	layer.add_child(store_bar)
 	store_bar.setup(self)
+	if egg_widget != null:
+		egg_widget.refresh()
 	_update_hud()
 	_add_backdrop()
 
@@ -258,22 +280,55 @@ func non_special_food() -> int:
 	return count
 
 
-## Arm the wave clock with a stored selection (0 disarms it). Level data owns the real schedule.
-func arm_wave(kind: int) -> void:
-	alien_selection = kind
-	# `shutdown()` frees the clock with the rest of the level, so arming rebuilds it when needed.
-	if wave == null or not is_instance_valid(wave) or wave.dead:
-		wave = tank.spawn_wave_clock()
-		wave.alien_spawn_requested.connect(_on_wave_spawn)
-	wave.selection = kind
-
-
-## The wave clock asked for a spawn. Composite recipes (9..0xC) carry no decoded member kinds yet, so
-## they are skipped rather than guessed (Q-0046).
-func _on_wave_spawn(selection: int, at: Vector2) -> void:
-	if not AlienScript.DEFS.has(selection):
+## Rebuild the wave clock after `shutdown()` freed it, and keep both spawn signals connected.
+func _ensure_wave() -> void:
+	if wave != null and is_instance_valid(wave) and not wave.dead:
 		return
-	wire_alien(tank.spawn_alien(selection, at))
+	wave = tank.spawn_wave_clock()
+	wave.alien_spawn_requested.connect(_on_wave_spawn)
+	wave.wave_spawned.connect(_on_wave_spawned)
+
+
+## Arm the wave clock with a stored selection (0 disarms it). `countdown` is the clock's remaining
+## ticks: the normal start is 3000, and tank 1 level 2 starts at 1750 (P2.6 §8).
+func arm_wave(kind: int, countdown: int = WaveClock.WAVE_TICKS) -> void:
+	alien_selection = kind
+	_ensure_wave()
+	wave.selection = kind
+	wave.timer = clampi(WaveClock.WAVE_TICKS - countdown, 0, WaveClock.WAVE_TICKS)
+
+
+## Restore the saved selection without disturbing the countdown `TankScalars.apply` just set.
+func _sync_wave_selection() -> void:
+	_ensure_wave()
+	wave.selection = alien_selection
+
+
+## The wave clock asked for a spawn. Composite recipes (9..0xC) spawn their two member kinds at the
+## one rolled point; the clock emits the recipe twice, so the pending queue hands out one member per
+## request (P2.8 §4).
+func _on_wave_spawn(selection: int, at: Vector2) -> void:
+	if COMPOSITE_MEMBERS.has(selection):
+		if _composite_selection != selection or _composite_pending.is_empty():
+			_composite_selection = selection
+			_composite_pending.clear()
+			for member in COMPOSITE_MEMBERS[selection]:
+				_composite_pending.append(int(member))
+		wire_alien(tank.spawn_alien(int(_composite_pending.pop_front()), at))
+		return
+	_composite_selection = -1
+	_composite_pending.clear()
+	if AlienScript.DEFS.has(selection):
+		wire_alien(tank.spawn_alien(selection, at))
+
+
+## After every spawned wave the level re-rolls its stored type for the next one (P2.8 §5.1).
+func _on_wave_spawned(selection: int) -> void:
+	waves_spawned += 1
+	var next := next_wave_selection(selection)
+	alien_selection = next
+	if wave != null and is_instance_valid(wave):
+		wave.selection = next
 
 
 ## Every alien the level owns: its shots go through the tank's projectile spawner, and its death
@@ -321,6 +376,71 @@ const BOSS_BY_LEVEL := {"5:1": "cyrax"}
 const BOSS_KINDS := {"cyrax": 0x15}
 
 
+## `FUN_00541200`'s normal start type per level (P2.6 §8). Zero is tank 1 level 1, which deliberately
+## runs no wave; kinds 9..0xC are recipes, not entries in this table.
+const WAVE_SELECTIONS := {
+	"1:1": 0, "1:2": 1, "1:3": 2, "1:4": 3, "1:5": 3,
+	"2:1": 2, "2:2": 3, "2:3": 4, "2:4": 5,
+	"3:1": 3, "3:3": 7, "3:4": 6,
+	"4:1": 3, "4:2": 8, "4:3": 4, "4:4": 8, "4:5": 8,
+	"5:1": 0x15,
+}
+## Levels whose start type is one of a pair; the seeded level RNG picks the first wave's member.
+const WAVE_PAIRS := {"2:5": [4, 5], "3:2": [4, 5], "3:5": [6, 7]}
+## `FUN_00541200` also shortens tank 1 level 2's arrival to 1750 ticks (P2.6 §8).
+const WAVE_COUNTDOWNS := {"1:2": 1750}
+
+
+## The spawn selection a level starts with, or 0 when the level has no wave.
+static func wave_selection_for(tank_no: int, level_no: int, rng: RandomNumberGenerator = null) -> int:
+	var key := "%d:%d" % [tank_no, level_no]
+	var pair: Array = WAVE_PAIRS.get(key, [])
+	if not pair.is_empty():
+		var index := 0
+		if rng != null:
+			index = rng.randi_range(0, pair.size() - 1)
+		return int(pair[index])
+	return int(WAVE_SELECTIONS.get(key, 0))
+
+
+static func wave_countdown_for(tank_no: int, level_no: int) -> int:
+	return int(WAVE_COUNTDOWNS.get("%d:%d" % [tank_no, level_no], WaveClock.WAVE_TICKS))
+
+
+## The type re-roll the wave block applies after each spawn (P2.8 §5.1).
+func next_wave_selection(current: int) -> int:
+	match "%d:%d" % [tank_index, level_index]:
+		"1:5":
+			return 3 if tank.randi_below(2) == 0 else 0x09
+		"2:5":
+			var next := current
+			if next == 0x09:
+				next = 4 + (1 - tank.randi_below(2))
+			var roll := tank.randi_below(100)
+			if roll < 10:
+				next = 4 if next == 5 else 5
+			elif roll < 15:
+				next = 0x09
+			return next
+		"3:2":
+			if tank.randi_below(100) < 10:
+				return 4 if current == 5 else 5
+			return current
+		"3:5":
+			return 6 + (1 - tank.randi_below(2))
+		"4:3":
+			return 4 if tank.randi_below(2) == 0 else 0x0A
+		"4:4":
+			return 8 if tank.randi_below(2) == 0 else 0x0B
+		"4:5":
+			var roll5 := tank.randi_below(5)
+			var selection := 0x0A if roll5 < 2 else (0x0B if roll5 < 4 else 0x08)
+			if game_mode == MODE_CHALLENGE and waves_spawned > 4 and selection == 0x08:
+				selection = 0x0C
+			return selection
+	return current
+
+
 ## The boss kind a level starts with, or 0 (P2.6: tank 5 level 1 is `boss = "cyrax"`).
 static func boss_kind_for(tank_no: int, level_no: int) -> int:
 	var name: String = BOSS_BY_LEVEL.get("%d:%d" % [tank_no, level_no], "")
@@ -347,6 +467,14 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	reset_prices()
 	tank.tank_index = tank_index
 	spawn_owned_pets()
+	# The level schedule owns the wave start: tank 1 level 1 stays at 0, tank 1 level 2 starts with
+	# 1750 ticks left, and every other level uses its recovered type (P2.6 §8).
+	arm_wave(
+		wave_selection_for(tank_index, level_index, tank.rng),
+		wave_countdown_for(tank_index, level_index)
+	)
+	if egg_widget != null:
+		egg_widget.refresh()
 	# `SetMusic` per stage (P2.14 §4.1/EV-0148); Virtual Tank is silenced inside `Audio`.
 	var audio := _autoload("Audio")
 	if audio != null:
@@ -522,6 +650,8 @@ func _on_sim_tick(_tick: int) -> void:
 		inflate_prices(1)
 	if store_bar != null:
 		store_bar.refresh_if_changed()
+	if egg_widget != null:
+		egg_widget.refresh_if_changed()
 	if fire_cooldown > 0:
 		fire_cooldown -= 1
 	var period := hold_fire_period()
@@ -678,6 +808,9 @@ func load_game(path: String = save_path) -> bool:
 	for entity in tank.entities_in(Sim.Phase.FISH):
 		tank.despawn(entity)
 	TankSnapshotScript.restore(tank, save)
+	# The scalar block restored the type and countdown; point the live clock at the restored type
+	# without resetting the countdown (G10).
+	_sync_wave_selection()
 	return true
 
 
