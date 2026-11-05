@@ -55,7 +55,7 @@ Limits, stated so the numbers are not over-read:
   summaries and sum to exactly the **938** claimed in `PLAN.md` and `README.md`.
 - The boot check exits 0 and resolves the three content phases: `Init` 14, `Register` 16,
   `LoadingThread` 296 (326 ids, as `SPECS.md` §2.2 requires).
-- Checkout is clean on `main` at `46d5f35`; `resources/sprites/` holds 129 `SpriteFrames`,
+- The audit began on clean `main` at `46d5f35`; the §5b follow-up is a later commit. `resources/sprites/` holds 129 `SpriteFrames`,
   `assets_raw/` and the carved game module are present, `docs/evidence/` holds 561 JSON exports and
   `docs/analysis/notes/` holds 18 notes.
 
