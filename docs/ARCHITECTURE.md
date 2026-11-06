@@ -207,8 +207,16 @@ The rest of the table is the checklist for which P4 task owns which phase regist
 
 A screen is a `Control` subtree plus one `match id:` click handler, ported as data (button list: id,
 label, rect, font/colour) rather than as a bespoke class per screen (SPECS.md §6, P2.12). `Screens`
-provides `replace(screen, id)` and the single modal slot `open_dialog()`/`close_dialog()` - the original
-has exactly one add-window slot, so a second open is a caller bug and is refused with a warning.
+provides `replace(screen, id)` and the single modal slot `open_dialog()`/`close_dialog()`.
+
+Fonts are part of that data. `scripts/ui/ui_font.gd` maps a screen's role to a manifest id
+(`SELECTOR_BIG_FONT`, `STORE_FONT`, `HUD_FONT`, ...) and applies the `FontFile` with its native
+`font_size`; nothing scales a BMFont to a non-native size, and no outline is added because the
+outline fonts bake theirs (EV-0157, Q-0059). Resolution goes through the scene root, so a screen can
+apply fonts while it builds a control, before `add_child`.
+
+The original has exactly one add-window slot, so a second open is a caller bug and is refused with
+a warning.
 
 `Screens.replace()` frees the previous screen after mounting the new one, so a button callback may open
 its successor directly. Level teardown therefore happens by screen destruction; a screen that spawns
@@ -414,7 +422,7 @@ at x 10 / y box-3 inside the box. Cyrax always shows it; ordinary aliens only wh
 | the Time Trial clock and collect-all finish, Challenge scoring/records, and the Virtual Tank spawner and rules | P4.11 |
 | persistence for entity bodies other than fish (coins/food/projectiles are rebuilt by design) and golden-file save fixtures | P4.12 |
 | options sliders, the battle loop (trigger unrecovered), and the rest of the per-event sound map (Q-0030/Q-0056) | P4.13 |
-| options/hall-of-fame/help screens, the menu buttons' baked bitmaps (labels are port text) and the mermaid flop trigger (Q-0050/Q-0055) | P4.14 |
+| options/hall-of-fame/help screens, the menu buttons' baked bitmaps (labels are port text) and the original trigger for the one-shot mermaid flop (the port plays it on menu open, Q-0055) | P4.14 |
 | the mermaid tail sheet and mask are loaded with `Image.load_from_file` (Godot warns this does not work on export), and `resources/content.json`'s export inclusion is still unconfirmed (AUDIT.md F1) | P5.5 |
 | shop-bought fish event wiring, stage -> coin-kind mapping, and the Tank mode-flag writers (AUDIT.md G4/G7/G9) | P4.4/P4.5/P4.11 |
 | per-mode save stems and profile persistence (AUDIT.md G10) | P4.12 |

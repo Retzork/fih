@@ -15,8 +15,9 @@ passes done (screen map, mode writer, store screen and stock refresh, level-star
 constructors and their click handlers, the dialog base plus all ten dialog ctors and their click
 handlers); what is left there are the tracked open questions.
 **Phase 4 is in progress:** P4.1-P4.3 are complete; P4.4-P4.14 are in progress (P4.10/P4.11
-partial). The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in, and all
-19 headless checks pass. The next task is the P4.10/P4.11 follow-up.
+partial). The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in, every UI
+surface draws with the game's native BMFonts, and all 19 headless checks pass (992 assertions).
+The next task is the P4.10/P4.11 follow-up.
 `PLAN.md` is the source of truth for progress.
 
 ## Start here
@@ -25,7 +26,8 @@ partial). The playable level, store, menu, audio, saves, pets, aliens and Cyrax 
    session-end checklist in `AGENTS.md`.
 2. **Want the current state quickly?** Read `SPECS.md` (the behaviour contract - it summarises every
    system and maps the P4 tasks), then the newest note `analysis/notes/p2.15-resources.md` (EV-0150..
-   EV-0154; latest corrections EV-0155/EV-0156), then `analysis/notes/p2.12-menus.md` for the
+   EV-0154; latest corrections EV-0155/EV-0156, plus EV-0157's font-global map), then
+   `analysis/notes/p2.12-menus.md` for the
    screen/vtable map, the dialog layer and store population (EV-0131..EV-0140) and
    `analysis/notes/p2.13-saves.md` for the save bodies (EV-0144).
 3. **Need to run analysis?** Read the REA section below and the matching section of
@@ -43,7 +45,7 @@ partial). The playable level, store, menu, audio, saves, pets, aliens and Cyrax 
 | P1 target identity | Complete (10/10) |
 | P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In progress (3/14 complete): P4.1 architecture, P4.2 content registry, P4.3 entity set; P4.4-P4.14 in progress (P4.10/P4.11 partial). Playable level, store, menu, audio, saves, pets, aliens and Cyrax boss in; 19 headless checks green (992 assertions) |
+| P4 Godot implementation | In progress (3/14 complete): P4.1 architecture, P4.2 content registry, P4.3 entity set; P4.4-P4.14 in progress (P4.10/P4.11 partial). Playable level, store, menu, audio, saves, pets, aliens and Cyrax boss in; UI on the native BMFonts; 19 headless checks green (992 assertions) |
 | P5 validation / polish | Not started (0/5) |
 
 - **P2.12 menus & UI flow (2026-10-29, first pass):** every screen class is a widget container plus
@@ -222,12 +224,13 @@ partial). The playable level, store, menu, audio, saves, pets, aliens and Cyrax 
   alpha = mask blue channel. Elements are registered at parse time and loaded later by
   `FUN_00419480` (failures are per-asset, not fatal); `GetImage`/`GetSound`/`GetFont` are three maps
   that return deferred placeholders during the loading thread and otherwise throw
-  `"X resource not found: %s"`. Evidence EV-0150..EV-0154; note `analysis/notes/p2.15-resources.md`;
+  `"X resource not found: %s"`. Evidence EV-0150..EV-0154 and EV-0157 (font globals); note
+  `analysis/notes/p2.15-resources.md`;
   open Q-0032/Q-0033 (non-blocking).
 - **Phase 2 close-out:** P2.18 `SPECS.md` is complete (the cross-system P4 contract, D-0008);
   P2.16 (screensaver deltas) and P2.17 (cheats) stay optional. P2.15 is closed
-  (EV-0150..EV-0154); P2.14 is closed (EV-0145..EV-0149); P2.13 is closed (EV-0144). P2.12 is
-  closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends tracked. Q-0018's tank-side
+  (EV-0150..EV-0154, EV-0157); P2.14 is closed (EV-0145..EV-0149); P2.13 is closed (EV-0144).
+  P2.12 is closed (EV-0139/EV-0140) with only Q-0027's two dialog loose ends tracked. Q-0018's tank-side
   call site is identified (`0x54782A` = `FUN_005409B0()` inside `FUN_00547610`, gated on tank 5 /
   `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`); the tutorial-loop owner and the
   `prize+0x1D0/+0x1D1` writers stay open.
@@ -306,7 +309,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
 | `AUDIT.md` | Progress audit (2026-11-05): re-run test counts, per-system capability assessment, findings and next-step priority. |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0156). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0157). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `SPECS.md` | Behaviour contract for P4 (P2.18 output): tick model, resource contract, entity rules, economy, modes, UI, persistence, audio, cross-system rules, shared constant sheet, open-question index. Read before any P4 task. |

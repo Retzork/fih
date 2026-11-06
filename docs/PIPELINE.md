@@ -111,18 +111,21 @@ animated_sprite.play("default")
   filtering (Q-0005).
 
 ### Fonts
-- `assets_raw\fonts\<ID>.fnt` (BMFont text) + `<ID>.png` (page). Load as `FontFile`:
+- `assets_raw\fonts\<ID>.fnt` (BMFont text) + `<ID>.png` (page), loaded by `Content` as `FontFile`.
+  Apply one through the shared helper, which also uses the manifest's native size:
 
 ```gdscript
-var font: FontFile = load("res://assets_raw/fonts/LIDDIE12.fnt")
-label.add_theme_font_override("font", font)
-label.add_theme_font_size_override("font_size", 12)  # native size = "size=" in the .fnt
+UiFont.apply(label, UiFont.LABEL_FONT)   # scripts/ui/ui_font.gd
 ```
+
+- Draw a BMFont only at its native `size=`; any other `font_size` scales the page and breaks the
+  pixel grid. The outline fonts already bake their outline, so do **not** add an engine
+  `font_outline_color`/`outline_size` on top (Q-0059).
 
 - Composition model is D-0007: page RGB = base atlas pixel, A = luminance(mask|self). This
   reproduces the original tint-fill/outline behavior under Godot `modulate`. Raw layers are kept
-  in `fonts\raw\` and all raw metrics in `fonts.json` for P2.12 refinement (line advance and
-  two-pass outline rendering are open items).
+  in `fonts\raw\` and all raw metrics in `fonts.json` for P2.12 refinement (line advance remains a
+  refinement item; the two-pass outline is resolved because the outline fonts bake it).
 - Verified: all 15 fonts load and cover their exact source char lists (EV-0033).
 
 ### Sounds

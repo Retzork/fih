@@ -518,6 +518,10 @@ than editing numbers in place.
 Do not guess these; ship them behind a named config flag with the wiki-safe default **disabled**, and
 reference the question id in the code comment.
 
+This table is the P2.18 snapshot and stops at Q-0039. Questions raised later (Q-0040..Q-0059) are
+live in [`DECISIONS.md`](DECISIONS.md) and are cited from the P4 task lines in `PLAN.md`; Q-0059 is
+the UI-font one.
+
 | id | what is open | impact |
 | --- | --- | --- |
 | Q-0010 | coin-hit gameplay intent | coin collection dispatch (§3.3) |

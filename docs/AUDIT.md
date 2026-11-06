@@ -197,8 +197,9 @@ mean the threat path is not a game yet.
 - **G13 fixed.** `tests/headless_integration_check.tscn` mounts the real `Main`, presses Adventure
   on the production `GameSelector`, starts 2-4 and advances the production wave and the Destructor's
   real missile, then starts 5-1 through the same menu path and asserts the scheduled Cyrax boss. It
-  also checks the centred sprites and the HP bar (full 127-px fill, 64 px at half hp); it never calls
-  `start_level`, `arm_wave` or `start_boss`; 37 assertions. The suite is scene-backed because
+  also checks the centred sprites, the HP bar (full 127-px fill, 64 px at half hp) and the native
+  font of each UI surface; it never calls `start_level`, `arm_wave` or `start_boss`; 37 assertions.
+  The suite is scene-backed because
   `--script` does not expose the project autoloads that `main.gd` names.
 - **UI fonts and menu animation tidied.** `scripts/ui/ui_font.gd` applies the recovered BMFonts to
   the menu, store, in-tank bar, egg widget and HUD at the manifest's native pixel size, instead of

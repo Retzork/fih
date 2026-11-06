@@ -92,7 +92,7 @@ unreachable and every earlier "demo" reading of that predicate is withdrawn (EV-
 `Tank+0x4FE` writer, `+0x2DC`/`+0x2E0`, VT helpers).
 Phase 2 closure: [`SPECS.md`](SPECS.md) (P2.18, D-0008) is the behaviour contract, and P2.16
 (screensaver) / P2.17 (cheats) remain optional. P2.18, P2.15 and P2.14 are complete
-(EV-0150..EV-0154, EV-0145..EV-0149); P2.13 is complete (EV-0144), with Q-0029 bounding the
+(EV-0150..EV-0154, EV-0157, EV-0145..EV-0149); P2.13 is complete (EV-0144), with Q-0029 bounding the
 residual fields. Q-0018's tank-side xref is identified - `0x54782A` is the `FUN_005409B0()` call
 inside `FUN_00547610`, gated on tank 5 / `Tank+0x110 == 0` / `+0x2A5 == 0` / `+0x3AF == 0`, so the
 tank owns the item cache at `Tank+0x404` and builds lazily; the tutorial-loop xref (`0x4F18xx`)
@@ -701,7 +701,14 @@ set.
     alpha - and the rest frame sits over the backdrop's own tail, which otherwise reads as a pale
     unfinished blob. The cell offset and which cell is the rest pose are port placements (Q-0055);
     the flop's `anim: once`, `framemap="7,6,5,4,3,2,1,0"` and delays are recovered but no trigger
-    for it is, so the port draws the rest pose and does not play the flop.
+    for it is, so the port plays it once when the menu opens, holds the rest pose for the recovered
+    3 ticks first, and then returns to rest (on the 36 Hz clock, Q-0034).
+  - Every UI surface now draws with the game's own fonts (`scripts/ui/ui_font.gd`): the selector's
+    art slots and small buttons use the two `Init` JungleFever outline fonts at 10/17 px, the store's
+    Shell counter and prices use `CONTINUUMBOLD12` (`DAT_005e8CE4`), and the bar, egg widget and HUD
+    use the recovered Tiny/TinyBold/Liddie set. Fonts are drawn at the manifest's native pixel size
+    with no engine outline over the baked one; the global -> id mapping is EV-0157 and the selector's
+    17/10 split is the unresolved part (Q-0059).
   - The assembled path is now checked by `tests/headless_integration_check.tscn` (37 assertions):
     it mounts `Main`, presses Adventure through the real `GameSelector`, starts 2-4, advances the
     production wave and the Destructor's real missile, then starts 5-1 through the same menu path

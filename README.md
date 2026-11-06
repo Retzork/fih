@@ -30,8 +30,9 @@ original's catch-up rules and the per-tick phase order every new system must reg
 **One cross-system question blocks tuning**: Q-0034 - the wrapper loop is 10 ms (100 Hz) but every
 gameplay timer calibrates at ~36 Hz, so the simulation rate stays parameterised until P5.3 measures
 it. The newest system note is
-[`docs/analysis/notes/p2.15-resources.md`](docs/analysis/notes/p2.15-resources.md) (EV-0150..EV-0154);
-the latest corrections are EV-0155 (coin predicate) and EV-0156 (fish swim branch). Audio is at
+[`docs/analysis/notes/p2.15-resources.md`](docs/analysis/notes/p2.15-resources.md)
+(EV-0150..EV-0154, EV-0157); the latest corrections are EV-0155 (coin predicate), EV-0156 (fish swim
+branch) and EV-0157 (the font-global map the UI fonts come from). Audio is at
 [`p2.14-audio.md`](docs/analysis/notes/p2.14-audio.md) (EV-0145..EV-0149) and saves at
 [`p2.13-saves.md`](docs/analysis/notes/p2.13-saves.md) (EV-0144).
 
