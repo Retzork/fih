@@ -1,16 +1,19 @@
 # Architecture (Phase 4)
 
-Status: **P4.1-P4.3 complete; P4.4-P4.14 in progress (P4.10/P4.11 partial)** (2026-11-05).
+Status: **P4.1-P4.14 and P5.1-P5.5 complete** (2026-11-08).
 This is the design the P4 tasks build against, derived from [`SPECS.md`](SPECS.md) (behaviour) and
 [`PIPELINE.md`](PIPELINE.md) (assets). It fixes the tick model, the resource registry, the autoload
 set and the coupling rules, and leaves every system to its own P4 task.
 
 What exists: the boot scene, five autoloads, the 640x480 project settings, the committed content
 manifest resolving all 326 ids into typed handles, the entity/tank seam, the playable level (feeding,
-coins, store, waves, pets, boss), the game selector, the two-mixer audio layer and the tank save/load
-path. Nineteen headless checks cover the tick driver, content registry, entities, level, store,
-progression, menu, audio, animation, pets, aliens, boss, saves and snapshots. Remaining gaps are
-listed in §9.
+coins, store + roller, waves, pets, boss, Larva, laser), the game selector + Options/Help/Hall,
+the Hatch/Pets/Bonus flow, the two-mixer audio layer with cue consumers, the tank save/load path
+(per-mode stems, profile JSON, golden fixtures) and every game mode (Adventure, Time Trial,
+Challenge, Virtual Tank, Sandbox). Twenty-three headless checks cover the tick driver, content
+registry, entities, level, store, progression, menu, modes, weapons, profile, audio, animation,
+pets, aliens, boss, saves, snapshots and golden files. Remaining unknowns are the parameterised
+guards in §9 (Q-0023/Q-0036/Q-0044 residuals), not gates.
 
 ## 1. The tick contract
 
@@ -260,7 +263,7 @@ a running remake:
 # the Coin entity (87 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_coin_check.gd
 
-# the Projectile entity (50 assertions; exit 0 = pass)
+# the Projectile entity (64 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_projectile_check.gd
 
 # the level: feeding loop, wave wiring, shooting, pet session (121 assertions; exit 0 = pass)
@@ -345,7 +348,8 @@ and single-use `collect()`, Virtual Tank homing/bank, and the 79-tick frame time
 10-tick expiry, kind-0 clamping vs kinds-1/2 death outside the wide rect (kind 1 only after a
 deflection), kind 2's 0.2 gravity, movement through the divisor, both hit-tests (missile destroyed in
 a 60x60 box with the burst at click-40; ball deflected by `((click - pos) - 40) / -5` clamped to -1),
-kind 2 not being clickable, the smoke roll, and the victim lock.
+kind 2 not being clickable, the smoke roll, the victim lock, and the homing body (steering toward
+the victim, target-loss expiry, the locked-victim kill and the deflected-ball 30-damage alien hit).
 
 `tests/headless_level_check.gd` covers the P4.4 level with rendering off: the starting population and
 its band, a pellet at the fish centre feeding +500 and being removed, click routing (collect first,
@@ -411,22 +415,20 @@ at x 10 / y box-3 inside the box. Cyrax always shows it; ordinary aliens only wh
 
 ## 9. What is still missing
 
+All P4/P5 work is landed except the parameterised guards below. Each is a
+documented unknown (DECISIONS `Q-*`), never a gate on the remake:
+
 | gap | task |
 | --- | --- |
-| the level HUD is a placeholder; no gore/splat particles; the coin kind uses the placeholder table (Q-0036) | P4.4/P4.5 |
-| per-item store art, stock roller/tooltips/paging, the binary's own price arrays (Q-0047/Q-0052) | P4.5 |
-| bonus rounds and their wait, Hatch/Pets screens, pre-bonus store, elapsed-time and Challenge score records, credits/trophy screens (Q-0053) | P4.6 |
-| 18 of the 24 pet bodies idle; Stinky, Niko, Angie, Vert, Shrapnel and Nostradamus are implemented (Q-0044) | P4.7 |
-| Cyrax's minion kind and pulse content are placeholders (Q-0047) | P4.9 |
-| the projectile homing body, the `Larva` object, the laser draw/frame binding and the weapon HUD (Q-0023/Q-0041) | P4.10 |
-| the Time Trial clock and collect-all finish, Challenge scoring/records, and the Virtual Tank spawner and rules | P4.11 |
-| persistence for entity bodies other than fish (coins/food/projectiles are rebuilt by design) and golden-file save fixtures | P4.12 |
-| options sliders, the battle loop (trigger unrecovered), and the rest of the per-event sound map (Q-0030/Q-0056) | P4.13 |
-| options/hall-of-fame/help screens, the menu buttons' baked bitmaps (labels are port text) and the original trigger for the one-shot mermaid flop (the port plays it on menu open, Q-0055) | P4.14 |
-| the mermaid tail sheet and mask are loaded with `Image.load_from_file` (Godot warns this does not work on export), and `resources/content.json`'s export inclusion is still unconfirmed (AUDIT.md F1) | P5.5 |
-| shop-bought fish event wiring, stage -> coin-kind mapping, and the Tank mode-flag writers (AUDIT.md G4/G7/G9) | P4.4/P4.5/P4.11 |
-| per-mode save stems and profile persistence (AUDIT.md G10) | P4.12 |
-| consumers for the hunger/growth/coin/pet/alien/projectile/wave cue signals (AUDIT.md G11) | P4.13 |
+| gore/splat article art; the stage -> coin-kind binding (the port tiers by stage, Q-0036) | P4.4/P4.5 |
+| per-item store art, tooltips/paging, the binary's own price arrays (Q-0047/Q-0052) | P4.5 |
+| bonus rounds and their 160-tick wait, the pre-bonus store, elapsed-time/Challenge score records, credits/trophy screens (Q-0053, Q-0013/Q-0016) | P4.6 |
+| pets whose slot-81 bodies are still guards: Wadsworth shelter, Seymour aura, Gumbo lure, Blip overlays, Amp click, Nostradamus sneeze, Presto transform, Walter glove (Q-0044) | P4.7 |
+| per-kind alien click box (Q-0046); alien wander target + bottom lane (Q-0045) | P4.8 |
+| laser draw/frame binding (Q-0023); the `Tank+0xBC` list stays empty | P4.10 |
+| battle-music trigger (Q-0031b) and the numeric event->sound table (Q-0030; the port maps by semantic name) | P4.13 |
+| menu buttons' baked bitmaps (labels are port text); the flop trigger plays on menu open (Q-0055) | P4.14 |
+| `content.json` export inclusion is open until a real export is run (AUDIT F1 closed for the tailflop) | P5.5 |
 | renderer/packaging decisions (Forward+ kept as-is) | P5.5 |
 
 ## 10. File map (P4 output)
@@ -452,7 +454,8 @@ scripts/entities/fish.gd          Fish: seven species, swim/feed/grow/coin (P2.2
 scripts/entities/coin.gd          Coin: kinds/values, fall/bob/expiry, collection (P2.5 §5)
 scripts/entities/projectile.gd    Projectile: three kinds, expiry, bounds, hit tests (P2.10 §5)
 scripts/entities/dead_fish.gd     DeadFish corpse: sink physics, stage countdown, revive branch (P2.4 §4)
-scripts/entities/pet.gd           Pet base: roster, gates, six implemented pets (P2.7)
+scripts/entities/larva.gd          Larva: fall + shells payout, Tank+0xDC click order (P2.10 §5.5)
+scripts/entities/pet.gd           Pet base: roster, gates, steering, slot-81 bodies (P2.7)
 scripts/entities/alien.gd         Alien: kinds, bands, attacks, eating, shot death (P2.8)
 scripts/entities/boss.gd          Cyrax: hp scale, arrival, minions, pulse, hit cooldown
 scripts/tank/wave_clock.gd        wave clock: 3000-tick gate, milestones, spawn roll (P2.8)
@@ -463,6 +466,12 @@ scripts/ui/ui_font.gd             applies the recovered BMFonts at their native 
 scripts/ui/game_selector.gd       main menu: EV-0131 dispatch, gates, mermaid tail (P4.14)
 scripts/ui/store_screen.gd        shop screen: shelves, price lines, Shell plate (P4.5)
 scripts/ui/store_bar.gd           in-tank store bar: eight buy slots (FUN_005409B0)
+scripts/ui/hatch_screen.gd        Hatch award card (P4.6)
+scripts/ui/pets_screen.gd         24-button pet selection, writes profile+0x5A (P4.6)
+scripts/ui/bonus_screen.gd        bonus payout card + payout switch (P4.6)
+scripts/ui/options_dialog.gd      sliders on the buses + checkboxes (P4.14)
+scripts/ui/help_screen.gd         8-page help/tutor screen (P4.14)
+scripts/ui/hall_screen.gd         4-tab hall of fame (P4.14)
 scripts/persistence/tank_save.gd  tank save framing (0x36 header, sections, store rows)
 scripts/persistence/tank_scalars.gd  316-byte scalar block in note order
 scripts/persistence/tank_snapshot.gd  fish records in and out of a tank save
@@ -477,22 +486,24 @@ tests/headless_content_check.gd   51-assertion contract check for the content re
 tests/headless_entity_check.gd    38-assertion check for the entity seam and Food
 tests/headless_fish_check.gd      105-assertion check for Fish (P2.2-P2.4)
 tests/headless_coin_check.gd      87-assertion check for Coin (P2.5 §5)
-tests/headless_projectile_check.gd  50-assertion check for Projectile (P2.10 §5)
+tests/headless_projectile_check.gd  64-assertion check for Projectile (P2.10 §5)
 tests/headless_level_check.gd     121-assertion check for the level, feeding and waves
 tests/headless_store_ui_check.gd  34-assertion check for the shop screen and bar
 tests/headless_progression_check.gd  79-assertion check for P2.6 progression and completion
 tests/headless_menu_check.gd      37-assertion check for the main menu (P4.14)
-tests/headless_pet_check.gd       66-assertion check for the pet base and six pets (P2.7)
-tests/headless_alien_check.gd     57-assertion check for aliens and the wave clock (P2.8)
-tests/headless_boss_check.gd      35-assertion check for the Cyrax fight (P2.9)
+tests/headless_pet_check.gd       66-assertion check for the pet base, roster, steering and slot-81 bodies (P2.7)
+tests/headless_mode_check.gd      28-assertion check for game modes + G4/G7/G9 wiring (P4.11)
+tests/headless_weapon_check.gd    23-assertion check for Larva, laser, cues + particles (P4.10)
+tests/headless_profile_check.gd   29-assertion check for screens, roller, saves, profile JSON (P4.6/P4.12/P4.14)
+tests/headless_golden_check.gd    22-assertion check for the golden tank saves (P2.13)
+tests/headless_alien_check.gd     65-assertion check for aliens and the wave clock (P2.8)
+tests/headless_boss_check.gd      46-assertion check for the Cyrax fight (P2.9)
 tests/headless_save_check.gd      38-assertion check for the tank-save framing (P2.13)
 tests/headless_save_files_check.gd  21-assertion check for the save file layer
 tests/headless_tank_snapshot_check.gd  54-assertion check for capture/restore
 tests/headless_audio_check.gd     40-assertion check for the audio layer (P2.14)
 tests/headless_anim_check.gd      18-assertion check for sprite playback and keying
-tests/headless_integration_check.tscn  22-assertion menu -> level -> wave -> boss integration
+tests/headless_integration_check.tscn  37-assertion menu -> level -> wave -> boss integration
 tests/headless_integration_check_scene.gd  the scene-backed integration test body
+docs/P5-VALIDATION.md             P5.1-P5.5: differential table, playtest checklist, timing, perf, packaging
 ```
-
-Next: **P4.10/P4.11** (projectile homing and weapon follow-ups, then the game modes), with the
-remaining sub-items on P4.4-P4.9/P4.12-P4.14 tracked on their PLAN lines.

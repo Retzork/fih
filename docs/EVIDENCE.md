@@ -4027,3 +4027,34 @@ behavior or specs; follow up with a binary observation entry.
   outline to the art slots and the 10 px outline to the text buttons is the port's inference,
   recorded as Q-0059.
 
+### EV-0158 - P2.10: the homing body `FUN_004FF4E0` and the on-target check `FUN_004FC070`
+- Date: 2026-11-07
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.10-fn-4FF4E0.json` / `.txt` (homing),
+  `docs/evidence/p2.10-fn-4FC070.json` / `.txt` (on-target), `docs/evidence/p2.10-fn-4FFB30.txt`
+  (the caller that returns early when the homing body returns 1)
+- Confidence: high for steering steps/caps/box tests; medium for the caller-visible flow
+  (see notes on `FUN_004FC070`'s list scans)
+- Notes: (1) `FUN_004FF4E0` reads the victim from `this+0x1A4`. When the victim is null or its
+  `+0x98` is clear and `kind != 2`, it removes the shot (`FUN_004D80E0`, return 1); the
+  `FUN_004D80C0` guard tests the shot's own kind in {3,4,5} and is unreachable for kinds 0/1,
+  so the port expires directly (EV-0130). A deflected shot (`+0x190` set) skips steering to
+  the on-target check. (2) Steering samples at `position + offset` (40 for the 80x80 kinds,
+  25 for kind 2; kind 2 with a non-empty `Tank+0xF4` list also uses 40) and steps `vx`/`vy`
+  by `0.2` toward caps of `1.8`. The wide bands (victim `+0x8C == 6`, the Ultravore type id)
+  use a `+200` far edge and `+110` mid edge with inner targets `1.4`/`0.6` and a `0.1`-step
+  vertical deadband at `+-0.2`; everyone else uses `+80`/`+60` with the same near caps and
+  the same fine deadband. Steps overshoot by one increment when already near the cap (no
+  clamp). (3) The on-target check (`FUN_004FC070`) tests the `+40` sample against the locked
+  victim's box (`10..70` both axes; Ultravore `8..140` x `4..140`) and on a hit calls the
+  victim's slot-77 consume, then returns 1 (the caller in `FUN_004FFB30` returns early).
+  A kind-2 hit instead sets `+0x190`, clears the lock, sets the divisor to `1.5` and flips
+  the velocity, returning 0 (the shot survives). (4) A deflected ball (kind 1, `+0x190` set,
+  demo flag clear) scans aliens/boss (`+30..+140` x `+10..+150`, 30 damage, then remove) and
+  the fish lists (slot-88 die / `FUN_004F3C60` / `FUN_004F2890` / `FUN_004DD5D0`, return 0,
+  the ball flies on). The `Tank+0xF4`/`+0xB4`/`+0xB0` scans name head/entity lists the port
+  does not model as separate entities; only the alien/boss and fish scans are implemented.
+  (5) `FUN_004E8DF0` (P2.8 §8.2) returns the *farthest* eligible fish; no eligible fish means
+  no shot, so `Alien._tick_shots` must hold the volley when the picker is empty. The type-0
+  gate (`FUN_00500FF0`) is unrecovered and treated as always eligible.
+

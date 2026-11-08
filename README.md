@@ -12,14 +12,17 @@ of the original (no source code). The game install is read-only; all behavioral 
 documentation index, repository map, analysis commands and handover checklist are in
 **[`docs/README.md`](docs/README.md)**.
 
-**Current status (2026-11-05):** Phase 2 is **closed**, 14/18 systems documented - P2.1-P2.4 and
+**Current status (2026-11-08):** Phase 2 is **closed**, 14/18 systems documented - P2.1-P2.4 and
 P2.7-P2.15 are done, P2.5 and P2.6 are substantially complete with tracked open questions, and only
-the optional P2.16 (screensaver) / P2.17 (cheats) remain. Phase 3 (assets) is complete. **Phase 4 is
-well underway:** P4.1-P4.3 are complete; P4.4-P4.14 are in progress, with P4.10/P4.11 partial.
-The playable level, store, game selector, audio layer, saves, pets, aliens and Cyrax boss are
-in, and **19 headless checks pass (992 assertions)**. The port runs the ~36 Hz reading of Q-0034.
-**Next task: P4.10/P4.11** (projectile homing/weapon follow-ups and game modes), with the remaining
-sub-items on the in-progress tasks tracked in [`docs/PLAN.md`](docs/PLAN.md).
+the optional P2.16 (screensaver) / P2.17 (cheats) remain. Phase 3 (assets) is complete.
+**Phase 4 and Phase 5 are complete:** P4.1-P4.14 and P5.1-P5.5 are `[x]`. The playable level,
+store + roller, Hatch/Pets/Bonus flow, game selector + Options/Help/Hall, audio layer, saves
+(tank + profile JSON, golden fixtures), pets (all 24 steer, 12 slot-81 bodies recovered),
+aliens, Cyrax boss, projectiles + `Larva`, laser sparks, weapon HUD and all game modes are
+in, and **23 headless checks pass (1123 assertions; 22 `--script` suites + the scene-backed
+integration suite)**. The port runs the ~36 Hz reading of Q-0034. Validation lives in
+[`docs/P5-VALIDATION.md`](docs/P5-VALIDATION.md). **No next task in the remake scope**; the
+remaining items are the parameterised guards and the optional windows (see PLAN).
 
 **The contracts.** Behaviour: [`docs/SPECS.md`](docs/SPECS.md) (P2.18, D-0008) — tick model and click
 order, resource loading, entity/tank/creature rules, economy, mode matrix, UI, persistence, audio,
@@ -27,9 +30,9 @@ cross-system rules, a shared constant sheet and the open-question index. Assets:
 [`docs/PIPELINE.md`](docs/PIPELINE.md). Design: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (P4.1) —
 how the remake is put together, including the ~36 Hz `Sim` tick (Q-0034's port decision) with the
 original's catch-up rules and the per-tick phase order every new system must register into.
-**One cross-system question blocks tuning**: Q-0034 - the wrapper loop is 10 ms (100 Hz) but every
-gameplay timer calibrates at ~36 Hz, so the simulation rate stays parameterised until P5.3 measures
-it. The newest system note is
+**Consistent rate, one open lead**: Q-0034 - the wrapper loop is 10 ms (100 Hz) but every
+gameplay timer calibrates at ~36 Hz, so the simulation runs at the 36 Hz reading (one
+`Sim.TICK_MS` constant) until the unfound 100 Hz gate is located. The newest system note is
 [`docs/analysis/notes/p2.15-resources.md`](docs/analysis/notes/p2.15-resources.md)
 (EV-0150..EV-0154, EV-0157); the latest corrections are EV-0155 (coin predicate), EV-0156 (fish swim
 branch) and EV-0157 (the font-global map the UI fonts come from). Audio is at
@@ -68,7 +71,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 # the Coin entity (87 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_coin_check.gd
 
-# the Projectile entity (50 assertions; exit 0 = pass)
+# the Projectile entity (64 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_projectile_check.gd
 
 # the playable level: feeding, waves, shooting, pets (121 assertions; exit 0 = pass)
@@ -92,13 +95,25 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 # tick-driven sprite playback and per-cell keying (18 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_anim_check.gd
 
-# the pet base + Stinky/Niko/Angie/Vert/Shrapnel/Nostradamus (66 assertions; exit 0 = pass)
+# the pet base, roster, steering and recovered slot-81 bodies (66 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_pet_check.gd
 
-# aliens + the wave clock + HP-bar geometry (61 assertions; exit 0 = pass)
+# game modes: Time Trial, Challenge, Virtual Tank, Sandbox + shop wiring (28 assertions)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_mode_check.gd
+
+# weapons: Larva, laser sparks, weapon HUD, cue consumers + particles (23 assertions)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_weapon_check.gd
+
+# the recovered screens + stock roller + per-mode saves + profile JSON (29 assertions)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_profile_check.gd
+
+# the golden tank saves, byte-for-byte against EV-0144 (22 assertions)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_golden_check.gd
+
+# aliens + the wave clock + HP-bar geometry (65 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_alien_check.gd
 
-# the Cyrax boss fight (35 assertions; exit 0 = pass)
+# the Cyrax boss fight (46 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_boss_check.gd
 
 # the tank-save framing (38 assertions; exit 0 = pass)

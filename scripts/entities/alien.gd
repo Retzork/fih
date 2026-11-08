@@ -94,6 +94,12 @@ var shots_left := ATTACK_SHOTS
 var resting := false
 var rest_timer := 0
 
+## `+0x98`: the "incoming projectile" back-pointer (P2.10 §5.1). Aliens are not homing victims in
+## retail play (the picker scans the fish lists), but a deflected ball can hit one (EV-0158), so
+## the slot exists for parity with `Fish` and clears with the same rules.
+var locked_projectile: Node2D = null
+
+
 
 static func create(kind_: int, pos: Vector2) -> Alien:
 	var alien := Alien.new()
@@ -188,6 +194,26 @@ func _nearest_target() -> Node2D:
 	return best
 
 
+## The projectile target picker (`FUN_004E8DF0`, P2.8 §8.2, EV-0158): the *farthest* eligible
+## fish, not the nearest one the alien chases. Types 5-0xA (Oscar/Ultravore/Beetlemuncher and the
+## two neighbours) are unconditional; type 0 (Guppy) is gated by `FUN_00500FF0`, whose body is
+## unrecovered, so the port treats every live fish as eligible and keeps the gate open as a
+## documented approximation. No eligible fish means no shot (the caller in `_tick_shots` holds the
+## volley). Kinds 5/6 never chase (`_nearest_target` returns null for them) but *do* shoot at
+## this target, which is why the two pickers are separate.
+func _farthest_target() -> Node2D:
+	if tank == null:
+		return null
+	var best: Node2D = null
+	var best_distance := -1.0
+	for entity: SimEntity in tank.entities_in(Sim.Phase.FISH):
+		var distance := position.distance_squared_to(entity.position)
+		if distance > best_distance:
+			best_distance = distance
+			best = entity
+	return best
+
+
 func _steer_to(at: Vector2) -> void:
 	var step := GUS_STEER if eats_pellets else STEER
 	var cap := GUS_CAP if eats_pellets else STEER_CAP
@@ -263,7 +289,12 @@ func _tick_shots(shot_kind: int) -> void:
 	attack_timer -= 1
 	if attack_timer > 0:
 		return
-	var target := _nearest_target()
+	# `FUN_004E8DF0` returns the farthest eligible fish; no eligible target means no shot
+	# (P2.8 §8.2, EV-0158). The volley counter does not advance on a held shot.
+	var target := _farthest_target()
+	if target == null:
+		attack_timer = MISSILE_PERIOD
+		return
 	attack_requested.emit(shot_kind, position, target)
 	cue.emit("missile" if shot_kind == 0 else "ball")
 	shots_left -= 1
@@ -295,13 +326,38 @@ func hit(damage: int, from_shot: bool = true) -> void:
 		die(from_shot)
 
 
+func lock_projectile(shot) -> void:
+	locked_projectile = shot
+
+
+func unlock_projectile(shot) -> void:
+	if locked_projectile == shot:
+		locked_projectile = null
+
+
+
 func die(from_shot: bool = true) -> void:
 	if dead:
 		return
+	_release_projectile_lock()
 	died.emit(self, from_shot)
 	if from_shot and not (tank != null and bool(tank.boss_alive)):
 		tank.spawn_coin(DIAMOND_KIND, position)
 	despawn()
+
+
+func _release_projectile_lock() -> void:
+	if locked_projectile != null:
+		var shot := locked_projectile
+		locked_projectile = null
+		if is_instance_valid(shot) and shot.has_method("release_target"):
+			shot.release_target()
+
+
+func _exit_tree() -> void:
+	_release_projectile_lock()
+	super()
+
 
 
 func _roll(limit: int) -> int:

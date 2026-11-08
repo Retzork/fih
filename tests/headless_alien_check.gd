@@ -119,11 +119,17 @@ func _test_attacks() -> void:
 	tank.shutdown()
 	var destructor: Alien = tank.spawn_alien(DESTRUCTOR, Vector2(300.0, 200.0))
 	var shots: Array[int] = []
-	destructor.attack_requested.connect(func(kind: int, _at: Vector2, _t) -> void: shots.append(kind))
+	var victims: Array = []
+	destructor.attack_requested.connect(func(kind: int, _at: Vector2, t) -> void: shots.append(kind); victims.append(t))
+	# `FUN_004E8DF0` returns the farthest eligible fish; no fish means no shot (EV-0158).
+	var near: Fish = tank.spawn_fish(FishScript.Species.GUPPY, Vector2(320.0, 200.0), 0, 1)
+	var far: Fish = tank.spawn_fish(FishScript.Species.GUPPY, Vector2(460.0, 200.0), 0, 1)
+	_expect(destructor._farthest_target() == far, "the picker aims at the farthest fish")
 	_step(AlienScript.INTRO_TICKS)
 	_expect(shots.is_empty(), "no shots during the intro")
 	_step(AlienScript.MISSILE_PERIOD)
 	_expect(shots == [0], "the first missile fires after 75 ticks, got %s" % [shots])
+	_expect(victims.size() == 1 and victims[0] != null, "the shot has a victim")
 	_step(AlienScript.MISSILE_PERIOD)
 	_expect(shots.size() == 2, "the second missile follows 75 ticks later")
 	_step(AlienScript.MISSILE_PERIOD)
@@ -131,6 +137,16 @@ func _test_attacks() -> void:
 	_expect(destructor.attack_timer >= AlienScript.MISSILE_TAIL_BASE
 		and destructor.attack_timer < AlienScript.MISSILE_TAIL_BASE + AlienScript.MISSILE_TAIL_SPAN,
 		"the tail gap is rand%%50 + 150 (got %d)" % destructor.attack_timer)
+
+	tank.shutdown()
+	var dry: Alien = tank.spawn_alien(DESTRUCTOR, Vector2(300.0, 200.0))
+	var dry_shots: Array[int] = []
+	dry.attack_requested.connect(func(kind: int, _at: Vector2, _t) -> void: dry_shots.append(kind))
+	_step(AlienScript.INTRO_TICKS + AlienScript.MISSILE_PERIOD)
+	_expect(dry_shots.is_empty(), "no fish means no shot")
+	# The empty picker holds the volley instead of firing into nothing.
+	_expect(dry.attack_timer == AlienScript.MISSILE_PERIOD,
+		"an empty picker re-arms for one period (got %d)" % dry.attack_timer)
 
 	tank.shutdown()
 	var squid: Alien = tank.spawn_alien(PSYCHOSQUID, Vector2(300.0, 200.0))

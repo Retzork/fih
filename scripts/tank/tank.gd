@@ -22,6 +22,8 @@ const FishScript := preload("res://scripts/entities/fish.gd")
 const CoinScript := preload("res://scripts/entities/coin.gd")
 ## Projectile spawner helper, preloaded for the same reason.
 const ProjectileScript := preload("res://scripts/entities/projectile.gd")
+## Larva spawner helper (P2.10 §5.5).
+const LarvaScript := preload("res://scripts/entities/larva.gd")
 ## Corpse spawner helper (dead-fish bodies, P2.4 §4).
 const DeadFishScript := preload("res://scripts/entities/dead_fish.gd")
 ## Pet spawner helper (P2.7).
@@ -137,6 +139,20 @@ func spawn_projectile(kind: int, position: Vector2, target: Node2D = null) -> Pr
 	return shot
 
 
+## Spawn a larva (P2.10 §5.5). No system spawns one yet (Q-0023); the entity and the
+## click order exist so a spawner can be bound without guessing one.
+func spawn_larva(position: Vector2, mode: int = 0, vy: float = 1.5, hit_kind: int = 0) -> Larva:
+	var larva: Larva = LarvaScript.create(position, mode, vy, hit_kind)
+	return spawn_at(larva, Sim.Phase.PROJECTILES, position) as Larva
+
+
+## Spawn a food pellet through the tank stream (Zorf's drop, P2.7 §4.5).
+func spawn_food(position: Vector2, food_kind: int = 0, quality: int = 0) -> Food:
+	const FoodScript := preload("res://scripts/entities/food.gd")
+	var pellet: Food = FoodScript.create(position, food_kind, false, 0, quality, rng)
+	return spawn_at(pellet, Sim.Phase.FOOD, position) as Food
+
+
 ## Spawn the corpse a dead fish leaves (P2.4 §4). It sinks in the PARTICLES phase and emits
 ## `successor_requested` when its death animation ends; the level spawns the live successor.
 ## `corpse_id` is the dying fish's stage (`+0x1A4`); the corpse starts with its own stage counter
@@ -156,7 +172,7 @@ func spawn_dead_fish(
 
 ## Spawn a pet. Stinky's fixed lane is applied by the ctor, so the spawn keeps its own y.
 func spawn_pet(index: int, position: Vector2) -> Pet:
-	var pet: Pet = PetScript.create(index, position)
+	var pet: Pet = PetScript.create(index, position, rng)
 	return spawn_at(pet, Sim.Phase.PETS, pet.position) as Pet
 
 

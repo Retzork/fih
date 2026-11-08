@@ -71,6 +71,10 @@ func _run() -> void:
 	_expect(_health_fill(alien) != null and roundf(_health_fill(alien).region_rect.size.x) == 64.0,
 		"at half hp the fill is cut to 64 px (got %s)" % [_fill_width(alien)])
 
+	# No eligible fish means no shot (EV-0158). The 3000-tick wave wait starves the stock
+	# guppies, so restock one live victim if they are gone.
+	if _live_fish(level.tank).is_empty():
+		level.spawn_guppy(Vector2(460.0, 200.0))
 	# The Destructor's own 75-tick timer asks the tank for a missile; the spawn path builds its
 	# sprite. Its 7-tick intro runs before the attack timer starts counting down.
 	_step(AlienScript.INTRO_TICKS + AlienScript.MISSILE_PERIOD)
@@ -178,6 +182,14 @@ func _first_projectile(tank) -> Projectile:
 		if entity is Projectile and not entity.dead:
 			return entity as Projectile
 	return null
+
+
+func _live_fish(tank) -> Array:
+	var found: Array = []
+	for entity in tank.entities:
+		if entity is Fish and not entity.dead:
+			found.append(entity)
+	return found
 
 
 ## The sprite's content id, or "" when the entity has no visual (rendering off or image missing).

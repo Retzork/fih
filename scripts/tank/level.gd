@@ -20,6 +20,8 @@ const FoodScript := preload("res://scripts/entities/food.gd")
 const AlienScript := preload("res://scripts/entities/alien.gd")
 const PetScript := preload("res://scripts/entities/pet.gd")
 const EggWidgetScript := preload("res://scripts/ui/egg_widget.gd")
+const WaveClockScript := preload("res://scripts/tank/wave_clock.gd")
+const LarvaScript := preload("res://scripts/entities/larva.gd")
 
 ## `Tank::AddMoney` clamps the wallet at 9,999,999 (P2.5 §5).
 const MONEY_MAX := 9999999
@@ -106,10 +108,36 @@ var profile: Profile = null
 ## `Main` uses this to start the next level.
 signal level_completed(tank_no: int, level_no: int, pet_index: int)
 
-## The game mode the selector writes (P2.12 EV-0131): 0 adventure, 1 time trial, 4 challenge,
-## 5 virtual tank. Only mode 4 inflates store prices.
+## The game mode the selector writes (P2.12 EV-0131): 0 adventure, 1 time trial, 3 sandbox,
+## 4 challenge, 5 virtual tank. Mode branches live in `start_level` and `_on_sim_tick`
+## (P2.11 §10) and nowhere else.
+const MODE_TIME_TRIAL := 1
+const MODE_SANDBOX := 3
 const MODE_CHALLENGE := 4
+const MODE_VIRTUAL := 5
 var game_mode := 0
+
+## Time Trial clock (P2.11 §4 / EV-0127): budget in ticks at the 36 Hz port rate. 300 s on
+## tank 1, 600 s on tanks 2-4. `elapsed` counts `_on_sim_tick` calls (one per Sim tick).
+## Expiry collects all coins and completes the level through the normal path.
+var time_trial_budget_ticks := 0
+var time_trial_elapsed := 0
+## Challenge reward per tank, flat (P2.11 §5): tanks 1-4. Completion grants shells.
+const CHALLENGE_REWARDS := {1: 2000, 2: 5000, 3: 10000, 4: 20000}
+## Sandbox starts with 999999 money (P2.11 §6).
+const SANDBOX_MONEY := 999999
+## Virtual Tank (P2.11 §7 / EV-0128): 76 % ordinary / 24 % prize, weights sum to 100.
+const VT_ORDINARY_CHANCE := 76
+## `(prize_type, weight)` in roll order; the strict `<` walk makes the fallback unreachable,
+## exactly as the binary does. `kind` is the P2.4 type id; `species` is the Fish entity's
+## stand-in (Penta/Grubber/Breeder have no Fish class yet, so the guppy proxy is flagged).
+const VT_PRIZE := [
+	[8, 26], [9, 25], [7, 25], [10, 10], [6, 5], [0x24, 3], [0x23, 3], [0x22, 3],
+]
+## Type id -> Fish species for the prize fish the port can spawn today.
+const VT_PRIZE_SPECIES := {
+	7: 3, 6: 2, 0x24: 6, 0x23: 5, 0x22: 4, 8: 0, 9: 0, 10: 0,
+}
 
 ## The weapon level (2..12) **is** `Tank+0x3E4`, the field P2.5 calls the weapon upgrade and P2.9
 ## calls pet capacity (the boss forces it to 10); keeping one field is why `shot_damage()` and the
@@ -144,6 +172,14 @@ var render := true
 
 ## Every sound the level asked for, in order: the headless checks read this instead of listening.
 var sounds_played: Array[String] = []
+## Lightweight particles (P4.4): smoke puffs and hit bursts live here as tick-counted facts,
+## not as entities - the original spawns them through `FUN_00543640`/`FUN_005436F0` and the
+## port keeps the same lifetime (smoke drifts, bursts fade in 5 ticks). Each entry is
+## `{"pos": Vector2, "life": int, "kind": String}` with `life` counting down per Sim tick.
+var particles: Array[Dictionary] = []
+## Laser sparks (P2.10 §1): one entry per resolved click at `click - (40,40)`, for the
+## renderer. The frame binding is parameterised (Q-0023): `laser_cell_for()` rows by tier.
+var laser_sparks: Array[Dictionary] = []
 ## Held-fire state (SPECS §3.5): set while the left button is down; the period decides the cadence.
 var holding_fire := false
 var fire_cooldown := 0
@@ -246,12 +282,15 @@ func spawn_guppy(pos: Vector2, stage: int = -1, facing: int = 0) -> Fish:
 	return fish
 
 
-## Every fish the level owns answers the same three events. The death path goes through a corpse, not
-## straight to a successor (P2.4 §4).
+## Every fish the level owns answers the same events. The death path goes through a corpse, not
+## straight to a successor (P2.4 §4). Hunger/growth cues are wired to sounds (Q-0030: the
+## event->sound mapping is a port choice; see `CUE_SOUNDS`).
 func _wire(fish: Fish) -> void:
 	fish.died.connect(_on_fish_died)
 	fish.breed_requested.connect(_on_breed)
 	fish.coin_due.connect(_on_coin_due)
+	fish.hunger_warning.connect(_on_fish_hunger)
+	fish.grew.connect(_on_fish_grew)
 
 
 func _on_fish_died(fish: Fish) -> void:
@@ -296,6 +335,7 @@ func _ensure_wave() -> void:
 	wave = tank.spawn_wave_clock()
 	wave.alien_spawn_requested.connect(_on_wave_spawn)
 	wave.wave_spawned.connect(_on_wave_spawned)
+	wave.milestone.connect(_on_wave_milestone)
 
 
 ## Arm the wave clock with a stored selection (0 disarms it). `countdown` is the clock's remaining
@@ -345,11 +385,125 @@ func _on_wave_spawned(selection: int) -> void:
 func wire_alien(alien: Alien) -> void:
 	alien.attack_requested.connect(_on_alien_attack)
 	alien.died.connect(_on_alien_died)
+	alien.cue.connect(_on_alien_cue)
 	tank.aliens_present = true
 
 
 func _on_alien_attack(shot_kind: int, at: Vector2, target: Node2D) -> void:
-	tank.spawn_projectile(shot_kind, at, target)
+	var shot: Projectile = tank.spawn_projectile(shot_kind, at, target)
+	shot.smoke_requested.connect(_on_projectile_smoke)
+	shot.burst_requested.connect(_on_projectile_burst)
+	shot.hit_target.connect(_on_projectile_hit_target)
+
+
+## The wave milestones (P2.8 §5): message -> warp hole -> sound -> warning -> event.
+## Warning and sound play; message/warp/event are presentation the milestones name.
+func _on_wave_milestone(step: String) -> void:
+	match step:
+		"warning":
+			play_sound("SOUND_ROAR")
+		"sound":
+			play_sound("SOUND_SONAR")
+		"message":
+			play_sound("SOUND_TAPGLASS")
+		_:
+			pass
+
+
+## Pet cue names (P2.7) through the registry: the numeric `FUN_00538230` ids name these
+## sounds but no recovered table binds them (Q-0030), so the mapping is by semantic name.
+const CUE_SOUNDS := {
+	"niko_open": "SOUND_NIKOOPEN",
+	"niko_close": "SOUND_NIKOCLOSE",
+	"pearl": "SOUND_PEARL",
+	"drop": "SOUND_POINTS",
+	"snot": "SOUND_SNEEZE",
+	"revive": "SOUND_HEAL",
+	"missile": "SOUND_MISSLE",
+	"ball": "SOUND_RICOCHET",
+	"birth": "SOUND_BABY",
+	"food": "SOUND_BUBBLES",
+	"sing": "SOUND_SING",
+	"zap": "SOUND_ZAP",
+	"punch": "SOUND_PUNCH",
+	"toss": "SOUND_POINTS2",
+	"feed": "SOUND_SLURP",
+}
+
+
+func _on_pet_cue(cue_name: String, _at: Vector2) -> void:
+	var id := String(CUE_SOUNDS.get(cue_name, ""))
+	if id != "":
+		play_sound(id)
+
+
+func _on_alien_cue(cue_name: String) -> void:
+	var id := String(CUE_SOUNDS.get(cue_name, ""))
+	if id != "":
+		play_sound(id)
+
+
+func _on_fish_hunger(_level_no: int) -> void:
+	play_sound("SOUND_SLURP")
+
+
+func _on_fish_grew(_fish, _stage: int) -> void:
+	play_sound("SOUND_GROW")
+
+
+func _on_projectile_smoke(at: Vector2) -> void:
+	spawn_particle(at, "smoke", 28)
+
+
+func _on_projectile_burst(at: Vector2) -> void:
+	spawn_particle(at, "burst", 5)
+	play_sound("SOUND_HIT")
+
+
+func _on_projectile_hit_target(_victim) -> void:
+	pass
+
+
+func _on_larva_burst(at: Vector2) -> void:
+	spawn_particle(at, "burst", 5)
+	play_sound("SOUND_HIT")
+
+
+func _on_larva_payout(_larva) -> void:
+	# The shells payout (`FUN_0053C1E0` routing, P2.6 §9) lands as shells in every mode.
+	_profile().add_shells(15)
+	_update_hud()
+
+
+## A tick-counted particle (P4.4): no entity, no phase, just a lifetime the renderer draws.
+func spawn_particle(at: Vector2, kind: String, life: int) -> void:
+	particles.append({"pos": at, "life": life, "kind": kind})
+
+
+## Age every particle and every laser spark by one Sim tick.
+func _tick_particles() -> void:
+	for i in range(particles.size() - 1, -1, -1):
+		particles[i]["life"] = int(particles[i]["life"]) - 1
+		if int(particles[i]["life"]) <= 0:
+			particles.remove_at(i)
+	for i in range(laser_sparks.size() - 1, -1, -1):
+		laser_sparks[i]["life"] = int(laser_sparks[i]["life"]) - 1
+		if int(laser_sparks[i]["life"]) <= 0:
+			laser_sparks.remove_at(i)
+
+
+## The laser spark of `FUN_00543640(x - 0x28, y - 0x28)` (P2.10 §1): drawn on every resolved
+## click. `life` 5 ticks matches the fire cooldown the hit bookkeeping stamps.
+func spawn_laser(at: Vector2) -> void:
+	laser_sparks.append({"pos": at - Vector2(40.0, 40.0), "life": 5, "cell": laser_cell_for(weapon_level)})
+
+
+## Q-0023 parameterisation: `IMAGE_LASERS` is 6 rows x 10 cols (60 cells). The row is the
+## asset-level reading for the upgrade tier; the column is the beam animation. The draw code
+## that binds tier to row was never found, so this stays the one place to change.
+static func laser_cell_for(tier: int) -> int:
+	var row := clampi(tier - 2, 0, 5)
+	return row * 10
 
 
 func _on_alien_died(_alien, _from_shot: bool) -> void:
@@ -373,6 +527,17 @@ func try_hit_projectile(point: Vector2) -> bool:
 	for entity: SimEntity in tank.entities_in(Sim.Phase.PROJECTILES):
 		var shot := entity as Projectile
 		if shot != null and shot.hit_test(point):
+			return true
+	return false
+
+
+## Click a larva (`Tank+0xDC`, `Larva::HitTest`): kind 0 is destroyed, kind 1 deflects, kind 2
+## cannot be clicked (P2.10 §1/§5.4). The click chain tests larvae before missiles, as the
+## handler does; Rapid Fire tests them in reverse (P2.11 §8).
+func try_hit_larva(point: Vector2) -> bool:
+	for entity: SimEntity in tank.entities_in(Sim.Phase.PROJECTILES):
+		var larva := entity as Larva
+		if larva != null and larva.hit_test(point):
 			return true
 	return false
 
@@ -475,13 +640,19 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	stock_default_store()
 	reset_prices()
 	tank.tank_index = tank_index
-	spawn_owned_pets()
-	# The level schedule owns the wave start: tank 1 level 1 stays at 0, tank 1 level 2 starts with
-	# 1750 ticks left, and every other level uses its recovered type (P2.6 §8).
-	arm_wave(
-		wave_selection_for(tank_index, level_index, tank.rng),
-		wave_countdown_for(tank_index, level_index)
-	)
+	_apply_mode_flags()
+	refresh_save_path()
+	if game_mode != MODE_TIME_TRIAL:
+		spawn_owned_pets()
+	if game_mode == MODE_VIRTUAL:
+		_start_virtual_tank()
+	else:
+		# The level schedule owns the wave start: tank 1 level 1 stays at 0, tank 1 level 2
+		# starts with 1750 ticks left, and every other level uses its recovered type (P2.6 §8).
+		arm_wave(
+			wave_selection_for(tank_index, level_index, tank.rng),
+			wave_countdown_for(tank_index, level_index)
+		)
 	if egg_widget != null:
 		egg_widget.refresh()
 	# `SetMusic` per stage (P2.14 §4.1/EV-0148); Virtual Tank is silenced inside `Audio`.
@@ -489,29 +660,148 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	if audio != null:
 		audio.set_stage_music(tank_index)
 	if boss_kind_for(tank_index, level_index) == BOSS_KINDS["cyrax"]:
-		return start_boss(profile_counter)
+		# `profile_counter <= 0` means "use the profile": `Main` starts levels without an
+		# explicit counter, and Cyrax's hp must read `profile+0x54` (P2.9 §8/§10).
+		var counter := profile_counter if profile_counter > 0 else _profile().cyrax_attempts
+		return start_boss(counter)
 	return null
 
 
+## Mode -> tank flags (G7): mode is an input to level start (SPECS §5), so every mode-only
+## rule branches here. `virtual_tank` mirrors the original's mode 5: it changes growth
+## thresholds, nutrition caps and coin pacing. Sandbox money, Challenge rewards and the
+## Time Trial budget are level-local and are set here too.
+func _apply_mode_flags() -> void:
+	tank.virtual_tank = game_mode == MODE_VIRTUAL
+	if game_mode == MODE_SANDBOX:
+		money = SANDBOX_MONEY
+	if game_mode == MODE_TIME_TRIAL:
+		var seconds := 300 if tank_index == 1 else 600
+		# Ticks at the port's 36 Hz rate (Q-0034); keep this next to `Sim.TICK_MS`.
+		time_trial_budget_ticks = seconds * 36
+	else:
+		time_trial_budget_ticks = 0
+	time_trial_elapsed = 0
+
+
+## `FUN_0053C3F0` (EV-0128): a Virtual Tank starts without the starter fish `setup()` placed
+## and without an alien clock (P2.11 §7). It populates through the weighted fish spawner
+## instead; the save is `sim%d.dat` through `Game.save_stem` (EV-0142).
+func _start_virtual_tank() -> void:
+	for entity in tank.entities_in(Sim.Phase.FISH):
+		tank.despawn(entity)
+	alien_selection = 0
+	if wave != null and is_instance_valid(wave):
+		wave.selection = 0
+	for i in 6:
+		spawn_virtual_fish(-1)
+
+
+## `FUN_0051B260` (EV-0128): 76 % ordinary, otherwise the weighted prize table. The retried
+## roll re-checks the exclusion and gives up after 100 tries with the "anything" call.
+## Ordinary fish upgrade through `FUN_00519890(obj, 1)` 76 % of the time (stage +1).
+func spawn_virtual_fish(excluded_type: int) -> Fish:
+	if tank == null:
+		return null
+	for attempt in 100:
+		var prize := tank.randi_below(100) >= VT_ORDINARY_CHANCE
+		var type_id := -1
+		if prize:
+			var roll := tank.randi_below(100)
+			var cumulative := 0
+			for pair: Array in VT_PRIZE:
+				cumulative += int(pair[1])
+				if roll < cumulative:
+					type_id = int(pair[0])
+					break
+			if type_id == excluded_type:
+				continue
+		var stage := tank.randi_below(3)
+		var species := FishScript.Species.GUPPY
+		if prize:
+			species = int(VT_PRIZE_SPECIES.get(type_id, FishScript.Species.GUPPY))
+			if type_id in [8, 9, 10]:
+				# Penta/Grubber/Breeder have no Fish class yet; the guppy at a high stage
+				# is the port's stand-in until the creature entities land (see Fish header).
+				stage = 4 if type_id == 8 else (3 if type_id == 9 else 2)
+			elif species == FishScript.Species.GEKKO:
+				stage = -1
+			elif species == FishScript.Species.ULTRA:
+				stage = -1
+		elif tank.randi_below(100) < VT_ORDINARY_CHANCE:
+			stage += 1
+		var at := _random_spawn_point()
+		var fish: Fish = tank.spawn_fish(species, at, stage, 0)
+		_wire(fish)
+		return fish
+	# Exhausted: the fallback call passes excluded_type = -1 (EV-0128).
+	var fallback: Fish = tank.spawn_fish(FishScript.Species.GUPPY, _random_spawn_point(), 0, 0)
+	_wire(fallback)
+	return fallback
+
+
+## The level-end sweep (`FUN_0053C2D0`, EV-0047): every live coin is collected. Used by the
+## Time Trial clock expiry and by egg completion in Time Trial/Challenge/Virtual Tank.
+func collect_all_coins() -> int:
+	var taken := 0
+	for coin in tank.coins():
+		if not coin.dead:
+			coin.collect()
+			taken += 1
+	return taken
+
+
 ## Pets join the tank with the session (P2.7 §2.2, branch A): every owned flag `FUN_00501410(i)` spawns
-## its pet through `FUN_00544A90(index, -1, ...)`, which rolls x 105..369 and y 20..539. Branch B
-## (the profile's selected-pet bytes) needs `profile+0x18`/mode, which is still open (Q-0013 area), so
-## the owned flags are the port's source. Returns how many pets entered.
+## its pet through `FUN_00544A90(index, -1, ...)`, which rolls x 105..369 and y 20..539. When the
+## profile carries a non-empty pending selection (`profile+0x5A`, branch B), that selection is the
+## spawned set instead. Returns how many pets entered.
 func spawn_owned_pets() -> int:
 	if tank == null:
 		return 0
 	var owner := _profile()
 	var spawned := 0
+	var selected: Array[int] = []
 	for index: int in PetScript.DEFS:
-		if not owner.owns_pet(index):
-			continue
+		if index >= 0 and index < owner.selected_pets.size() and owner.selected_pets[index] != 0 \
+				and owner.owns_pet(index):
+			selected.append(index)
+	var indices: Array[int] = []
+	indices.append_array(selected)
+	if indices.is_empty():
+		for index: int in PetScript.DEFS:
+			if owner.owns_pet(index):
+				indices.append(index)
+	for index: int in indices:
 		var at := Vector2(
 			tank.rng.randf_range(PET_SPAWN_MIN.x, PET_SPAWN_MAX.x),
 			tank.rng.randf_range(PET_SPAWN_MIN.y, PET_SPAWN_MAX.y)
 		)
-		tank.spawn_pet(index, at)
+		var pet: Pet = tank.spawn_pet(index, at)
+		pet.cue.connect(_on_pet_cue)
+		pet.birth_requested.connect(_on_pet_birth)
+		pet.food_requested.connect(_on_pet_food)
+		pet.attack_requested.connect(_on_pet_attack)
 		spawned += 1
 	return spawned
+
+
+## Prego's birth: the guppy spawns live at the reported point (`FUN_00546EF0`).
+func _on_pet_birth(at: Vector2) -> void:
+	_wire(tank.spawn_fish(FishScript.Species.GUPPY, at, 0, 0))
+
+
+## Zorf's level-2 food drop; the pellet is special, so the manual cap does not block it.
+func _on_pet_food(quality_kind: int, at: Vector2) -> void:
+	tank.spawn_food(at, 0, quality_kind)
+
+
+## Pet melee/ball damage (Itchy/Rufus/Gash/Stanley/Walter): float damage vs aliens.
+func _on_pet_attack(target: Node2D, damage: float) -> void:
+	if target != null and is_instance_valid(target) and target.has_method("hit"):
+		if target is Boss:
+			(target as Boss).hit(int(damage), true)
+		else:
+			target.hit(int(damage), true)
 
 
 ## `FUN_00544A90`'s randomized spawn point when the caller passes x = -1.
@@ -553,9 +843,16 @@ func complete_level() -> void:
 	var owner := _profile()
 	var tank_no := tank_index
 	var level_no := level_index
-	if game_mode == Progression.MODE_CHALLENGE:
+	if game_mode == MODE_CHALLENGE:
 		if tank_no >= 1 and tank_no <= Profile.CHALLENGE_SLOTS:
 			owner.challenge_unlocks[tank_no - 1] = 1
+		owner.add_shells(int(CHALLENGE_REWARDS.get(tank_no, 0)))
+		level_completed.emit(tank_no, level_no, -1)
+		return
+	if game_mode == MODE_TIME_TRIAL:
+		# Time Trial ends by the clock, not the egg (P2.11 §4): the reward is money*5/100
+		# as shells. The expiry path collects first (see `_tick_time_trial`).
+		owner.add_shells(int(money * 5 / 100))
 		level_completed.emit(tank_no, level_no, -1)
 		return
 	var award := Progression.offered_pet(tank_no, level_no)
@@ -577,16 +874,46 @@ func start_boss(counter: int, at: Vector2 = Vector2(320.0, 200.0)) -> Boss:
 	boss.minion_requested.connect(_on_boss_minion)
 	boss.pulse_requested.connect(_on_boss_pulse)
 	boss.died.connect(_on_alien_died)
+	boss.died.connect(_on_boss_died)
 	return boss
 
 
-## Q-0047: the minion kind is not named by the note; a Sylvester stands in for it.
+## `FUN_00545580(x, y)` (EV-0117): a 1-hp Minisylvester (kind 0x14) at the boss position
+## +40,+40. The boss signal already carries that point.
 func _on_boss_minion(at: Vector2) -> void:
-	wire_alien(tank.spawn_alien(0x01, at))
+	wire_alien(tank.spawn_alien(0x14, at))
 
 
+## `FUN_005475B0(type, 1)` (EV-0117): the 300-tick pulse spawns `type = rand%6 + 4` through the
+## generic wave spawner, at `x 20..469, y 105..299`. Applies exactly like a wave spawn, so a
+## composite 9 arrives as its two members at the one rolled point.
 func _on_boss_pulse(at: Vector2) -> void:
-	wire_alien(tank.spawn_alien(0x01, at))
+	var selection := 4 + tank.randi_below(6)
+	var point := Vector2(
+		WaveClockScript.SPAWN_X_BASE + tank.randi_below(WaveClockScript.SPAWN_X_SPAN),
+		WaveClockScript.SPAWN_Y_BASE + tank.randi_below(WaveClockScript.SPAWN_Y_SPAN)
+	)
+	_on_wave_spawn(selection, point)
+	if COMPOSITE_MEMBERS.has(selection):
+		_on_wave_spawn(selection, point)
+
+
+## P2.9 §10: a fight that ends with more than 1000 damage dealt and no minions left counts
+## toward `profile+0x54`, so the next Cyrax spawns 125 hp weaker (down to 2500). The binary
+## runs this in the tank update while the boss is still alive (Q-0022); the port's kill path
+## is where the fight ends, and the death wipe (`FUN_004F9950`) has already cleared the field
+## by the time this handler runs.
+func _on_boss_died(boss: Boss, _from_shot: bool) -> void:
+	if boss == null:
+		return
+	# `died` fires before the boss despawns, so it still counts itself: the
+	# "no minions left" check has to exclude the dying boss.
+	var others := 0
+	for entity in tank.entities_in(Sim.Phase.ALIENS):
+		if entity != boss and not entity.dead:
+			others += 1
+	if boss.max_hp - boss.hp > 1000 and others == 0:
+		_profile().cyrax_attempts += 1
 
 
 ## Pick up the coin under `point`, if any. Returns true when a coin was taken (P2.5 §5).
@@ -624,13 +951,50 @@ func _on_breed(_species: int, at: Vector2, facing: int) -> void:
 	_wire(tank.spawn_fish(FishScript.Species.GUPPY, at, 0, facing))
 
 
+## Q-0036 port tuning: the binary's stage -> kind assignment is still open (the slot-81 call sites
+## elide the kind argument), so the port tiers by stage through the recovered value table (EV-0047):
+## 1->15, 2->35, 3->40, 4->200, 5/6->500, 7->2000. Revisit when a slot-81 kind is bound; the mapping
+## is kept here, keyed by `(species, stage)`, so one edit re-tunes the whole economy.
+static func coin_kind_for(species: int, stage: int) -> int:
+	if species == FishScript.Species.ULTRA:
+		return 0x06
+	if species == FishScript.Species.GEKKO:
+		return 0x07
+	match stage:
+		1:
+			return 0x01
+		2:
+			return 0x02
+		3:
+			return 0x03
+		4:
+			return 0x04
+		5:
+			return 0x06
+		6:
+			return 0x06
+	return 0x01
+
+
 func _on_coin_due(fish: Fish) -> void:
-	# Q-0036: the stage -> kind table is still open. Kind 1 (15 shells) is the placeholder.
-	tank.spawn_coin(1, fish.position + Vector2(20.0, 20.0))
+	tank.spawn_coin(coin_kind_for(fish.species, fish.stage),
+		fish.position + Vector2(20.0, 20.0))
 
 
 func _on_coin_collected(_coin, amount: int) -> void:
+	# Virtual Tank converts coins to shells instead of money (P2.11 §7 / EV-0128).
+	if tank != null and bool(tank.virtual_tank):
+		_profile().add_shells(amount)
+		_update_hud()
+		return
 	add_money(amount)
+
+
+## Virtual Tank banked hand-off (`Coin.banked` at (550,30)): shells, not money.
+func _on_coin_banked(coin) -> void:
+	if coin != null and not coin.dead:
+		_profile().add_shells(int(coin.amount()))
+		_update_hud()
 
 
 ## Hold-to-fire (SPECS §3.5): level 12 unlocks it at `11 - level/2` ticks, floored at 100 ms
@@ -641,22 +1005,31 @@ func hold_fire_period() -> int:
 	return maxi(11 - weapon_level / 2, 10)
 
 
-## Held fire: level 12 fires every `hold_fire_period()` ticks at the last press position. The re-test
-## order is the spec's missiles -> aliens (there is no larvae entity in the port yet).
-## Retarget held fire (the live cursor while the button is held).
+## Held fire: level 12 fires every `hold_fire_period()` ticks at the last press position. The
+## re-test order is Rapid Fire's missiles -> larvae -> aliens (P2.11 §8).
 func aim(point: Vector2) -> void:
 	fire_target = point
 
 
 func fire_at(point: Vector2) -> bool:
 	if try_hit_projectile(point):
+		spawn_laser(point)
 		return true
-	return try_shoot(point)
+	if try_hit_larva(point):
+		spawn_laser(point)
+		return true
+	if try_shoot(point):
+		spawn_laser(point)
+		return true
+	return false
 
 
 func _on_sim_tick(_tick: int) -> void:
 	if game_mode == MODE_CHALLENGE:
 		inflate_prices(1)
+	if game_mode == MODE_TIME_TRIAL and not completed:
+		_tick_time_trial()
+	_tick_particles()
 	if store_bar != null:
 		store_bar.refresh_if_changed()
 	if egg_widget != null:
@@ -668,6 +1041,25 @@ func _on_sim_tick(_tick: int) -> void:
 		return
 	if fire_at(fire_target):
 		fire_cooldown = period
+
+
+## One Time Trial tick (P2.11 §4 / EV-0127). Expiry collects all coins
+## (`FUN_0053C2D0`) and completes the level, which pays `money*5/100` shells.
+func _tick_time_trial() -> void:
+	if time_trial_budget_ticks <= 0:
+		return
+	time_trial_elapsed += 1
+	_update_hud()
+	if time_trial_elapsed > time_trial_budget_ticks:
+		collect_all_coins()
+		complete_level()
+
+
+## Seconds left on the Time Trial clock (integer, like `Tank+0x3B0`), or 0 outside Time Trial.
+func time_trial_seconds_left() -> int:
+	if game_mode != MODE_TIME_TRIAL or time_trial_budget_ticks <= 0:
+		return 0
+	return maxi(0, int((time_trial_budget_ticks - time_trial_elapsed) / 36))
 
 
 # --- audio -------------------------------------------------------------------
@@ -746,7 +1138,9 @@ func buy_item(index: int) -> bool:
 	play_sound("SOUND_BUY")
 	match kind:
 		Store.KIND_FISH:
-			tank.spawn_fish(int(Store.item(id)["species"]), _random_spawn_point())
+			# Shop-bought fish enter through the same wiring as starter and bred fish (G4):
+			# without it a bought guppy never emits died/coin_due/breed_requested.
+			_wire(tank.spawn_fish(int(Store.item(id)["species"]), _random_spawn_point()))
 		Store.KIND_FOOD_QUALITY:
 			food_quality += 1
 		Store.KIND_FOOD_QUANTITY:
@@ -775,12 +1169,44 @@ const STORE_SHELF_COUNT := 8
 
 
 ## Stock the shop from P2.6 §3's per-tank table: which items a tank sells, at which store slot and
-## for which price, with level 1/2 hiding the gated ones. The roller that re-rolls the shelves every
-## 100-249 ticks (`FUN_0052F0D0`) is still open (Q-0052), so this is the level's opening stock.
+## for which price, with level 1/2 hiding the gated ones. This is the level's opening stock;
+## `roll_stock()` overlays the one roller slot on top of it (Q-000?/EV-0141).
 func stock_default_store() -> void:
 	tank_store.clear()
 	for row in Progression.store_rows(tank_index, level_index, game_mode):
 		tank_store.append(row)
+
+
+## The stock roller (EV-0141, Q-0026): one slot is always a random **unowned** backdrop at
+## 15000 shells, falling back to a random unowned pet once all six backdrops are owned.
+## Buying the slot marks it owned (`_on_store_roller_bought`). The 100-249-tick refresh
+## timer (`FUN_0052FEA0`) is the StoreScreen's job; this is the single roll.
+func roll_stock() -> Dictionary:
+	var owner := _profile()
+	var unowned: Array[int] = []
+	for i in Profile.BACKDROP_SLOTS:
+		if i < owner.backdrops_owned.size() and owner.backdrops_owned[i] == 0:
+			unowned.append(i)
+	var row := {
+		"slot": -1, "price": Profile.BACKDROP_PRICE, "base": Profile.BACKDROP_PRICE,
+		"increment": 0, "present": 0, "kind_roll": 3,
+	}
+	if not unowned.is_empty():
+		row["backdrop"] = unowned[tank.randi_below(unowned.size())]
+	else:
+		var unowned_pets: Array[int] = []
+		for index: int in PetScript.DEFS:
+			if not owner.owns_pet(index):
+				unowned_pets.append(index)
+		if unowned_pets.is_empty():
+			row["kind_roll"] = 0
+			return row
+		row["kind_roll"] = 1
+		row["pet"] = unowned_pets[tank.randi_below(unowned_pets.size())]
+		row["price"] = 5000
+		row["base"] = 5000
+	tank_store.append(row)
+	return row
 
 
 func store_rows(ids: Array) -> void:
@@ -791,8 +1217,21 @@ func store_rows(ids: Array) -> void:
 
 # --- persistence -------------------------------------------------------------
 
+## The per-mode save path (EV-0142): `userdata/<stem><slot>.dat` with the stem from the
+## mode and the slot from `profile+0x44`. `save_path` stays the headless default; the game
+## refreshes it at level start so each mode keeps its own file (G10).
+func current_save_path() -> String:
+	return SaveFilesScript.path_for(game_mode, _profile().save_slot)
+
+
+func refresh_save_path() -> void:
+	save_path = current_save_path()
+
+
 ## Save the tank: fish records, the store table, the pet flags and the scalar block.
-func save_game(path: String = save_path) -> Error:
+func save_game(path: String = "") -> Error:
+	if path == "":
+		path = save_path
 	var save: TankSave = TankSnapshotScript.capture(tank, int(tank.tank_index), level_index)
 	while save.store.size() < TankSaveScript.STORE_ROWS:
 		save.store.append({"slot": -1, "price": 0, "base": 0, "increment": 0, "present": 0})
@@ -805,7 +1244,9 @@ func save_game(path: String = save_path) -> Error:
 
 
 ## Load a save: scalars, store, pet flags and the fish. Live fish are replaced, not merged.
-func load_game(path: String = save_path) -> bool:
+func load_game(path: String = "") -> bool:
+	if path == "":
+		path = save_path
 	var save: TankSave = SaveFilesScript.read_tank_save(path)
 	if save == null:
 		return false
@@ -859,12 +1300,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var at := get_global_mouse_position()
 	fire_target = at
-	# Click order (P2.10 §6.1): projectiles, then aliens, then coins, then feeding.
+	# Click order (P2.10 §1): larvae (`Tank+0xDC`), missiles (`Tank+0xF4`), aliens, coins, feed.
+	# Every resolved click draws a laser spark (`FUN_00543640`); the feed path does not.
+	if try_hit_larva(at):
+		spawn_laser(at)
+		return
 	if try_hit_projectile(at):
+		spawn_laser(at)
 		return
 	if try_shoot(at):
+		spawn_laser(at)
 		return
 	if try_collect(at):
+		spawn_laser(at)
 		return
 	drop_food(at)
 
@@ -878,13 +1326,61 @@ func _process(_delta: float) -> void:
 	if holding_fire:
 		aim(get_global_mouse_position())
 	_sync_visuals()
+	_sync_fx()
 	_update_hud()
+
+
+## The FX layer: one small tinted square per particle/laser spark. Squares keep the
+## original's "spawn a particle, age it, remove it" shape without a particle system;
+## the sheet-level gore/splat art (P4.4) is still a Q-0036-adjacent gap, not faked here.
+var _fx_layer: Node2D = null
+var _fx_dot: Texture2D = null
+
+
+func _sync_fx() -> void:
+	if _fx_layer == null:
+		_fx_layer = Node2D.new()
+		_fx_layer.name = "FxLayer"
+		_fx_layer.z_index = 50
+		add_child(_fx_layer)
+		var img := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+		img.fill(Color.WHITE)
+		_fx_dot = ImageTexture.create_from_image(img)
+	var wanted: Array[Dictionary] = []
+	for p in particles:
+		wanted.append({"pos": p["pos"], "kind": String(p["kind"]), "life": int(p["life"])})
+	for s in laser_sparks:
+		wanted.append({"pos": s["pos"], "kind": "laser", "life": int(s["life"])})
+	while _fx_layer.get_child_count() > wanted.size():
+		_fx_layer.get_child(_fx_layer.get_child_count() - 1).queue_free()
+	while _fx_layer.get_child_count() < wanted.size():
+		var dot := Sprite2D.new()
+		dot.texture = _fx_dot
+		dot.centered = true
+		_fx_layer.add_child(dot)
+	for i in wanted.size():
+		var dot := _fx_layer.get_child(i) as Sprite2D
+		dot.position = wanted[i]["pos"]
+		match String(wanted[i]["kind"]):
+			"smoke":
+				dot.modulate = Color(0.8, 0.8, 0.8, 0.6)
+				dot.scale = Vector2.ONE * (0.6 + float(int(wanted[i]["life"])) / 30.0)
+			"burst":
+				dot.modulate = Color(1.0, 0.85, 0.3)
+				dot.scale = Vector2.ONE * 0.8
+			_:
+				dot.modulate = Color(0.5, 0.95, 1.0)
+				dot.scale = Vector2(4.0, 2.0)
 
 
 func _on_entity_spawned(entity: SimEntity) -> void:
 	# The pickup path is simulation, not drawing: connect it even when rendering is off.
 	if entity is Coin:
 		(entity as Coin).collected.connect(_on_coin_collected)
+		(entity as Coin).banked.connect(_on_coin_banked)
+	if entity is Larva:
+		(entity as Larva).shells_payout.connect(_on_larva_payout)
+		(entity as Larva).burst_requested.connect(_on_larva_burst)
 	if not render:
 		return
 	var visual := _make_visual(entity)
@@ -929,6 +1425,9 @@ func _make_visual(entity: SimEntity) -> Sprite2D:
 	elif entity is Projectile:
 		# P2.10 §5: the three projectile kinds bind the missile, energy-ball and balls sheets.
 		source_id = (entity as Projectile).image_id()
+	elif entity is Larva:
+		# P2.10 §5.5: the larva shares the family sheets (Q-0023 keeps the binding open).
+		source_id = (entity as Larva).image_id()
 	else:
 		return null
 	if _content == null or not _content.has_image(source_id):
@@ -1002,6 +1501,9 @@ func _draw_entity_frame(entity: SimEntity, sprite: Sprite2D, anim: AnimState) ->
 	if entity is Projectile:
 		# The projectile sheets have no recovered playback metadata; the first cell is their base
 		# art. The missing homing body still owns the direction/animation choice (Q-0041).
+		sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")), 0)
+		return
+	if entity is Larva:
 		sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")), 0)
 		return
 	if entity is Food:
@@ -1151,6 +1653,8 @@ func _update_hud() -> void:
 	# still be null here; the first tick after setup fills the label.
 	if _hud == null or tank == null:
 		return
-	_hud.text = "Shells %d   Fish %d   Food %d" % [
-		money, tank.entities_in(Sim.Phase.FISH).size(), tank.food_count()
+	_hud.text = "Shells %d   Fish %d   Food %d   Weapon %d" % [
+		money, tank.entities_in(Sim.Phase.FISH).size(), tank.food_count(), weapon_level
 	]
+	if game_mode == MODE_TIME_TRIAL:
+		_hud.text += "   Time %ds" % time_trial_seconds_left()

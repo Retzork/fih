@@ -1,6 +1,6 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Progress audit (2026-11-05):** all 19 headless suites re-run green on this checkout (992 assertions; the scene-backed integration suite covers menu -> level -> wave -> boss, the alien/boss HP bars and the native UI fonts); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md).
+**Progress audit (2026-11-05, re-run 2026-11-07):** all 19 headless suites re-run green on this checkout (1010 assertions after the projectile homing follow-up, EV-0158; at the 2026-11-05 audit baseline it was 992; the scene-backed integration suite covers menu -> level -> wave -> boss, the alien/boss HP bars and the native UI fonts); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md). **Completion pass (2026-11-08):** 23/23 suites green (1123 assertions); see `PLAN.md` Completion pass and `AUDIT.md` §5c.
 
 **Handover status: Phase 2 closed (2026-11-02).** Phase 0, Phase 1 and Phase 3 are complete; Phase 2
 is 14/18 with **every technical system decoded** and `SPECS.md` written - only the two optional items
@@ -14,11 +14,7 @@ P2.6 are substantially complete with tracked open questions, and P2.12 has its s
 passes done (screen map, mode writer, store screen and stock refresh, level-start flow, all 13 screen
 constructors and their click handlers, the dialog base plus all ten dialog ctors and their click
 handlers); what is left there are the tracked open questions.
-**Phase 4 is in progress:** P4.1-P4.3 are complete; P4.4-P4.14 are in progress (P4.10/P4.11
-partial). The playable level, store, menu, audio, saves, pets, aliens and Cyrax boss are in, every UI
-surface draws with the game's native BMFonts, and all 19 headless checks pass (992 assertions).
-The next task is the P4.10/P4.11 follow-up.
-`PLAN.md` is the source of truth for progress.
+**Phase 4 and Phase 5 are complete (2026-11-08):** P4.1-P4.14 and P5.1-P5.5 are `[x]`. All 23 headless checks pass (1123 assertions). Validation is `P5-VALIDATION.md`; `PLAN.md` is the source of truth for progress (no next task in the remake scope).
 
 ## Start here
 
@@ -45,8 +41,8 @@ The next task is the P4.10/P4.11 follow-up.
 | P1 target identity | Complete (10/10) |
 | P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In progress (3/14 complete): P4.1 architecture, P4.2 content registry, P4.3 entity set; P4.4-P4.14 in progress (P4.10/P4.11 partial). Playable level, store, menu, audio, saves, pets, aliens and Cyrax boss in; UI on the native BMFonts; 19 headless checks green (992 assertions) |
-| P5 validation / polish | Not started (0/5) |
+| P4 Godot implementation | Complete (14/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, 12 slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser, all modes; 23 headless checks green (1123 assertions) |
+| P5 validation / polish | Complete (5/5): `P5-VALIDATION.md` |
 
 - **P2.12 menus & UI flow (2026-10-29, first pass):** every screen class is a widget container plus
   an embedded `Sexy::ButtonListener` at `+0x88` (manager at `+0x8C`, callbacks get `object+0x88`),
@@ -314,6 +310,7 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `SPECS.md` | Behaviour contract for P4 (P2.18 output): tick model, resource contract, entity rules, economy, modes, UI, persistence, audio, cross-system rules, shared constant sheet, open-question index. Read before any P4 task. |
 | `ARCHITECTURE.md` | Phase 4 design (P4.1): the tick contract and phase order, autoloads and scene tree, ownership map, coupling rules, project settings, verification commands, file map. |
+| `P5-VALIDATION.md` | Phase 5 validation (P5.1-P5.5 complete): differential table, playtest checklist, timing, perf, packaging. |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8-P2.15 opens and **Q-0034** (tick rate, the one item that affects every timed system). |
 | `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.15-resources.md`, `p3-assets.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
 | `analysis/` | Inventories (`resources.json`, `extraction.json`, ...), snapshots (gitignored), evidence maps. |
@@ -321,11 +318,11 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 
 ## Handover checklist
 
+- [x] Remake scope complete (P4 + P5). Next work is optional: windowed eye-check (P5.2 art),
+  REA-only unknowns (see PLAN) and new feature scope.
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
-- [ ] Read `SPECS.md` and the latest EVIDENCE entries; the newest system note is
-  `p2.15-resources.md`.
-- [ ] Pick the next task from `PLAN.md` (currently the P4.10/P4.11 follow-up); check the open
-  questions first - Q-0034 (tick rate) affects everything timed.
+- [ ] Read `SPECS.md` and the completion pass in `PLAN.md`; P5 detail is in `P5-VALIDATION.md`.
+- [ ] Check the open questions first - Q-0034 (tick rate) affects everything timed.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended
   `EVIDENCE.md`, `DECISIONS.md` questions, note's P4 spec, saved raw output, and a commit.

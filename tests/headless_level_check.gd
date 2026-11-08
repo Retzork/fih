@@ -1,11 +1,11 @@
-extends SceneTree
+﻿extends SceneTree
 ## Headless check for the P4.4 level (the feeding loop).
 ##
 ##   & "<godot>" --headless --path . --script res://tests/headless_level_check.gd
 ##
 ## The level runs with `render = false`, so no Content access and no sprites - the same simulation the
 ## game runs, minus the drawing. Covers the starting population, click-to-feed, pickup routing, the
-## AddMoney clamps, death + live successor (P2.4 §4) and the tank pause gate.
+## AddMoney clamps, death + live successor (P2.4 Â§4) and the tank pause gate.
 
 const SimScript := preload("res://scripts/autoload/sim.gd")
 const LevelScript := preload("res://scripts/tank/level.gd")
@@ -76,7 +76,7 @@ func _test_starting_population() -> void:
 func _test_feeding() -> void:
 	var fish: Fish = _live_fish()[0]
 	fish.fullness = 0
-	# A pellet at the fish's centre: the eat window is ±35 px around position + (40, 40).
+	# A pellet at the fish's centre: the eat window is Â±35 px around position + (40, 40).
 	var pellet := level.drop_food(fish.position + Vector2(40.0, 40.0))
 	_expect(level.tank.food_count() == 1, "drop_food adds one pellet")
 	_expect(level.sounds_played.has("SOUND_DROPFOOD"), "the drop requests its sound (P4.13)")
@@ -111,7 +111,7 @@ func _test_money() -> void:
 	_expect(level.money == LevelScript.MONEY_MAX, "a non-positive amount is ignored")
 
 
-## P2.5 §2-§3: the buy hub's price, cap and refusal rules.
+## P2.5 Â§2-Â§3: the buy hub's price, cap and refusal rules.
 func _test_store() -> void:
 	level.food_quantity = 1
 	level.store_rows([0, 2, 3, 10, 6])
@@ -132,7 +132,7 @@ func _test_store() -> void:
 	level.money = 300
 	_expect(level.buy_item(2), "food quantity upgrades")
 	_expect(level.food_quantity == 2 and level.money == 0, "the level rises and the money falls")
-	# The weapon row has no recovered price (P2.5 §3), so the fixture gives it one.
+	# The weapon row has no recovered price (P2.5 Â§3), so the fixture gives it one.
 	level.tank_store[3]["price"] = 300
 	level.money = 300
 	_expect(level.buy_item(3), "the weapon upgrades")
@@ -185,7 +185,7 @@ func _test_store() -> void:
 	# The later scenarios drop freely, so the cap goes back to the maximum.
 	level.food_quantity = LevelScript.FOOD_QUANTITY_MAX
 	level.stock_default_store()
-	_expect(level.tank_store.size() == 1, "tank 1 level 1 stocks the guppy alone (P2.6 §3)")
+	_expect(level.tank_store.size() == 1, "tank 1 level 1 stocks the guppy alone (P2.6 Â§3)")
 	level.start_level(1, 3)
 	var stocked: Array = []
 	for row: Dictionary in level.tank_store:
@@ -198,7 +198,7 @@ func _test_store() -> void:
 
 
 
-## Pets enter with the session (P2.7 §2.2): owned flags spawn, unowned ones do not, and every pet has
+## Pets enter with the session (P2.7 Â§2.2): owned flags spawn, unowned ones do not, and every pet has
 ## a `Content` body sheet so it is drawn (P2.15).
 func _test_pet_session() -> void:
 	level.tank.shutdown()
@@ -230,7 +230,7 @@ func _test_coin_pickup() -> void:
 
 
 func _test_death_and_successor() -> void:
-	# Deaths (P2.4 §4, EV-0053): the fish leaves an inert corpse that sinks while its own stage
+	# Deaths (P2.4 Â§4, EV-0053): the fish leaves an inert corpse that sinks while its own stage
 	# counter falls, then detaches **silently**. Nothing spawns a replacement - a starved fish has to
 	# be bought again. The live successor belongs to the corpse's revive branch (phase < 1), whose
 	# writer is unrecovered (Q-0043), so it must not fire here.
@@ -290,7 +290,7 @@ func _test_death_and_successor() -> void:
 	_expect(guard > 250 and guard < 460, "it takes the same fall to disappear (got %d)" % guard)
 
 
-## SPECS §3.5: level 12 holds fire every `hold_fire_period()` ticks, re-testing missiles then aliens.
+## SPECS Â§3.5: level 12 holds fire every `hold_fire_period()` ticks, re-testing missiles then aliens.
 ## The pellet draws the simulation's own frame counter, ten ticks per sheet frame.
 ## The swim strip speeds up with the fish, and never leaves its clamp (presentation-only rule).
 func _test_fish_animation_speed() -> void:
@@ -372,7 +372,7 @@ func _test_pause() -> void:
 
 func _test_wave_spawn() -> void:
 	level.tank.shutdown()
-	# The production start arms the clock from the level's own table (P2.6 §8): tank 1 level 3 is
+	# The production start arms the clock from the level's own table (P2.6 Â§8): tank 1 level 3 is
 	# kind 2, with no `arm_wave` call from the test.
 	level.start_level(1, 3)
 	_step(WaveClockScript.WAVE_TICKS)
@@ -381,7 +381,7 @@ func _test_wave_spawn() -> void:
 	if level.tank.alien_count() == 1:
 		var alien: Alien = level.tank.entities_in(SimPhaseALIENS())[0] as Alien
 		_expect(alien.kind == 2, "the production wave uses the level's selection")
-	# Composite recipes compose their member kinds at the one rolled point (P2.8 §4).
+	# Composite recipes compose their member kinds at the one rolled point (P2.8 Â§4).
 	level.tank.shutdown()
 	level.arm_wave(0x09)
 	_step(WaveClockScript.WAVE_TICKS)
@@ -402,6 +402,8 @@ func _test_shooting() -> void:
 
 	var destructor: Alien = level.tank.spawn_alien(0x05, Vector2(260.0, 260.0))
 	level.wire_alien(destructor)
+	alien.position = Vector2(50.0, 100.0)
+	level.spawn_guppy(Vector2(500.0, 350.0))
 	_step(AlienScript.INTRO_TICKS + AlienScript.MISSILE_PERIOD)
 	_expect(level.tank.projectile_count() == 1, "an attack request spawns a projectile")
 	if level.tank.projectile_count() == 1:
@@ -431,7 +433,7 @@ func SimPhasePROJECTILES() -> int:
 
 # --- helpers -----------------------------------------------------------------
 
-## P2.3 §2: at most `food_quantity` non-special pellets; specials are exempt.
+## P2.3 Â§2: at most `food_quantity` non-special pellets; specials are exempt.
 func _test_food_cap() -> void:
 	level.tank.shutdown()
 	level.food_quantity = 1
@@ -482,3 +484,4 @@ func _expect(condition: bool, what: String) -> void:
 	else:
 		_failures += 1
 		printerr("  FAIL ", what)
+

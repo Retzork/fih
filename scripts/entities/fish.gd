@@ -195,6 +195,12 @@ var virtual_tank := false
 var sprite_box := 80
 var can_seek := true
 
+## `+0x98`: the "incoming projectile" back-pointer (P2.10 §5.1, EV-0124/EV-0158). The tank's
+## projectile spawner locks the victim onto the shot; `FUN_004FF4E0` reads a cleared pointer as
+## "target lost" and expires the shot. Cleared when the fish dies or leaves the tree.
+var locked_projectile: Node2D = null
+
+
 ## `+0x158/+0x160` are the note's doubles; `position` is the Godot equivalent.
 var vx := 0.0
 var vy := -0.5
@@ -379,8 +385,41 @@ func uses_hungry_art() -> bool:
 func die() -> void:
 	if dead:
 		return
+	_release_projectile_lock()
 	died.emit(self)
 	despawn()
+
+
+## The projectile lock (`+0x98`, P2.10 §5.1). The spawner sets it; a cleared pointer is how the
+## homing body (`FUN_004FF4E0`) knows the victim is gone (EV-0158).
+func lock_projectile(shot) -> void:
+	locked_projectile = shot
+
+
+func unlock_projectile(shot) -> void:
+	if locked_projectile == shot:
+		locked_projectile = null
+
+
+## `+0x8C` (the object type / prize kind, EV-0138). The homing body branches on `+0x8C == 6`
+## (Ultravore) for its wider steering bands, so the projectile reads the type through this
+## accessor rather than guessing from the species enum.
+func obj_type() -> int:
+	return int(SPECIES[species]["type_id"])
+
+
+func _release_projectile_lock() -> void:
+	if locked_projectile != null:
+		var shot := locked_projectile
+		locked_projectile = null
+		if is_instance_valid(shot) and shot.has_method("release_target"):
+			shot.release_target()
+
+
+func _exit_tree() -> void:
+	_release_projectile_lock()
+	super()
+
 
 
 func _tick_effect_timers() -> void:

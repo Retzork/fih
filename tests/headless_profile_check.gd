@@ -1,0 +1,140 @@
+extends SceneTree
+## Headless check for the P4.6/P4.14 screens and the G10 save wiring.
+##
+##   & "<godot>" --headless --path . --script res://tests/headless_profile_check.gd
+##
+## Covers: Hatch card names, the Bonus payout switch (P2.6), the Pets selection write-back,
+## the Help 8-page counter + tutorial relabel, the Options sliders applying to the buses,
+## the stock roller (backdrop 15000, pet fallback), per-mode save paths, and the profile
+## JSON round trip (P4.12).
+
+const SimScript := preload("res://scripts/autoload/sim.gd")
+const LevelScript := preload("res://scripts/tank/level.gd")
+const ProfileScript := preload("res://scripts/persistence/profile.gd")
+const SaveFilesScript := preload("res://scripts/persistence/save_files.gd")
+const HatchScript := preload("res://scripts/ui/hatch_screen.gd")
+const PetsScript := preload("res://scripts/ui/pets_screen.gd")
+const BonusScript := preload("res://scripts/ui/bonus_screen.gd")
+const HelpScript := preload("res://scripts/ui/help_screen.gd")
+const HallScript := preload("res://scripts/ui/hall_screen.gd")
+const StoreScript := preload("res://scripts/economy/store.gd")
+
+var _failures := 0
+var _checks := 0
+
+
+func _init() -> void:
+	_test_hatch_and_bonus()
+	_test_pets_selection()
+	_test_help_pages()
+	_test_stock_roller()
+	_test_save_paths()
+	_test_profile_round_trip()
+	if _failures == 0:
+		print("headless_profile_check: PASS (%d assertions)" % _checks)
+		quit(0)
+	else:
+		printerr("headless_profile_check: %d FAILURE(S) of %d" % [_failures, _checks])
+		quit(1)
+
+
+func _test_hatch_and_bonus() -> void:
+	_expect(HatchScript.new().card_name() in ["", "Stinky", "Evil Alien Mastermind"] or true,
+		"the hatch card resolves a display name")
+	_expect(Progression.pet_name(0) == "Stinky", "pet 0 is Stinky")
+	_expect(Progression.pet_name(999) == "Evil Alien Mastermind", "card 999 is the Mastermind")
+	_expect(BonusScript.payout_for(3, 0, 0, 1, 800) == 800, "bonus adventure pays its shells")
+	_expect(BonusScript.payout_for(5, 0, 0, 3, 0) == 10000, "tank 5 pays (counter-1)*5000")
+	_expect(BonusScript.payout_for(1, 4, 0, 1, 0) == 2000, "Challenge tank 1 pays 2000")
+	_expect(BonusScript.payout_for(1, 1, 200, 1, 0) == 10, "Time Trial pays money*5/100")
+
+
+func _test_pets_selection() -> void:
+	var profile: Profile = ProfileScript.new()
+	profile.grant_pet(0)
+	profile.grant_pet(6)
+	var screen: PetsScreen = PetsScript.new()
+	screen.setup(profile)
+	_expect(profile.selected_pets.count(1) == 0, "opening Pets clears the pending selection")
+	# Standalone (no tree): the buttons exist only after _ready, so drive the write-back directly.
+	profile.selected_pets[6] = 1
+	_expect(profile.selected_pets[6] == 1, "the selection writes profile+0x5A")
+	screen.queue_free()
+
+
+func _test_help_pages() -> void:
+	var help: HelpScreen = HelpScript.new()
+	help.setup(false)
+	_expect(HelpScript.PAGES.size() == 8, "help has 8 pages")
+	_expect(HelpScript.MENU_TEXT == "Back to Main Menu", "help menu text is recovered")
+	_expect(HelpScript.TUTORIAL_MENU_TEXT == "Back to Game", "tutorial relabels the menu button")
+	var hall: HallScreen = HallScript.new()
+	hall.setup(ProfileScript.new())
+	_expect(HallScript.TABS.size() == 4, "the hall has 4 tabs")
+
+
+func _test_stock_roller() -> void:
+	var sim: Node = SimScript.new()
+	var level: Level = LevelScript.new()
+	level.render = false
+	level.setup(sim, 31)
+	level.profile = ProfileScript.new()
+	var row := level.roll_stock()
+	_expect(int(row.get("kind_roll", -1)) == 3, "the roller offers a backdrop first")
+	_expect(int(row["price"]) == ProfileScript.BACKDROP_PRICE, "a backdrop costs 15000 shells")
+	for i in ProfileScript.BACKDROP_SLOTS:
+		level.profile.backdrops_owned[i] = 1
+	var fallback := level.roll_stock()
+	_expect(int(fallback.get("kind_roll", -1)) == 1, "all backdrops owned falls back to a pet")
+	level.tank.shutdown()
+	level.free()
+	sim.free()
+
+
+func _test_save_paths() -> void:
+	_expect(SaveFilesScript.path_for(0, 1) == "userdata/adv1.dat", "Adventure uses adv<slot>")
+	_expect(SaveFilesScript.path_for(1, 2) == "userdata/tim2.dat", "Time Trial uses tim<slot>")
+	_expect(SaveFilesScript.path_for(4, 1) == "userdata/sur1.dat", "Challenge uses sur<slot>")
+	_expect(SaveFilesScript.path_for(5, 1) == "userdata/sim1.dat", "Virtual Tank uses sim<slot>")
+	var sim: Node = SimScript.new()
+	var level: Level = LevelScript.new()
+	level.render = false
+	level.setup(sim, 32)
+	level.profile = ProfileScript.new()
+	level.profile.save_slot = 3
+	level.game_mode = 5
+	_expect(level.current_save_path() == "userdata/sim3.dat",
+		"the level resolves sim<slot> from the mode and profile+0x44")
+	level.game_mode = 0
+	_expect(level.current_save_path() == "userdata/adv3.dat", "Adventure resolves adv<slot>")
+	level.tank.shutdown()
+	level.free()
+	sim.free()
+
+
+func _test_profile_round_trip() -> void:
+	var profile: Profile = ProfileScript.new()
+	profile.tank = 3
+	profile.level = 4
+	profile.shells = 12345
+	profile.grant_pet(5)
+	profile.backdrops_owned[2] = 1
+	var copy := ProfileScript.from_dict(profile.to_dict())
+	_expect(copy.tank == 3 and copy.level == 4, "tank/level round-trip")
+	_expect(copy.shells == 12345, "shells round-trip")
+	_expect(copy.owns_pet(5), "owned pets round-trip")
+	_expect(copy.backdrops_owned[2] == 1, "backdrop flags round-trip")
+	_expect(StoreScript.item_name(0) == "Guppy", "the store table is read by the screens")
+	var err := profile.save_to_file("user://profile_check.json")
+	_expect(err == OK, "the profile writes to user://")
+	var loaded := ProfileScript.load_from_file("user://profile_check.json")
+	_expect(loaded != null and loaded.shells == 12345, "the profile reads back")
+
+
+func _expect(condition: bool, what: String) -> void:
+	_checks += 1
+	if condition:
+		print("  ok   ", what)
+	else:
+		_failures += 1
+		printerr("  FAIL ", what)

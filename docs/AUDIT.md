@@ -211,6 +211,37 @@ mean the threat path is not a game yet.
   wiring (G4/G9), modes (G7), pets/persistence (G8/G10), cue consumers (G11), UI/screens (G12) and
   packaging (F1).
 
+## 5c. Completion pass (2026-11-08)
+
+All §5a rows and §6 priorities are closed against the recovered contract:
+
+- **G5/G6 closed upstream (2026-11-07, EV-0158):** homing `FUN_004FF4E0`, on-target
+  `FUN_004FC070`, farthest-fish picker, Minisylvester minion + 4..9 pulse, death wipe and the
+  `profile+0x54` counter (boss suite 46).
+- **G4/G9 fixed:** shop-bought fish enter through `_wire()`; `Level.coin_kind_for()` tiers
+  stage -> kind through EV-0047 (port tuning, Q-0036 stays open for the binary binding).
+  `headless_mode_check` (28).
+- **G7/P4.11 fixed:** `_apply_mode_flags()` writes `virtual_tank`, Sandbox money, the Time Trial
+  budget (300/600 s in ticks) and per-mode save paths; Time Trial expires through collect-all +
+  `money*5/100` with no pets; Challenge pays 2000/5000/10000/20000 + unlocks; Virtual Tank runs
+  the 76/24 weighted spawner (26/25/25/10/5/3/3/3, 100-try retry), no wave, coins to shells.
+- **G8 fixed:** `Pet.create` takes the tank RNG; `spawn_owned_pets()` takes the pending
+  selection when non-empty (branch B) else the owned flags (branch A); every pet steers and the
+  recovered slot-81 bodies are in (Prego, Zorf, Meryl, Amp, Gash/Itchy/Rufus/Walter, Stanley,
+  Nimbus, Brinkley). The 8 guard bodies (Wadsworth, Seymour, Gumbo, Blip, Presto, ...) stay
+  parameterised (Q-0044).
+- **G10 fixed:** per-mode stems (`adv`/`tim`/`snd`/`sur`/`sim` + `profile+0x44`), the Hatch/Pets/
+  Bonus + Options/Help/Hall screens, the roller (backdrop 15000, pet fallback), the profile JSON
+  round trip, and golden fixtures (`headless_golden_check` 22, `headless_profile_check` 29).
+- **G11/F1 fixed:** hunger/growth/pet/alien/wave/projectile cue signals are consumed
+  (`CUE_SOUNDS` by semantic name, Q-0030 documented) and missile smoke/bursts spawn tick-counted
+  particles; the tailflop loads through the imported textures (no export warning on boot).
+- **P5 closed:** `docs/P5-VALIDATION.md` (differential table, playtest checklist, timing,
+  perf, packaging).
+
+Totals: **23 suites, 1123 assertions** (22 `--script` + the scene-backed integration suite),
+boot exit 0. The F2 Ogg/ObjectDB notices are unchanged and are not failures.
+
 ## 6. Priority for the next sessions
 
 1. **Give projectiles their behaviour** (G5): the homing body, then collision/damage against fish;

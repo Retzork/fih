@@ -759,16 +759,19 @@ gates `Tank::Update` - and the ported rate is a single constant to change once i
   without any of these; only the coin's animation cadence and the special kind stay approximate.
 
 ### Q-0041 - The homing body `FUN_004FF4E0` is missing, so a shot starts still
-- OPEN (2026-11-03, raised by `scripts/entities/projectile.gd` for P4.3/P4.10; source EV-0130,
-  P2.10 §5.2-§5.3).
-- The ctor's random-velocity branch is dead code: it tests the object's own `+0x19C`, which is the
-  kind (0/1/2), so retail projectiles spawn with `vx = vy = 0` and are moved entirely by
-  `FUN_004FF4E0` - a body the note marks "not decompiled". P4 implements everything else and leaves
-  `_steer()` an explicit no-op.
-- What is missing: the body of `FUN_004FF4E0` (homing acceleration, its cap, and whether it also
-  handles the missile's z-order or trail).
-- Non-blocking: expiry, bounds, gravity, immunity, hit-tests and the lock are all decodable now, and
-  P4.10's click routing can be wired before the steering exists.
+- PARTIALLY ANSWERED (2026-11-07, EV-0158; source EV-0130, P2.10 §5.2-§5.3, P4.10).
+- The homing body is now decompiled (`docs/evidence/p2.10-fn-4FF4E0.txt`) and implemented in
+  `scripts/entities/projectile.gd`: `+-0.2` steering toward `1.8`, Ultravore wide bands vs
+  tight bands, target-loss expiry for kinds 0/1, and the on-target check (`FUN_004FC070`)
+  that kills the locked fish (or, when deflected, damages aliens/boss). Aliens now pick the
+  farthest fish (`FUN_004E8DF0`) and hold the volley when none is eligible, and `Fish`/`Alien`
+  carry the `+0x98` lock that the homing body reads.
+- What remains open: the kind-2 (`FALLING`) victim/damage sub-branches name classes the port
+  does not spawn here (the port keeps the bounce only), the `FUN_004FC070` `Tank+0xF4` /
+  `+0xB4` / `+0xB0` list scans name head/entity lists the port does not model, and the
+  type-0 target-picker gate (`FUN_00500FF0`) is unrecovered (treated as always eligible).
+  None of these block P4.10's flight/damage path; they are recorded in the note so the next
+  reader does not mistake a port simplification for a binary fact.
 
 ### Q-0042 - Fish sprite assembly: ids, stage rows and the 40x40 art inside the 80x80 box
 - OPEN (2026-11-03, raised by `scripts/tank/level.gd` for P4.4; source P2.2 §5, P3 asset pass).
@@ -881,13 +884,25 @@ their sheets would need the actual row meaning, which is not recovered; they kee
 
 ### Q-0047 - the boss fight's three gaps
 
-P2.9 and SPECS §3.6 settle Cyrax's numbers, and `scripts/entities/boss.gd` implements exactly those. Three things are not in the note, so the port keeps them as placeholders rather than guesses:
+RESOLVED (2026-11-07, EV-0117/EV-0118/EV-0119). P2.9 §§4/8/10 name the content the earlier
+placeholder text called unnamed:
 
-- the **minion kind** is unnamed; the level spawns a Sylvester (0x01) for the minion and for the pulse (`Level._on_boss_minion`, `_on_boss_pulse`);
-- the **pulse content** is likewise unnamed, so it is the same single Sylvester;
-- the **HP bar** is a draw rule, not a simulation rule (the boss bar is always drawn; other aliens only when the tank's flag is set and the tank is not 5). It is now implemented; Q-0058 records the missing flag writer and the remake's default.
+- the **minion** is a kind-0x14 Minisylvester at the boss position +40,+40 every 75 ticks
+  (`FUN_00545580`), spawned by `Level._on_boss_minion`;
+- the **pulse** is `type = rand%6 + 4` (4..9) every 300 ticks while `Tank+0xB8` and
+  `Tank+0xF4` are empty, at `x 20..469, y 105..299`, routed through the wave spawner
+  (`FUN_005475B0`), spawned by `Level._on_boss_pulse`;
+- the **HP bar** is a draw rule, not a simulation rule (the boss bar is always drawn; other
+  aliens only when the tank's flag is set and the tank is not 5). It is implemented; Q-0058
+  records the missing flag writer and the remake's default.
 
-`tests/headless_boss_check.gd` covers the recovered parts (35 assertions).
+`Level.start_level` reads Cyrax's hp counter from `Profile.cyrax_attempts`
+(`profile+0x54`) when no explicit counter is given, death wipes the field
+(`FUN_004F9950`), and a >1000-damage kill with no minions left bumps `profile+0x54`
+(Q-0022 keeps the loss/retry vs defeat naming open). The pulse gate also checks the
+projectile list, and `_on_boss_died` excludes the dying boss from the minion count.
+
+`tests/headless_boss_check.gd` covers the recovered parts (46 assertions).
 
 ### Q-0048 - not assigned
 
@@ -1171,3 +1186,27 @@ Open: `GameSelector` preloads font ids `0x61`/`0x62`, and the decompile does not
 small text buttons; swapping them is a two-constant change (`UiFont.SELECTOR_BIG_FONT`/
 `SELECTOR_SMALL_FONT`). The menu tail still plays on the 36 Hz tick clock (Q-0034) as integer tick
 counts; only the erroneous "20 ms/30 ms" comment was corrected, not the recovered delays.
+
+### Completion-pass updates (2026-11-08; implementation only, no new binary evidence)
+
+- **Q-0036 (coin kind):** the port tiers by stage through EV-0047 (`Level.coin_kind_for`:
+  1->15, 2->35, 3->40, 4->200, 5/6->500, 7->2000). The binary binding stays open for the
+  slot-81 kind argument; this is a documented port tuning, not a recovered fact.
+- **Q-0044 (pets):** narrowed. All 24 pets now steer (lane chase, 2D chase, wander band),
+  use the recovered ctor speeds where given, and Prego/Zorf/Meryl/Amp/Gash/Itchy/Rufus/
+  Stanley/Nimbus/Brinkley/Walter bodies are in (signals for birth/food/melee, `Level` applies).
+  The 8 guards (Wadsworth shelter, Seymour aura, Gumbo lure, Blip overlays, Amp click,
+  Nostradamus sneeze, Presto transform, Walter glove entity) stay disabled and named.
+- **Q-0050 (menu screens):** closed in the port. Options/Hall/Help now mount
+  (`OptionsDialog`, `HallScreen`, `HelpScreen`); the Hall tabs read the profile rather
+  than inventing scores.
+- **Q-0052 (store roller):** partially closed. `Level.roll_stock()` runs the recovered
+  roller shape (random unowned backdrop at 15000, kind 3; pet fallback when all six owned).
+  Per-item art/tooltips/paging still need the kind byte binding.
+- **Q-0053 (progression screens):** partially closed. Hatch/Pets/Bonus are in (`Main` runs
+  Hatch -> Pets -> Bonus -> next level). The 160-tick bonus wait, the pre-bonus store,
+  score records and credits/trophy still need their triggers (Q-0013/Q-0016).
+- **F1 (export):** closed for the tailflop. `GameSelector` loads the sheet and mask through
+  the imported textures; the boot no longer logs the warning. `content.json` export
+  inclusion stays open until a real export is run.
+

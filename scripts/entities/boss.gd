@@ -8,9 +8,11 @@ extends Alien
 ## 300 ticks and the intro drift 15, minions come every 75 ticks at `+40,+40`, and the pulse every 300
 ## ticks but only while the field is clear. Waves are frozen until he dies and disabled afterwards.
 ##
-## Q-0047 (open): the minion kind and the pulse content are not named by the note, so the level spawns
-## a Sylvester for both; the boss HP bar is UI (P4.5). Damage per shot is `3 * pet_capacity` (30 at the
-## boss's forced capacity 10), which the shooter computes - the boss only enforces the cooldown.
+## Minion/pulse content is settled (Q-0047, EV-0117): the 75-tick minion is a kind-0x14
+## Minisylvester at +40,+40; the 300-tick pulse spawns a random type 4..9 at a random point,
+## routed through the level's wave-spawner wrapper (`FUN_005475B0`). Damage per shot is
+## `3 * pet_capacity` (30 at the boss's forced capacity 10), which the shooter computes - the
+## boss only enforces the cooldown.
 
 const KIND := 0x15
 const MAX_HP := 5000
@@ -95,10 +97,13 @@ func _advance() -> void:
 			pulse_requested.emit(position)
 
 
-## The pulse cadence only fires while no other alien is on the field. The boss is itself an ALIENS
-## entity, so the count has to exclude `self`.
+## The pulse cadence only fires while the field is clear. The binary gates on both lists
+## empty (`Tank+0xB8` aliens and `Tank+0xF4` projectiles, EV-0117); the boss is itself an
+## ALIENS entity, so the alien scan has to exclude `self`.
 func _field_clear() -> bool:
 	if tank == null:
+		return false
+	if tank.projectile_count() > 0:
 		return false
 	for entity in tank.entities_in(Sim.Phase.ALIENS):
 		if entity != self:
@@ -117,12 +122,30 @@ func hit(damage: int, from_shot: bool = true, attacker: Object = null) -> void:
 	super.hit(damage, from_shot)
 
 
-## Death: the boss clears `boss_alive`, unfreezes the clock and then disables waves permanently.
+## Death: wipe the field (`FUN_004F9950`, EV-0118), clear `boss_alive`, unfreeze the clock
+## and then disable waves permanently. The wipe removes every surviving alien and enemy
+## projectile without a diamond drop (`FUN_004D6830(1)` warp-out); the boss himself never
+## drops one either, because the diamond gate tests `boss_alive` before it is cleared.
 func die(from_shot: bool = true) -> void:
 	if dead:
 		return
+	_wipe_field()
 	super.die(from_shot)
 	if tank != null:
 		tank.boss_alive = false
 		tank.wave_frozen = false
 		tank.waves_disabled = true
+		tank.aliens_present = tank.alien_count() > 0
+
+
+## `FUN_004F9950`: tear down every surviving alien and projectile. Silent despawn, not the
+## death path, so no diamond or death signal comes out of a wipe.
+func _wipe_field() -> void:
+	if tank == null:
+		return
+	for entity in tank.entities_in(Sim.Phase.ALIENS):
+		if entity != self and not entity.dead:
+			tank.despawn(entity)
+	for entity in tank.entities_in(Sim.Phase.PROJECTILES):
+		if not entity.dead:
+			tank.despawn(entity)

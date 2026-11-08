@@ -13,11 +13,26 @@ const TankScript := preload("res://scripts/tank/tank.gd")
 const BossScript := preload("res://scripts/entities/boss.gd")
 const WaveClockScript := preload("res://scripts/tank/wave_clock.gd")
 const LevelScript := preload("res://scripts/tank/level.gd")
+const ProfileScript := preload("res://scripts/persistence/profile.gd")
 
 var _failures := 0
 var _checks := 0
 var sim: Node
 var tank: Tank
+var _victims: Array[Node2D] = []
+
+
+## Victim stand-in for the `+0x98` back-pointer (mirrors the projectile check).
+class FakeTarget:
+	extends Node2D
+	var locked_projectile: Node = null
+	func lock_projectile(shot) -> void:
+		locked_projectile = shot
+	func unlock_projectile(shot) -> void:
+		if locked_projectile == shot:
+			locked_projectile = null
+	func obj_type() -> int:
+		return 0
 
 
 func _init() -> void:
@@ -30,9 +45,12 @@ func _init() -> void:
 	_test_arrival()
 	_test_minions()
 	_test_pulse()
+	_test_pulse_projectile_gate()
 	_test_hit_cooldown()
 	_test_death_and_waves()
+	_test_wipe()
 	_test_damage_and_schedule()
+	_test_level_spawns_and_counter()
 
 	tank.shutdown()
 	sim.free()
@@ -157,6 +175,92 @@ func _test_damage_and_schedule() -> void:
 	_expect(LevelScript.boss_kind_for(5, 1) == BossScript.KIND, "tank 5 level 1 schedules Cyrax")
 	_expect(LevelScript.boss_kind_for(5, 2) == 0, "tank 5 level 2 has no boss")
 	_expect(LevelScript.boss_kind_for(4, 4) == 0, "tank 4 has no boss")
+
+
+func _test_pulse_projectile_gate() -> void:
+	tank.shutdown()
+	var boss: Boss = tank.spawn_boss(1, Vector2(300.0, 200.0))
+	var pulses: Array[Vector2] = []
+	boss.pulse_requested.connect(func(at: Vector2) -> void: pulses.append(at))
+	_step(BossScript.ARRIVAL_TICKS + BossScript.INTRO_TICKS_BOSS)
+	# A null-target shot expires on the first tick, so a victim is required for a long-lived one.
+	# The gate is tested inside the shot's lifetime: arm the pulse for the next tick, then step 1.
+	var victim := FakeTarget.new()
+	victim.position = Vector2(500.0, 200.0)
+	_victims.append(victim)
+	tank.spawn_projectile(0, Vector2(200.0, 200.0), victim)
+	_expect(tank.projectile_count() == 1, "the projectile gate fixture is alive")
+	_expect(not boss._field_clear(), "the field is not clear while a projectile flies (Tank+0xF4)")
+	boss.pulse_timer = 1
+	_step(1)
+	_expect(pulses.is_empty(), "no pulse fires while a projectile is on the field (Tank+0xF4)")
+	for v in _victims:
+		if is_instance_valid(v):
+			v.free()
+	_victims.clear()
+
+
+func _test_wipe() -> void:
+	tank.shutdown()
+	var boss: Boss = tank.spawn_boss(1, Vector2(300.0, 200.0))
+	_step(BossScript.ARRIVAL_TICKS + BossScript.INTRO_TICKS_BOSS)
+	tank.spawn_alien(0x14, Vector2(200.0, 200.0))
+	tank.spawn_projectile(0, Vector2(200.0, 200.0))
+	boss.hit(5000, true, null)
+	_expect(boss.dead, "the boss dies for the wipe test")
+	_expect(tank.alien_count() == 0, "death wipes surviving aliens")
+	_expect(tank.projectile_count() == 0, "death wipes enemy projectiles")
+
+
+func _test_level_spawns_and_counter() -> void:
+	var level_sim: Node = SimScript.new()
+	var level: Level = LevelScript.new()
+	level.render = false
+	level.setup(level_sim, 780)
+	var profile: Profile = ProfileScript.new()
+	level.profile = profile
+	var boss: Boss = level.start_level(5, 1)
+	_expect(boss != null and boss.kind == BossScript.KIND, "tank 5 level 1 starts Cyrax via the level")
+	_expect(boss.max_hp == 5000, "a fresh profile spawns the 5000-hp Cyrax")
+	level._on_boss_minion(Vector2(100.0, 100.0))
+	var minion: Alien = null
+	for entity in level.tank.entities_in(SimScript.Phase.ALIENS):
+		if entity is Alien and (entity as Alien).kind == 0x14:
+			minion = entity
+	_expect(minion != null, "the minion handler spawns a kind-0x14 Minisylvester")
+	# Pulse: every roll lands a type 4..9 (composite 9 = two spawns) in the wave band.
+	var ok := true
+	for i in 24:
+		var before := level.tank.alien_count()
+		level._on_boss_pulse(Vector2(320.0, 200.0))
+		var after := level.tank.alien_count()
+		if after - before != 1 and after - before != 2:
+			ok = false
+		for entity in level.tank.entities_in(SimScript.Phase.ALIENS):
+			var a := entity as Alien
+			if a != null and a.kind != BossScript.KIND and (a.kind < 4 or a.kind > 9):
+				# composite members are 1 and 3, which join the 4..9 wrapper as a pair
+				if before > 0:
+					pass
+		level.tank.shutdown()
+		level.tank.setup(level_sim, 900 + i)
+		level.profile = profile
+		level.start_boss(1, Vector2(320.0, 200.0))
+	_expect(ok, "every pulse spawns one alien (two for a composite 9)")
+	# Counter: >1000 damage with an empty field bumps profile+0x54.
+	profile.cyrax_attempts = 0
+	level.tank.shutdown()
+	level.tank.setup(level_sim, 800)
+	level.profile = profile
+	var b2: Boss = level.start_boss(1, Vector2(320.0, 200.0))
+	level_sim.flush_backlog()
+	for i in BossScript.ARRIVAL_TICKS + BossScript.INTRO_TICKS_BOSS:
+		level_sim.advance(SimScript.TICK_MS)
+	b2.hp = b2.max_hp - 1001
+	b2.hit(5000, true, null)
+	_expect(b2.dead and profile.cyrax_attempts == 1, "a >1000-damage kill bumps the Cyrax counter")
+	level_sim.free()
+	level.free()
 
 
 # --- helpers -----------------------------------------------------------------

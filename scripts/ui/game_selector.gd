@@ -136,10 +136,13 @@ func _ready() -> void:
 ## Draw the mermaid's tail over the baked art and play its one-shot flop. Without the sheet, the
 ## mask, or `MaskAlpha`, the screen keeps the art as it is.
 func _add_mermaid_tail() -> void:
-	var base_image := Image.load_from_file(TAIL_SHEET_PATH)
+	# Export-safe (F1): `Image.load_from_file` warns "will not work on export" for imported
+	# PNGs. Loading the imported textures and taking their images works in the editor and
+	# in an export.
+	var base_image := _texture_image(TAIL_SHEET_PATH)
 	if base_image == null:
 		return
-	var mask_image := Image.load_from_file(TAIL_MASK_PATH)
+	var mask_image := _texture_image(TAIL_MASK_PATH)
 	if mask_image == null:
 		return
 	var sheet := MaskAlpha.apply(base_image, mask_image)
@@ -166,6 +169,15 @@ func _add_mermaid_tail() -> void:
 	# Draw the rest pose now and let `_process` start the flop after `TAIL_BEGIN_TICKS`; drawing at
 	# `TAIL_BEGIN_TICKS` here would show the first flop cell for one frame before the hold.
 	_draw_tail(_tail_started)
+
+
+## The imported texture's image for an `assets_raw` PNG (export-safe, F1).
+static func _texture_image(path: String) -> Image:
+	var texture := load(path) as Texture2D
+	if texture == null:
+		return null
+	var image := texture.get_image()
+	return image
 
 
 ## Playback position on the strip, or -1 once the one-shot flop is over.
@@ -261,7 +273,8 @@ static func choose(button_id: int, profile: Dictionary) -> Dictionary:
 	return {"action": "mode", "mode": mode}
 
 
-## Apply a press. `screens` are not all ported yet (Q-0050), so those ids only report.
+## Apply a press. Options/hall/help mount their screens (P4.14); without the screen layer
+## (standalone checks) they only report.
 func press(button_id: int, profile: Dictionary = {}) -> Dictionary:
 	var audio := _autoload("Audio")
 	if audio != null:
@@ -279,7 +292,58 @@ func press(button_id: int, profile: Dictionary = {}) -> Dictionary:
 				_status.text = "Not Yet!"
 		"quit":
 			get_tree().quit()
+		"options":
+			_open_options()
+		"hall":
+			_open_hall()
+		"help":
+			_open_help()
 		_:
 			if _status != null and String(result["action"]) != "ignored":
 				_status.text = "%s is not ported yet (Q-0050)" % label_for(button_id)
 	return result
+
+
+func _open_options() -> void:
+	var screens := _autoload("Screens")
+	var game := _autoload("Game")
+	if screens == null:
+		if _status != null:
+			_status.text = "Options is not ported yet (Q-0050)"
+		return
+	var dialog := OptionsDialog.new()
+	dialog.name = "OptionsDialog"
+	dialog.closed.connect(func() -> void: screens.close_dialog())
+	dialog.back_to_menu.connect(func() -> void:
+		screens.close_dialog()
+		if game != null:
+			game.gameplay_paused = false)
+	if not screens.open_dialog(dialog):
+		dialog.queue_free()
+
+
+func _open_hall() -> void:
+	var screens := _autoload("Screens")
+	var game := _autoload("Game")
+	if screens == null:
+		if _status != null:
+			_status.text = "Hall of Fame is not ported yet (Q-0050)"
+		return
+	var screen := HallScreen.new()
+	screen.name = "HallScreen"
+	if game != null:
+		screen.setup(game.profile)
+	screen.closed.connect(func() -> void: screen.queue_free())
+	screens.open_dialog(screen)
+
+
+func _open_help() -> void:
+	var screens := _autoload("Screens")
+	if screens == null:
+		if _status != null:
+			_status.text = "Help is not ported yet (Q-0050)"
+		return
+	var screen := HelpScreen.new()
+	screen.name = "HelpScreen"
+	screen.closed.connect(func() -> void: screen.queue_free())
+	screens.open_dialog(screen)

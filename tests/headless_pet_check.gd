@@ -181,8 +181,10 @@ func _test_niko_cycle() -> void:
 	var coins := tank.coins()
 	if coins.size() == 1:
 		_expect(coins[0].kind == PetScript.PEARL_KIND, "the pearl is coin kind 0x0F")
-		_expect(coins[0].position.x == 301.0 and coins[0].position.y >= 198.0 and coins[0].position.y <= 200.0,
-			"the pearl spawns at (x+1, y-2) before its first tick (got %s)" % coins[0].position)
+		# Niko wanders (P2.7 §4.2: no perch), so the drop is measured from his live position.
+		# The coin falls 1.5 in the same tick, hence the 3 px window.
+		_expect((coins[0].position - niko.position).distance_to(PetScript.PEARL_OFFSET) < 3.0,
+			"the pearl spawns at (x+1, y-2) (got %s, pet %s)" % [str(coins[0].position), str(niko.position)])
 		_expect(coins[0].value() == 250, "the pearl is worth 250")
 	_expect(niko.pearl_taken, "the open-animation flag is set")
 
@@ -244,8 +246,10 @@ func _test_timer_drops() -> void:
 	_expect(coins.size() == 1, "Vert drops one coin per period (got %d)" % coins.size())
 	if coins.size() == 1:
 		_expect(coins[0].kind == PetScript.VERT_DROP, "Vert's coin is kind 2 (got %d)" % coins[0].kind)
-		_expect(coins[0].position.distance_to(Vector2(215.0, 210.0)) < 40.0,
-			"Vert drops beside himself at +15,+10 (got %s)" % coins[0].position)
+		# Vert swims (FishTypePet steer), so the drop is measured from his live position.
+		# The coin falls 1.5 in the same tick, hence the 3 px window.
+		_expect((coins[0].position - vert.position).distance_to(PetScript.VERT_OFFSET) < 3.0,
+			"Vert drops beside himself at +15,+10 (got %s, pet %s)" % [str(coins[0].position), str(vert.position)])
 	# The first coin expires while the next period runs, so the second drop is simply a fresh coin.
 	_step(PetScript.VERT_PERIOD)
 	var fresh := false
@@ -279,7 +283,8 @@ func _test_timer_drops() -> void:
 	var snot: Array[Coin] = tank.coins()
 	_expect(snot.size() == 1 and snot[0].kind == PetScript.SNOT_DROP, "he sneezes the 0x12 snot coin")
 	if snot.size() == 1:
-		_expect(snot[0].position.distance_to(Vector2(235.0, 230.0)) < 40.0, "the snot lands at +15,+10")
+		_expect((snot[0].position - nose.position).distance_to(PetScript.SNOT_OFFSET) < 3.0,
+			"the snot lands at +15,+10")
 
 
 func _step(count: int) -> void:

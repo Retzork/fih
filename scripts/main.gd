@@ -14,6 +14,7 @@ var _level: Level = null
 var _selector: GameSelector = null
 var _frames := 0
 var _elapsed := 0.0
+var _flow: Control = null
 
 
 func _ready() -> void:
@@ -51,13 +52,55 @@ func _on_start_requested(mode: int) -> void:
 	_level.start_level(Game.profile.tank, Game.profile.level)
 
 
-## A completed level: the profile has already advanced (P2.6 §1.2/§10.4), so the next level
-## starts from it. The Hatch and Pets screens in between are not ported yet (Q-0053).
-func _on_level_completed(_tank_no: int, _level_no: int, _pet_index: int) -> void:
+## A completed level: the profile has already advanced (P2.6 §1.2/§10.4). The between-level
+## flow is Hatch (award card) -> Pets (selection) -> Bonus (payout) -> next level (P4.6).
+func _on_level_completed(tank_no: int, level_no: int, pet_index: int) -> void:
+	var payload := 0
 	if _level != null:
+		payload = BonusScreen.payout_for(tank_no, Game.mode, _level.money,
+			Game.profile.tank5_wins, 0)
 		_level.queue_free()
 		_level = null
-	_on_start_requested(Game.mode)
+	_show_hatch(pet_index, tank_no, level_no, payload)
+
+
+func _show_hatch(pet_index: int, tank_no: int, level_no: int, payload: int) -> void:
+	_clear_flow()
+	var screen := HatchScreen.new()
+	screen.name = "HatchScreen"
+	screen.setup(pet_index)
+	screen.continue_pressed.connect(func() -> void: _show_pets(tank_no, level_no, payload))
+	_screens_layer.add_child(screen)
+	_flow = screen
+
+
+func _show_pets(tank_no: int, level_no: int, payload: int) -> void:
+	_clear_flow()
+	var screen := PetsScreen.new()
+	screen.name = "PetsScreen"
+	screen.setup(Game.profile)
+	screen.confirm_pressed.connect(func(_chosen: Array[int]) -> void:
+		_show_bonus(tank_no, level_no, payload))
+	_screens_layer.add_child(screen)
+	_flow = screen
+
+
+func _show_bonus(tank_no: int, level_no: int, payload: int) -> void:
+	_clear_flow()
+	var screen := BonusScreen.new()
+	screen.name = "BonusScreen"
+	screen.setup(tank_no, Game.mode, payload)
+	screen.continue_pressed.connect(func() -> void:
+		_clear_flow()
+		_on_start_requested(Game.mode))
+	_screens_layer.add_child(screen)
+	_flow = screen
+
+
+func _clear_flow() -> void:
+	if _flow != null and is_instance_valid(_flow):
+		_flow.queue_free()
+	_flow = null
 
 
 func _process(delta: float) -> void:

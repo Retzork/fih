@@ -38,6 +38,9 @@ var profile := Profile.new()
 ## scene-tree pause, because the UI and screens keep updating while gameplay is held.
 var gameplay_paused := false
 
+## OptionsDialog's "Show Money" checkbox (P2.12 §11): the HUD money line toggles on it.
+var show_money := true
+
 
 func set_mode(new_mode: int) -> void:
 	if new_mode == mode:
