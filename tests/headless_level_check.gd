@@ -70,7 +70,8 @@ func _test_starting_population() -> void:
 	_expect(fish.phase == SimScript.Phase.FISH, "the guppy ticks in the FISH phase")
 	_expect(fish.position.x >= LevelScript.SPAWN_MIN.x and fish.position.x <= LevelScript.SPAWN_MAX.x,
 		"the spawn x is inside the tank band (%.0f)" % fish.position.x)
-	_expect(level.money == 0, "the wallet starts empty")
+	_expect(level.money == LevelScript.STARTING_MONEY,
+		"the wallet starts at 200 (SPECS §4.3, got %d)" % level.money)
 
 
 func _test_feeding() -> void:
@@ -159,9 +160,12 @@ func _test_store() -> void:
 	_expect(level.star_potion_armed, "the potion arms the next drop")
 	_expect(not level.buy_item(0), "a second potion is refused while one is armed")
 	_expect(level.money == 0, "the refusal spends nothing")
+	# A manual drop spends the pellet price (5), so fund the wallet for the two drops below.
+	level.money = 500
 	var potion := level.drop_food(Vector2(300.0, 250.0))
 	_expect(potion != null and potion.quality == 3, "the armed drop is a quality-3 pellet")
 	_expect(not level.star_potion_armed, "the flag clears with the drop")
+	_expect(level.money == 495, "the drop spends the 5-shell pellet price")
 	var plain := level.drop_food(Vector2(320.0, 250.0))
 	_expect(plain != null and plain.quality == 0, "the next drop is an ordinary pellet")
 	level.store_rows([2])
@@ -307,6 +311,7 @@ func _test_fish_animation_speed() -> void:
 
 func _test_food_animation() -> void:
 	level.tank.shutdown()
+	level.money = 200
 	var pellet := level.drop_food(Vector2(300.0, 200.0))
 	_expect(pellet != null, "a pellet is dropped")
 	if pellet == null:
@@ -436,6 +441,7 @@ func SimPhasePROJECTILES() -> int:
 ## P2.3 Â§2: at most `food_quantity` non-special pellets; specials are exempt.
 func _test_food_cap() -> void:
 	level.tank.shutdown()
+	level.money = 200
 	level.food_quantity = 1
 	var first := level.drop_food(Vector2(200.0, 250.0))
 	_expect(first != null, "the first pellet of a level-1 tank drops")

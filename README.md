@@ -19,7 +19,7 @@ the optional P2.16 (screensaver) / P2.17 (cheats) remain. Phase 3 (assets) is co
 store + roller, Hatch/Pets/Bonus flow, game selector + Options/Help/Hall, audio layer, saves
 (tank + profile JSON, golden fixtures), pets (all 24 steer, 12 slot-81 bodies recovered),
 aliens, Cyrax boss, projectiles + `Larva`, laser sparks, weapon HUD and all game modes are
-in, and **23 headless checks pass (1123 assertions; 22 `--script` suites + the scene-backed
+in, and **23 headless checks pass (1124 assertions; 22 `--script` suites + the scene-backed
 integration suite)**. The port runs the ~36 Hz reading of Q-0034. Validation lives in
 [`docs/P5-VALIDATION.md`](docs/P5-VALIDATION.md). **No next task in the remake scope**; the
 remaining items are the parameterised guards and the optional windows (see PLAN).

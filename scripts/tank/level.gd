@@ -62,6 +62,10 @@ const TankScalarsScript := preload("res://scripts/persistence/tank_scalars.gd")
 const TankSnapshotScript := preload("res://scripts/persistence/tank_snapshot.gd")
 
 var tank: Tank = null
+## Starting wallet (SPECS §4.3): 200 in every mode; Sandbox sets 999999 in `_apply_mode_flags`.
+const STARTING_MONEY := 200
+## Manual pellet price (SPECS §3.2, P2.3 §2): `Tank+0x4AC` base 5, spent per drop.
+const PELLET_PRICE := 5
 var money := 0
 var money_earned := 0
 ## The food quantity level (1..9, a saved tank counter - P2.3 §2, P2.5): at most this many
@@ -219,6 +223,8 @@ func setup(sim_node: Node, seed_value: int = 4242) -> void:
 	egg_widget.setup(self)
 	for i in STARTING_FISH:
 		spawn_guppy(_random_spawn_point())
+	# A fresh level starts with the mode's wallet even before `start_level` (R1).
+	_apply_mode_flags()
 	if _sim != null and _sim.has_signal("ticked"):
 		_sim.ticked.connect(_on_sim_tick)
 	# `_ready()` may have run before the tank existed, so the backdrop is added here as well.
@@ -307,14 +313,21 @@ func _on_fish_died(fish: Fish) -> void:
 ## `Tank::DropFood` manual-drop cap (P2.3 §2): refuse when
 ## `food_quantity + specials <= total`, i.e. at most `food_quantity` non-special pellets exist at
 ## once. Specials (`kind != 0 || variant != 0`) are exempt from the cap.
+## A manual drop spends the pellet price (5, SPECS §3.2); Virtual Tank drops are free
+## (its economy runs on shells, not money).
 func drop_food(pos: Vector2) -> Food:
 	if non_special_food() >= food_quantity:
 		return null
+	if not bool(tank.virtual_tank):
+		if money < PELLET_PRICE:
+			return null
+		money -= PELLET_PRICE
 	# A bought star potion turns the next manual drop into a quality-3 pellet (P2.3 §2).
 	var quality := 3 if star_potion_armed else 0
 	star_potion_armed = false
 	var pellet: Food = FoodScript.create(pos, 0, false, 0, quality, tank.rng)
 	play_sound("SOUND_DROPFOOD")
+	_update_hud()
 	return tank.spawn_at(pellet, Sim.Phase.FOOD, pos) as Food
 
 
@@ -673,8 +686,9 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 ## Time Trial budget are level-local and are set here too.
 func _apply_mode_flags() -> void:
 	tank.virtual_tank = game_mode == MODE_VIRTUAL
-	if game_mode == MODE_SANDBOX:
-		money = SANDBOX_MONEY
+	# SPECS §4.3: every mode starts at 200, Sandbox at 999999. A load restores the saved
+	# wallet afterwards, so this only seeds a fresh level.
+	money = SANDBOX_MONEY if game_mode == MODE_SANDBOX else STARTING_MONEY
 	if game_mode == MODE_TIME_TRIAL:
 		var seconds := 300 if tank_index == 1 else 600
 		# Ticks at the port's 36 Hz rate (Q-0034); keep this next to `Sim.TICK_MS`.
@@ -1413,12 +1427,15 @@ func _make_visual(entity: SimEntity) -> Sprite2D:
 		source_id = (entity as Pet).image_id()
 	elif entity is DeadFish:
 		# P2.4 §4: the corpse draws `SMALLDIE` at the dying stage's row, framed by `sprite_frame()`.
-		# Only the guppy lines are drawn for now (P4.4 scope, Q-0042).
 		var corpse := entity as DeadFish
 		if corpse.species != Fish.Species.GUPPY:
-			return null
-		source_id = DEATH_IMAGE
-		body_row = clampi(corpse.corpse_id, 0, GUPPY_ROWS - 1)
+			# No death sheet in the manifest for this species: rest the corpse on its swim
+			# sheet's first cell so the death is visible (Q-0042).
+			source_id = String(SPECIES_IMAGE.get(corpse.species, BODY_IMAGE))
+			body_row = 0
+		else:
+			source_id = DEATH_IMAGE
+			body_row = clampi(corpse.corpse_id, 0, GUPPY_ROWS - 1)
 	elif entity is Alien:
 		# P2.8 §3: the kind -> image binding includes Cyrax (BOSS) and the 80x80 minis/Bilaterus.
 		source_id = (entity as Alien).image_id()
@@ -1458,8 +1475,22 @@ func _sim_tick() -> int:
 	return _sim.tick_count if _sim != null else 0
 
 
+## Per-species body sheets (Q-0042). The guppy body is the 10x5 SMALLSWIM stage sheet;
+## the other species keep their own whole sheets (cell 0, animated columns). Oscar,
+## Minisylvester and Bi have no swim sheet in the manifest, so they fall back to the
+## guppy body rather than drawing a store card or an alien sheet.
+const SPECIES_IMAGE := {
+	Fish.Species.ULTRA: "IMAGE_ULTRA",
+	Fish.Species.GEKKO: "IMAGE_GEKKO",
+	Fish.Species.BALL: "IMAGE_BALLS",
+}
+
+
 ## The body sheet a fish draws from: the starving twin appears on the hunger transition (P2.3 §6).
+## Non-guppy species draw their own sheet when one is bound (Q-0042); the rest keep the guppy body.
 func _fish_body_image(fish: Fish) -> String:
+	if fish.species != Fish.Species.GUPPY:
+		return String(SPECIES_IMAGE.get(fish.species, BODY_IMAGE))
 	if fish.uses_hungry_art():
 		return HUNGRY_BODY_IMAGE
 	return BODY_IMAGE
@@ -1476,8 +1507,11 @@ func _draw_entity_frame(entity: SimEntity, sprite: Sprite2D, anim: AnimState) ->
 		return
 	if entity is DeadFish:
 		# The corpse's frame is its own countdown rule, not a clock: it walks the death cells as the
-		# stage counter falls (P2.4 §4).
+		# stage counter falls (P2.4 §4). Non-guppy corpses rest on the swim sheet's first cell.
 		var corpse := entity as DeadFish
+		if corpse.species != Fish.Species.GUPPY:
+			sprite.texture = _keyed_cell(String(sprite.get_meta("source", BODY_IMAGE)), 0)
+			return
 		var death_row := int(sprite.get_meta("body_row", 0))
 		sprite.texture = _keyed_cell(String(sprite.get_meta("source", BODY_IMAGE)),
 			death_row * GUPPY_COLS + corpse.sprite_frame())
@@ -1635,14 +1669,16 @@ func _sync_visuals() -> void:
 			# Fish box offsets: the drawn 40x40 art sits in the middle of the 80x80 bounds box.
 			visual.position = Vector2(20.0, 20.0) + Vector2(20.0, 0.0) * (1.0 if fish.flip else 0.0)
 			visual.flip_h = fish.flip
-			# Hungry art is a different sheet, so the sprite is rebuilt on the transition (P2.3 §6).
-			var hungry := fish.uses_hungry_art()
-			if hungry != bool(visual.get_meta("hungry")):
-				var fresh := _make_visual(fish)
-				if fresh != null:
-					visual.queue_free()
-					entity.set_meta("visual", fresh)
-					continue
+			# Hungry art is a different sheet, so the guppy sprite is rebuilt on the transition
+			# (P2.3 §6). Non-guppy species keep their own sheet; no swap needed.
+			if fish.species == Fish.Species.GUPPY:
+				var hungry := fish.uses_hungry_art()
+				if hungry != bool(visual.get_meta("hungry")):
+					var fresh := _make_visual(fish)
+					if fresh != null:
+						visual.queue_free()
+						entity.set_meta("visual", fresh)
+						continue
 		else:
 			visual.position = Vector2.ZERO
 		_draw_entity_frame(entity, visual, anim)
@@ -1653,8 +1689,9 @@ func _update_hud() -> void:
 	# still be null here; the first tick after setup fills the label.
 	if _hud == null or tank == null:
 		return
-	_hud.text = "Shells %d   Fish %d   Food %d   Weapon %d" % [
-		money, tank.entities_in(Sim.Phase.FISH).size(), tank.food_count(), weapon_level
+	_hud.text = "Money %d   Egg %d/4   Fish %d   Food %d   Weapon %d" % [
+		money, mini(egg_pieces, Progression.EGG_PIECES_TO_COMPLETE),
+		tank.entities_in(Sim.Phase.FISH).size(), tank.food_count(), weapon_level
 	]
 	if game_mode == MODE_TIME_TRIAL:
 		_hud.text += "   Time %ds" % time_trial_seconds_left()
