@@ -986,7 +986,7 @@ three screens (option rows, defaults, hall layout, help pages) were never recove
 drawn for them rather than invented. `Main` mounts the selector before the level, so
 the menu is the entry point and its choice reaches `Level.game_mode`.
 
-`tests/headless_menu_check.gd` covers the dispatch and both gates (37 assertions).
+`tests/headless_menu_check.gd` covers the dispatch and both gates (21 assertions).
 
 ### Q-0051 - the pellet animation: which sheet row a pellet draws, and what the frame unit really is
 
@@ -1051,7 +1051,7 @@ counter's ctor rect (250,155,150,255) is a label layout box rather than that pla
 for two seconds.
 
 `tests/headless_store_ui_check.gd` pins the shelf rects, the price offsets, the row states and the
-three price-line states (34 assertions).
+three price-line states (40 assertions).
 ### Q-0053 - progression: the tables and the completion path are in, the screens around them are not
 
 P2.6 is the one phase note that reads like an implementation spec, so its tables went in whole:
@@ -1104,18 +1104,27 @@ Unrecovered, therefore recorded rather than guessed:
 - **slot 7's x**: the decompile pushes the eighth element of the table from the stack (`local_3c[7] =
   &iStack_68`), so no constant for it exists in the evidence. The port draws nothing on that slot and
   `slot_rect(7)` answers an empty rect; a byte dump around 0x5409F0 would fill it in one line.
-- **the per-kind widget art** (`+0x14C`, Q-0052): the buttons are flat with the item's name and price
-  instead of the fish/upgrade icons, because the item ids the port sells are the P2.5 buy hub's while
-  the art is keyed by the store kind the roller sets.
+- **the per-kind widget art** (`+0x14C`, Q-0052): the buttons show the item's name and price instead
+  of the fish/upgrade icons, because the item ids the port sells are the P2.5 buy hub's while the art
+  is keyed by the store kind the roller sets.
 - the tooltips, keyed by the same kind byte, and the widget's pressed state.
 
-Port decisions: the bar is a `CanvasLayer` Control over the tank rather than tank-space widgets, the
-name line above the price is port text (the original draws only the price and the icon), and the
-level's debug HUD line moved below the bar so the two stop overlapping. `Level.buy_item` is the single
-purchase path for both the bar and the StoreScreen.
+**2026-11-09 update (R4):** the bar now draws the game's own **`MENUBAR`** art (640x75, EV-0171):
+seven item domes with purple price plates, the MENU button and the green `$` wallet plate. The seven
+recovered x values sit exactly 7 px inside the art's plates, which confirms the rects are the bar
+slots. The wallet number is drawn on the green plate, and the HUD line below carries only the counts
+the art does not. An **unstocked** slot now stays empty: `FUN_005409B0` returns null when the item's
+store slot is negative, so the original builds no widget there. `SOLD` belongs to the StoreScreen's
+sold-out branch (EV-0135), not to an empty tank slot; the earlier port text was wrong on that point.
 
-`tests/headless_store_ui_check.gd` pins the slot rects, the row -> slot mapping, the empty slot 7 and
-a bar purchase (34 assertions).
+Port decisions: the bar is a `CanvasLayer` Control over the tank rather than tank-space widgets, the
+item name in the dome is port text (the original draws only the icon and the price), and the
+`MENUBAR` MENU control is baked art with no handler yet (no in-level menu screen is ported).
+`Level.buy_item` is the single purchase path for both the bar and the StoreScreen.
+
+`tests/headless_store_ui_check.gd` pins the slot rects, the `MENUBAR` binding and wallet plate, the
+empty dome (no `SOLD`), the row -> slot mapping, the empty slot 7 and a bar purchase (40 assertions).
+`headless_integration_check` pins the assembled bar's background, wallet text and empty dome.
 ### Q-0055 - the menu mermaid's tail: the sprite and its mask are recovered, its placement is not
 
 `resources.xml` gives the menu mermaid a tail of her own: `MERYLTAIL` (`tailflop.png`, 8 cells of
@@ -1168,10 +1177,12 @@ here rather than guessed:
   `0x520836`, next to the money subtraction). The rest of the 65 ids wait on Q-0030; the per-event
   `FUN_00538230(0x1NN, ...)` calls in the entity notes name **numeric ids**, and no recovered
   mapping turns those numbers into `SOUND_*` names, so wiring them by name would be a guess.
-- **default volumes.** The config keys are `MusicVolume`/`SfxVolume` as integer percent; the port
-  starts both at 1.0 (100 %) because the shipped default is not in evidence. The Options dialog's
-  two sliders (P4.14) are the place this becomes user-visible; applying a value is already instant
-  because it writes the bus.
+- **default volumes.** The config keys are `MusicVolume`/`SfxVolume` as integer percent; the shipped
+  default is not in evidence. **Temporary port choice (2026-11-09):** both start at **0.0 (muted)**
+  because the owner asked for silence during review. This is not a recovered value: the Options
+  sliders seed from the mixer (so they show 0) and are the only place that raises it; applying a
+  value is already instant because it writes the bus. Restore a non-zero default only with a
+  recovered config value or an owner decision.
 - **voice count.** Only the *slots* are capped at 256 (the original's table of loaded sound ids);
   playback allocates a voice per call with no cap, which is what `DSoundInstance` per play does.
   `"Out of free sound ids"` is emitted for a new id when all 256 slots are taken, matching

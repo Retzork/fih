@@ -100,6 +100,14 @@ func _run() -> void:
 	shop.queue_free()
 	_expect(_uses_font(level.store_bar.get_node_or_null("Slot0/Price"), UiFont.SMALL_FONT),
 		"the in-tank bar price uses the 8 px bold font")
+	var bar_bg = level.store_bar.get_node_or_null("Background")
+	_expect(bar_bg is TextureRect and bar_bg.texture == Content.texture("IMAGE_MENUBAR"),
+		"the level bar draws the recovered MENUBAR art")
+	var wallet = level.store_bar.get_node_or_null("Money")
+	_expect(wallet != null and wallet.text == str(level.money),
+		"the MENUBAR wallet plate shows the tank's money")
+	_expect(level.store_bar.get_node("Slot6/Price").text == "",
+		"an unstocked dome is empty (no SOLD text)")
 	_expect(_uses_font(level.egg_widget.get_node_or_null("Buy/Price"), UiFont.LABEL_FONT),
 		"the egg price uses Liddie12")
 	_expect(_uses_font(level.get_node_or_null("Hud/Info"), UiFont.HUD_FONT),

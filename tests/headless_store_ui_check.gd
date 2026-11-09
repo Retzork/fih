@@ -69,6 +69,11 @@ func _test_states() -> void:
 
 
 func _test_bar() -> void:
+	_expect(BarScript.BAR_IMAGE == "IMAGE_MENUBAR",
+		"the bar is the game's own MENUBAR art, not a blank Control")
+	_expect(BarScript.BAR_SIZE == Vector2(640, 75), "MENUBAR is the 640x75 top strip")
+	_expect(BarScript.MONEY_RECT.position == Vector2(530, 34),
+		"the wallet readout sits on MENUBAR's green plate")
 	_expect(BarScript.slot_rect(0) == Rect2(18, 3, 60, 58),
 		"the first in-tank slot is at x 0x12, y 3, 60x58 (FUN_005409B0)")
 	_expect(BarScript.slot_rect(1).position.x == 87, "slot 1 starts at 0x57")
@@ -88,8 +93,13 @@ func _test_bar() -> void:
 		"a bar slot maps to its row and back")
 	var bar: Control = BarScript.new()
 	bar.setup(level)
+	_expect(bar._labels[4].text == "" and bar._prices[4].text == "",
+		"an unstocked dome stays empty - SOLD is the StoreScreen's branch, not an empty tank slot")
+	_expect(bar._money_label.text == str(level.money),
+		"the MENUBAR wallet plate shows the tank's money")
 	level.money = 100
 	expect_purchase(bar, level, "the bar buys from its own slot")
+	_expect(bar._money_label.text == "0", "the wallet plate follows the purchase")
 	_expect(not bar.press(7), "an empty bar slot buys nothing")
 	bar.free()
 	level.tank.shutdown()

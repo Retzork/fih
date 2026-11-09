@@ -4395,3 +4395,25 @@ behavior or specs; follow up with a binary observation entry.
   `draws_sparks()` is false. (4) Pinned: `headless_coin_check` 151 -> 154 assertions (0x12's image,
   row and overlay flag, plus both Virtual Tank guards). Not visually inspected: a blank sprite has no
   pixels to view.
+
+### EV-0171 - P4.5: the in-tank store bar is the shipped `MENUBAR` art (640x75)
+- Date: 2026-11-09
+- Type: asset binding + measured geometry against the extracted art
+- Source: `resources/content.json`'s `IMAGE_MENUBAR` entry (640x75,
+  `assets_raw/images/menubar.png`); `docs/analysis/inputs/p2.15-loadingthread-ids.txt` line 87
+  (`0x509dce "IMAGE_MENUBAR"`); `docs/evidence/p2.13-decompile-5409B0.txt` (the widget rect and
+  the `local_14 < 0` early return); EV-0135 (the `SOLD` branch is the StoreScreen refresh)
+- Confidence: high for the art and the slot alignment; the screen it mounts on is an inference
+  (the 640x75 strip and its seven dome x positions match the recovered widget table)
+- Notes: (1) **Art binding:** `MENUBAR` is the tank-top strip - seven item domes with purple
+  price plates, the MENU button and the green `$` wallet plate. The seven recovered x values
+  (0x12/0x57/0x90/0xD9/0x122/0x16B/0x1B4) sit exactly 7 px inside the plates measured in the art
+  (25..69, 94..138, 151..195, 224..268, 297..341, 370..414, 443..487 at y 55), so the recovered
+  widget rects are the bar slots. (2) **Empty is empty:** `FUN_005409B0` returns null when the
+  item's store slot is negative, so an unstocked slot has no widget at all. The port leaves the
+  dome empty; it does not draw `SOLD`. That literal is the StoreScreen's sold-out branch
+  (EV-0135), not an empty tank slot. (3) **Wallet:** the green plate spans x 530..621,
+  y 39..58, so the tank's money is drawn there instead of in the HUD line. (4) Still unrecovered
+  (Q-0054): the per-kind item art and slot 7's x; the port draws the item name in the dome and
+  the price on the plate. Pinned: `headless_store_ui_check` 40 assertions and
+  `headless_integration_check` 40.

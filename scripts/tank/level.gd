@@ -238,8 +238,8 @@ func _ready() -> void:
 	add_child(layer)
 	_hud = Label.new()
 	_hud.name = "Info"
-	# The debug/HUD line clears the in-tank store bar, whose slots start at y 3 and are 58 tall.
-	_hud.position = Vector2(8.0, 66.0)
+	# The `MENUBAR` store bar is the full 75 px strip at the top; the info line starts below it.
+	_hud.position = Vector2(8.0, 80.0)
 	layer.add_child(_hud)
 	UiFont.apply(_hud, UiFont.HUD_FONT)
 	# The in-tank store bar (`FUN_005409B0`, Q-0018): the row of buy buttons above the tank.
@@ -1698,8 +1698,10 @@ func _update_hud() -> void:
 	# still be null here; the first tick after setup fills the label.
 	if _hud == null or tank == null:
 		return
-	_hud.text = "Money %d   Egg %d/4   Fish %d   Food %d   Weapon %d" % [
-		money, mini(egg_pieces, Progression.EGG_PIECES_TO_COMPLETE),
+	# Money is drawn on the `MENUBAR`'s own green wallet plate, so the info line carries the counts
+	# the art does not (EGG/FISH/FOOD/WEAPON).
+	_hud.text = "Egg %d/4   Fish %d   Food %d   Weapon %d" % [
+		mini(egg_pieces, Progression.EGG_PIECES_TO_COMPLETE),
 		tank.entities_in(Sim.Phase.FISH).size(), tank.food_count(), weapon_level
 	]
 	if game_mode == MODE_TIME_TRIAL:

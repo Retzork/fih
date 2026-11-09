@@ -45,8 +45,13 @@ const PAIR_STARTUP := Vector2i(2, 45)
 
 var slot_limit := SFX_SLOT_LIMIT
 ## 0..1 doubles, the in-memory half of the volume model (P2.14 §6).
-var sfx_volume := 1.0
-var music_volume := 1.0
+##
+## TEMPORARY PORT CHOICE (2026-11-09, owner request): both mixes start muted (0 %) because the
+## owner asked for silence during review - the shipped defaults are not in evidence (Q-0056), so
+## this is a playtest choice, not a recovered value. The Options sliders start at 0 and are the
+## only place that raises them; nothing else writes these fields.
+var sfx_volume := 0.0
+var music_volume := 0.0
 ## Every accepted effect, in order - the checks read this instead of listening.
 var played: Array[String] = []
 ## Sound ids that ran out of pool slots (`"Out of free sound ids"`), and ids the registry does not

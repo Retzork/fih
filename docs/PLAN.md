@@ -6,11 +6,12 @@ prove modules, not the assembled game. P4 14/14 `[x]` and P5 5/5 `[x]` are rever
 below; see the Review section at the end of this file for the confirmed defects, each with its
 reproduction. Do not re-mark anything `[x]` until the windowed playtest passes. Re-verified
 2026-11-09: all 23 suites pass - 22 script suites + the scene-backed integration suite,
-**1203 assertions** - and the 400-frame boot exits 0 with no script error; the remaining Ogg
+**1212 assertions** - and the 400-frame boot exits 0 with no script error; the remaining Ogg
 vendor-comment and ObjectDB/resource-at-exit notices are the known AUDIT F2 noise.)
 
-Next: **Review fixes in order.** R1 (200 starting money) and R2 (HUD) are fixed, R3/R4 verified
-faithful, R7 is closed on evidence (EV-0159/EV-0160/EV-0161/EV-0166/EV-0169: the bottom branch, the landing
+Next: **Review fixes in order.** R1 (200 starting money), R2 (HUD/money placement) and R4 (the tank's
+`MENUBAR` shop row, EV-0171) are fixed; R3 verified faithful, R7 is closed on evidence
+(EV-0159/EV-0160/EV-0161/EV-0166/EV-0169: the bottom branch, the landing
 flag with no writer, Angie's re-lay, and the completed sweep - all seven `DropFood` sites read, every
 one 0 except Angie, and the loader's type-`0x1C` branch read too: bare Food ctor, no flag), R6 is
 closed by the recovered coin draw (EV-0162/EV-0163): the image +
@@ -18,8 +19,9 @@ sheet row now come from `FUN_004DD7A0` per kind, so coins no longer all draw `MO
 closed by the recovered fish draw (EV-0164): the body sheet is `FUN_004D5AA0`'s swim/eat/hungry pick,
 the guppy's row is its stage (3 -> 2, 4 -> 3) and the carnivore's is row 4, so the eye-layer rule is
 answered (three/four tinted `SIM` layers) even though that colourised path stays unimplemented.
-Remaining: a windowed run of tanks 2-4 and 5-1 (R8) and the assembled feel. The P4 lines below keep
-their evidence; only the premature `[x]` is withdrawn.
+Remaining: a windowed run of tanks 2-4 and 5-1 (R8) and the assembled feel. Audio is muted by
+default for now at the owner's request (Q-0056). The P4 lines below keep their evidence; only the
+premature `[x]` is withdrawn.
 
 ## Phase 2 history (retained)
 
@@ -552,7 +554,7 @@ set.
   longer holds it on the line. The landed flag was then swept end to end (EV-0160) and the sweep is
   now complete (EV-0166): no writer exists outside the ctor and every non-Angie call site passes
   `flag = 0`, so dropped food never bobs (the bob is entered only for a spawned-landed pellet). Verified
-  headlessly: `tests/headless_entity_check.gd` passes **40 assertions** (phase assignment,
+  headlessly: `tests/headless_entity_check.gd` passes **43 assertions** (phase assignment,
   phase-ordered ticking, layers, despawn, both pause gates, teardown, seeded-RNG reproducibility, and
   every Food rule above). **Fish landed (P2.2/P2.3/P2.4):** `scripts/entities/fish.gd` is one `Fish`
   class plus a `SPECIES` table for Guppy, Oscar, Ultravore, Beetlemuncher, Minisylvester, Ball and
@@ -572,7 +574,7 @@ set.
   because a corpse or eaten fish despawning inside its own bucket shrank the array mid-loop.
   Fish carries no sprite/audio of its own (`sprite_row()` exposes the draw row; the P4.4 level draws guppies from SIMSWIM1..3, Q-0042);
   Penta/Grubber remain out of scope; pets, the DeadFish corpse, the Coin object, aliens and projectiles landed later. Verified headlessly:
-  `tests/headless_fish_check.gd` passes **105 assertions** (ctor tuning, hunger/death, all swim
+  `tests/headless_fish_check.gd` passes **121 assertions** (ctor tuning, hunger/death, all swim
   branches, approach/eat/acceptance, nutrition/growth, star/breeding, coin scheduling, species
   defaults, RNG reproducibility); the three earlier checks stay green and a 400-frame boot exits 0.
   New open questions: Q-0037 (non-Guppy overshoot), Q-0038 (two approach paths/seek gate), Q-0039
@@ -618,14 +620,16 @@ set.
     is not ported, the Shell plate count and the `+0xBA0` "Thanks for shopping" blurb. Rows come
     from the level's own `tank_store`; the shop opens with the port-only `S` key and Escape
     closes it (Q-0052).
-  - The **in-tank store bar** is in (`scripts/ui/store_bar.gd`): eight flat slots along the top of
-    the aquarium at `FUN_005409B0`'s recovered rects (`x` 0x12/0x57/0x90/0xD9/0x122/0x16B/0x1B4,
-    `y` 3, 60x58), each selling the `tank_store` row whose `shelf` matches, with the row's name and
-    price line, `SOLD` where the level stocks nothing, and a click that buys the row (the egg row
-    routes to `buy_egg`). Slot 7's x is not a constant in the decompile, so that slot stays blank
-    (Q-0054). The bar refreshes when the purse or the stock changes; the debug HUD line moved below
-    it so the two do not overlap.
-  - The store core is in: `scripts/economy/store.gd` holds the twelve recovered item ids with their wiki prices and the handler kind, and `Level.buy_item(index)` spends the row price, checks the upgrade caps (food quality 2, food quantity 9, weapon 0xC), then spawns the fish or raises the counter. Unimplemented items (breeder, the three pets, the egg/random-pet row) refuse without charging (Q-0049). The star potion is implemented: buying it arms `Level.star_potion_armed` (`Tank+0x440`), the next manual drop becomes a quality-3 pellet and the flag clears; `Fish` already handles quality 3 (small fish die, a stage-2 guppy promotes). `tests/headless_level_check.gd` passes **121 assertions**. The weapon level is now the same field the boss forces to 10: `Level.weapon_level` reads and writes `Tank.pet_capacity` (`+0x3E4`), which is why `Tank.shot_damage()` and the upgrade agree, and `Level.hold_fire_period()` implements SPECS §3.5's level-12 hold-to-fire at `11 - level/2` ticks floored at 100 ms, and the level now runs it: the left button sets `holding_fire`, `Sim.ticked` counts `fire_cooldown` down, and `fire_at` re-tests missiles then aliens (there is no larvae entity yet, so that step is absent). Held fire follows the live cursor through `Level.aim` (mouse motion plus a per-frame update in the rendering path), so moving the mouse retargets the next shot. Mode-4 price inflation is in (`Store.inflate`, `Level.inflate_prices`): each row rises by its own `+0x374` increment per tick, clamped at `SetStorePrice`'s 99,999, and rows with a zero increment never move.
+  - The **in-tank store bar** is in (`scripts/ui/store_bar.gd`): the game's own `MENUBAR` art
+    (640x75, EV-0171) with seven item slots at `FUN_005409B0`'s recovered rects (`x`
+    0x12/0x57/0x90/0xD9/0x122/0x16B/0x1B4, `y` 3, 60x58), each selling the `tank_store` row whose
+    `shelf` matches. The item name sits in the dome and the price on the purple plate; an
+    unstocked slot is an empty dome (the original builds no widget for it, so no `SOLD`), and the
+    green plate shows the tank's money. A click buys the row (the egg row routes to `buy_egg`).
+    Slot 7's x is not a constant in the decompile, so that slot stays blank (Q-0054); the per-kind
+    item art is still unrecovered (Q-0052). The bar refreshes when the purse or the stock changes,
+    and the info line below it carries only the counts the art does not.
+  - The store core is in: `scripts/economy/store.gd` holds the twelve recovered item ids with their wiki prices and the handler kind, and `Level.buy_item(index)` spends the row price, checks the upgrade caps (food quality 2, food quantity 9, weapon 0xC), then spawns the fish or raises the counter. Unimplemented items (breeder, the three pets, the egg/random-pet row) refuse without charging (Q-0049). The star potion is implemented: buying it arms `Level.star_potion_armed` (`Tank+0x440`), the next manual drop becomes a quality-3 pellet and the flag clears; `Fish` already handles quality 3 (small fish die, a stage-2 guppy promotes). `tests/headless_level_check.gd` passes **122 assertions**. The weapon level is now the same field the boss forces to 10: `Level.weapon_level` reads and writes `Tank.pet_capacity` (`+0x3E4`), which is why `Tank.shot_damage()` and the upgrade agree, and `Level.hold_fire_period()` implements SPECS §3.5's level-12 hold-to-fire at `11 - level/2` ticks floored at 100 ms, and the level now runs it: the left button sets `holding_fire`, `Sim.ticked` counts `fire_cooldown` down, and `fire_at` re-tests missiles then aliens (there is no larvae entity yet, so that step is absent). Held fire follows the live cursor through `Level.aim` (mouse motion plus a per-frame update in the rendering path), so moving the mouse retargets the next shot. Mode-4 price inflation is in (`Store.inflate`, `Level.inflate_prices`): each row rises by its own `+0x374` increment per tick, clamped at `SetStorePrice`'s 99,999, and rows with a zero increment never move.
 
 `Level.game_mode` now carries the selector's value (P2.12: 0 adventure, 1 time trial, 4 challenge, 5 virtual tank); `_on_sim_tick` inflates one tick per tick in mode 4 only, and `reset_prices()` puts every row back to its `base` at level start (the wiki's "prices reset"). The selector (`scripts/ui/game_selector.gd`, P4.14) sets the mode; the level still has no per-mode rules beyond mode-4 inflation. The store UI and the binary's own price arrays are still open.
 - [~] **P4.6** Egg/level/tank progression + trophy room (P2.6)
@@ -659,7 +663,7 @@ set.
   shot death with no boss). `WaveClock` runs the 3000-tick gate, the fixed milestone order, one rolled
   spawn point reused by a composite selection, and asks the level to spawn rather than spawning.
   `Tank` gained `spawn_alien`, `spawn_wave_clock`, `alien_count`, `projectile_count` and `boss_alive`.
-  `tests/headless_alien_check.gd` passes **61 assertions**. `Alien.IMAGE_BY_KIND` binds every kind to its recovered sheet (SYLV/BALROG/GUS/DESTRUCTOR/ULYSSES/PSYCHOSQUID/BILATERUS/MINISYLV/BOSS), and `box_size`/`initial_hp` feed the HP bar (160x160 box except the 80x80 mini; Bilaterus has no body hp, so no bar). `start_level` now arms the clock from
+  `tests/headless_alien_check.gd` passes **65 assertions**. `Alien.IMAGE_BY_KIND` binds every kind to its recovered sheet (SYLV/BALROG/GUS/DESTRUCTOR/ULYSSES/PSYCHOSQUID/BILATERUS/MINISYLV/BOSS), and `box_size`/`initial_hp` feed the HP bar (160x160 box except the 80x80 mini; Bilaterus has no body hp, so no bar). `start_level` now arms the clock from
   P2.6 §8's per-level selection (tank 1 level 2 starts at 1750 ticks), spawns the requested alien,
   composes 9..0xC into their recovered member pairs (1+3, 7+3, 5+6, 3+8), and re-rolls the type after
   each wave per P2.8 §5.1; the level wires attacks to the tank's projectile spawner and death to the
@@ -693,13 +697,13 @@ set.
     `Insaniq2` 4, EV-0147), looping, driven by the recovered `SetMusic` pairs (EV-0148): stages
     1-4, level complete `(0, 13)`, the startup state `(2, 45)`. Virtual Tank is silenced where the
     original gates it (mode 5), and `Game.set_mode` stops the music at the switch. Volumes are the
-    two 0..1 doubles on their buses, ready for the options sliders. Triggers wired so far: stage
-    music on level start, level-complete music, `SOUND_BUY` on a purchase, `SOUND_BUTTONCLICK` on
-    menu/shop/bar presses and the existing `SOUND_DROPFOOD` on a drop - the rest of the per-event
-    map is Q-0030. Which loaded track a pair names, the missing battle-music trigger and the
-    default volumes are Q-0056. `tests/headless_audio_check.gd` passes **40 assertions**; a
-    windowed run reports the Music bus at -15.6 dB and effects at -17.4 dB, so both mixes carry
-    signal. Remaining: the options sliders (P4.14), the battle loop once its trigger is found.
+    two 0..1 doubles on their buses; the Options sliders seed from them and write the bus. Triggers
+    wired so far: stage music on level start, level-complete music, `SOUND_BUY` on a purchase,
+    `SOUND_BUTTONCLICK` on menu/shop/bar presses and the existing `SOUND_DROPFOOD` on a drop - the
+    rest of the per-event map is Q-0030. **Temporary port choice (2026-11-09, owner request):**
+    both volumes start at **0.0**, so the mixes are muted until the Options sliders are raised -
+    not a recovered default (Q-0056). `tests/headless_audio_check.gd` passes **40 assertions**.
+    Remaining: the battle loop once its trigger is found.
 - [~] **P4.14** Menus/UI shell, options, help (P2.12)
   - The `GameSelector` is in (`scripts/ui/game_selector.gd`): EV-0131's eight buttons, with
     `choose()` exposing the dispatch so both gates are testable and `press()` writing
@@ -729,7 +733,7 @@ set.
     use the recovered Tiny/TinyBold/Liddie set. Fonts are drawn at the manifest's native pixel size
     with no engine outline over the baked one; the global -> id mapping is EV-0157 and the selector's
     17/10 split is the unresolved part (Q-0059).
-  - The assembled path is now checked by `tests/headless_integration_check.tscn` (37 assertions):
+  - The assembled path is now checked by `tests/headless_integration_check.tscn` (40 assertions):
     it mounts `Main`, presses Adventure through the real `GameSelector`, starts 2-4, advances the
     production wave and the Destructor's real missile, then starts 5-1 through the same menu path
     and asserts the scheduled Cyrax boss. It also checks the centred alien/missile sprites and the
@@ -806,9 +810,9 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 | # | Defect (confirmed) | Evidence | Status |
 | --- | --- | --- | --- |
 | R1 | Starting money is 0. The original starts at 200 (999999 in Sandbox), so the player cannot buy the first guppy (100). | `Level.money` starts at 0 and `start_level` never sets it; `SPECS.md` §4.3, P2.11 §6. | FIXED: `STARTING_MONEY` 200 in `setup` + `_apply_mode_flags`; manual pellets spend 5 (VT free); suite pins 200 + the 5-spend. |
-| R2 | The level HUD is a debug label ("Shells 0 Fish 2 Food 1" + the FPS line). It misnames tank money as shells and shows no egg/wave/clock. | `Level._hud` debug text; `Main` debug overlay. | FIXED: "Money %d Egg %d/4 Fish Food Weapon" (+ Time in Trial); verified in `shot_level.png` (Money 195 after the shot's pellet). |
+| R2 | The level HUD is a debug label ("Shells 0 Fish 2 Food 1" + the FPS line). It misnames tank money as shells and shows no egg/wave/clock. | `Level._hud` debug text; `Main` debug overlay. | FIXED: the money is on the `MENUBAR` wallet plate (R4), and the info line below the bar carries "Egg %d/4 Fish Food Weapon" (+ Time in Trial); verified in `shot_level.png`. |
 | R3 | The egg widget does not read in the level shot (bottom-right empty). It must show pieces, price and state at 640x480. | `shot_level.png` (2026): no egg visible; `EggWidget.RECT` at (500,416). | WITHDRAWN: the fresh shot shows EGG 1/4 + 150 bottom-right. Port placement retained (Q-0053). |
-| R4 | The in-tank store bar reads SOLD everywhere on tank 1 level 1. Verify the per-tank table + hiding: only the guppy should sell, everything else must be empty, not "sold out". | `shot_level.png` top bar; `Progression.HIDDEN` 1:1. | VERIFIED FAITHFUL: tank 1 L1 stocks the guppy alone (P2.6 §3); empty shelves read SOLD (the kind-0 stand-in, P2.12 §6c). |
+| R4 | The in-tank store bar reads SOLD everywhere on tank 1 level 1 and was bare floating text. Verify the per-tank table + hiding and the bar's presentation. | `shot_level.png` top bar; `Progression.HIDDEN` 1:1; `menubar.png`. | FIXED (2026-11-09, EV-0171): the bar draws the game's `MENUBAR` art (domes, MENU, wallet plate), the seven recovered slot x's align with its price plates, the wallet number is on the green plate, and an unstocked slot stays an empty dome. `FUN_005409B0` builds no widget for an item not for sale, so `SOLD` (the StoreScreen branch, EV-0135) is gone from the tank bar. Tank 1 L1 still stocks the guppy alone (P2.6 §3). Pinned by 40 store-UI + 40 integration assertions and re-shot windowed. |
 | R5 | All fish draw the same guppy body (SMALLSWIM rows). Carnivore/Ultravore/Beetlemuncher/Ball/Bi need their own sheets; hungry art (HUNGRYSWIM) needs the transition. | `Level._make_visual` draws `BODY_IMAGE` for every Fish; Q-0042. | FIXED on evidence (EV-0164): the sheet is `FUN_004D5AA0`'s pick (SMALLSWIM/HUNGRYSWIM, SMALLEAT/HUNGRYEAT while the eat timer or fed countdown runs) and the row is recovered (guppy 0/1/2, 3->2, 4->3; carnivore row 4), both drawn per tick and pinned by 16 new fish assertions. Residue (Q-0042): the other five classes' draw bodies (override slots recorded); the tinted `SIM` layer path is closed as a bounded negative (EV-0168 - the tint colours are runtime-only, no literal exists in the module, and the palette table is empty in the file). |
 | R6 | Coins all cycle the MONEY first row, so every coin looks identical. The kind -> row binding is still open (Q-0057). | `_draw_entity_frame` comment; Q-0057. | FIXED: slot 26 `FUN_004DD7A0` recovered (EV-0162/EV-0163) - the draw binds image + row per kind (`MONEY` 0..4 normal, `SHELLS` 0..3 + `MONEYBAG` virtual, `PEARL` for 0x06/0x0D); `Coin.sprite_image()`/`sprite_row()` + `_draw_entity_frame`, 154-assertion coin suite pins all 27 bindings plus 0x11's `MISCITEMS`+`SPARKS` pair (EV-0167) and 0x12's `PEANUT` (EV-0170); windowed render shows all six art variants. Residue (Q-0057/Q-0040): the diamond row's blue plate (no second colorkey is recovered); 0x11 and 0x12 now draw their recovered art (0x12's `PEANUT` is the blank shipped image, so the snot is invisible by design), while 0x10 still falls back to `MONEY` cell 0 (`+0x1A0` ramp unrecovered). |
 | R7 | Pellets fall but never land/bob. **Two evidence-backed answers**: dropped food has no landing transition (nothing writes `+0x190`; click/feed drops pass `flag = 0`) and sinks out after a 15-tick bottom life (EV-0159/EV-0160), while a pellet **does** land and bob when Angie re-lays it with `flag = 1` in her 30 px food contact (EV-0161). The port now does both. Sweep complete (EV-0166): the last two sites (`0x4E4DEF`, the tank's own `0x547DFD`) also pass 0, and the save body never writes `+0x190`; the loader's type-`0x1C` branch builds Food with its bare ctor, so no flag exists there (EV-0169). | `Food._advance`, `FUN_004D62D0`, `FUN_004FE740`. | FIXED: sink-out + Angie's re-lay implemented, both suite-pinned; no landing transition exists, so none was added. **Deviation D-0012:** `Food.SETTLE_TICKS` (single constant, shipped 20) rests an ordinary pellet on the floor that many ticks before the sink-out; 0 = faithful. |

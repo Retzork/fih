@@ -184,7 +184,7 @@ mean the threat path is not a game yet.
 - **G1/G2 fixed.** `Level.start_level()` arms the per-level selection from P2.6 §8 (including tank 1
   level 2's 1750-tick start), and `WaveClock.wave_spawned` re-rolls the type after each wave per
   P2.8 §5.1. `Level._on_wave_spawn` composes 9..0xC into 1+3, 7+3, 5+6 and 3+8. The level suite starts
-  1-3 through `start_level` and exercises 0x09 without arming by hand (121 assertions).
+  1-3 through `start_level` and exercises 0x09 without arming by hand (122 assertions).
 - **G3 fixed.** `Alien.IMAGE_BY_KIND` binds every kind to its recovered sheet and
   `Projectile.IMAGE_BY_KIND` does the same for the three shot kinds; `Level._make_visual` creates one
   `Sprite2D` per alien/boss/shot, centred on the entity position (the box centre, P2.8 §2.1), and
@@ -193,12 +193,12 @@ mean the threat path is not a game yet.
   to `127 * hp / hp0` under the full `IMAGE_HEALTHBARTUBE` glass at x 10 / y box-3, always for Cyrax
   and for ordinary aliens while `Tank.show_alien_health` (`Tank+0x178`, writer unrecovered) is set
   and the tank is not 5. The alien, projectile and integration suites cover the image maps and the
-  bar (61/50/37 assertions).
+  bar (65/64/40 assertions).
 - **G13 fixed.** `tests/headless_integration_check.tscn` mounts the real `Main`, presses Adventure
   on the production `GameSelector`, starts 2-4 and advances the production wave and the Destructor's
   real missile, then starts 5-1 through the same menu path and asserts the scheduled Cyrax boss. It
   also checks the centred sprites, the HP bar (full 127-px fill, 64 px at half hp) and the native
-  font of each UI surface; it never calls `start_level`, `arm_wave` or `start_boss`; 37 assertions.
+  font of each UI surface; it never calls `start_level`, `arm_wave` or `start_boss`; 40 assertions.
   The suite is scene-backed because
   `--script` does not expose the project autoloads that `main.gd` names.
 - **UI fonts and menu animation tidied.** `scripts/ui/ui_font.gd` applies the recovered BMFonts to
@@ -241,8 +241,8 @@ All §5a rows and §6 priorities are closed against the recovered contract:
   perf, packaging). **Superseded 2026-11-08:** the completion pass was revoked after the owner's
   playtest; see `PLAN.md`'s Review table (R8/R9 open).
 
-Totals: **23 suites, 1123 assertions** (22 `--script` + the scene-backed integration suite),
-boot exit 0. The F2 Ogg/ObjectDB notices are unchanged and are not failures.
+Totals: **23 suites, 1212 assertions** (22 `--script` at 1172 + the scene-backed integration suite
+at 40), boot exit 0. The F2 Ogg/ObjectDB notices are unchanged and are not failures.
 
 ## 6. Priority for the next sessions
 

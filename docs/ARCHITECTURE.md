@@ -256,40 +256,40 @@ a running remake:
 # the content registry contract (51 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_content_check.gd
 
-# the entity/tank seam and Food rules (38 assertions; exit 0 = pass)
+# the entity/tank seam and Food rules (43 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_entity_check.gd
 
 # the Fish entity (121 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_fish_check.gd
 
-# the Coin entity (143 assertions; exit 0 = pass)
+# the Coin entity (154 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_coin_check.gd
 
 # the Projectile entity (64 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_projectile_check.gd
 
-# the level: feeding loop, wave wiring, shooting, pet session (121 assertions; exit 0 = pass)
+# the level: feeding loop, wave wiring, shooting, pet session (122 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_level_check.gd
 
-# the store screen and bar (34 assertions; exit 0 = pass)
+# the store screen and the MENUBAR bar (40 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_store_ui_check.gd
 
 # progression, eggs and level completion (79 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_progression_check.gd
 
-# the main menu: EV-0131 ids, mode writers, gates and the tail flop (37 assertions; exit 0 = pass)
+# the main menu: EV-0131 ids, mode writers and gates (21 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_menu_check.gd
 
-# the assembled path: menu -> level -> wave -> boss + UI fonts (37 assertions; exit 0 = pass)
+# the assembled path: menu -> level -> wave -> boss + UI fonts (40 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . res://tests/headless_integration_check.tscn --quit-after 1200
 
 # the pet base, roster, the implemented pets and Angie's food re-lay (73 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_pet_check.gd
 
-# the alien kinds, attacks, eating, the HP-bar geometry and the wave clock (61 assertions; exit 0 = pass)
+# the alien kinds, attacks, eating, the HP-bar geometry and the wave clock (65 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_alien_check.gd
 
-# the Cyrax boss fight (35 assertions; exit 0 = pass)
+# the Cyrax boss fight (46 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_boss_check.gd
 
 # the tank-save framing (38 assertions; exit 0 = pass)
@@ -382,7 +382,7 @@ box and spawn-hp values the HP bar divides by, phase and bands (full, mini, bott
 intro, the missiles_3 volley and its rand%50+150 tail, the Psychosquid 400-tick rest flip, the reach
 boxes (Sylvester, mini, out-of-reach, kinds 5/6 never eating), the Diamond death rule (shot vs boss
 vs non-shot), and the wave clock (unarmed freeze, alien freeze, milestone order, spawn point range,
-composite double spawn at one point). The boss check (`tests/headless_boss_check.gd`) covers the Cyrax fight: the hp formula and its clamp, the spawn flags (boss alive, waves frozen, pet capacity 10), the 300-tick arrival immunity, the 15-tick intro, the 75-tick minion cadence at +40/+40, the 300-tick pulse that stays quiet while another alien is on the field, the 10-tick per-attacker hit cooldown, and death clearing `boss_alive` while unfreezing then disabling the wave clock (35 assertions).
+composite double spawn at one point). The boss check (`tests/headless_boss_check.gd`) covers the Cyrax fight: the hp formula and its clamp, the spawn flags (boss alive, waves frozen, pet capacity 10), the 300-tick arrival immunity, the 15-tick intro, the 75-tick minion cadence at +40/+40, the 300-tick pulse that stays quiet while another alien is on the field, the 10-tick per-attacker hit cooldown, and death clearing `boss_alive` while unfreezing then disabling the wave clock (46 assertions).
 
 `tests/headless_integration_check.tscn` is the assembled-path suite and the only one run as a scene:
 `--script` does not expose the project autoloads, so `Main` cannot load there. It mounts the real
@@ -392,7 +392,7 @@ same menu path and checks the scheduled Cyrax boss and its sprite. It never call
 `arm_wave` or `start_boss`. It also checks that the alien and missile sprites are centred on their
 boxes, the Destructor's HP bar is the full 127-px fill at 150 hp and 64 px at 75, and the menu,
 store, in-tank bar, egg widget and HUD each use their recovered bitmap font at the manifest's native
-size (37 assertions).
+size (40 assertions).
 
 `tests/headless_save_check.gd` covers the tank-save framing: every header field, the class-`0x1F` skip, the round trip through `to_bytes()`/`from_bytes()`, the `42+E+S` / `454+E+S` / `658+E+S` section offsets, the size law, the `+0x110` object shift, and the loader's version gate (`0x34` rejected, `0x35` accepted, short/truncated files refused) - 38 assertions. `tests/headless_save_files_check.gd` covers the file layer: the per-mode stems and paths, a real write/read round trip under `user://`, the on-disk version refusal, a missing file, and the Adventure-only profile match - 21 assertions. `tests/headless_tank_snapshot_check.gd` covers the snapshot glue: capture (fish only, header stamped, store rows and pet flags preserved), the magic-tagged record in a 0x140 slot, a byte-level round trip through `TankSave`, restore into a fresh tank, the exclusion of non-fish entries, and the 316-byte scalar block (money, food levels, pet capacity, backdrop, wave selection and countdown, the `+0x440` star potion flag and the tint bytes, with the offsets the note gives and the clamps), plus the level-level pair `Level.save_game`/`load_game` through real disk (header, store table, money in the scalar block, fish count, wallet/food restore, fish replaced not merged, and a missing file returning false) - 54 assertions. Shots take their damage from `Tank.shot_damage()` (`3 * pet_capacity`, not a hard-coded multiplier), and `Level.start_level()` reads the boss from its schedule table (`Level.boss_kind_for`), so the fight is entered rather than started by hand.
 

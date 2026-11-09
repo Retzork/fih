@@ -10,8 +10,18 @@ extends Control
 ## the decompile (the array's last element is pushed from the stack), so slot 7's x is unrecovered and
 ## Q-0054 records it - the port leaves that slot blank rather than guessing.
 ##
-## Not recovered, so not drawn: the widget art per item kind (`+0x14C`, Q-0052). The buttons are flat
-## with the item's name and its recovered price line, exactly like the StoreScreen's shelves.
+## The bar is the game's own `MENUBAR` art (640x75): seven item domes with purple price plates, the
+## MENU button and the green wallet readout. `FUN_005409B0` positions each widget over one dome;
+## drawing the art is what makes the row read as the original's bar instead of floating text.
+## The per-kind item art (`+0x14C`, Q-0052) is still unrecovered, so the item name sits in the dome.
+const BAR_IMAGE := "IMAGE_MENUBAR"
+const BAR_SIZE := Vector2(640.0, 75.0)
+## The green wallet plate inside `MENUBAR` (green pixels span x 530..621, y 39..58).
+const MONEY_RECT := Rect2(530.0, 34.0, 100.0, 30.0)
+## The dome's text area and the purple price plate, both relative to a slot's top-left. The plate
+## spans screen y 48..59, i.e. y 45..56 inside the slot rect, so the 8 px line centres at y 50..58.
+const NAME_RECT := Rect2(2.0, 9.0, 56.0, 36.0)
+const PRICE_RECT := Rect2(2.0, 42.0, 56.0, 16.0)
 
 ## `FUN_005409B0`'s x table for slots 0-6; slot 7 is unrecovered (Q-0054).
 const SLOT_X := [0x12, 0x57, 0x90, 0xD9, 0x122, 0x16B, 0x1B4]
@@ -22,10 +32,14 @@ const SLOT_COUNT := 8
 
 const GREYED_COLOR := Color8(0xCC, 0xCC, 0xCC)
 const PRICE_COLOR := Color8(0xF2, 0xE8, 0xC8)
-const SOLD_TEXT := "SOLD"
+## The name is engraved on the gold dome; the price sits on the purple plate.
+const NAME_COLOR := Color8(0x33, 0x20, 0x0E)
+const MONEY_COLOR := Color8(0xFF, 0xFF, 0xE8)
 
 ## The level whose `tank_store` the bar sells from.
 var level: Level = null
+var _background: TextureRect = null
+var _money_label: Label = null
 var _buttons: Array[Button] = []
 var _labels: Array[Label] = []
 var _prices: Array[Label] = []
@@ -77,7 +91,11 @@ static func shelf_of(target: Level, index: int) -> int:
 
 func setup(target: Level) -> void:
 	level = target
+	position = Vector2.ZERO
+	size = BAR_SIZE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_add_background()
+	_add_money_readout()
 	for shelf in SLOT_X.size():
 		var rect := slot_rect(shelf)
 		var button := Button.new()
@@ -91,9 +109,12 @@ func setup(target: Level) -> void:
 		_buttons.append(button)
 		var name_label := Label.new()
 		name_label.name = "Name"
-		name_label.position = Vector2(2.0, 6.0)
-		name_label.size = Vector2(rect.size.x - 4.0, 20.0)
+		name_label.position = NAME_RECT.position
+		name_label.size = NAME_RECT.size
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_label.add_theme_color_override("font_color", NAME_COLOR)
 		# The bar is a port stand-in for `FUN_005409B0` (its item art is Q-0054), so the two recovered
 		# 8 px fonts carry the name and the price at native size.
 		UiFont.apply(name_label, UiFont.TINY_FONT)
@@ -101,14 +122,46 @@ func setup(target: Level) -> void:
 		_labels.append(name_label)
 		var price_label := Label.new()
 		price_label.name = "Price"
-		price_label.position = Vector2(2.0, 24.0)
-		price_label.size = Vector2(rect.size.x - 4.0, 20.0)
+		price_label.position = PRICE_RECT.position
+		price_label.size = PRICE_RECT.size
 		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price_label.add_theme_color_override("font_color", PRICE_COLOR)
 		UiFont.apply(price_label, UiFont.SMALL_FONT)
 		button.add_child(price_label)
 		_prices.append(price_label)
 	refresh()
+
+
+## The 640x75 `MENUBAR` art: the seven domes, the MENU button and the wallet plate. Without Content
+## (a `--script` check runs the bar outside the tree) the bar keeps the same controls on a blank field.
+func _add_background() -> void:
+	var content := _autoload("Content")
+	if content == null or not content.has_image(BAR_IMAGE):
+		return
+	var res: ImageRes = content.image(BAR_IMAGE)
+	if res == null or res.texture == null:
+		return
+	_background = TextureRect.new()
+	_background.name = "Background"
+	_background.texture = res.texture
+	_background.position = Vector2.ZERO
+	_background.size = BAR_SIZE
+	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_background)
+
+
+## The wallet number on the art's green plate (`Tank::AddMoney`'s value).
+func _add_money_readout() -> void:
+	_money_label = Label.new()
+	_money_label.name = "Money"
+	_money_label.position = MONEY_RECT.position
+	_money_label.size = MONEY_RECT.size
+	_money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_money_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_money_label.add_theme_color_override("font_color", MONEY_COLOR)
+	UiFont.apply(_money_label, UiFont.SMALL_FONT)
+	add_child(_money_label)
 
 
 ## Redraw the eight slots when the purse or the stock changed since the last call.
@@ -126,27 +179,31 @@ func refresh() -> void:
 		return
 	_last_money = level.money
 	_last_stock = str(level.tank_store.size()) + ":" + str(level.tank_store.hash())
+	if _money_label != null:
+		_money_label.text = str(level.money)
 	for shelf in _buttons.size():
 		var row := row_at(level, shelf)
 		var button := _buttons[shelf]
 		var name_label := _labels[shelf]
 		var price_label := _prices[shelf]
 		if row.is_empty():
+			# `FUN_005409B0` builds no widget for an item that is not for sale, so the dome stays
+			# empty. `SOLD` belongs to the StoreScreen's sold-out branch, not to an empty tank slot.
 			button.disabled = true
+			button.mouse_default_cursor_shape = Control.CURSOR_ARROW
 			name_label.text = ""
-			price_label.text = SOLD_TEXT
-			price_label.add_theme_color_override("font_color", GREYED_COLOR)
+			price_label.text = ""
 			continue
 		var id := int(row.get("slot", -1))
 		name_label.text = Store.item_name(id)
 		var known := Store.price_known(row)
 		var affordable := known and (int(row.get("price", 0)) <= level.money)
 		button.disabled = not known or level.completed
+		button.mouse_default_cursor_shape = (
+			Control.CURSOR_ARROW if button.disabled else Control.CURSOR_POINTING_HAND)
 		price_label.text = str(int(row.get("price", 0))) if known else "?"
 		var colour := PRICE_COLOR if affordable else GREYED_COLOR
 		price_label.add_theme_color_override("font_color", colour)
-		name_label.add_theme_color_override("font_color",
-			Color.WHITE if affordable else GREYED_COLOR)
 
 
 ## Click a bar slot: it buys the row that sits there. Returns whether the purchase went through.
