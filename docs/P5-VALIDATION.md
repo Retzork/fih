@@ -1,14 +1,15 @@
-# P5 - Validation & polish (complete)
+# P5 - Validation & polish (in review)
 
-Status: **P5.1-P5.5 complete** (2026-11-08). This document closes Phase 5 against the
-checked-out tree: the constant sheet (P5.1), the per-tank playtest checklist (P5.2),
-the timing model (P5.3), the performance sanity (P5.4) and the packaging decision (P5.5).
-Every value below cites its `EV-` entry or its port code path; nothing here is new binary
-evidence.
+Status: **withdrawn pending the Review fixes** (2026-11-09). The 2026-11-08 completion pass was
+revoked by the owner after a playtest; `PLAN.md`'s Review table is the work list. This document
+keeps the constant sheet (P5.1), the playtest checklist (P5.2), the timing model (P5.3), the
+performance sanity (P5.4) and the packaging decision (P5.5) as reference evidence, but P5.2/P5.3
+cannot close until R8 (windowed tanks 2-4/5-1) and R9 (pet guards) pass. Every value below cites
+its `EV-` entry or its port code path; nothing here is new binary evidence.
 
-Test totals for the tree this document describes: **23 suites, 1123 assertions** (20
-18-assertion suites plus the scene-backed integration suite at 37). The boot check
-exits 0. The pre-existing Ogg vendor-comment warnings and the ObjectDB/resource leak
+Test totals for the tree this document describes: **23 suites, 1203 assertions** (2026-11-09
+re-run: 22 `--script` suites at 1166 plus the scene-backed integration suite at 37). The boot
+check exits 0. The pre-existing Ogg vendor-comment warnings and the ObjectDB/resource leak
 notices at exit are unchanged (AUDIT F2) and are not failures.
 
 ## P5.1 - Constant cross-check (differential table)
@@ -104,7 +105,7 @@ A live-measurement pass against the original (stopwatch on wave arrival) is stil
 only way to close the question; there is no per-wave timing figure in the wiki.
 
 No simulation code may use `delta` or hard-code a rate (ARCHITECTURE §1). Presentation
-(`_process`, HUD, the mermaid flop) runs on the same tick counters.
+(`_process`, HUD, screen flow) runs on the same tick counters.
 
 ## P5.4 - Performance sanity
 
@@ -135,9 +136,8 @@ Export checklist:
   in a future pass); `tools/godot/gen_content.gd` fails if the 14/16/296 partition drifts.
 - `assets_raw/` is gitignored/regenerable. An export needs it present at build time:
   regenerate per the README Quick start, then `--import`, then export.
-- The tailflop backdoor is closed (F1): `GameSelector` loads the sheet and mask through
-  the imported textures, so the export warning is gone (verified: the 400-frame boot no
-  longer logs it).
+- The tailflop overlay is removed (R10, Q-0055): the menu leaves the baked `SELECTORSCREEN`
+  art alone, so no raw PNG is loaded at runtime and the old export warning (F1) cannot recur.
 - The `Profile` file is `user://profile.json` (the port's own format, SPECS §7.4); tank
   saves stay `userdata/<stem><slot>.dat` in the port's framing (same paths, own bytes).
   Neither writes into the read-only original install.

@@ -146,10 +146,12 @@ func spawn_larva(position: Vector2, mode: int = 0, vy: float = 1.5, hit_kind: in
 	return spawn_at(larva, Sim.Phase.PROJECTILES, position) as Larva
 
 
-## Spawn a food pellet through the tank stream (Zorf's drop, P2.7 §4.5).
-func spawn_food(position: Vector2, food_kind: int = 0, quality: int = 0) -> Food:
+## Spawn a food pellet through the tank stream (Zorf's drop, P2.7 §4.5). `landed` is the play ctor's
+## `param_4`, i.e. `Food+0x190`: only Angie's food re-lay passes true (EV-0161), and such a pellet
+## enters `Food::Update`'s bob instead of falling.
+func spawn_food(position: Vector2, food_kind: int = 0, quality: int = 0, landed: bool = false) -> Food:
 	const FoodScript := preload("res://scripts/entities/food.gd")
-	var pellet: Food = FoodScript.create(position, food_kind, false, 0, quality, rng)
+	var pellet: Food = FoodScript.create(position, food_kind, landed, 0, quality, rng)
 	return spawn_at(pellet, Sim.Phase.FOOD, position) as Food
 
 

@@ -319,13 +319,69 @@ func _configure(
 		_apply_sylvester_size(2)
 
 
-## The draw row the original derives from `+0x1A0`: 0/1/2 as-is, 3 -> 2, 4 -> 3.
-func sprite_row() -> int:
-	if stage == 3:
+## Per-species sprite binding (`EV-0164`). Every specimen class overrides the fish draw slot 83, and
+## each one fixes its own row on the shared state sheet: the guppy's row follows its stage, the
+## carnivore's is row 4 (`FUN_004E2480` sources `y 0x140`). `image` is set only for a species whose
+## draw swaps in a sheet of its own; empty means the state sheet [`draw_image`] returns.
+## Recovered: GUPPY (stage rows) and OSCAR (row 4). The other five classes also override the draw
+## slot but their bodies are not decompiled yet - Gekko `0x4E17F0`, Ultra `0x4E3A10`, Sylvester
+## `0x4E3420`, Ball `0x4DB3B0`, Bi `0x4DB9B0` - so they keep the port's earlier stand-in (their
+## same-named sheet at cell 0, or the guppy body for the two with no swim sheet), per Q-0042.
+const SPECIES_DRAW := {
+	Species.GUPPY: {"image": "", "row": -1},
+	Species.OSCAR: {"image": "", "row": 4},
+	Species.ULTRA: {"image": "IMAGE_ULTRA", "row": 0},
+	Species.GEKKO: {"image": "IMAGE_GEKKO", "row": 0},
+	Species.BALL: {"image": "IMAGE_BALLS", "row": 0},
+}
+
+## The state sheets `FUN_004D5AA0` returns, `[normal, hungry]` (`EV-0164`). It yields a runtime-table
+## index; that table carries 16 entries before the first manifest image, and four independent
+## families confirm the `- 0x10` offset: `0x9B/0x9C` = SMALLTURN/HUNGRYTURN, `0x9E..0xA0` =
+## SIMTURN1..3, `0xA5..0xA7` = SIMEAT1..3 and `0xA8..0xAA` = SIMSWIM1..3.
+const STATE_SHEETS := {
+	"swim": ["IMAGE_SMALLSWIM", "IMAGE_HUNGRYSWIM"],
+	"eat": ["IMAGE_SMALLEAT", "IMAGE_HUNGRYEAT"],
+	"turn": ["IMAGE_SMALLTURN", "IMAGE_HUNGRYTURN"],
+}
+
+
+## `FUN_004D5AA0`'s state split: eat art while the eat-fx timer runs (`+0x1C8`) or the fed countdown
+## is past 100 (`+0x108`), otherwise the swim sheet. The turn sheet (`+0x1C4`) stays unwired: the
+## port's `facing` is a latched side that is never 0, while the recovered test treats 0 as "not
+## turning", so binding it would make turn art the default (Q-0042).
+func draw_state() -> String:
+	if eat_fx_timer >= 1 or digest_timer > 100:
+		return "eat"
+	return "swim"
+
+
+## The sheet this fish draws this tick.
+func draw_image() -> String:
+	var def: Dictionary = SPECIES_DRAW.get(species, {"image": "", "row": -1})
+	var fixed := String(def["image"])
+	if fixed != "":
+		return fixed
+	var pair: Array = STATE_SHEETS[draw_state()]
+	return String(pair[1] if uses_hungry_art() else pair[0])
+
+
+## The draw row for a species at a given stage (`EV-0164`): the guppy rule is 0/1/2 as-is, 3 -> 2,
+## 4 -> 3; a species whose draw fixes its row ignores the stage.
+static func row_for(species_: int, stage_: int) -> int:
+	var def: Dictionary = SPECIES_DRAW.get(species_, {"image": "", "row": -1})
+	var fixed := int(def["row"])
+	if fixed >= 0:
+		return fixed
+	if stage_ == 3:
 		return 2
-	if stage == 4:
+	if stage_ == 4:
 		return 3
-	return stage
+	return stage_
+
+
+func sprite_row() -> int:
+	return Fish.row_for(species, stage)
 
 
 func _advance() -> void:

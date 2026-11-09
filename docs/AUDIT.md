@@ -235,9 +235,11 @@ All §5a rows and §6 priorities are closed against the recovered contract:
   round trip, and golden fixtures (`headless_golden_check` 22, `headless_profile_check` 29).
 - **G11/F1 fixed:** hunger/growth/pet/alien/wave/projectile cue signals are consumed
   (`CUE_SOUNDS` by semantic name, Q-0030 documented) and missile smoke/bursts spawn tick-counted
-  particles; the tailflop loads through the imported textures (no export warning on boot).
+  particles; the tailflop loaded through the imported textures (no export warning on boot) and the
+  overlay was later removed entirely (R10, Q-0055).
 - **P5 closed:** `docs/P5-VALIDATION.md` (differential table, playtest checklist, timing,
-  perf, packaging).
+  perf, packaging). **Superseded 2026-11-08:** the completion pass was revoked after the owner's
+  playtest; see `PLAN.md`'s Review table (R8/R9 open).
 
 Totals: **23 suites, 1123 assertions** (22 `--script` + the scene-backed integration suite),
 boot exit 0. The F2 Ogg/ObjectDB notices are unchanged and are not failures.

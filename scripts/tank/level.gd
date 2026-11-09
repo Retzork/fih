@@ -45,9 +45,6 @@ const DEATH_IMAGE := "IMAGE_SMALLDIE"
 const GUPPY_COLS := 10
 const GUPPY_ROWS := 5
 const FOOD_IMAGE := "IMAGE_FOOD"
-const COIN_IMAGE := "IMAGE_MONEY"
-## The coin sheet's animation columns (`MONEY` is 10x6).
-const COIN_COLUMNS := 10
 ## The alien/boss HP bar (P2.9 §5): the `HEALTHBARTUBE` glass over the `HEALTHBAR` fill, both
 ## 127x15, inside the alien's own box at x 10 and y = box height - 3. The fill is clipped to
 ## `tube_w * hp / hp0`.
@@ -1416,26 +1413,24 @@ func _make_visual(entity: SimEntity) -> Sprite2D:
 	var source_id := ""
 	if entity is Fish:
 		var fish := entity as Fish
-		source_id = _fish_body_image(fish)
-		if fish.species == Fish.Species.GUPPY:
-			body_row = clampi(fish.stage, 0, GUPPY_ROWS - 1)
+		# The sheet is the recovered state sheet (swim/eat + hungry) and the row is the species'
+		# own (guppy stages, carnivore row 4) - EV-0164.
+		source_id = fish.draw_image()
+		body_row = fish.sprite_row()
 	elif entity is Food:
 		source_id = FOOD_IMAGE
 	elif entity is Coin:
-		source_id = COIN_IMAGE
+		# The coin picks its own sheet: `MONEY` in a normal tank, `SHELLS`/`MONEYBAG`/`PEARL`
+		# per kind (EV-0162).
+		source_id = (entity as Coin).sprite_image()
 	elif entity is Pet:
 		source_id = (entity as Pet).image_id()
 	elif entity is DeadFish:
-		# P2.4 §4: the corpse draws `SMALLDIE` at the dying stage's row, framed by `sprite_frame()`.
+		# P2.4 §4: the corpse draws `SMALLDIE`, the death twin of the state sheet, at the species'
+		# row and `sprite_frame()`'s cell (EV-0164 binds the row; Q-0043 keeps the cell rule).
 		var corpse := entity as DeadFish
-		if corpse.species != Fish.Species.GUPPY:
-			# No death sheet in the manifest for this species: rest the corpse on its swim
-			# sheet's first cell so the death is visible (Q-0042).
-			source_id = String(SPECIES_IMAGE.get(corpse.species, BODY_IMAGE))
-			body_row = 0
-		else:
-			source_id = DEATH_IMAGE
-			body_row = clampi(corpse.corpse_id, 0, GUPPY_ROWS - 1)
+		source_id = DEATH_IMAGE
+		body_row = Fish.row_for(corpse.species, corpse.corpse_id)
 	elif entity is Alien:
 		# P2.8 §3: the kind -> image binding includes Cyrax (BOSS) and the 80x80 minis/Bilaterus.
 		source_id = (entity as Alien).image_id()
@@ -1463,7 +1458,6 @@ func _make_visual(entity: SimEntity) -> Sprite2D:
 	sprite.set_meta("anim", anim)
 	sprite.set_meta("body_row", body_row)
 	sprite.set_meta("source", source_id)
-	sprite.set_meta("hungry", entity is Fish and (entity as Fish).uses_hungry_art())
 	_draw_entity_frame(entity, sprite, anim)
 	entity.add_child(sprite)
 	if entity is Alien:
@@ -1475,25 +1469,7 @@ func _sim_tick() -> int:
 	return _sim.tick_count if _sim != null else 0
 
 
-## Per-species body sheets (Q-0042). The guppy body is the 10x5 SMALLSWIM stage sheet;
-## the other species keep their own whole sheets (cell 0, animated columns). Oscar,
-## Minisylvester and Bi have no swim sheet in the manifest, so they fall back to the
-## guppy body rather than drawing a store card or an alien sheet.
-const SPECIES_IMAGE := {
-	Fish.Species.ULTRA: "IMAGE_ULTRA",
-	Fish.Species.GEKKO: "IMAGE_GEKKO",
-	Fish.Species.BALL: "IMAGE_BALLS",
-}
 
-
-## The body sheet a fish draws from: the starving twin appears on the hunger transition (P2.3 §6).
-## Non-guppy species draw their own sheet when one is bound (Q-0042); the rest keep the guppy body.
-func _fish_body_image(fish: Fish) -> String:
-	if fish.species != Fish.Species.GUPPY:
-		return String(SPECIES_IMAGE.get(fish.species, BODY_IMAGE))
-	if fish.uses_hungry_art():
-		return HUNGRY_BODY_IMAGE
-	return BODY_IMAGE
 
 
 ## Pick this tick's texture. The sheet is keyed once and cached per `(id, cell)`, so the per-frame
@@ -1501,19 +1477,21 @@ func _fish_body_image(fish: Fish) -> String:
 func _draw_entity_frame(entity: SimEntity, sprite: Sprite2D, anim: AnimState) -> void:
 	if entity is Fish:
 		var fish := entity as Fish
-		var row := int(sprite.get_meta("body_row", 0))
+		# The state sheet changes with the eat timer and the hunger flag (EV-0164), so the sprite
+		# takes the new sheet in place instead of being rebuilt.
+		var source := fish.draw_image()
+		if source != String(sprite.get_meta("source", "")):
+			sprite.set_meta("source", source)
+		var row := fish.sprite_row()
 		var col := AnimState.column_at(anim.started, _sim_tick(), GUPPY_COLS)
-		sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")), row * GUPPY_COLS + col)
+		sprite.texture = _keyed_cell(source, row * GUPPY_COLS + col)
 		return
 	if entity is DeadFish:
 		# The corpse's frame is its own countdown rule, not a clock: it walks the death cells as the
-		# stage counter falls (P2.4 §4). Non-guppy corpses rest on the swim sheet's first cell.
+		# stage counter falls (P2.4 §4), inside the species' own row (EV-0164).
 		var corpse := entity as DeadFish
-		if corpse.species != Fish.Species.GUPPY:
-			sprite.texture = _keyed_cell(String(sprite.get_meta("source", BODY_IMAGE)), 0)
-			return
 		var death_row := int(sprite.get_meta("body_row", 0))
-		sprite.texture = _keyed_cell(String(sprite.get_meta("source", BODY_IMAGE)),
+		sprite.texture = _keyed_cell(String(sprite.get_meta("source", DEATH_IMAGE)),
 			death_row * GUPPY_COLS + corpse.sprite_frame())
 		return
 	if entity is Pet:
@@ -1545,9 +1523,39 @@ func _draw_entity_frame(entity: SimEntity, sprite: Sprite2D, anim: AnimState) ->
 		var food := entity as Food
 		sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")), _food_frame(food))
 		return
-	# Coins cycle the sheet's first row: which row belongs to which kind is not recovered (Q-0057).
-	sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")),
-		AnimState.column_at(anim.started, _sim_tick(), COIN_COLUMNS))
+	if entity is Coin:
+		# The recovered draw (`FUN_004DD7A0`) blits one cell of the coin's own sheet: the column is the
+		# coin's animation frame, the row is the kind's row in that sheet (EV-0162). Single-cell art
+		# (`PEARL`, `MONEYBAG`) has no row.
+		var coin := entity as Coin
+		var id := String(sprite.get_meta("source", coin.sprite_image()))
+		var row := coin.sprite_row()
+		_draw_sparks(entity, coin, anim)
+		if row < 0:
+			sprite.texture = _keyed_cell(id, 0)
+			return
+		var columns := _sheet_columns(id)
+		var column := AnimState.column_at(anim.started, _sim_tick(), columns)
+		sprite.texture = _keyed_cell(id, row * columns + column)
+
+
+## The 0x11 drop is the one coin with a second sprite: `IMAGE_SPARKS` at (10,-10) over the
+## single-cell `MISCITEMS`, stepped by the coin's own column (EV-0162). Created on demand, so a kind
+## that stops drawing it cannot leave the overlay behind.
+func _draw_sparks(entity: SimEntity, coin: Coin, anim: AnimState) -> void:
+	var sparks := entity.get_node_or_null("Sparks") as Sprite2D
+	if not coin.draws_sparks():
+		if sparks != null:
+			sparks.queue_free()
+		return
+	if sparks == null:
+		sparks = Sprite2D.new()
+		sparks.name = "Sparks"
+		sparks.position = Coin.SPARKS_OFFSET
+		sparks.set_meta("source", Coin.IMAGE_SPARKS)
+		entity.add_child(sparks)
+	sparks.texture = _keyed_cell(Coin.IMAGE_SPARKS,
+		AnimState.column_at(anim.started, _sim_tick(), _sheet_columns(Coin.IMAGE_SPARKS)))
 
 
 ## The bar is a pair of sprites inside the alien's box: the red fill (width-clipped to hp) under
@@ -1605,6 +1613,17 @@ func _update_health_bar(alien: Alien) -> void:
 
 ## One keyed cell of a sheet, built once and kept for the session.
 var _cell_cache: Dictionary = {}
+
+
+## A sheet's column count, so a coin cell is `row * columns + column` - `MONEY` is 10 wide and
+## `SHELLS` 20, and the recovered blit sources `(column * cellW, row * cellH)` (EV-0162).
+func _sheet_columns(id: String) -> int:
+	if _content == null or not _content.has_image(id):
+		return 1
+	var res: ImageRes = _content.image(id)
+	if res == null:
+		return 1
+	return maxi(res.cols, 1)
 
 
 func _keyed_cell(id: String, cell: int) -> Texture2D:
@@ -1669,16 +1688,6 @@ func _sync_visuals() -> void:
 			# Fish box offsets: the drawn 40x40 art sits in the middle of the 80x80 bounds box.
 			visual.position = Vector2(20.0, 20.0) + Vector2(20.0, 0.0) * (1.0 if fish.flip else 0.0)
 			visual.flip_h = fish.flip
-			# Hungry art is a different sheet, so the guppy sprite is rebuilt on the transition
-			# (P2.3 §6). Non-guppy species keep their own sheet; no swap needed.
-			if fish.species == Fish.Species.GUPPY:
-				var hungry := fish.uses_hungry_art()
-				if hungry != bool(visual.get_meta("hungry")):
-					var fresh := _make_visual(fish)
-					if fresh != null:
-						visual.queue_free()
-						entity.set_meta("visual", fresh)
-						continue
 		else:
 			visual.position = Vector2.ZERO
 		_draw_entity_frame(entity, visual, anim)

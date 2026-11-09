@@ -12,17 +12,18 @@ of the original (no source code). The game install is read-only; all behavioral 
 documentation index, repository map, analysis commands and handover checklist are in
 **[`docs/README.md`](docs/README.md)**.
 
-**Current status (2026-11-08):** Phase 2 is **closed**, 14/18 systems documented - P2.1-P2.4 and
+**Current status (2026-11-09):** Phase 2 is **closed**, 14/18 systems documented - P2.1-P2.4 and
 P2.7-P2.15 are done, P2.5 and P2.6 are substantially complete with tracked open questions, and only
 the optional P2.16 (screensaver) / P2.17 (cheats) remain. Phase 3 (assets) is complete.
-**Phase 4 and Phase 5 are complete:** P4.1-P4.14 and P5.1-P5.5 are `[x]`. The playable level,
-store + roller, Hatch/Pets/Bonus flow, game selector + Options/Help/Hall, audio layer, saves
-(tank + profile JSON, golden fixtures), pets (all 24 steer, 12 slot-81 bodies recovered),
-aliens, Cyrax boss, projectiles + `Larva`, laser sparks, weapon HUD and all game modes are
-in, and **23 headless checks pass (1124 assertions; 22 `--script` suites + the scene-backed
-integration suite)**. The port runs the ~36 Hz reading of Q-0034. Validation lives in
-[`docs/P5-VALIDATION.md`](docs/P5-VALIDATION.md). **No next task in the remake scope**; the
-remaining items are the parameterised guards and the optional windows (see PLAN).
+The 2026-11-08 completion pass was **revoked by the owner after a playtest**: the suites prove
+modules, not the assembled game. **The Review table in [`docs/PLAN.md`](docs/PLAN.md) is the
+current work list.** R1/R2 (starting money, HUD) and R5/R6/R7 (species art, coin art, pellet
+sink-out + Angie's re-lay) are fixed with evidence EV-0162..EV-0170; **R8 (windowed run of tanks
+2-4 and 5-1) and R9 (remaining pet guards) are open.** The suites still pass - **23 headless
+checks, 1203 assertions** (22 `--script` suites + the scene-backed integration suite, re-run
+2026-11-09) - which is necessary but not sufficient for the assembled feel. The port runs the
+~36 Hz reading of Q-0034. Validation lives in [`docs/P5-VALIDATION.md`](docs/P5-VALIDATION.md),
+with its status withdrawn pending R8.
 
 **The contracts.** Behaviour: [`docs/SPECS.md`](docs/SPECS.md) (P2.18, D-0008) — tick model and click
 order, resource loading, entity/tank/creature rules, economy, mode matrix, UI, persistence, audio,
@@ -62,19 +63,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 # the content-registry contract (51 assertions; exits 0 on pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_content_check.gd
 
-# the entity/tank seam and Food rules (38 assertions; exits 0 on pass)
+# the entity/tank seam and Food rules (43 assertions; exits 0 on pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_entity_check.gd
 
-# the Fish entity (105 assertions; exit 0 = pass)
+# the Fish entity (121 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_fish_check.gd
 
-# the Coin entity (87 assertions; exit 0 = pass)
+# the Coin entity (154 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_coin_check.gd
 
 # the Projectile entity (64 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_projectile_check.gd
 
-# the playable level: feeding, waves, shooting, pets (121 assertions; exit 0 = pass)
+# the playable level: feeding, waves, shooting, pets (122 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_level_check.gd
 
 # the shop screen's shelves, prices and states (34 assertions; exits 0 on pass)
@@ -83,7 +84,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 # P2.6 progression: store tables, egg prices, pet awards, advance (79 assertions)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_progression_check.gd
 
-# the main menu: EV-0131 ids, mode writers, gates and the tail flop (37 assertions; exit 0 = pass)
+# the main menu: EV-0131 ids, mode writers and gates (21 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_menu_check.gd
 
 # the assembled path: menu -> level -> wave -> boss + UI fonts (37 assertions; exit 0 = pass)
@@ -95,7 +96,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 # tick-driven sprite playback and per-cell keying (18 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_anim_check.gd
 
-# the pet base, roster, steering and recovered slot-81 bodies (66 assertions; exit 0 = pass)
+# the pet base, roster, steering, slot-81 bodies and Angie's food re-lay (73 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_pet_check.gd
 
 # game modes: Time Trial, Challenge, Virtual Tank, Sandbox + shop wiring (28 assertions)

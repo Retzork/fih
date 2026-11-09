@@ -30,6 +30,50 @@ extends SimEntity
 ##   table, which makes a landed coin climb ~30 ticks before it oscillates in the band. Both facts are
 ##   implemented as written; that they belong together is unverified.
 
+## The draw binding (`FUN_004DD7A0`, sprite slot 26; EV-0162). The switch picks an image and a sheet
+## **row** per kind and hands them to the tile blit `FUN_00456980` as `(image, dx, dy, column, row)`:
+## the blit bounds-checks the row against the image's own row count and sources
+## `(column * cellW, row * cellH)`, so these numbers are rows, not cell indices.
+##
+## Normal tanks draw the 10x6 `MONEY` sheet (rows 0..4); the Virtual Tank swaps in the 4x20 `SHELLS`
+## sheet at a 20 px inset, and draws kind 0x07/0x0E from the single-cell `MONEYBAG` instead. Kinds
+## 0x06/0x0D (500) never use the money sheet in the normal tank: they are the single-cell `PEARL`,
+## which is also kind 0x0F's art (that one behind a `+0x198` gate the port does not model yet).
+## Kinds 0x03/0x0A keep `MONEY` row 2 even in the Virtual Tank - the recovered switch never routes
+## them to the shell sheet. Kind 0x11 (Shrapnel's drop) draws the single-cell `MISCITEMS` with the
+## `SPARKS` overlay at (10,-10), both from the recovered switch. Kind 0x12 (Nostradamus' snot) draws
+## the recovered single-cell `PEANUT` - the shipped resource is the dedicated blank 107x34 image
+## (P3.3), so the snot is deliberately invisible rather than wrong-art; 0x10's `+0x1A0` colour ramp
+## is still unrecovered (Q-0040). Both are recorded in Q-0057.
+const IMAGE_MONEY := "IMAGE_MONEY"
+const IMAGE_SHELLS := "IMAGE_SHELLS"
+const IMAGE_MONEYBAG := "IMAGE_MONEYBAG"
+const IMAGE_PEARL := "IMAGE_PEARL"
+const IMAGE_MISCITEMS := "IMAGE_MISCITEMS"
+const IMAGE_SPARKS := "IMAGE_SPARKS"
+const IMAGE_PEANUT := "IMAGE_PEANUT"
+## kind -> `MONEY` row, normal tank.
+const MONEY_ROWS := {
+	0x01: 0, 0x08: 0,
+	0x02: 1, 0x09: 1,
+	0x03: 2, 0x0A: 2,
+	0x04: 3, 0x0B: 3, 0x05: 3, 0x0C: 3,
+	0x07: 4, 0x0E: 4,
+}
+## kind -> `SHELLS` row, Virtual Tank.
+const SHELL_ROWS := {
+	0x01: 0, 0x08: 0,
+	0x02: 1, 0x09: 1,
+	0x04: 2, 0x0B: 2, 0x05: 2, 0x0C: 2,
+	0x06: 3, 0x0D: 3,
+}
+const SHELL_BAG_KINDS := [0x07, 0x0E]
+const PEARL_KINDS := [0x06, 0x0D, 0x0F]
+## 0x11 is `MISCITEMS` plus `SPARKS` (EV-0162); the overlay's recovered offset from the coin origin.
+const MISCITEM_KINDS := [0x11]
+const PEANUT_KINDS := [0x12]
+const SPARKS_OFFSET := Vector2(10.0, -10.0)
+
 ## `FUN_004D53A0`: kind -> normal value. Pairs {n, n+7} share a value (two sprite variants each).
 const VALUES := {
 	0x01: 15, 0x08: 15, 0x12: 15,
@@ -127,6 +171,46 @@ func value() -> int:
 ## `FUN_004D5360`: 1 when the manager is in mode 5 or `Tank+0x2A5` is set - i.e. Virtual Tank.
 func virtual_mode() -> bool:
 	return tank != null and bool(tank.virtual_tank)
+
+
+## The sheet this coin draws from (EV-0162).
+func sprite_image() -> String:
+	if virtual_mode():
+		if kind in SHELL_BAG_KINDS:
+			return IMAGE_MONEYBAG
+		if SHELL_ROWS.has(kind):
+			return IMAGE_SHELLS
+		return IMAGE_MONEY
+	if kind in MISCITEM_KINDS:
+		return IMAGE_MISCITEMS
+	if kind in PEANUT_KINDS:
+		return IMAGE_PEANUT
+	if kind in PEARL_KINDS:
+		return IMAGE_PEARL
+	return IMAGE_MONEY
+
+
+## The sheet row this coin draws, or -1 when it draws a single-cell image (`PEARL`, `MONEYBAG`,
+## `MISCITEMS`, `PEANUT`).
+func sprite_row() -> int:
+	if virtual_mode():
+		if kind in SHELL_BAG_KINDS:
+			return -1
+		if SHELL_ROWS.has(kind):
+			return int(SHELL_ROWS[kind])
+	elif kind in MISCITEM_KINDS:
+		return -1
+	elif kind in PEANUT_KINDS:
+		return -1
+	elif kind in PEARL_KINDS:
+		return -1
+	return int(MONEY_ROWS.get(kind, -1))
+
+
+## Whether this coin also draws the `SPARKS` overlay (0x11 only, EV-0162). Unverified in the Virtual
+## Tank: the recovered switch's virtual branch covers 0x01..0x0E only, so that mode keeps `MONEY`.
+func draws_sparks() -> bool:
+	return not virtual_mode() and kind in MISCITEM_KINDS
 
 
 ## What the coin is worth in the current mode. Virtual Tank multiplies `+0x1C0` (the note's formula).

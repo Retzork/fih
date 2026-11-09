@@ -39,6 +39,13 @@ const ANGIE_TARGET_STAGE := 0x5F
 const ANGIE_CONTACT := 30.0
 const ANGIE_CONTACT_BIG := 60.0
 
+## Angie's second contact branch (`FUN_004FE740`, 0x4FF2AA, EV-0161): with no aliens or missiles on the
+## field and outside mode 5, an ordinary (kind 0) pellet inside the 30 px box is removed and re-dropped
+## at the same point with the ctor's `flag = 1` - the only landed pellet in the game, and therefore the
+## only one that bobs. The box samples `Angie+0x158/+0x160 + 40` against `pellet + 0x30/+0x34 + 0x14`.
+const ANGIE_FOOD_RANGE := 30.0
+const ANGIE_FOOD_BIAS := 20.0
+
 ## Vert (P2.7 §4.7, EV-0087): a plain `+0x224` timer. At 216 it asks `FUN_004D70B0` (1 in normal play)
 ## and drops coin kind 2 at `(x+15, y+10)`; the counter then restarts. The Virtual Tank branch needs the
 ## avatar-screen state the port does not model yet, so the gate is normal play here.
@@ -449,6 +456,33 @@ func _angie_revive() -> void:
 			continue
 		corpse.phase_counter = DeadFish.REVIVE_PHASE
 		cue.emit("revive", corpse.position)
+		return
+	_angie_relay_food()
+
+
+## Angie's food re-lay (EV-0161). Removing and re-dropping is how the original produces a `landed`
+## pellet: it calls `FUN_00543280(x, round(y), 0, 1, pellet+0x188)`, so the new pellet keeps the old
+## one's `+0x188` and starts in the bob branch of `Food::Update`. Dropped food never lands; this does.
+## The re-laid pellet bobs upward and leaves the box within a few ticks, so this does not loop.
+func _angie_relay_food() -> void:
+	if tank == null:
+		return
+	# `FUN_004DA780() == 0` (no alien or missile lists) and `mode != 5`.
+	if tank.alien_count() > 0 or tank.projectile_count() > 0 or bool(tank.virtual_tank):
+		return
+	for entity in tank.entities_in(Sim.Phase.FOOD):
+		var pellet := entity as Food
+		if pellet == null or pellet.dead or pellet.kind != 0:
+			continue
+		if absf((position.x + 40.0) - (pellet.position.x + ANGIE_FOOD_BIAS)) >= ANGIE_FOOD_RANGE:
+			continue
+		if absf((position.y + 40.0) - (pellet.position.y + ANGIE_FOOD_BIAS)) >= ANGIE_FOOD_RANGE:
+			continue
+		var at := pellet.position
+		var quality := pellet.quality
+		pellet.despawn()
+		tank.spawn_food(at, 0, quality, true)
+		cue.emit("food", at)
 		return
 
 

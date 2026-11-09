@@ -5,8 +5,8 @@ extends SceneTree
 ##
 ## Covers the two value tables (`Value()`/`FUN_004D53A0` and the Virtual Tank multipliers), the fall and
 ## landing line, the staged bob, the three expiry modes plus Niko's Pearl, the collection square, the
-## Virtual Tank homing/bank hand-off, and the animation timer. Rendering, audio and the AddMoney side
-## are out of scope (P4.4/P4.7/P4.13).
+## Virtual Tank homing/bank hand-off, the animation timer, and the recovered draw binding (image + sheet
+## row per kind). Rendering itself, audio and the AddMoney side are out of scope (P4.4/P4.7/P4.13).
 
 const SimScript := preload("res://scripts/autoload/sim.gd")
 const TankScript := preload("res://scripts/tank/tank.gd")
@@ -32,6 +32,7 @@ func _init() -> void:
 	_test_collection()
 	_test_virtual_flight()
 	_test_animation_timer()
+	_test_sprite_binding()
 
 	tank.shutdown()
 	sim.free()
@@ -241,6 +242,81 @@ func _test_animation_timer() -> void:
 		_step(1)
 	_expect(coin.frame_timer == 0, "the frame timer wraps at 79 (got %d)" % coin.frame_timer)
 	tank.coin_hint_active = false
+
+
+# --- draw binding ------------------------------------------------------------
+
+## EV-0162: `FUN_004DD7A0` picks image + sheet row per kind, and the Virtual Tank draws the `SHELLS`
+## sheet (rows 0..3) with the 2000-value kinds as the single-cell `MONEYBAG`.
+func _test_sprite_binding() -> void:
+	var money_rows := {0x01: 0, 0x08: 0, 0x02: 1, 0x09: 1, 0x03: 2, 0x0A: 2,
+		0x04: 3, 0x0B: 3, 0x05: 3, 0x0C: 3, 0x07: 4, 0x0E: 4}
+	for kind: int in money_rows:
+		var coin: Coin = CoinScript.create(kind, Vector2.ZERO)
+		coin.tank = tank
+		_expect(coin.sprite_image() == "IMAGE_MONEY", "kind 0x%X draws the money sheet" % kind)
+		_expect(coin.sprite_row() == int(money_rows[kind]),
+			"kind 0x%X draws money row %d (got %d)" % [kind, int(money_rows[kind]), coin.sprite_row()])
+		coin.free()
+	for kind: int in [0x06, 0x0D, 0x0F]:
+		var pearl: Coin = CoinScript.create(kind, Vector2.ZERO)
+		pearl.tank = tank
+		_expect(pearl.sprite_image() == "IMAGE_PEARL", "kind 0x%X draws the pearl" % kind)
+		_expect(pearl.sprite_row() == -1, "kind 0x%X has no sheet row" % kind)
+		pearl.free()
+	tank.virtual_tank = true
+	var shell_rows := {0x01: 0, 0x08: 0, 0x02: 1, 0x09: 1, 0x04: 2, 0x0B: 2,
+		0x05: 2, 0x0C: 2, 0x06: 3, 0x0D: 3}
+	for kind: int in shell_rows:
+		var coin: Coin = CoinScript.create(kind, Vector2.ZERO)
+		coin.tank = tank
+		_expect(coin.sprite_image() == "IMAGE_SHELLS", "Virtual kind 0x%X draws the shell sheet" % kind)
+		_expect(coin.sprite_row() == int(shell_rows[kind]),
+			"Virtual kind 0x%X draws shell row %d (got %d)" % [kind, int(shell_rows[kind]), coin.sprite_row()])
+		coin.free()
+	for kind: int in [0x07, 0x0E]:
+		var bag: Coin = CoinScript.create(kind, Vector2.ZERO)
+		bag.tank = tank
+		_expect(bag.sprite_image() == "IMAGE_MONEYBAG", "Virtual kind 0x%X draws the money bag" % kind)
+		_expect(bag.sprite_row() == -1, "Virtual kind 0x%X has no sheet row" % kind)
+		bag.free()
+	var star: Coin = CoinScript.create(0x03, Vector2.ZERO)
+	star.tank = tank
+	_expect(star.sprite_image() == "IMAGE_MONEY", "Virtual kind 0x03 keeps the money sheet")
+	_expect(star.sprite_row() == 2, "Virtual kind 0x03 keeps money row 2 (got %d)" % star.sprite_row())
+	star.free()
+	tank.virtual_tank = false
+
+	# 0x11 (Shrapnel) draws the single-cell MISCITEMS with the SPARKS overlay at (10,-10).
+	var shrapnel: Coin = CoinScript.create(0x11, Vector2.ZERO)
+	shrapnel.tank = tank
+	_expect(shrapnel.sprite_image() == "IMAGE_MISCITEMS", "kind 0x11 draws the misc-items image")
+	_expect(shrapnel.sprite_row() == -1, "kind 0x11 has no sheet row")
+	_expect(shrapnel.draws_sparks(), "kind 0x11 overlays the sparks sheet")
+	_expect(CoinScript.SPARKS_OFFSET == Vector2(10.0, -10.0),
+		"the sparks overlay uses the recovered (10,-10)")
+	shrapnel.free()
+	# 0x12 (Nostradamus' snot) draws the recovered single-cell PEANUT image. Its shipped resource is
+	# the dedicated blank 107x34 image (P3.3), so the binding is invisible by design, not by fallback.
+	var snot: Coin = CoinScript.create(0x12, Vector2.ZERO)
+	snot.tank = tank
+	_expect(snot.sprite_image() == "IMAGE_PEANUT", "kind 0x12 draws the peanut image")
+	_expect(snot.sprite_row() == -1, "kind 0x12 has no sheet row")
+	_expect(not snot.draws_sparks(), "kind 0x12 draws no sparks overlay")
+	snot.free()
+	# The recovered switch's virtual branch does not cover 0x11/0x12, so that mode keeps MONEY cell 0.
+	tank.virtual_tank = true
+	var virtual_shrapnel: Coin = CoinScript.create(0x11, Vector2.ZERO)
+	virtual_shrapnel.tank = tank
+	_expect(virtual_shrapnel.sprite_image() == "IMAGE_MONEY", "Virtual kind 0x11 keeps the money fallback")
+	_expect(not virtual_shrapnel.draws_sparks(), "Virtual kind 0x11 draws no sparks")
+	virtual_shrapnel.free()
+	var virtual_snot: Coin = CoinScript.create(0x12, Vector2.ZERO)
+	virtual_snot.tank = tank
+	_expect(virtual_snot.sprite_image() == "IMAGE_MONEY", "Virtual kind 0x12 keeps the money fallback")
+	_expect(virtual_snot.sprite_row() == -1, "Virtual kind 0x12 draws money cell 0")
+	virtual_snot.free()
+	tank.virtual_tank = false
 
 
 # --- helpers -----------------------------------------------------------------

@@ -4058,3 +4058,340 @@ behavior or specs; follow up with a binary observation entry.
   no shot, so `Alien._tick_shots` must hold the volley when the picker is empty. The type-0
   gate (`FUN_00500FF0`) is unrecovered and treated as always eligible.
 
+### EV-0159 - P2.3: `FUN_004D62D0` is the bottom-of-tank lifetime setter (closes half of Q-0035)
+- Date: 2026-11-08
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.3-fn-4D62D0.json` (the callee),
+  `docs/evidence/p2.3-fn-4F22C0.json` (the shared per-tick helper, re-read for a `+0x190` writer)
+- Confidence: high for the `+0x180` write; medium for the dropped `y` clamp (see 2)
+- Notes: (1) `FUN_004D62D0` takes its object in `ECX` and its entire body is
+  `if (this+0x180 < 1) this+0x180 = 0xf`. `+0x180` is `Food`'s lifetime counter (`[0x60]`, P2.3 §1),
+  so step 8's remaining branch does not bounce, float or splash the pellet: it arms a **15-tick**
+  life on an ordinary pellet that crossed the line, and step 3 then removes it when the counter
+  reaches 0. Uneaten food therefore sinks out of the tank ~15 ticks after it passes y 410 (400 for a
+  star potion, which is handled earlier by its own branch). (2) The `y = FUN_004D62D0()` reading in
+  EV-0045 treats a **void** call as returning a float; no value is written by the callee, so the port
+  drops the clamp and lets the pellet keep sinking. That part is an inference from the callee's body
+  rather than an observed instruction, hence medium confidence - no bounce was found either. (3) The
+  shared per-tick helper `FUN_004F22C0` decrements `+0x108`, `+0x10c`, `+0xf8` and `+0x120` and runs a
+  hint/overlay counter at `+0x114`; it does **not** write `+0x190`, so the landed/bob entry is still
+  unrecovered and Q-0035 stays open on that half (the writer sweep over the tank's food-list pass and
+  `Tank::DropFood`'s non-click callers was still missing at that point; it is EV-0160).
+
+### EV-0160 - P2.3: the `+0x190` landing flag has no writer outside the ctor (closes Q-0035)
+- Date: 2026-11-08
+- Type: code trace (module decompilation + xref sweep)
+- Source: `docs/evidence/p2.3-fn-547610.json` (`Tank::Update`), `docs/evidence/p2.3-dropfood-xrefs.json`
+  (the seven call sites), `docs/evidence/p2.3-fn-4D6290.json` (the pellet nudge),
+  `docs/evidence/p2.3-fn-542EE0.json` (the post-ctor add-to-list helper),
+  `docs/evidence/p2.3-food-4F8AA0.json` (the update body), `docs/evidence/p2.3-dropfood.json`
+- Confidence: high for every function read; the residual gap is named in (5)
+- Notes: (1) **`FUN_004D6290` is not a landing setter.** It sets `+0x185` (the *homing* flag), clears
+  the bytes at `+0x55` and the `in_ECX+0x7C` int, and calls vtable slot `+0x98` with 0; the click test
+  `FUN_00539F30` reaches it only for a pellet whose variant (`[0x65]`) is 2, i.e. clicking a breeding
+  pellet vacuum-collects it toward (550,30). (2) **`Tank::Update` (`FUN_00547610`, 31 KB of
+  pseudocode) contains no reference to `0x190`, `0x184` or `0x185` at all** - the tank's food pass
+  never flips the flag - and `Tank::DropFood` (`FUN_00543280`) has none either. (3) `FUN_00542EE0`, the
+  helper DropFood calls on the new object, is a dispatcher on the entity type id at `+0x8C` that adds
+  the object to its tank list (`FUN_00540EC0`) and sets `+0x2A7`; no flag write. (4) `Food::Update`
+  itself only **reads** `(char)[100]` (`+0x190`) and writes `+0x55`, `+0x5E`, `+0x5F`, `+0x56`,
+  `+0x58`, `+0x60` and `+0x61` (`+0x184`). It also confirms EV-0159's reading: the bottom branch is
+  `fVar7 = (float10)FUN_004D62D0(); y = (double)fVar7;` although the callee is `void`, so the assigned
+  `y` has no defined value - the port keeps the pellet's own y (it keeps sinking) rather than copying
+  an undefined x87 register. (5) **Conclusion (bounded negative):** the only writer of `Food+0x190` is
+  the play ctor from `param_4`, and the click path passes `flag = 0`; a dropped pellet therefore never
+  enters the bob - it falls, crosses the line, arms the 15-tick life and is removed. Unexamined and
+  named as the residual gap: the other six `FUN_00543280` call sites (`0x4E4A42`, `0x4E4DEF`,
+  `0x4E5DC8`, `0x4E5DDB`, `0x4FF2AA`, `0x543DC8`) and the save loader's type-`0x1C` branch. (6)
+  Correction note: the `0x543441`/`0x54352E`/`0x5435F2` cluster recorded in P2.3 §2 is **not** in
+  REA's xref list for `FUN_00543280`; the seven sites above are the observed ones.
+
+### EV-0161 - P2.3: Angie's food re-lay is the one `flag = 1` caller (corrects EV-0160 note 5)
+- Date: 2026-11-08
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.3-callsite-4FF2AA.json` (Angie's body `FUN_004FE740`),
+  `docs/evidence/p2.3-callsite-4E4A42.json` (`FUN_004E4870`), `docs/evidence/p2.3-callsite-4E5DC8.json`
+  (`FUN_004E5900`), `docs/evidence/p2.3-callsite-543DC8.json`
+- Confidence: high for the branch and its arguments; the 5th argument's formal parameter is elided
+- Notes: (1) **Correction to EV-0160 (5):** a caller does pass `flag = 1`. Inside Angie's body
+  `FUN_004FE740`, at `0x4FF2AA`, behind the gate `FUN_004DA780() == 0 && [manager+0x87C] != 5`, the food
+  list at `Tank+0xAC` is scanned for a pellet with `+0x18C == 0` whose sampled centres
+  (`pellet+0x30/+0x34 + 0x14` against `Angie+0x158/+0x160 + 40`) are within **30 px** on both axes. On
+  a hit it calls `FUN_004D9570()` (remove that pellet) and then
+  `FUN_00543280(x, round(y), 0, 1, pellet+0x188)` - kind 0, **flag 1**, and the taken pellet's
+  `+0x188`. (2) That re-drop is the only place the landed state is produced, and it is produced by the
+  **ctor's** `param_4`, not by a later write - so Q-0035's question has an exact answer: nobody writes
+  `Food+0x190`; Angie constructs a new pellet with it set. Such a pellet enters step 4's bob branch
+  (`y >= 150 -> -8`, the 135/130/125/120 bands, then `+0x184 = 1` and it falls) instead of falling
+  from the start, so it visibly floats up before sinking. (3) Every other caller passes 0: the click
+  feed `FUN_004E4870` (0x4E4A42: `kind 0, flag 0`) and `FUN_004E5900` (0x4E5DC8/0x4E5DDB:
+  `kind 1/2, flag 0`). (4) The port implements the branch as `Pet._angie_relay_food()` and
+  `Tank.spawn_food(..., landed = true)`; the re-laid pellet keeps the taken pellet's `quality`.
+  Which formal parameter receives the `+0x188` value is elided at the call site, so the note's
+  param_5/param_6 split (P2.3 §2) does not settle it; the semantic - same quality - is what the port
+  keeps.
+
+### EV-0162 - P2.5: the coin draw binds image + sheet row per kind (closes Q-0057's coin row)
+- Date: 2026-11-08
+- Type: code trace (module decompilation) + byte read of the image-name literals
+- Source: `docs/evidence/p2.5-coin-draw-4DD7A0.json` (sprite slot 26, `FUN_004DD7A0`, decompile
+  exit 0); the handle names are the `PUSH <string>` operands immediately before each
+  `MOV [handle], EAX` store, read from the module image at file offsets `0x10a4b4` (`0x5E8E60`),
+  `0x10ba91` (`0x5E8D7C`), `0x10a50d` (`0x5E8D88`), `0x10a82f` (`0x5E8BD8`), `0x10a402`
+  (`0x5E8BC4`), `0x10c263` (`0x5E8D04`), `0x10a7d6` (`0x5E8C50`)
+- Confidence: high for the switch, the rows and the handles; the `+0x19C` head gate is read as
+  written but cannot be shown to fire (see note 2)
+- Notes: (1) **This replaces P2.5 §5's "Coin draw = slot 26 `0x4DD7A0` (unanalyzed)".** The draw
+  reads `kind` `+0x194` once, calls `FUN_004D5360()` (the Virtual Tank predicate, P2.5 §5) and then
+  blits **one cell** of a per-kind image with `FUN_00456980(image, dx, dy, column, row)`, where the
+  column is the coin's own animation frame `+0x174` and the fourth/fifth arguments are bounded by the
+  image's own column/row counts (EV-0163).
+  (2) Head of the function: `FUN_004D6AE0()` (base draw), then a gate
+  `((+0x19C & 0x7) > 7) && kind != 6 && kind != 7 && +0x198 == 0` -> draw nothing. The masked value
+  cannot exceed 7, so the gate as decompiled never suppresses the draw; it is recorded, not modelled.
+  The fade is `+0x178 != 0` -> additive blend with the colour `(255,255,255, +0x178 * 255 / 5)`.
+  (3) Image handles, all named by their own load site: `0x5E8E60` = `IMAGE_MONEY`, `0x5E8D7C` =
+  `IMAGE_SHELLS`, `0x5E8D88` = `IMAGE_MONEYBAG`, `0x5E8BD8` = `IMAGE_PEARL`, `0x5E8BC4` =
+  `IMAGE_MISCITEMS`, `0x5E8D04` = `IMAGE_SPARKS`, `0x5E8C50` = `IMAGE_PEANUT`.
+  (4) **Normal tank** (`FUN_004D5360() == 0`), `IMAGE_MONEY` unless stated, drawn at (0,0):
+  0x01/0x08 -> row 0, 0x02/0x09 -> row 1, 0x03/0x0A -> row 2, 0x04/0x0B/0x05/0x0C -> row 3,
+  0x07/0x0E -> row 4, 0x06/0x0D -> `IMAGE_PEARL` single cell, 0x0F -> `IMAGE_PEARL` single cell
+  **only when `+0x198` != 0** (else nothing is drawn), 0x12 -> `IMAGE_PEANUT` single cell,
+  0x11 -> `IMAGE_MISCITEMS` frame 0 at (0,0) plus `IMAGE_SPARKS` at frame `+0x174` and offset
+  (10,-10), 0x10 -> the `+0x1A0` colour ramp over `0x5E8CF0`/`0x5E8E18` (still Q-0040 item 3).
+  (5) **Virtual Tank** (`FUN_004D5360() != 0`), `IMAGE_SHELLS` at a (20,20) inset unless stated:
+  0x01/0x08 -> row 0, 0x02/0x09 -> row 1, 0x04/0x0B/0x05/0x0C -> row 2, 0x06/0x0D -> row 3,
+  0x07/0x0E -> `IMAGE_MONEYBAG` single cell at (18,18) with frame 0, and 0x03/0x0A keep
+  `IMAGE_MONEY` row 2 at (0,0) - the switch never routes them to the shell sheet.
+  (6) The insets are consistent with the art: `SHELLS` cells are 32x32 and `MONEYBAG` is 36x44, so
+  (20,20) and (18,18) centre them in a 72x72 `MONEY` cell. The port draws all coin art centred on the
+  entity, which reproduces the money/pearl/shell placement exactly and puts the bag 4 px high.
+  (7) Port: `Coin.sprite_image()` / `Coin.sprite_row()`, drawn by `Level._draw_entity_frame` as
+  `row * columns + column` with the sheet's own column count; `headless_coin_check` pins all 27
+  bindings. Kinds 0x10/0x11/0x12 still draw `MONEY` cell 0 (their art is recorded here, not
+  implemented), and the 0x0F `+0x198` gate is not modelled.
+  (8) **Visible side effect, open:** the `MONEY` sheet's row 3 (the 200-value kinds) is shipped on an
+  opaque blue plate, and `SpriteKey` only clears border-connected black, so the port now draws that
+  plate with the diamond. Nothing recovered says the original keys a second colour, so the port does
+  not key it; recorded as an open art question rather than a guessed colorkey. A windowed render with
+  one coin per row (`0x01/0x02/0x03/0x04/0x07/0x06`) shows silver, gold, star, diamond, chest and
+  pearl, i.e. rows 0..4 plus the pearl.
+
+### EV-0163 - P2.5: `FUN_00456980` is a grid blit - (image, dx, dy, column, row)
+- Date: 2026-11-08
+- Type: code trace (module decompilation)
+- Source: `docs/evidence/p2.5-coin-blit-456980.json` (`FUN_00456980`, decompile exit 0)
+- Confidence: high
+- Notes: (1) `void FUN_00456980(int image, dx, dy, int param_4, int param_5)` bails unless
+  `param_5 >= 0 && param_4 >= 0 && param_5 < image[0x2C] && param_4 < image[0x30]` - i.e. the
+  **5th** argument is the row (bounded by the image's row count) and the **4th** is the column
+  (bounded by its column count). (2) It then sources `x = (image[0x24] / image[0x30]) * param_4` and
+  `y = (image[0x28] / image[0x2C]) * param_5` - column times cell width, row times cell height - and
+  calls `FUN_00455E40(image, dx, dy, &rect)`. So a cell is `row * columns + column` in the sheet's own
+  grid, which is what the port computes from the manifest's `cols`. (3) The menu call recorded in
+  P2.12 §`FUN_00531A60` (`(..., 0x28, 0x28, ([+0x28]/4) % 10, 2)`) is the same helper: a 0..9 digit
+  column on row 2, which is only coherent with this argument order.
+### EV-0164 - P2.2: slot 83 is per class - the draw row rule, the swim/eat/hungry sheets and the layered SIM style
+- Date: 2026-11-09
+- Type: observation (decompiled pseudocode, vtable bytes); inference (the table's `-0x10` offset,
+  corroborated four ways)
+- Source: REA decompiles `docs/evidence/p2.2-fish-draw-4DEA00.json` (Fish, `0x4DEA00`),
+  `p2.2-fish-image-4D5AA0.json` (`0x4D5AA0`), `p2.2-draw-helper-5008F0.json` (`0x5008F0`),
+  `p2.2-oscar-draw-4E2480.json` (Oscar, `0x4E2480`); slot-83 dwords read from the module image at
+  the class vtables (Fish `0x597D54`, Oscar `0x59843C`, Gekko `0x5982C4`, Ultra `0x59872C`,
+  SylvesterFish `0x5985BC`, BallFish `0x5988B4`, BiFish `0x598A24`); note
+  `docs/analysis/notes/p2.2-tank-sim.md` §6
+- Confidence: high for addresses, ids and the row rule; medium for what the table offset means
+- Notes:
+  1. **Every fish class overrides the sprite draw (slot 83)**, so the body art is a per-class
+     decision: Fish `0x4DEA00`, Oscar `0x4E2480`, Gekko `0x4E17F0`, Ultra `0x4E3A10`,
+     SylvesterFish `0x4E3420`, BallFish `0x4DB3B0`, BiFish `0x4DB9B0`. Slots 22 (Update) and 26
+     (draw entry) stay shared, as P2.2 already recorded.
+  2. Source rect: `srcX = +0x1C0 * 80`, `srcY = row * 80`, 80x80 cells. `FUN_005008F0` is only a
+     cell blit of the drawable it is handed (EV-0165).
+  3. **Fish row**: `stage <= 2` -> row = stage; `3` -> 2; `4` -> 3; `>= 5` -> the draw's second
+     argument (the same value the blit receives). **Oscar row**: fixed `0x140` = row 4 at every
+     stage (`FUN_004E2480` builds its source rect with `0x140`).
+  4. **State sheet** (`FUN_004D5AA0(hungry)`), which returns a runtime-table index:
+     `+0x1C4 != 0` -> `0xAB` / `0xAC`; `+0x1C8 < 1 && +0x108 < 0x65` -> `0xE2` / `0xB3`; else ->
+     `0xAD` / `0xB1` (hungry second). The table carries 16 entries ahead of the first manifest
+     image, so manifest image = index `- 0x10`: `0x9B` SMALLTURN / `0x9C` HUNGRYTURN, `0xD2`
+     SMALLSWIM / `0xA3` HUNGRYSWIM, `0x9D` HUNGRYEAT / `0xA1` SMALLEAT.
+  5. That offset is fixed by four strips the code walks as `base`, `base+1`, `base+2`: `0x9E..0xA0`
+     = SIMTURN1..3, `0xA5..0xA7` = SIMEAT1..3 and `0xA8..0xAA` = SIMSWIM1..3 are each exactly
+     `0x10` above their manifest indices, and `0x9B`/`0x9C` land on SMALLTURN/HUNGRYTURN.
+  6. **The layered style** (`+0x1D0 != 0`, not hungry): Fish draws three passes of the `SIM` family
+     for the current state - SIMSWIM1..3, SIMEAT1..3 or SIMTURN1..3 - onto the same 80x80 rect,
+     tinted white, then `fish+0x1E8`, then `fish+0x1D8`. Oscar draws **four** passes of one 12-row
+     sheet (`DAT_005e8b48`) at rows `iVar6+0..3`, `iVar6` = 0 swim / 4 eat / 8 turn, tinted white /
+     `+0x1E8` / `+0x1D8` / `+0x1F8`. That is the assembly rule Q-0042 asked for: the `SIM` sheets
+     are single-channel layers stacked with per-fish tints, not a body+eye composite.
+  7. Extras in the same draw: stage 3 draws the body twice (alpha `0x9B`, then `200` or
+     `(5-+0xA0)*200/5`); `+0xA0` in 1..5 draws the hungry sheet again as a white overlay at
+     `(+0xA0*255)/5`; `+0x98 != 0` draws the shadow (`FUN_004D7040`); `FUN_004D6980(500)` adds
+     `MISCITEMS` (`DAT_005e8BC4`) at y -5 (Fish) / -10 (Oscar); the `DAT_005e89CE` path draws
+     column 6 (hungry) or 9 of `DAT_005e8AA8` at Oscar's row. A windowed render of one fish per row
+     (guppy stages 0-4, a hungry guppy, an eating guppy, one carnivore) shows the five growing
+     stages, both state sheets and the grey/red carnivore body on row 4.
+  8. NOT established: the tint colours at `+0x1E8`/`+0x1D8`/`+0x1F8`; what `DAT_005e89CE` toggles
+     (the tank ctor sets it from bit 4 of a config dword); the draw bodies of Gekko, Ultra,
+     Sylvester, Ball and Bi (decompiling their slot-83 bodies did not complete); and whether
+     `+0x1C4` is a latched facing (slot 26 reads it that way) or a transient turn state (the sheet
+     test treats 0 as "not turning").
+
+### EV-0165 - P2.2: `FUN_005008F0` is the cell blit of a drawable, not an image lookup
+- Date: 2026-11-09
+- Type: observation (pseudocode)
+- Source: `docs/evidence/p2.2-draw-helper-5008F0.json` (`0x5008F0`)
+- Confidence: high
+- Notes: `FUN_005008F0(drawable, &dst, &src, flip)` blits one cell: it takes `FUN_004560A0(drawable,
+  dst.x, dst.y, &src, flip)` when `dst.size == src.size` and `FUN_004561C0` (scaled) otherwise. The
+  image travels inside the drawable `FUN_004D5AA0` returns, so one id selects both the sheet and its
+  palette/colorisation. This narrows EV-0043's "colorize via `FUN_004d6f30` / `FUN_004d5aa0`":
+  `FUN_004D5AA0` is the drawable, and the colourisation lives inside it.
+
+### EV-0166 - P2.3: Q-0035 closed - every `Tank::DropFood` site and the tank's own food pass pass `flag = 0` except Angie
+- Date: 2026-11-09
+- Type: code trace (decompilation of the last two call sites + byte decode of the tank's own drop)
+- Source: `docs/evidence/p2.3-callsite-4E4DEF.json` (`FUN_004E4C10`, call `0x4E4DEF`),
+  `p2.3-callsite-543DC8.json` (`FUN_00543920`, call `0x543DC8`), `p2.3-callsite-4E4A42.json`
+  (`FUN_004E4870`), `p2.3-callsite-4E5DC8.json` (`FUN_004E5900`), `p2.3-callsite-4FF2AA.json`
+  (`FUN_004FE740`), `p2.13-decompile-547610.txt` (`Tank::Update` `FUN_00547610`, call `0x547DFD`, and
+  the raw bytes at that site), `p2.13-decompile-546240.txt` (save body `FUN_00546240`)
+- Confidence: high for every argument; the loader note is bounded by the body's own text
+- Notes:
+  1. The seven sites REA lists for `FUN_00543280(x, y, kind, flag, param_5, param_6)` and the fourth
+     argument each passes:
+
+     | site | enclosing body | kind | `flag` |
+     | --- | --- | --- | --- |
+     | `0x4E4A42` | `FUN_004E4870` (pointer click/feed) | 0 | 0 |
+     | `0x4E4DEF` | `FUN_004E4C10` (its `+0x229`-gated twin) | 0 | 0 |
+     | `0x4E5DC8` | `FUN_004E5900` | 1 | 0 |
+     | `0x4E5DDB` | `FUN_004E5900` | 2 | 0 |
+     | `0x4FF2AA` | `FUN_004FE740` (Angie's re-lay) | 0 | **1** |
+     | `0x543DC8` | `FUN_00543920` | 0 | 0 |
+     | `0x547DFD` | `Tank::Update` (`FUN_00547610`) | 0 | 0 |
+
+  2. `0x4E4DEF` is `FUN_004E4C10`, the `+0x229`-gated twin of the click/feed body: same window
+     (`30 < x < 587`, `60 < y < 400`), same `FUN_00539F30` hit test, same `FUN_00540B30` gate, and the
+     same register setup (`uVar7 = 0` -> kind, `uVar8 = 0` -> flag, `iVar4` -> `param_5`,
+     `uVar9 = -1` -> `param_6`). The only difference from `0x4E4A42` is the extra `Tank+0x229` gate.
+  3. `0x543DC8` (`FUN_00543920`) is the tank's clicked-object body (`FUN_0046E3A0` base, `Tank+0x2A5`,
+     `+0x2C8`, `+0x110`, `+0xBC`); it passes `(x-10, y-10, 0, 0, quality, -1)`.
+  4. `0x547DFD` - the tank's **own** periodic drop inside `Tank::Update` - is the one site Ghidra
+     prints with the arguments elided (the stack stores it shows at `iStack_a0`/`iStack_a4` are the
+     `x-10`/`y-10` half and the return-address marker). The bytes at the call site decode to
+     `6a ff | 6a 14 | 6a 00 | 6a 00 | 8d 43 f6 / 50 | 83 c7 f6 / 57 | 8b ce | e8 7e b4 ff ff`, i.e.
+     `push -1` (param_6), `push 0x14` (`param_5 = 20`), `push 0` (**flag = param_4**), `push 0`
+     (kind 0), `push ebx-10` (y), `push edi-10` (x), `mov ecx,esi`, `call 0x543280`. Its gate is
+     `Tank+0x13B != 0` + `FUN_0046CCE0() != 0` + `[Tank+0x111] % (0x10 - DAT_005DF58C) == 0` +
+     `[Tank+0xF0] + 200 < now` + the `0x1F..0x24B`/`0x3D..0x190` window, so it is the scripted/attract
+     feed: periodic, quality 20, and still `flag = 0`.
+  5. The save path cannot produce one either: the body `FUN_00546240` contains no reference to `0x190`
+     and rebuilds each entity by calling its class's slot `0x140` `Serialize` (EV-0063), so a load
+     restores fields at most and never runs a fall-to-land transition. The port does not persist food
+     at all (the save note in `DECISIONS.md`), so nothing there can drift.
+  6. Conclusion: `Food+0x190` still has exactly one writer (the play ctor's `param_4`, EV-0045) and
+     exactly one `flag = 1` caller (Angie, EV-0161). **A dropped pellet never lands and never bobs**:
+     it falls at 1.5, crosses the death line, arms its 15-tick life and is removed (EV-0159). The port
+     already does this, so no code change follows from this sweep; "land then bob" is a deviation from
+     the recovered code, not a missing feature. This closes the residual gap named in EV-0160 (5) and
+     EV-0161.
+
+### EV-0167 - P2.5: the 0x11 coin draws `MISCITEMS` + the `SPARKS` overlay; 0x12's `PEANUT` art is blank in the shipped data
+- Date: 2026-11-09
+- Type: code change against EV-0162's recovered switch + data check of the extracted images
+- Source: `EV-0162` note (3)/(4) (the special kinds' images and the overlay's offset), `resources/content.json`
+  entries for `MISCITEMS` (3x1), `SPARKS` (5x1) and `PEANUT` (1x1, `assets_raw/images/blank.png`),
+  `docs/analysis/notes/p3-assets.md` P3.3 ("PEANUT=blank"), `scripts/entities/coin.gd`,
+  `scripts/tank/level.gd` (`_draw_sparks`), `tests/headless_coin_check.gd`
+- Confidence: high for the binding and the overlay; the Virtual Tank behaviour of 0x11 is unverified
+- Notes: (1) **Implemented:** kind `0x11` (Shrapnel's drop, `Pet.SHRAPNEL_DROP`) now draws
+  `IMAGE_MISCITEMS` cell 0 and overlays `IMAGE_SPARKS` at `(10,-10)`, stepping the sparks with the
+  coin's own animation column - exactly EV-0162 note 4's `MISCITEMS` frame 0 plus `SPARKS` at frame
+  `+0x174`. `Coin.sprite_image()`/`sprite_row()`/`draws_sparks()` carry the binding and
+  `Level._draw_sparks` creates the second sprite on demand. (2) **0x12 not wired, deliberately:**
+  the recovered switch names `IMAGE_PEANUT`, but the shipped `PEANUT` resource is the blank 1x1
+  placeholder (P3.3 deduped it to `blank.png`), so drawing it would make Nostradamus' snot invisible;
+  the coin keeps the `MONEY` cell-0 fallback and the mismatch is logged in Q-0057. (3) **Virtual Tank
+  unverified for these kinds:** EV-0162 note 5's virtual branch lists only `0x01..0x0E`, so 0x11/0x12
+  keep `MONEY` cell 0 there and `draws_sparks()` is false; the port does not guess. (4) Kind `0x10`
+  stays on the fallback because its `+0x1A0` colour ramp is unrecovered (Q-0040 item 3). (5) Pinned:
+  `headless_coin_check` 143 -> 151 assertions (image, row, overlay flag and offset for 0x11, the 0x12
+  fallback, and both Virtual Tank guards). Not visually inspected: the overlay's placement was
+  verified against the recovered `(10,-10)`, not by eye.
+
+### EV-0168 - P2.2: the eye-layer tint colours are runtime data, not module constants (Q-0042's last half closed)
+- Date: 2026-11-09
+- Type: bounded negative (whole-image byte scan) + code reading
+- Source: `docs/analysis/snapshots/insaniquarium-game-module.exe` (whole-file scans for every store form
+  into `+0x1D8`/`+0x1E8`/`+0x1F8`), `docs/evidence/p2.2-fish-draw-4DEA00.json`, `p2.2-oscar-draw-4E2480.json`,
+  `docs/analysis/notes/p3-assets.md` P3.3, `resources/content.json`, `assets_raw/`
+- Confidence: high that no literal colour reaches those fields; the values themselves stay unknown
+- Notes:
+  1. **Shape confirmed.** Both draw bodies set the tint with `FUN_004D6DB0(graphics, colour_ptr)`:
+     `FUN_004DEA00` passes `&DAT_005EC478` (the shared white) and then `in_ECX + 0x1E8` /
+     `in_ECX + 0x1D8`; `FUN_004E2480` adds `in_ECX + 0x1F8`. The same call is handed
+     `CRect::CRect(&local_38, 0xff,0xff,0xff,0xff)` and the hit-flash `(255,255,255,(+0xA0*255)/5)`
+     rect, so each field is a 4-byte colour, not an image id or a sheet index.
+  2. **Scan.** Across the whole image, every `C7 /r` store (`mov dword [reg+disp32], imm32`) whose
+     displacement is one of the three offsets writes a small integer, never a colour:
+     `0x4EDE73` -> `0x0C` and `0x4EDEF7` -> `0` (`+0x1E8`), `0x4ED337` -> `0x14` and `0x4E8685` -> `0x32`
+     (`+0x1D8`), `0x46CB61` -> `0x3D` (`+0x1F8`). The `89 /r` form has only register copies
+     (`0x4F4D27`, `0x52B883`, `0x52B99F`, `0x54CDFA`, `0x571AA3`) and `C6 /r` has one byte store
+     (`0x4A71EF`, `0xBF` at `+0x1F8`). No site in the module writes a colour constant into these fields.
+  3. The small-integer stores are recorded but not attributed: the offsets collide across classes, and
+     the functions containing them were not decompiled.
+  4. The runtime colour table is empty in the file - `PTR_DAT_005e0a10` is zero for the colourised
+     indices 0xAB..0xE2 (P3.3) - and neither `assets_raw/` nor `resources/content.json` ships a palette
+     or ramp image: the `SIM` family is greyscale art with `_`-prefixed mask companions.
+  5. **Conclusion.** The assembly rule is fully recovered (three layers for Fish, four for Oscar, the
+     layer order, white for the first, and the tint pointer per layer), but the three tint colours are
+     supplied from runtime state that the shipped artifacts do not contain. The port therefore does not
+     composite the layered path: any colour it chose would be invented. Finishing it needs a runtime
+     capture (a memory read of the four bytes at each field while the draw runs), which this evidence
+     base cannot produce.
+  6. The rest of Q-0042 is implemented and pinned: sheet pick, stage rows, per-class fixed row, the
+     hungry/eat/turn transitions and corpse rows (EV-0164), `headless_fish_check` 121 assertions.
+
+### EV-0169 - P2.3: the save loader's type-`0x1C` branch constructs Food with the bare ctor, never a flag (closes Q-0035's last residual)
+- Date: 2026-11-09
+- Type: code trace (existing factory/reader decompilations re-read against Q-0035)
+- Source: `docs/evidence/p2.3-site-5375CD.json` (factory `FUN_00537570`), `docs/evidence/p2.4-site-537B1E.json`
+  (object reader `FUN_00537B00`), `docs/evidence/p2.13-decompile-546240.txt` (tank body `FUN_00546240`),
+  `docs/evidence/p2.3-callsite-4E4DEF.json`, EV-0044/EV-0063/EV-0166
+- Confidence: high for the branch and its constructor; whether Food's own slot-`0x140` serializer carries
+  `+0x190` is not established and is noted as such
+- Notes: (1) **The branch.** `FUN_00537570`'s switch has `case 0x1c:` -> `FUN_00564345(0x1a0, cookie)`
+  (allocates `0x1A0` bytes) -> `FUN_004EF820()`. That is the **bare** Food constructor; the play
+  constructor `Tank::DropFood` uses is `FUN_004EF840(x, y, kind, flag, param_5)` (P2.3 §2, EV-0045),
+  which is the only place `flag` exists at all. No argument is passed on this path, so a load cannot
+  choose `+0x190`. (2) **The reader.** `FUN_00537B00` reads a `u32` id, skips 4 bytes, calls the factory,
+  throws `Sexy::DataReaderException` on an unknown id, then calls the new object's slot `0x140`
+  (`Serialize`) - so any field a loaded pellet gets comes from its own serialized record, never from a
+  fall-to-land transition. (3) The tank body `FUN_00546240` itself contains no reference to `+0x190`
+  (EV-0166 note 5). (4) **Conclusion:** combined with EV-0166's seven call sites, every path to a Food
+  object is now accounted for - two gameplay constructors (`FUN_004EF840` with `flag`, `FUN_004EF820`
+  bare) plus the loader that uses the bare one - and exactly one caller (Angie) passes `flag = 1`.
+  Dropped pellets therefore still fall and sink out; the loader cannot change that, and the port does
+  not persist food at all. Q-0035 has no residual left.
+
+### EV-0170 - P2.5: kind 0x12 draws the recovered `PEANUT` image (supersedes EV-0167 note 2's fallback)
+- Date: 2026-11-09
+- Type: code change against EV-0162's recovered switch + data check of the extracted image
+- Source: EV-0162 note (3), EV-0167, `resources/content.json`'s `PEANUT` entry (107x34,
+  `assets_raw/images/blank.png`), `docs/analysis/notes/p3-assets.md` P3.3 ("PEANUT=blank"),
+  `scripts/entities/coin.gd`, `tests/headless_coin_check.gd`
+- Confidence: high for the binding; the art it resolves to is the shipped blank placeholder
+- Notes: (1) **Implemented:** kind `0x12` (Nostradamus' snot) now returns `IMAGE_PEANUT` from
+  `Coin.sprite_image()` with `sprite_row() == -1`, so `_draw_entity_frame` blits its single cell
+  instead of `MONEY` cell 0. `0x11` stays on `MISCITEMS` + the `SPARKS` overlay at (10,-10).
+  (2) **Deliberate invisibility:** the recovered `PEANUT` is the dedicated blank 107x34 image in the
+  shipped data (P3.3 deduped it to `blank.png`), so the snot draws nothing. This replaces EV-0167
+  note (2)'s visibility-first fallback: the recovered binding is now followed, and the resource gap is
+  recorded instead of hidden behind a coin sprite. (3) **Virtual Tank unchanged:** EV-0162 note 5's
+  virtual branch covers only `0x01..0x0E`, so 0x11/0x12 keep `MONEY` cell 0 there and
+  `draws_sparks()` is false. (4) Pinned: `headless_coin_check` 151 -> 154 assertions (0x12's image,
+  row and overlay flag, plus both Virtual Tank guards). Not visually inspected: a blank sprite has no
+  pixels to view.

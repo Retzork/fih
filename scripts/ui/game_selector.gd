@@ -14,30 +14,11 @@ extends Control
 
 signal start_requested(mode: int)
 
-## The menu mermaid's tail is a **separate sprite** over the baked art: `MERYLTAIL`
-## (`tailflop.png`, 8 cells of 238x165) from `resources.xml`. The backdrop keeps a resting tail of
-## her own, but its pale filling reads as unfinished (in-game the tail is the sprite), so the port
-## draws the sprite over it. The cell offset is a **port placement** - the note recovers the sheet and
-## its timing, not the screen position - and Q-0055 records it. The sheet has no transparency:
-## `masks/tailflop_.png` is its alpha layer (P3.3), composed in at load time by `MaskAlpha`.
-const TAIL_OFFSET := Vector2(114.0, 274.0)
-const TAIL_CELL := Vector2(238.0, 165.0)
-## The idle pose: cell 2 of the strip is the gentle S-curve that covers the baked tail's footprint.
-const TAIL_REST_FRAME := 2
-## `MERYLTAIL`'s own playback (P2.15 §8.5): `anim="once"`, `framemap="7,6,5,4,3,2,1,0"`,
-## `framedelay="2"`, `begindelay="3"` - so it plays once, two ticks a frame after a three-tick hold,
-## and it starts when the sprite does. On the port's 36 Hz clock (Q-0034) that is ~56 ms a frame
-## after ~83 ms, keeping the recovered delays as integer tick counts rather than re-deriving them.
-## The port plays that flop when the menu opens and then returns to the rest pose instead of holding
-## cell 0, because the backdrop's own tail is drawn under it (Q-0055).
-const TAIL_PLAY_ORDER := [7, 6, 5, 4, 3, 2, 1, 0]
-const TAIL_FRAME_TICKS := 2
-const TAIL_BEGIN_TICKS := 3
-## Read as raw files: `Content.texture()` hands back the first cell of an animated sheet, while the
-## alpha composite needs the whole strip to line up with the whole mask.
-const TAIL_SHEET_PATH := "res://assets_raw/images/tailflop.png"
-const TAIL_MASK_PATH := "res://assets_raw/masks/tailflop_.png"
-
+## The mermaid's tail is **baked into `SELECTORSCREEN`**: the backdrop paints her resting tail in
+## full. `MERYLTAIL` (`tailflop.png`) is the separate animated overlay the original flops with, but
+## its cells are flat thin shapes with no matching placement recovered; drawing one over the baked
+## tail produced a green strap across it on screen. The port therefore leaves the baked art alone
+## and Q-0055 records the missing one-shot overlay as an open visual item (no placement evidence).
 ## Button id -> what the listener does with it (EV-0131).
 const ACTIONS := {
 	1: "mode",
@@ -80,11 +61,6 @@ const RECTS := {
 const BIG_IDS := [1, 8, 9, 2]
 
 var _status: Label
-var _tail: Sprite2D = null
-var _tail_frames: Array[Texture2D] = []
-## When the flop started, in logic ticks, and the texture it last drew.
-var _tail_started := 0
-var _tail_drawn := -1
 
 
 ## Resolve an autoload only when the menu is inside the scene tree. The menu check drives `choose()`
@@ -102,7 +78,6 @@ func _ready() -> void:
 	if audio != null:
 		audio.set_music_pair(audio.PAIR_STARTUP)
 	_add_background()
-	_add_mermaid_tail()
 	for id in [1, 8, 9, 2, 6, 3, 7, 4]:
 		var rect: Rect2 = RECTS[id]
 		var button := Button.new()
@@ -131,90 +106,6 @@ func _ready() -> void:
 	_status.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
 	UiFont.apply(_status, UiFont.SELECTOR_SMALL_FONT)
 	add_child(_status)
-
-
-## Draw the mermaid's tail over the baked art and play its one-shot flop. Without the sheet, the
-## mask, or `MaskAlpha`, the screen keeps the art as it is.
-func _add_mermaid_tail() -> void:
-	# Export-safe (F1): `Image.load_from_file` warns "will not work on export" for imported
-	# PNGs. Loading the imported textures and taking their images works in the editor and
-	# in an export.
-	var base_image := _texture_image(TAIL_SHEET_PATH)
-	if base_image == null:
-		return
-	var mask_image := _texture_image(TAIL_MASK_PATH)
-	if mask_image == null:
-		return
-	var sheet := MaskAlpha.apply(base_image, mask_image)
-	if sheet == null:
-		push_warning("MERYLTAIL: the sheet and its mask are different sizes")
-		return
-	var atlas := ImageTexture.create_from_image(sheet)
-	_tail_frames.clear()
-	for cell in TAIL_PLAY_ORDER:
-		var region := AtlasTexture.new()
-		region.atlas = atlas
-		region.region = Rect2(cell * TAIL_CELL.x, 0.0, TAIL_CELL.x, TAIL_CELL.y)
-		_tail_frames.append(region)
-	if _tail_frames.is_empty():
-		return
-	_tail = Sprite2D.new()
-	_tail.name = "MermaidTail"
-	_tail.centered = false
-	_tail.position = TAIL_OFFSET
-	add_child(_tail)
-	# Playback starts now, on the same clock the rest of the game uses.
-	var sim := _autoload("Sim")
-	_tail_started = sim.tick_count if sim != null else 0
-	# Draw the rest pose now and let `_process` start the flop after `TAIL_BEGIN_TICKS`; drawing at
-	# `TAIL_BEGIN_TICKS` here would show the first flop cell for one frame before the hold.
-	_draw_tail(_tail_started)
-
-
-## The imported texture's image for an `assets_raw` PNG (export-safe, F1).
-static func _texture_image(path: String) -> Image:
-	var texture := load(path) as Texture2D
-	if texture == null:
-		return null
-	var image := texture.get_image()
-	return image
-
-
-## Playback position on the strip, or -1 once the one-shot flop is over.
-func tail_position(tick: int) -> int:
-	var elapsed := tick - _tail_started - TAIL_BEGIN_TICKS
-	if elapsed < 0:
-		return -1
-	var position := int(elapsed / TAIL_FRAME_TICKS)
-	if position >= TAIL_PLAY_ORDER.size():
-		return -1
-	return position
-
-
-## The strip cell drawn at `tick`: the rest pose before and after the flop.
-func tail_cell(tick: int) -> int:
-	var position := tail_position(tick)
-	if position < 0:
-		return TAIL_REST_FRAME
-	return int(TAIL_PLAY_ORDER[position])
-
-
-func _draw_tail(tick: int) -> void:
-	if _tail == null or _tail_frames.is_empty():
-		return
-	var cell := tail_cell(tick)
-	if cell == _tail_drawn:
-		return
-	_tail_drawn = cell
-	var index := TAIL_PLAY_ORDER.find(cell)
-	_tail.texture = _tail_frames[index if index >= 0 else 0]
-
-
-func _process(_delta: float) -> void:
-	if _tail == null:
-		return
-	var sim := _autoload("Sim")
-	_draw_tail(sim.tick_count if sim != null else 0)
 
 
 ## The menu art (`SELECTORSCREEN`, 640x480). Without it the screen stays on the project clear colour.

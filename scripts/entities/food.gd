@@ -8,10 +8,21 @@ extends SimEntity
 ## `gate` +0x184, `homing` +0x185, `lifetime` +0x60, `inedible` +0x198, `anim_frame` +0x5E,
 ## `anim_cycle` +0x5F.
 ##
-## Q-0035 (open): `Food::Update` step 4 only bobs when `landed` is already set, and nothing in the
-## recovered code sets it - the transition from a falling pellet to a landed one is not located. The
-## bob above is therefore implemented exactly as written but is entered only for a pellet spawned with
-## `landed = true`; a dropped pellet keeps falling. Do not guess the landing trigger here.
+## Q-0035 (closed, EV-0160/EV-0161): `Food::Update` step 4 only bobs when `landed` is already set, and
+## nothing writes `+0x190` after construction - the flag is the ctor's `param_4`. Exactly one caller
+## passes `flag = 1`: Angie's food re-lay (`FUN_004FE740`, 0x4FF2AA), which removes an ordinary pellet
+## in her 30 px contact box and re-drops it landed at the same point, so that pellet bobs. The click
+## and feed drops pass `flag = 0`, so dropped food falls, arms the 15-tick bottom life and sinks out.
+## There is no landing transition to port; do not invent one.
+##
+## Deviation (D-0012): `SETTLE_TICKS` (one constant, shipped 20) is the single gate for a
+## deliberately non-faithful rest - a dropped pellet pauses on its death line that many ticks, then
+## resumes the faithful sink-out. Setting the constant to 0 restores the original behaviour exactly.
+##
+## The bottom branch *is* recovered (EV-0159): step 8's remaining call `FUN_004D62D0` is a void
+## function whose whole body arms the lifetime counter (`+0x180`) to 15 when it is below 1, so an
+## uneaten pellet sinks past the line and is removed 15 ticks later by step 3 - it is not held at the
+## line and it is not bounced.
 
 ## Step 4: fall speed while airborne (`y += 1.5`).
 const FALL_SPEED := 1.5
@@ -25,6 +36,12 @@ const X_MAX := 550.0
 ## Step 8: death lines, and the star potion's shallower one.
 const DEATH_Y := 410.0
 const STAR_DEATH_Y := 400.0
+## Step 8's bottom branch `FUN_004D62D0`: `if (this+0x180 < 1) this+0x180 = 0xf` - the pellet keeps
+## sinking and step 3 removes it when the 15 ticks run out (EV-0159).
+const BOTTOM_LIFETIME := 15
+## D-0012, the one knob: ticks a dropped pellet rests on the tank floor before sinking out.
+## 0 = the faithful behaviour (no rest).
+const SETTLE_TICKS := 20
 ## Step 4 homing (only when something sets `homing`): approach (550, 30) in sevenths, leave at x < 40.
 const HOMING_TARGET := Vector2(550.0, 30.0)
 const HOMING_DIVISOR := 7.0
@@ -50,6 +67,10 @@ var quality := 0
 var kind := 0
 var variant := 0
 var landed := false
+## Set once this pellet has taken its D-0012 rest, so it parks only a single time.
+var settled := false
+## Remaining ticks of that rest.
+var settle_ticks := 0
 var gate := false
 var homing := false
 ## Ticks until the pellet removes itself; 0 = never (normal pellets do not expire, P2.3 §1.3).
@@ -120,6 +141,11 @@ func _advance() -> void:
 			despawn()
 			return
 
+	# Deviation D-0012: the pellet pauses on the floor - animation keeps running, position does not.
+	if settle_ticks > 0:
+		settle_ticks -= 1
+		return
+
 	# Step 4: fall, homing, or the landed bob.
 	if not landed or gate:
 		if homing:
@@ -170,9 +196,10 @@ func _drift() -> void:
 			position.x += vx
 
 
-## Step 8's three branches: star potions splash and vanish, breeding pellets vanish silently, and the
-## remaining branch calls `FUN_004D62D0` whose effect is unrecovered (Q-0035). Until it is, the pellet
-## stays on the line rather than inventing a bounce or a removal.
+## Step 8's three branches: star potions splash and vanish, breeding pellets vanish silently, and an
+## ordinary pellet gets a 15-tick life (`FUN_004D62D0`, EV-0159) so it sinks out of the tank. `y` is
+## deliberately not clamped: the callee is void, the assignment the first reading saw had no value
+## source, and a pellet that stopped dead on the line would freeze in the tank forever.
 func _on_death_line() -> void:
 	if is_star_potion():
 		despawn()
@@ -180,4 +207,12 @@ func _on_death_line() -> void:
 	if variant == VARIANT_BREEDING:
 		despawn()
 		return
-	position.y = death_line()
+	if SETTLE_TICKS > 0 and not settled:
+		# Deviation D-0012: one brief rest on the floor; the next crossing arms the sink-out life.
+		settled = true
+		settle_ticks = SETTLE_TICKS
+		position.y = death_line()
+		vy = 0.0
+		return
+	if lifetime < 1:
+		lifetime = BOTTOM_LIFETIME

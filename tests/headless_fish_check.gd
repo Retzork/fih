@@ -44,6 +44,7 @@ func _init() -> void:
 	_test_state_round_trip()
 	_test_rng_reproducibility()
 	_test_hungry_art()
+	_test_sprite_binding()
 
 	tank.shutdown()
 	sim.free()
@@ -541,6 +542,47 @@ func _expect(condition: bool, what: String) -> void:
 	else:
 		_failures += 1
 		printerr("  FAIL ", what)
+
+
+## `EV-0164`: the draw row per stage and species, and `FUN_004D5AA0`'s state sheets.
+func _test_sprite_binding() -> void:
+	var fish: Fish = _quiet_fish(Vector2(200.0, 200.0), 0, 500)
+	_expect(fish.sprite_row() == 0, "stage 0 draws row 0")
+	fish.stage = 1
+	_expect(fish.sprite_row() == 1, "stage 1 draws row 1")
+	fish.stage = 2
+	_expect(fish.sprite_row() == 2, "stage 2 draws row 2")
+	fish.stage = 3
+	_expect(fish.sprite_row() == 2, "stage 3 draws row 2, not 3")
+	fish.stage = 4
+	_expect(fish.sprite_row() == 3, "stage 4 draws row 3, not 4")
+
+	fish.stage = 0
+	fish.fullness = 500
+	fish.eat_fx_timer = 0
+	fish.digest_timer = 0
+	_expect(fish.draw_state() == "swim", "an idle fish is in the swim state")
+	_expect(fish.draw_image() == "IMAGE_SMALLSWIM", "a fed swimmer draws SMALLSWIM")
+	fish.fullness = 200
+	_expect(fish.draw_image() == "IMAGE_HUNGRYSWIM", "a hungry swimmer draws HUNGRYSWIM")
+	fish.eat_fx_timer = 1
+	_expect(fish.draw_state() == "eat", "the eat-fx timer switches to the eat state")
+	_expect(fish.draw_image() == "IMAGE_HUNGRYEAT", "a hungry eater draws HUNGRYEAT")
+	fish.fullness = 500
+	_expect(fish.draw_image() == "IMAGE_SMALLEAT", "a fed eater draws SMALLEAT")
+	fish.eat_fx_timer = 0
+	fish.digest_timer = 100
+	_expect(fish.draw_state() == "swim", "digest 100 is still the swim state")
+	fish.digest_timer = 101
+	_expect(fish.draw_state() == "eat", "digest past 100 is the eat state")
+	fish.digest_timer = 0
+
+	var oscar: Fish = _quiet_fish(Vector2(200.0, 200.0), 5, 900)
+	oscar.species = Fish.Species.OSCAR
+	_expect(oscar.sprite_row() == 4, "the carnivore keeps row 4 at every stage")
+	oscar.stage = 6
+	_expect(oscar.sprite_row() == 4, "and row 4 does not follow the stage")
+	_expect(oscar.draw_image() == "IMAGE_SMALLSWIM", "the carnivore uses the same state sheet")
 
 
 ## `FUN_004D6F30`: hungry art below 301 fullness, and never at stage 3 or above.

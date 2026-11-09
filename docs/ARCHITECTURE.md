@@ -169,8 +169,10 @@ per-type lists on the tank and are advanced by the tank's update.
 
 `Food` is the first concrete entity and the template for the rest: constants named after the field
 offset and update step they came from (`+0x188` quality, `+0x18C` kind, `+0x190` landed, `+0x60`
-lifetime), every decoded branch implemented, and the one unlocated branch (landing/bob trigger and the
-death-line call, Q-0035) left explicit rather than guessed.
+lifetime), every decoded branch implemented. The bottom branch is recovered (`FUN_004D62D0` arms a
+15-tick life, EV-0159); the landing flag has no writer outside the ctor (EV-0160) and is passed as
+`flag = 1` only by Angie's food re-lay (EV-0161), so a dropped pellet sinks out and a re-laid one bobs -
+nothing is guessed (Q-0035, settled).
 
 ## 4. Ownership map
 
@@ -257,10 +259,10 @@ a running remake:
 # the entity/tank seam and Food rules (38 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_entity_check.gd
 
-# the Fish entity (105 assertions; exit 0 = pass)
+# the Fish entity (121 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_fish_check.gd
 
-# the Coin entity (87 assertions; exit 0 = pass)
+# the Coin entity (143 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_coin_check.gd
 
 # the Projectile entity (64 assertions; exit 0 = pass)
@@ -281,7 +283,7 @@ a running remake:
 # the assembled path: menu -> level -> wave -> boss + UI fonts (37 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . res://tests/headless_integration_check.tscn --quit-after 1200
 
-# the pet base, roster and six implemented pets (66 assertions; exit 0 = pass)
+# the pet base, roster, the implemented pets and Angie's food re-lay (73 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_pet_check.gd
 
 # the alien kinds, attacks, eating, the HP-bar geometry and the wave clock (61 assertions; exit 0 = pass)
@@ -341,7 +343,8 @@ suppression, threshold reset) and same-seed RNG reproducibility, plus the persis
 unknown kind, the Virtual Tank multipliers and the placeholder `+0x1C0` base), the COLLISION phase
 and layer, fall 1.5 to the 370 landing line, the staged bob oscillating in the 120..150 band, the
 20/108/150/200 expiry modes and Niko's Pearl's 217, the 5-tick fade, the 60x60 collection square
-and single-use `collect()`, Virtual Tank homing/bank, and the 79-tick frame timer.
+and single-use `collect()`, Virtual Tank homing/bank, the 79-tick frame timer, and the recovered draw
+binding (image + sheet row for all 27 kind/mode pairs, EV-0162).
 
 `tests/headless_projectile_check.gd` covers: the per-kind ctor constants (80x80/0.8 and 50x50/0.4,
 15-tick immunity, 0/10 expiry, still spawn velocity), phase and layer, immunity gating the click, the
@@ -427,8 +430,8 @@ documented unknown (DECISIONS `Q-*`), never a gate on the remake:
 | per-kind alien click box (Q-0046); alien wander target + bottom lane (Q-0045) | P4.8 |
 | laser draw/frame binding (Q-0023); the `Tank+0xBC` list stays empty | P4.10 |
 | battle-music trigger (Q-0031b) and the numeric event->sound table (Q-0030; the port maps by semantic name) | P4.13 |
-| menu buttons' baked bitmaps (labels are port text); the flop trigger plays on menu open (Q-0055) | P4.14 |
-| `content.json` export inclusion is open until a real export is run (AUDIT F1 closed for the tailflop) | P5.5 |
+| menu buttons' baked bitmaps (labels are port text); the `MERYLTAIL` overlay is not drawn - the baked tail is used, no placement recovered (Q-0055/R10) | P4.14 |
+| `content.json` export inclusion is open until a real export is run (the tail overlay removal makes AUDIT F1 moot) | P5.5 |
 | renderer/packaging decisions (Forward+ kept as-is) | P5.5 |
 
 ## 10. File map (P4 output)
@@ -451,7 +454,7 @@ scripts/persistence/profile.gd    Adventure profile: tank/level, Shells, owned p
 scripts/entities/sim_entity.gd    entity base: phase, tick, despawn
 scripts/entities/food.gd          Food pellet (P2.3 §1 rules)
 scripts/entities/fish.gd          Fish: seven species, swim/feed/grow/coin (P2.2-P2.4)
-scripts/entities/coin.gd          Coin: kinds/values, fall/bob/expiry, collection (P2.5 §5)
+scripts/entities/coin.gd          Coin: kinds/values, per-kind sheet image + row, fall/bob/expiry (P2.5 §5)
 scripts/entities/projectile.gd    Projectile: three kinds, expiry, bounds, hit tests (P2.10 §5)
 scripts/entities/dead_fish.gd     DeadFish corpse: sink physics, stage countdown, revive branch (P2.4 §4)
 scripts/entities/larva.gd          Larva: fall + shells payout, Tank+0xDC click order (P2.10 §5.5)
@@ -484,14 +487,14 @@ tools/godot/screenshot.gd         windowed menu/level/store captures
 tests/headless_sim_check.gd       20-assertion contract check for the tick driver
 tests/headless_content_check.gd   51-assertion contract check for the content registry
 tests/headless_entity_check.gd    38-assertion check for the entity seam and Food
-tests/headless_fish_check.gd      105-assertion check for Fish (P2.2-P2.4)
-tests/headless_coin_check.gd      87-assertion check for Coin (P2.5 §5)
+tests/headless_fish_check.gd      121-assertion check for Fish (P2.2-P2.4, incl. the draw binding)
+tests/headless_coin_check.gd     143-assertion check for Coin (P2.5 §5)
 tests/headless_projectile_check.gd  64-assertion check for Projectile (P2.10 §5)
 tests/headless_level_check.gd     121-assertion check for the level, feeding and waves
 tests/headless_store_ui_check.gd  34-assertion check for the shop screen and bar
 tests/headless_progression_check.gd  79-assertion check for P2.6 progression and completion
 tests/headless_menu_check.gd      37-assertion check for the main menu (P4.14)
-tests/headless_pet_check.gd       66-assertion check for the pet base, roster, steering and slot-81 bodies (P2.7)
+tests/headless_pet_check.gd       73-assertion check for the pet base, roster, steering and slot-81 bodies (P2.7)
 tests/headless_mode_check.gd      28-assertion check for game modes + G4/G7/G9 wiring (P4.11)
 tests/headless_weapon_check.gd    23-assertion check for Larva, laser, cues + particles (P4.10)
 tests/headless_profile_check.gd   29-assertion check for screens, roller, saves, profile JSON (P4.6/P4.12/P4.14)

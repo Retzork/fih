@@ -6,6 +6,7 @@ extends SceneTree
 ## Covers what P4.4+ will build on: entities tick only through `Sim` in the phase the tank assigned,
 ## despawn unregisters, teardown clears, the pause gate holds the whole level, the RNG is per-tank and
 ## reproducible, and `Food::Update`'s decoded steps (fall 1.5, drift decay, x clamp, death lines,
+## the `FUN_004D62D0` bottom life (EV-0159),
 ## star/breeding removals, lifetime, inedible countdown, animation wrap, bob bands) match P2.3 §1.
 
 const SimScript := preload("res://scripts/autoload/sim.gd")
@@ -147,13 +148,26 @@ func _init() -> void:
 	_ticks(sim, 10)
 	_expect(breeder.dead, "the breeding pellet is removed at the bottom without a splash")
 
-	# The remaining branch of step 8 reads an unrecovered function (Q-0035): the pellet must stay on
-	# the line rather than being removed or bounced on a guess.
+	# Deviation D-0012 (`Food.SETTLE_TICKS`, shipped 20), then the faithful tail: an ordinary pellet
+	# pauses on the floor, resumes sinking, arms `FUN_004D62D0`'s 15-tick life and step 3 removes it.
 	var bottom: Food = FoodScript.create(Vector2(300.0, 405.0), 0, false, 0, 0, tank.rng)
 	tank.spawn_at(bottom, SimScript.Phase.FOOD, Vector2(300.0, 405.0))
-	_ticks(sim, 10)
-	_expect(not bottom.dead, "an ordinary pellet is not removed at the line (Q-0035)")
-	_expect(is_equal_approx(bottom.position.y, FoodScript.DEATH_Y), "it is held at the death line (got %.1f)" % bottom.position.y)
+	# 405 -> 411 in four ticks, the tick that reaches the line.
+	_ticks(sim, 4)
+	_expect(not bottom.dead, "the pellet survives the tick it reaches the floor")
+	_expect(is_equal_approx(bottom.position.y, FoodScript.DEATH_Y),
+		"D-0012: it parks on the death line (got %.1f)" % bottom.position.y)
+	_expect(bottom.lifetime == 0, "D-0012: the rest arms no bottom life yet")
+	_ticks(sim, FoodScript.SETTLE_TICKS)
+	_expect(not bottom.dead and is_equal_approx(bottom.position.y, FoodScript.DEATH_Y),
+		"D-0012: it rests for the whole SETTLE_TICKS window")
+	_ticks(sim, 1)
+	_expect(bottom.position.y > FoodScript.DEATH_Y,
+		"D-0012: it resumes sinking after the rest (got %.1f)" % bottom.position.y)
+	_expect(bottom.lifetime == FoodScript.BOTTOM_LIFETIME,
+		"crossing the line again arms the 15-tick life (got %d)" % bottom.lifetime)
+	_ticks(sim, FoodScript.BOTTOM_LIFETIME)
+	_expect(bottom.dead, "it is removed when that bottom life runs out")
 
 	# --- Food: lifetime and the landed bob ----------------------------------------
 	var timer: Food = FoodScript.create(Vector2(300.0, 100.0), 0, false, 0, 0, tank.rng)

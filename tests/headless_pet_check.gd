@@ -35,6 +35,7 @@ func _init() -> void:
 	_test_coin_predicate()
 	_test_niko_cycle()
 	_test_angie_revive()
+	_test_angie_relay()
 	_test_timer_drops()
 
 	tank.shutdown()
@@ -195,6 +196,45 @@ func _test_niko_cycle() -> void:
 
 
 # --- helpers -----------------------------------------------------------------
+
+
+## Angie's food re-lay (`FUN_004FE740`, 0x4FF2AA, EV-0161): a kind-0 pellet in her 30 px box is removed
+## and re-dropped with `flag = 1`, so the replacement is `landed` and bobs; every other kind is left
+## alone and mode 5 does not re-lay at all.
+func _test_angie_relay() -> void:
+	tank.shutdown()
+	tank.virtual_tank = false
+	tank.aliens_present = false
+	var angie: Pet = tank.spawn_pet(PetScript.ANGIE, Vector2(200.0, 200.0))
+
+	# Sampled centres are Angie+40 and pellet+20, so (215,205) sits 5/15 px away - inside the box.
+	var drifting: Food = tank.spawn_food(Vector2(215.0, 205.0), 1, 0)
+	_step(1)
+	_expect(not drifting.dead, "a drifting (kind 1) pellet is left alone")
+	drifting.despawn()
+
+	var plain: Food = tank.spawn_food(Vector2(215.0, 205.0), 0, 2)
+	_step(1)
+	_expect(plain.dead, "a kind-0 pellet in the box is taken")
+	var live: Array[Food] = []
+	for entity in tank.entities_in(Sim.Phase.FOOD):
+		var pellet := entity as Food
+		if pellet != null and not pellet.dead:
+			live.append(pellet)
+	_expect(live.size() == 1, "exactly one pellet replaces it (got %d)" % live.size())
+	if live.size() == 1:
+		_expect(live[0].landed, "the re-laid pellet is constructed landed (flag = 1)")
+		_expect(live[0].quality == 2, "and keeps the taken pellet's quality (got %d)" % live[0].quality)
+		_expect(is_equal_approx(live[0].position.x, 215.0), "at the same point")
+
+	# The branch is gated on mode 5 (Virtual Tank): no re-lay there.
+	tank.virtual_tank = true
+	var gated: Food = tank.spawn_food(Vector2(215.0, 205.0), 0, 0)
+	_step(1)
+	_expect(not gated.dead, "Virtual Tank does not re-lay pellets")
+	gated.despawn()
+	tank.virtual_tank = false
+	angie.despawn()
 
 
 ## Angie (P2.7 §4.19, EV-0099): contact rewrites a fresh corpse's phase 100 -> 10, the corpse counts

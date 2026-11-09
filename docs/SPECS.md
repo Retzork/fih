@@ -166,10 +166,29 @@ reaches 0 - the fish is gone, there is no replacement. The death sound and the *
 from the id table belong to the corpse's uncalled `phase < 1` revive branch (trigger unrecovered,
 Q-0043); reviving a corpse is Angie's job (P2.7), not the death path.
 
+Rendering (EV-0164, P2.2 §6): every fish class overrides the sprite draw (slot 83). The cell is
+`column = +0x1C0` by `row * 80` inside the class's sheet, and the sheet comes from `FUN_004D5AA0`:
+SMALLSWIM/HUNGRYSWIM normally or when hungry, SMALLEAT/HUNGRYEAT while the eat-fx timer runs or the
+fed countdown is past 100, SMALLTURN/HUNGRYTURN for the turn state. Rows: the guppy maps its stage
+`0/1/2 -> 0/1/2, 3 -> 2, 4 -> 3`; the carnivore fixes row 4 at every stage; a stage of 5 or more takes
+the row the draw is called with. The colourised `+0x1D0` style instead stacks three tinted `SIM` layers
+(SIMSWIM/SIMEAT/SIMTURN 1..3), or four for the carnivore, using the per-fish tint rects at
+`+0x1E8`/`+0x1D8`/`+0x1F8` (EV-0164). Not ported: those are 4-byte colours supplied at runtime - the
+module stores no colour constant into them and the palette table is empty in the file (EV-0168) - so a
+composited path here would need invented colours.
+
 ### 3.2 Food
 
-Two speed profiles (P2.3): drop falls at 1.5; a landed pellet bobs on a 120..150-tick cycle with 0.05
-drift decay. Normal pellets never expire on their own. Feeding spends `Tank+0x4AC` (base 5) per pellet,
+Two speed profiles (P2.3): drop falls at 1.5; a landed pellet bobs in the 120..150 **y bands** (rise per
+tick 8 / 2.5 / 1.5 / 1.0 / 0.5, gated by `+0x184`), with 0.05 drift decay. The bob branch is reachable
+only for a pellet constructed with `flag = 1`; exactly one caller does that - Angie's food re-lay
+(`FUN_004FE740`: kind 0, 30 px box, no aliens or missiles, not mode 5, EV-0161) - so dropped food never
+lands while a re-laid pellet floats up and then sinks. The tank's own periodic drop inside `Tank::Update`
+(`0x547DFD`) is kind 0, `flag = 0` too (EV-0166), and the save body never writes `+0x190`, so no path
+lands a falling pellet. A single constant, `Food.SETTLE_TICKS` (shipped **20**), makes an ordinary pellet pause on the line
+that many ticks before it resumes the sink-out; that is a recorded deviation (D-0012), not recovered
+behaviour, and setting the constant to 0 restores the original. Normal pellets never expire on their own, but one
+that crosses the death line arms a 15-tick life (`FUN_004D62D0`, EV-0159), sinks out and is removed. Feeding spends `Tank+0x4AC` (base 5) per pellet,
 drops it at the cursor, latches hold-to-feed on `+0x4EC`/`+0x4ED`, and caps non-special pellets at the
 `food_quantity` level. The star potion is an armed flag (`Tank+0x440`): the next manual drop is
 quality 3, which kills small fish, stages a stage-2 guppy up, and splashes on death.
@@ -183,6 +202,17 @@ collectors, and the "collect all" call that runs at level end (`FUN_0053C2D0`). 
 per-list and order-sensitive (EV-0055); the intent question for coin hits is Q-0010. P4 seam: `Fish`
 emits `coin_due` when the counter matures (EV-0155); the coin system owns the stage -> kind mapping
 (Q-0036), and the coin object itself is not part of P4.3.
+
+Drawing: slot 26 (`FUN_004DD7A0`) blits one cell of a per-kind image on the sheet's own grid
+(EV-0162/EV-0163). `MONEY` (10x6) rows 0..4 for kinds `0x01/0x08 -> 0`, `0x02/0x09 -> 1`,
+`0x03/0x0A -> 2`, `0x04/0x0B/0x05/0x0C -> 3`, `0x07/0x0E -> 4`; `0x06/0x0D` draw the single-cell
+`PEARL` instead, `0x0F` too but only when `+0x198` is set. The Virtual Tank draws `SHELLS` (20x4) at
+a (20,20) inset with rows `0x01/0x08 -> 0`, `0x02/0x09 -> 1`, `0x04/0x0B/0x05/0x0C -> 2`,
+`0x06/0x0D -> 3`, `0x07/0x0E` as `MONEYBAG`, and keeps `0x03/0x0A` on `MONEY` row 2. `0x11` draws
+the single-cell `MISCITEMS` with the `SPARKS` overlay at (10,-10) (EV-0167). `0x12` draws its
+recovered single-cell `PEANUT`; that resource is the blank 107x34 placeholder in the shipped data, so
+the snot is intentionally invisible rather than drawn as a coin (EV-0170). `0x10` stays on `MONEY`
+cell 0 because its `+0x1A0` colour ramp is unidentified (Q-0040).
 
 ### 3.4 Pets
 
@@ -544,7 +574,7 @@ the UI-font one.
 | Q-0032 | `framemap` `-1`, `framedelay` unit | animation (§2.3) |
 | Q-0033 | grayscale runtime colourisation | fish/effect tints (§3.1) |
 | Q-0034 | 100 Hz vs 36 Hz tick rate | **everything time-based** (§1.2) |
-| Q-0035 | `Food` landed flag and `FUN_004D62D0` bottom behaviour | food fall/land (§3.2) |
+| Q-0035 | `Food` landed flag - settled: only Angie's re-lay passes `flag = 1`; the last two `DropFood` sites (incl. the tank's own drop) and the save body read (EV-0161/EV-0166) | food fall/land (§3.2) |
 | Q-0036 | which coin kind each species/stage emits | coin spawn (§3.3) |
 | Q-0037 | stage-4 overshoot for non-Guppy species | growth (§3.1) |
 | Q-0038 | two food-approach paths + per-species `+0x229` | feeding/steering (§3.1) |

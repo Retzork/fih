@@ -109,6 +109,21 @@
   the MoneyDialog name (a folded/merged vtable, most likely) is not established and is not needed
   for the remake.
 
+### D-0012 - "Pellets settle" is a deliberately non-faithful, constant-gated deviation
+- Date: 2026-11-09
+- Decision: one constant, `Food.SETTLE_TICKS` (shipped **20**), is the whole gate. A dropped pellet
+  that reaches its death line rests there that many ticks (`y = death_line()`, `vy = 0`), then falls
+  again, crosses the line and takes the recovered 15-tick sink-out. Star potions and breeding pellets
+  keep their immediate removals. `SETTLE_TICKS = 0` restores the original behaviour with no other edit.
+  There is no runtime switch and no Options checkbox: the constant is the only knob.
+- Why: EV-0159/EV-0160/EV-0161/EV-0166 establish that a dropped pellet never lands - only Angie's
+  re-lay constructs a landed pellet, and every other drop crosses the line, arms a 15-tick life and is
+  removed. A brief floor rest was requested as a visible deviation, so it is kept to one named
+  constant a reader can flip, rather than spread through the update as a second mode.
+- Boundaries: this is presentation, not recovered behaviour - never cite it as evidence for landing,
+  and keep it out of the save format (food is not persisted). `headless_entity_check` pins the rest
+  window and the resumed sink-out.
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15
@@ -661,7 +676,28 @@ agree, whereas the 100 Hz reading rests on one ctor constant whose consumer in t
 still unfound. The question stays open for that call site - a frame counter or a second interval that
 gates `Tank::Update` - and the ported rate is a single constant to change once it is located.
 
-### Q-0035 - Food: nothing sets the landed flag, and `FUN_004D62D0`'s bottom behaviour is unrecovered
+### Q-0035 - Food: the landed flag comes from Angie's food re-lay (RESOLVED)
+- **RESOLVED 2026-11-08 (EV-0159 + EV-0160 + EV-0161).** Nothing writes `+0x190` after construction:
+  the flag is the play ctor's `param_4`, and the write sweep cleared `Food::Update`, `Tank::Update`,
+  `Tank::DropFood`, the click test, the pellet nudge `FUN_004D6290` (which sets the *homing* flag
+  `+0x185`) and the post-ctor list helper. **Exactly one caller passes `flag = 1`**: Angie's food
+  re-lay in `FUN_004FE740` (`0x4FF2AA`), which removes an ordinary (kind 0) pellet inside her 30 px box
+  and re-drops it landed with the same quality - so that pellet bobs. Click/feed drops pass 0, so
+  dropped food falls, crosses the line, arms a 15-tick life and is removed. The remake does both.
+  **Sweep complete 2026-11-09 (EV-0166):** the last sites pass 0 as well - `0x4E4DEF` (the
+  `+0x229`-gated twin `FUN_004E4C10`) and `Tank::Update`'s own periodic drop at `0x547DFD`, whose
+  elided arguments decode from the bytes to kind 0, **flag 0**, quality 20 - and the save path cannot
+  produce one either: the body `FUN_00546240` never touches `+0x190`, and the factory's type-`0x1C`
+  branch (`FUN_00537570` `case 0x1c`) allocates `0x1A0` bytes and runs the **bare** Food ctor
+  `FUN_004EF820` - no `flag` argument at all, unlike `DropFood`'s `FUN_004EF840(x, y, kind, flag, ...)`
+  (EV-0169). Nothing is left open in this entry.
+- Original entry follows.
+- **Bottom branch RESOLVED 2026-11-08 (EV-0159).**
+  `FUN_004D62D0` is a void function whose body is `if (this+0x180 < 1) this+0x180 = 0xf`: step 8's
+  remaining branch arms a 15-tick life on an ordinary pellet that crossed the line, so it sinks out
+  and step 3 removes it. The port implements that and no longer clamps `y` at the line (medium
+  confidence on the clamp: the callee writes no return value). `FUN_004F22C0`, the shared per-tick
+  helper, was decompiled and does not write `+0x190`, so the landed/bob entry is still unrecovered.
 - OPEN (2026-11-02, raised while writing `scripts/entities/food.gd` for P4.3; source P2.3 §1,
   `p2.3-food-4F8AA0.json`).
 - `Food::Update` (`FUN_004F8AA0`) step 4 bobs only when `(char)[100]` / `+0x190` is set:
@@ -675,17 +711,23 @@ gates `Tank::Update` - and the ported rate is a single constant to change once i
   which is what the game looks like. Either a caller passes `flag` contextually, or the setter lives in
   the shared per-tick helper `FUN_004F22C0` / the tank's food list pass, neither of which was
   decompiled for writes to `+0x190`.
-- Second loose end, same function, step 8: the non-star, non-breeding death path assigns `y` from
-  `FUN_004D62D0()` (a float result). Identity unrecovered - candidates are a bounce back into the
-  tank, a float/settle, or a y reset for the splash. The star (410 -> 400 + splash + remove) and
-  breeding (`+0x194 == 2` -> remove silently) branches are decoded and implemented.
-- What is missing: a write-reference sweep for `+0x190` across the food list pass and `FUN_004F22C0`,
-  and a run of `FUN_004D62D0` (its callers are the death path only).
-- Non-blocking: `scripts/entities/food.gd` implements every decoded branch exactly, enters the bob
-  only for a pellet spawned landed, and holds an ordinary pellet at the death line instead of
-  inventing a removal or a bounce (`tests/headless_entity_check.gd` asserts both). `docs/SPECS.md`
-  §3.2's wording ("landed pellet bobs on a 120..150-tick cycle") should be re-read against the y-band
-  reading when this closes.
+- Second loose end, same function, step 8 - **settled in EV-0159**: `FUN_004D62D0` writes only
+  `+0x180` (the lifetime counter) to `0xf` when it is below 1, so the branch is "arm 15 ticks, keep
+  sinking, get removed by step 3", not a bounce or a float. The star (410 -> 400 + splash + remove)
+  and breeding (`+0x194 == 2` -> remove silently) branches were already decoded.
+- The sweep this entry asked for was run in two passes: EV-0160 found no *writer*, and EV-0161 found
+  the one caller that passes `flag = 1` (Angie's re-lay at `0x4FF2AA`) by decompiling the call sites.
+  Examined: `0x4E4A42` and `0x4E5DC8`/`0x4E5DDB` (both pass 0), `0x4FF2AA` (passes 1), `0x4E4DEF`
+  (`FUN_004E4C10`, passes 0 - EV-0166), `0x543DC8` (`FUN_00543920`, passes 0) and `0x547DFD`
+  (inside `Tank::Update`; elided in pseudocode, decoded from the bytes as kind 0 / flag 0, EV-0166).
+  The `0x543441`/`0x54352E`/`0x5435F2` cluster cited above is
+  not in REA's xref list for `FUN_00543280`; the observed sites are `0x4E4A42`, `0x4E4DEF`, `0x4E5DC8`,
+  `0x4E5DDB`, `0x4FF2AA`, `0x543DC8`, `0x547DFD`.
+- Non-blocking: `scripts/entities/food.gd` implements every decoded branch, enters the bob only for a
+  pellet spawned landed, and gives an ordinary pellet the recovered 15-tick bottom life
+  (`tests/headless_entity_check.gd` asserts the arming, the continued sink and the removal).
+  `docs/SPECS.md` §3.2's wording ("landed pellet bobs on a 120..150-tick cycle") is a y-band reading,
+  not a tick cycle, and stays as written.
 
 ### Q-0036 - Which coin kind does each species/stage emit?
 - OPEN (2026-11-02, raised by `scripts/entities/fish.gd` for P4.3; source P2.4 §6/§7, P2.5 §5).
@@ -784,6 +826,26 @@ gates `Tank::Update` - and the ported rate is a single constant to change once i
   runtime trace of which image id a stage-2 Oscar draws.
 - Non-blocking: gameplay does not read sprites; only the visual pick per species/stage is approximate,
   and P4.4 draws guppies only.
+- **Update (2026-11-09, EV-0164).** The binding now comes from the binary, not from measuring art.
+  Every fish class overrides the sprite draw (slot 83), the guppy's row follows its stage (0/1/2 as
+  is, 3 -> 2, 4 -> 3) and the carnivore fixes row 4 at every stage. The body sheet is
+  `FUN_004D5AA0`'s pick - SMALLSWIM/HUNGRYSWIM, SMALLEAT/HUNGRYEAT while the eat-fx timer runs or
+  the fed countdown is past 100, SMALLTURN/HUNGRYTURN for the turn state - whose ids resolve to those
+  images through the runtime table's 16-entry offset. Implemented as `Fish.draw_state()`,
+  `Fish.draw_image()` and `Fish.row_for()`, with the level swapping the sheet in place.
+- The eye-layer question is answered as well: the `SIM*` sheets are the single-channel layers of the
+  colourised style (`+0x1D0`), stacked three at a time (SIMSWIM/SIMEAT/SIMTURN 1..3) and tinted
+  white, `+0x1E8`, `+0x1D8`; the carnivore stacks four layers of a 12-row sheet with a third tint at
+  `+0x1F8`. **Closed as a bounded negative (EV-0168).** The fields are 4-byte colours handed to the
+  same setter as the white and flash colours, but no site in the module stores a colour constant into
+  them (the only literal stores are small integers such as `0x0C`/`0x14`), and the runtime palette
+  table is empty in the file, so the values are runtime-only. The port does not composite the layered
+  path - any colour it used would be invented - and finishing it needs a runtime capture at the draw
+  call.
+- Still open: the five other classes' draw bodies (Gekko `0x4E17F0`, Ultra `0x4E3A10`, Sylvester
+  `0x4E3420`, Ball `0x4DB3B0`, Bi `0x4DB9B0`), which keep the earlier stand-in sheets; the turn sheet,
+  because `+0x1C4` is not yet distinguished from a latched facing; and the stage-3 double draw plus the
+  hit-flash overlays.
 
 ### Q-0043 - The corpse's revive branch has no trigger, and its art/divisor stay approximate
 - OPEN (2026-11-03, amended 2026-11-04 after `EV-0053` was re-read for the death pass; source
@@ -1062,30 +1124,28 @@ art (`selectorback.png`) also carries a mermaid with a tail - and that baked tai
 shape that reads as unfinished, which is what "the tail isn't proper" was looking at.
 
 `MERYLTAIL` has no transparency (P3.3: 243 of 246 base GIFs are opaque and a grayscale mask companion
-supplies the alpha). `masks/tailflop_.png` is that companion: white is the tail, black is clear. So
-`scripts/data/mask_alpha.gd` composes it onto the base sheet and `GameSelector` draws the rest frame
-over the backdrop's tail, which is how the game composites this sprite at all.
+supplies the alpha). `masks/tailflop_.png` is that companion: white is the tail, black is clear.
+`scripts/data/mask_alpha.gd` composes it onto the base sheet - the general mechanism for any masked
+sheet drawn on a coloured field.
 
-Port decisions, recorded because the note does not recover them:
+**2026-11-09 update (R10): the overlay is not drawn.** The port did composite and draw the rest
+cell at a port-measured (114, 274) offset and played the recovered one-shot flop, but the owner's
+windowed menu check showed it as a green strap across the baked tail. The cells are thin flat
+shapes whose screen placement the recovered code does not give, so no offset can be justified from
+evidence. The port therefore leaves the baked `SELECTORSCREEN` art alone; Q-0055 stays open as a
+missing placement/trigger, not a missing sprite. Re-enable only with a recovered screen rect (or a
+runtime capture) proving where the cells sit.
 
-- **which cell is the rest pose** (cell 2, the gentle S-curve that covers the baked tail's footprint)
-  and **where the cell sits** ((114, 274) in the 640x480 canvas). `FUN_0052E070` places the eight
-  buttons; nothing recovered places Meryl's parts. The offset was chosen against the art: the tail's
-  base meets her waist and its tip lands on the sand before the button panel instead of crossing it;
-- ~~the flop is **not played**~~ **superseded**: the resource declares `anim="once"`, which is how
-  the original's sprite system starts a one-shot (it begins when the sprite is created), so the port
-  plays it on menu open - framemap `7,6,5,4,3,2,1,0`, a 3-tick hold, then 2 ticks a frame. It returns
-  to the rest pose afterwards instead of holding cell 0, because the backdrop's own tail is under it;
-- `MERYLLIPS`/`MERYLBLINK` overlays are not drawn: the baked art already has her mouth and eyes, and
-  layering the overlays needs the same missing placement plus their own trigger (blink is `once`).
+Still not drawn for the same missing-placement reason: `MERYLLIPS`/`MERYLBLINK` overlays - the
+baked art already has her mouth and eyes, and the blink is a `once` animation with its own trigger.
 
 General note for the asset layer: any *other* sprite drawn straight from a masked sheet is a solid
 rectangle until it goes through `MaskAlpha.apply`. The fish sheets avoid it because their base art is
-on black and `sprite_key.gd` keys that; masked sheets on a coloured field (this tail is on green)
+on black and `sprite_key.gd` keys that; masked sheets on a coloured field (this tail was on green)
 need the mask.
 
-`tests/headless_menu_check.gd` pins the cell size, the rest cell, the offset, both asset paths and the
-alpha composite (37 assertions with the flop timing).
+`tests/headless_menu_check.gd` covers the selector dispatch (ids, gates and labels; 21 assertions).
+The tail's cell/offset/flop assertions were removed with the overlay (R10).
 ### Q-0056 - audio: which track a `SetMusic` pair names, the battle loop, and the default volumes
 
 P4.13 ports the *mechanism* of P2.14 but three parts of it are not recovered, so they are recorded
@@ -1145,10 +1205,24 @@ Still **not recovered**, and therefore port defaults:
   as candidates, without proving either. The cadence is therefore `anim_state.gd`'s
   `SHEET_FRAME_TICKS = 5` (20 fps at the 100 Hz tick). It applies to the sheets that declare no
   `anim`: the fish body (`SMALLSWIM`/`HUNGRYSWIM`), `SIMSWIM1..3`, `FOOD` and `MONEY`.
-- **the coin sheet's row.** `MONEY` is 10x6 - presumably ten animation columns per coin type - but no
-  recovered table maps coin kind to row, so the port cycles the sheet's first row for every coin
-  (`COIN_COLUMNS`, `_draw_entity_frame`). This is visible: all coins look alike apart from their
-  motion. Q-0040 keeps the coin's own unlocated internals.
+- ~~**the coin sheet's row.**~~ **Recovered (EV-0162/EV-0163, 2026-11-08).** The draw (slot 26,
+  `FUN_004DD7A0`) picks the image *and* the sheet row per `kind`: `MONEY` rows 0..4 in a normal tank,
+  the 4-row `SHELLS` sheet in the Virtual Tank, `MONEYBAG` for the 2000-value kinds there, and the
+  single-cell `PEARL` for kinds 0x06/0x0D (plus 0x0F behind its `+0x198` gate). `Coin.sprite_image()`
+  and `Coin.sprite_row()` carry the binding and `_draw_entity_frame` draws
+  `row * sheet_columns + column` - the blit's own `(column, row)` cell maths. Still open and recorded
+  in EV-0162, not modelled: the coin's own column rule (`+0x174` vs this clock, Q-0040 item 1) and the
+  0x0F gate. The special kinds were split on 2026-11-09 (EV-0167): **0x11 draws the single-cell
+  `MISCITEMS` plus the `SPARKS` overlay at (10,-10)**, and **0x12 draws its recovered `PEANUT`**
+  (EV-0170) - the binding is followed even though the shipped `PEANUT` resource is the blank 107x34
+  placeholder (P3.3), so the snot is intentionally invisible rather than drawn as a coin. `0x10`
+  still draws the fallback because its `+0x1A0` colour ramp is unrecovered (Q-0040). The Virtual Tank
+  branch for these three is unverified (EV-0162's virtual switch covers only 0x01..0x0E), so that
+  mode keeps the fallback.
+  **Open art question:** the `MONEY` row-3 cells ship on an opaque blue plate and `SpriteKey` only
+  clears border-connected black, so the diamond now draws with that plate behind it. Nobody has
+  recovered a second colorkey, so the port does not key one - this is a visible fidelity gap, not a
+  presentation choice.
 - **the fish body's row** is the growth stage (0..4), which the art supports and P2.2 §Render notes.
 - **the food pellet** keeps the simulation's `anim_frame` (one column per tick, wrapped at
   `anim_cycle * 10 - 1`), which its note states outright - that one is recovered, so it is not on
@@ -1206,7 +1280,6 @@ counts; only the erroneous "20 ms/30 ms" comment was corrected, not the recovere
 - **Q-0053 (progression screens):** partially closed. Hatch/Pets/Bonus are in (`Main` runs
   Hatch -> Pets -> Bonus -> next level). The 160-tick bonus wait, the pre-bonus store,
   score records and credits/trophy still need their triggers (Q-0013/Q-0016).
-- **F1 (export):** closed for the tailflop. `GameSelector` loads the sheet and mask through
-  the imported textures; the boot no longer logs the warning. `content.json` export
-  inclusion stays open until a real export is run.
+- **F1 (export):** moot for the tailflop. The overlay is removed (R10, Q-0055), so no raw PNG is
+  loaded at runtime; `content.json` export inclusion stays open until a real export is run.
 
