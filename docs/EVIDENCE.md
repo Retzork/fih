@@ -4606,3 +4606,20 @@ behavior or specs; follow up with a binary observation entry.
   readable. A dead or freed pet clears it at once, and it is skipped entirely when rendering is off.
   (4) `headless_profile_check` 44 -> 56 assertions: the literal, the anchor, following the pet, the
   refusal path, a ready pet raising nothing, and expiry.
+
+### EV-0183 - R9 UI capture: the picker and the "Recharging..." notice, windowed
+- Date: 2026-11-10
+- Type: visual evidence (windowed run) + one implementation fix
+- Source: `tools/godot/shot_presto.gd` (run with `--audio-driver Dummy`); captures
+  `shot_presto_picker.png` and `shot_presto_recharging.png` (1280x960: the 640x480 viewport under
+  `canvas_items` stretch); `scripts/ui/presto_picker.gd`
+- Confidence: high for what the two frames show
+- Notes: (1) The picker opens through the real path (`Level.open_presto_picker` -> `Screens.dialog`)
+  over tank 1 level 3 with five owned pets, and draws its title, hint, pet buttons and Cancel inside
+  the panel. The **first** capture put the buttons at the screen origin, overlaying the store bar,
+  because they were parented to the picker instead of the panel; the frame caught it and they are now
+  panel children, with the re-capture showing the list in place. (2) A refused attempt with `+0x238`
+  running put "Recharging..." at (320,220) for a Presto parked at (300,230) - `position + (20,-10)`,
+  the recovered `x + width/2 - 20, y - 10` for the 80 px box - and it stayed over the pet for the 10
+  captured frames. (3) The stage is the port's real tank screen: `MENUBAR` shop row, egg dome, fish
+  and backdrop from the extracted art, with the debug FPS/tick overlay still on (R2's dev aid).

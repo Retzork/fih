@@ -94,9 +94,12 @@ func close() -> void:
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(_panel())
+	# The buttons are the panel's children: their positions are panel-local, so the list stays inside
+	# the dialog instead of landing under the tank's store bar.
+	var panel := _panel()
+	add_child(panel)
 	for index in candidates():
-		add_child(_pet_button(index))
+		panel.add_child(_pet_button(index))
 
 
 func _unhandled_input(event: InputEvent) -> void:
