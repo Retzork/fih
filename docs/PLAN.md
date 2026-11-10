@@ -16,6 +16,9 @@ shrink a parent inside the frame, so the loop never returned - a rendered level 
 moment an effect expired (a click's laser spark lives 5 ticks), which is what the 2026-11-09 and
 2026-11-10 debug sessions hung on. Totals with it: **24 suites, 1341 assertions**.
 
+2026-11-10 play addendum: coins now draw from their box corner like fish, so a click on the visible
+coin hits its recovered 60-px pickup square instead of dropping a pellet (EV-0187).
+
 2026-11-10 UI addendum: the tank's egg moved from a bottom-right widget into the seventh `MENUBAR`
 dome (R3, EV-0172), and the Hatch card now draws the recovered `HATCHSCREEN` incubator, the
 `HATCHANIMATION` crack strip and the awarded pet's first cell (EV-0175). Both masked sheets are

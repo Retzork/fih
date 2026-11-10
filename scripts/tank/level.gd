@@ -1381,7 +1381,9 @@ const STORE_SHELF_COUNT := 8
 ## `roll_stock()` overlays the one roller slot on top of it (Q-000?/EV-0141).
 func stock_default_store() -> void:
 	tank_store.clear()
-	for row in Progression.store_rows(tank_index, level_index, game_mode, true):
+	# Only the level's own stock (`§3`'s per-level hiding still applies); the reveal table then marks
+	# the shelves that are sold but not yet unlocked (EV-0185).
+	for row in Progression.store_rows(tank_index, level_index, game_mode):
 		tank_store.append(row)
 	_prime_store_reveals()
 
@@ -1716,7 +1718,10 @@ func _make_visual(entity: SimEntity) -> Sprite2D:
 	sprite.name = "Visual"
 	# Fish, corpses and pets draw from the top-left corner of their bounds box; aliens and shots
 	# fill their box, and the entity position is its centre (P2.8 §2.1), so those are centred.
-	sprite.centered = not (entity is Fish or entity is DeadFish or entity is Pet)
+	# Coins are drawn from their box's top-left like fish (`Coin.position` is the 80x80 box origin and
+	# the pickup square sits at `+36,+36`), so a centred coin sprite drew 36 px away from its own hit
+	# box and a click on the visible coin missed it.
+	sprite.centered = not (entity is Fish or entity is DeadFish or entity is Pet or entity is Coin)
 	var anim := AnimState.new()
 	anim.setup(res, _sim_tick())
 	sprite.set_meta("anim", anim)

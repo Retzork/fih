@@ -4706,3 +4706,19 @@ behavior or specs; follow up with a binary observation entry.
   is why `shot_menu.png` shows one clean green tail. (4) `MERYLTAIL`'s recovered playback
   (`framemap 7..0`, `framedelay 2`, `begindelay 3`) is kept as data and still pinned by
   `headless_menu_check` (28 assertions); Q-0055 stays open for the draw position.
+
+### EV-0187 - a click on a visible coin now picks it up
+- Date: 2026-11-10
+- Type: reproduced bug + fix + probe
+- Source: `scripts/tank/level.gd` (`_make_visual`), `scripts/entities/coin.gd` (`position`,
+  `COLLECT_CENTER`, `can_collect`); windowed probe clicking the visible coin centre
+- Confidence: high (reproduced before the change and re-run after)
+- Notes: (1) `Coin.position` is the origin of its 80x80 box and the pickup square is centred at
+  `position + (36, 36)` with a 60-px side (`P2.5 §5`), but `_make_visual` gave coins `centered = true`,
+  so the drawn coin sat centred on `position` - 36 px up-left of its own hit box. A click on the coin
+  fell through `try_collect` and paid the 5-shell pellet instead, which is the "coins can't be picked
+  up" report. Fish already draw from the box corner (`centered = false` plus a (20,20) offset), so
+  coins now use the same origin: the visible coin sits at `+40` inside the 60-px pickup box. (2) Probe:
+  a synthetic left click on the withdrawn coin's centre took the wallet 200 -> 215 and removed the
+  coin; the same click 36 px away still drops food, as before. (3) `headless_coin_check` 154,
+  `headless_level_check` 122, `headless_store_ui_check` 51, `headless_integration_check` 60 all pass.
