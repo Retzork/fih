@@ -83,6 +83,9 @@ var tank_store: Array[Dictionary] = []
 var store_screen: Control = null
 ## The open "PRESTO CHANGE-O" picker (`FUN_0054C6F0`, EV-0100), null while it is closed.
 var presto_picker: Control = null
+## The live "Recharging..." notice: `{"pet": Pet, "ticks": int}`, or empty (EV-0182).
+var _presto_notice: Dictionary = {}
+var _presto_notice_label: Label = null
 ## The in-tank store bar along the top of the aquarium (P4.5/P4.6), null until `_ready` builds it
 ## with rendering on.
 var store_bar: StoreBar = null
@@ -1075,6 +1078,7 @@ func fire_at(point: Vector2) -> bool:
 
 func _on_sim_tick(_tick: int) -> void:
 	tank.age_ticks += 1
+	_tick_presto_notice()
 	if game_mode == MODE_CHALLENGE:
 		inflate_prices(1)
 	if game_mode == MODE_TIME_TRIAL and not completed:
@@ -1148,6 +1152,16 @@ func open_store() -> void:
 
 
 
+## `FUN_004F89A0`'s failure text (EV-0100): with `+0x238` still running it draws "Recharging..." at
+## `(x + width/2 - 20, y - 10)` instead of transforming. The pet box is the 80x80 pet sheet, so the
+## anchor is 20 px right of its centre and 10 above its top.
+const PRESTO_RECHARGE_TEXT := "Recharging..."
+const PRESTO_NOTICE_OFFSET := Vector2(20.0, -10.0)
+## How long the notice stays up. The original draws it for the failed attempt itself; the port holds
+## it 90 ticks (2.5 s at the recovered 36 Hz) so a key press is readable (port choice, EV-0182).
+const PRESTO_NOTICE_TICKS := 0x5A
+
+
 ## The level's live Presto, or null. `FUN_0054C6F0` opens the picker from Presto's own object, so a
 ## tank without one has nothing to open.
 func presto_pet() -> Pet:
@@ -1175,6 +1189,12 @@ func can_open_presto_picker() -> bool:
 ## original opens it from the pet's own input handler, which EV-0106 records as untraced; the port
 ## binds the `P` key next to its existing `S` shop key (Q-0061) so the swap is reachable in play.
 func open_presto_picker() -> bool:
+	var presto := presto_pet()
+	# `FUN_004F89A0`'s failure half: a live pet whose timer has not run out draws "Recharging..." and
+	# returns. That is an attempt banner, not a permanent readout, so it is raised here.
+	if presto != null and not presto.can_transform():
+		show_presto_recharging(presto)
+		return false
 	if not can_open_presto_picker():
 		return false
 	var screens := _autoload("Screens")
@@ -1197,6 +1217,82 @@ func close_presto_picker() -> void:
 	if presto_picker != null and is_instance_valid(presto_picker):
 		presto_picker.close()
 	presto_picker = null
+
+
+## Raise the "Recharging..." notice over `pet` for `PRESTO_NOTICE_TICKS` ticks.
+func show_presto_recharging(pet: Pet) -> void:
+	if pet == null or not is_instance_valid(pet):
+		return
+	_presto_notice = {"pet": pet, "ticks": PRESTO_NOTICE_TICKS}
+	_sync_presto_notice()
+
+
+func clear_presto_notice() -> void:
+	_presto_notice.clear()
+	if _presto_notice_label != null and is_instance_valid(_presto_notice_label):
+		_presto_notice_label.queue_free()
+	_presto_notice_label = null
+
+
+func presto_notice_visible() -> bool:
+	return not _presto_notice.is_empty()
+
+
+func presto_notice_text() -> String:
+	return PRESTO_RECHARGE_TEXT if presto_notice_visible() else ""
+
+
+## Where the notice sits (`FUN_004F89A0`'s `x + width/2 - 20`, `y - 10`), computed from the pet so
+## the headless checks can assert it with rendering off.
+func presto_notice_position() -> Vector2:
+	if _presto_notice.is_empty():
+		return Vector2.ZERO
+	var pet: Pet = _presto_notice["pet"]
+	if pet == null or not is_instance_valid(pet) or pet.dead:
+		return Vector2.ZERO
+	return pet.position + PRESTO_NOTICE_OFFSET
+
+
+## Age the notice and keep it on the pet. A dead or freed pet clears it at once, so no text can
+## outlive the body it explains.
+func _tick_presto_notice() -> void:
+	if _presto_notice.is_empty():
+		return
+	var pet: Pet = _presto_notice["pet"]
+	_presto_notice["ticks"] = int(_presto_notice["ticks"]) - 1
+	if int(_presto_notice["ticks"]) <= 0 or pet == null or not is_instance_valid(pet) or pet.dead:
+		clear_presto_notice()
+		return
+	_sync_presto_notice()
+
+
+## The notice is world text over a Node2D, so it lives on the level's Hud CanvasLayer - the same
+## layer the store bar and egg widget draw on - created on first use and freed by `clear`.
+func _sync_presto_notice() -> void:
+	var label := _presto_notice_label_node()
+	if label == null:
+		return
+	label.text = PRESTO_RECHARGE_TEXT
+	label.position = presto_notice_position()
+
+
+func _presto_notice_label_node() -> Label:
+	if not render or not is_inside_tree():
+		return null
+	if _presto_notice_label != null and is_instance_valid(_presto_notice_label):
+		return _presto_notice_label
+	var layer := get_node_or_null("Hud")
+	if layer == null:
+		return null
+	var label := Label.new()
+	label.name = "PrestoRecharging"
+	label.text = PRESTO_RECHARGE_TEXT
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
+	UiFont.apply(label, UiFont.SMALL_FONT)
+	layer.add_child(label)
+	_presto_notice_label = label
+	return label
 
 
 ## `Tank::BuyItem` (P2.5 §3): resolve the row, check the price and the upgrade cap, spend, then apply.

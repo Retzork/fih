@@ -29,6 +29,7 @@ func _init() -> void:
 	_test_hatch_and_bonus()
 	_test_pets_selection()
 	_test_presto_picker()
+	_test_presto_recharging_notice()
 	_test_help_pages()
 	_test_stock_roller()
 	_test_save_paths()
@@ -113,6 +114,55 @@ func _test_presto_picker() -> void:
 	_expect(level.can_open_presto_picker(), "a spent recharge can")
 
 	again.despawn()
+	level.tank.shutdown()
+	level.free()
+	sim.free()
+
+
+## `FUN_004F89A0`'s "Recharging..." notice (EV-0182): a refused attempt raises the text over the pet
+## at `(x + width/2 - 20, y - 10)`, it follows the pet, and it expires instead of sticking.
+func _test_presto_recharging_notice() -> void:
+	var sim: Node = SimScript.new()
+	var level: Level = LevelScript.new()
+	level.render = false
+	level.setup(sim, 78)
+	level.profile = ProfileScript.new()
+	for index in [0, PetScript.PRESTO]:
+		level.profile.grant_pet(index)
+
+	_expect(not level.open_presto_picker() and not level.presto_notice_visible(),
+		"an attempt without a Presto says nothing")
+
+	var presto: Pet = level.tank.spawn_pet(PetScript.PRESTO, Vector2(300.0, 200.0))
+	presto.recharge = PetScript.PRESTO_RECHARGE
+	_expect(not level.open_presto_picker(), "a recharging Presto refuses the picker")
+	_expect(level.presto_notice_visible(), "and raises the notice instead")
+	_expect(level.presto_notice_text() == "Recharging...", "the text is FUN_004F89A0's literal")
+	_expect(LevelScript.PRESTO_NOTICE_OFFSET == Vector2(20, -10),
+		"the anchor is x + width/2 - 20, y - 10 for the 80 px box")
+	_expect(level.presto_notice_position() == presto.position + Vector2(20, -10),
+		"it sits over the pet (got %s)" % str(level.presto_notice_position()))
+
+	presto.position = Vector2(360.0, 240.0)
+	level._on_sim_tick(0)
+	_expect(level.presto_notice_position() == Vector2(380.0, 230.0), "and follows the pet")
+
+	_expect(not level.open_presto_picker(), "a second attempt while recharging still refuses")
+	_expect(level.presto_notice_visible(), "and keeps the notice up")
+
+	presto.recharge = 0
+	level.clear_presto_notice()
+	_expect(not level.open_presto_picker() and not level.presto_notice_visible(),
+		"a ready Presto raises no notice (the headless run has no dialog host)")
+
+	presto.recharge = PetScript.PRESTO_RECHARGE
+	level.open_presto_picker()
+	_expect(level.presto_notice_visible(), "the notice is up before its ticks run out")
+	for i in LevelScript.PRESTO_NOTICE_TICKS:
+		level._on_sim_tick(0)
+	_expect(not level.presto_notice_visible(), "and it is gone afterwards")
+
+	presto.despawn()
 	level.tank.shutdown()
 	level.free()
 	sim.free()

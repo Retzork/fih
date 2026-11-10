@@ -1365,3 +1365,12 @@ Open: the real per-cell hold and the pet reveal point.
 - Non-blocking: the swap, its recharge gate, the cleanup and the level wiring are the recovered
   parts; only the roster filter and the key are the port's choice. Recorded so a later pass replaces
   them instead of shipping them as facts.
+
+### Recharging notice (2026-11-10; port binding)
+
+- **EV-0182:** the literal ("Recharging...") and the anchor (`x + width/2 - 20`, `y - 10`) are
+  `FUN_004F89A0`'s, and the notice is raised from the same failure path (a refused transform
+  attempt), not shown permanently.
+- **Port choice:** the 90-tick dwell. The binary's draw is per attempt with no recovered lifetime, so
+  the port holds the text for 2.5 s at the 36 Hz rate instead of a single frame. `PRESTO_NOTICE_TICKS`
+  is the one constant to change when a lifetime is recovered.

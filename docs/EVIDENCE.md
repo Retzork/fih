@@ -4587,3 +4587,22 @@ behavior or specs; follow up with a binary observation entry.
   the wiki's right-click binding stays unbound. (5) A swap spawns the target transformed through
   `Level._on_pet_transform`, then the picker closes and the tank resumes; `headless_profile_check`
   29 -> 44 assertions.
+
+### EV-0182 - P4.7 the "Recharging..." notice over Presto (R9 follow-up)
+- Date: 2026-11-10
+- Type: implementation + test evidence (no new binary analysis)
+- Source: `scripts/tank/level.gd` (`show_presto_recharging`, `_tick_presto_notice`,
+  `_sync_presto_notice`, `PRESTO_NOTICE_OFFSET`, `PRESTO_NOTICE_TICKS`);
+  `tests/headless_profile_check.gd` (56 assertions); binary source EV-0100, P2.7 §3.3
+  (`FUN_004F89A0`, `FUN_004F2650`)
+- Confidence: high for the literal and the anchor; the 90-tick dwell is a port choice
+- Notes: (1) `FUN_004F89A0` draws "Recharging..." at `(x + width/2 - 20, y - 10)` when
+  `FUN_004F2650(+0x238)` has not run out, so the notice belongs to a **refused attempt**
+  (`Level.open_presto_picker` with a recharging pet), not to a permanent readout. The pet box is the
+  80x80 pet sheet, so the anchor is `position + (20, -10)`. (2) It is a `Label` on the level's `Hud`
+  CanvasLayer - the layer the store bar and egg widget draw on, and the only one that can draw over
+  the tank's Node2Ds - created on first use and freed on clear. (3) The original's own dwell is not
+  recovered; the port keeps the text 90 ticks (2.5 s at the 36 Hz reading, Q-0034) so a key press is
+  readable. A dead or freed pet clears it at once, and it is skipped entirely when rendering is off.
+  (4) `headless_profile_check` 44 -> 56 assertions: the literal, the anchor, following the pet, the
+  refusal path, a ready pet raising nothing, and expiry.
