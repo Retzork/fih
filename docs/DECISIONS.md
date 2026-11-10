@@ -1399,3 +1399,8 @@ unidentified, and EV-0185 records the guide evidence for the mechanism itself.
 - **EV-0186 / Q-0055:** the menu mermaid's `MERYLTAIL` strip is measured and its playback kept, but
   no recovered screen position exists and four composited placements all drew a second tail; the port
   now draws the shipped `SELECTORSCREEN` mermaid alone. Q-0055 stays open for the draw position.
+
+**2026-11-10 second pass on the mermaid (EV-0188):** the fin is drawn again. The baked tail's stump at
+~(152,405) is real, so the `MERYLTAIL` crescent is the missing fin; at 1:1 it read as a second tail,
+so the port fits it at scale 0.6 with its root notch on the stump and keeps the recovered flop. The
+placement is still the port's (Q-0055), not a recovered coordinate.

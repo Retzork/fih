@@ -4722,3 +4722,21 @@ behavior or specs; follow up with a binary observation entry.
   a synthetic left click on the withdrawn coin's centre took the wallet 200 -> 215 and removed the
   coin; the same click 36 px away still drops food, as before. (3) `headless_coin_check` 154,
   `headless_level_check` 122, `headless_store_ui_check` 51, `headless_integration_check` 60 all pass.
+
+### EV-0188 - R10: the menu mermaid's fin is drawn at a measured port fit
+- Date: 2026-11-10
+- Type: measurement + windowed visual (supersedes EV-0186's removal)
+- Source: `assets_raw/images/selectorback.png`, `tailflop.png`, `masks/tailflop_.png`;
+  `tools/godot/measure_mermaid.gd`, `tools/godot/preview_tail.gd`; `scripts/ui/game_selector.gd`;
+  capture `shot_menu.png`
+- Confidence: high for the measurements and the result; the fin's exact placement is still a port fit
+  (Q-0055)
+- Notes: (1) The owner's read was right: the baked tail stops in a rounded stump at about (152, 405)
+  and the shipped art has no fin there. `MERYLTAIL` is the fin, a 238x165 transparent cell whose
+  visible crescent has its root notch at (107, 84). (2) At 1:1 the crescent is twice the stump's
+  width and reads as a second tail; scaled to `TAIL_SCALE` 0.6 (143x99) and placed at
+  `TAIL_OFFSET` (110, 360) the notch meets the stump and the fin trails down-right, which is what
+  `shot_menu.png` shows. (3) The strip still plays its recovered one-shot flop (`framemap 7..0`,
+  2 ticks a frame, 3-tick hold) and returns to cell 0; `headless_menu_check` 28 passes unchanged.
+  (4) Q-0055 keeps the exact draw position open - only the fit is port choice, the art and timing are
+  recovered.
