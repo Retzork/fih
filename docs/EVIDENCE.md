@@ -4680,9 +4680,10 @@ behavior or specs; follow up with a binary observation entry.
   opens the whole bar on the first medium fish; Sandbox, Challenge and tank 5 start open (the challenge
   reading is the port's, tank 5 sells only the egg). (4) `Progression.HIDDEN` stays the level's
   opening stock - 1-1 genuinely has no carnivore or blaster row to reveal - so a hidden shelf is a
-  present row flagged `hidden`, never a fabricated price. (5) The price label moved from a box
-  centred at y 51 to (7, 44, 45, 18) centred at 53: the 8-px glyphs sat above the purple plate's
-  middle and now sit slightly below, as the owner asked. (6) `headless_store_ui_check` 43 -> 51
+  present row flagged `hidden`, never a fabricated price. (5) The price label is (7, 30, 45, 42), centred on y 51 on the purple plate: the owner read the
+  digits as too low, and the earlier 18-px box also cut their bottoms (a Label clips to its own
+  rect). The icons are fitted to 34x34 inside the dome glass, and the guppy's 80x80 cell is cropped
+  to its 44-px centre after masking so it reads at the same size as the 40x40 `SCL_` icons. (6) `headless_store_ui_check` 43 -> 51
   assertions (the hidden start, the medium and large reveals, the purchase reveal, the egg gate);
   `headless_integration_check` 60 passes unchanged; totals **24 suites, 1341 assertions**.
 

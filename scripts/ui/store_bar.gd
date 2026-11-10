@@ -23,11 +23,13 @@ const BAR_SIZE := Vector2(640.0, 75.0)
 const MONEY_RECT := Rect2(530.0, 34.0, 100.0, 30.0)
 ## The purple price plate under each dome, measured from the art: (7, 45, 45, 12) slot-local.
 const PLATE_RECT := Rect2(7.0, 45.0, 45.0, 12.0)
-## The label's layout box: the 12-px plate is shorter than the font's line, so the box is centred on
-## the plate (centre y 51) and the glyphs are drawn at their native size, not clipped.
-const PRICE_LABEL_RECT := Rect2(7.0, 44.0, 45.0, 18.0)
-## The dome's picture area: the shipped item icons are 40x40 and sit centred above the plate.
-const ICON_RECT := Rect2(9.0, 2.0, 40.0, 40.0)
+## The label's layout box: a `Label` clips its glyphs to its own rect, and the 8-px font's line is
+## taller than the 12-px plate, so the box is deliberately tall (centre y 51) and the glyphs are
+## drawn at their native size - a shorter box cut the bottoms off the price digits.
+const PRICE_LABEL_RECT := Rect2(7.0, 30.0, 45.0, 42.0)
+## The dome's glass: the shipped item icons are full 40x40 cells, so they are fitted to 34x34 inside
+## the ring (a 1:1 draw put the fins across the gold rim).
+const ICON_RECT := Rect2(12.0, 5.0, 34.0, 34.0)
 
 ## `FUN_005409B0`'s x table for slots 0-6; slot 7 is unrecovered (Q-0054).
 const SLOT_X := [0x12, 0x57, 0x90, 0xD9, 0x122, 0x16B, 0x1B4]
@@ -203,6 +205,7 @@ func _icon_texture(id: int) -> Texture2D:
 	var texture := frames.get_frame_texture("default", frame)
 	if texture == null:
 		return null
+
 	# These sheets have no transparency of their own (P3.3): their alpha lives in the `masks/_<name>`
 	# companion, exactly as the pets' sheets do. Compose the cell through `MaskAlpha`, and fall back
 	# to colour-keying when a sheet ships no mask.
@@ -211,8 +214,20 @@ func _icon_texture(id: int) -> Texture2D:
 	if mask != null:
 		var composed := HatchScreen.masked_cell(texture, mask)
 		if composed != null:
-			return composed
-	return SpriteKey.keyed(texture)
+			return _body_crop(composed, art)
+	return _body_crop(SpriteKey.keyed(texture), art)
+
+
+## The guppy body sheet is 80x80 per cell with the fish inside a ~44-px centre; cropping that centre
+## keeps it the same visual size as the 40x40 `SCL_` icons (port fit: the original's own icon image id
+## is unrecovered, Q-0054). Cropping happens **after** the mask composite, which needs the full cell.
+func _body_crop(texture: Texture2D, art: String) -> Texture2D:
+	if texture == null or art != "IMAGE_SMALLSWIM":
+		return texture
+	var image := texture.get_image()
+	if image == null or image.get_width() < 44 or image.get_height() < 44:
+		return texture
+	return ImageTexture.create_from_image(image.get_region(Rect2i(18, 18, 44, 44)))
 
 
 ## Redraw the eight slots when the purse or the stock changed since the last call.
