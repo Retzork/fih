@@ -11,6 +11,7 @@ func _init() -> void:
 	_test_ids()
 	_test_gates()
 	_test_labels()
+	_test_mermaid_tail()
 	if _checks == 0:
 		print("headless_menu_check: no assertions ran")
 		quit(1)
@@ -66,3 +67,18 @@ func _test_labels() -> void:
 	_expect(GameSelector.label_for(1) == "Adventure", "id 1 is labelled Adventure")
 	_expect(GameSelector.label_for(9) == "Challenge", "id 9 is labelled Challenge")
 	_expect(GameSelector.label_for(42) == "", "an unknown id has no label")
+
+
+## The mermaid tail's playback is the recovered `MERYLTAIL` strip: 8 cells of 238x165, `anim="once"`,
+## `framemap="7,6,5,4,3,2,1,0"`, `framedelay="2"`, `begindelay="3"`, resting on the cell the flop
+## ends on (Q-0055 keeps the screen placement a port fit, so it is not asserted here).
+func _test_mermaid_tail() -> void:
+	var menu := GameSelector.new()
+	_expect(GameSelector.TAIL_CELL == Vector2(238.0, 165.0), "the strip cells are 238x165")
+	_expect(GameSelector.TAIL_REST_FRAME == 0, "the idle pose is the flop's last cell")
+	_expect(menu.tail_cell(2) == GameSelector.TAIL_REST_FRAME, "the open holds the rest pose")
+	_expect(menu.tail_cell(3) == 7, "the first flop cell plays after the 3-tick begin delay")
+	_expect(menu.tail_cell(5) == 6, "the next cell is two ticks later")
+	_expect(menu.tail_cell(17) == 0, "the flop ends on cell 0")
+	_expect(menu.tail_cell(19) == GameSelector.TAIL_REST_FRAME, "the one-shot returns to the rest pose")
+	menu.free()

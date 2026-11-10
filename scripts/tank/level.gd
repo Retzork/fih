@@ -187,7 +187,6 @@ var fire_cooldown := 0
 ## Where held fire aims (the last left-button press position).
 var fire_target := Vector2.ZERO
 var _sim: Node = null
-var _hud: Label = null
 ## The `Content` autoload, looked up at run time: a `--script` run cannot resolve the autoload name at
 ## parse time, so the reference stays dynamic (the level is also usable with rendering disabled).
 var _content: Node = null
@@ -218,6 +217,7 @@ func setup(sim_node: Node, seed_value: int = 4242) -> void:
 	egg_widget.name = "EggWidget"
 	add_child(egg_widget)
 	egg_widget.setup(self)
+	_mount_egg_widget()
 	for i in STARTING_FISH:
 		spawn_guppy(_random_spawn_point())
 	# A fresh level starts with the mode's wallet even before `start_level` (R1).
@@ -236,21 +236,27 @@ func _ready() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "Hud"
 	add_child(layer)
-	_hud = Label.new()
-	_hud.name = "Info"
-	# The `MENUBAR` store bar is the full 75 px strip at the top; the info line starts below it.
-	_hud.position = Vector2(8.0, 80.0)
-	layer.add_child(_hud)
-	UiFont.apply(_hud, UiFont.HUD_FONT)
 	# The in-tank store bar (`FUN_005409B0`, Q-0018): the row of buy buttons above the tank.
 	store_bar = StoreBar.new()
 	store_bar.name = "StoreBar"
 	layer.add_child(store_bar)
 	store_bar.setup(self)
-	if egg_widget != null:
-		egg_widget.refresh()
-	_update_hud()
+	_mount_egg_widget()
 	_add_backdrop()
+
+
+## The egg widget lives in the bar's empty seventh dome, so it has to draw with the bar: a
+## CanvasLayer draws over every Node2D in the level, and `z_index` cannot lift a node across layers.
+## `setup()` can run before or after `_ready()` (Main adds the level to the tree first), so both call
+## this; `reparent()` keeps the widget's position, and it enters after the bar so it draws on top.
+func _mount_egg_widget() -> void:
+	if not render or egg_widget == null or not is_inside_tree():
+		return
+	var layer := get_node_or_null("Hud")
+	if layer == null or egg_widget.get_parent() == layer:
+		return
+	egg_widget.reparent(layer)
+	egg_widget.refresh()
 
 
 ## The tank backdrop (`+0x3E8`, 1..6 -> `TANKBACKDROP1..6`), drawn behind every entity.
@@ -324,7 +330,6 @@ func drop_food(pos: Vector2) -> Food:
 	star_potion_armed = false
 	var pellet: Food = FoodScript.create(pos, 0, false, 0, quality, tank.rng)
 	play_sound("SOUND_DROPFOOD")
-	_update_hud()
 	return tank.spawn_at(pellet, Sim.Phase.FOOD, pos) as Food
 
 
@@ -482,7 +487,6 @@ func _on_larva_burst(at: Vector2) -> void:
 func _on_larva_payout(_larva) -> void:
 	# The shells payout (`FUN_0053C1E0` routing, P2.6 §9) lands as shells in every mode.
 	_profile().add_shells(15)
-	_update_hud()
 
 
 ## A tick-counted particle (P4.4): no entity, no phase, just a lifetime the renderer draws.
@@ -942,7 +946,6 @@ func add_money(amount: int) -> void:
 		return
 	money = mini(money + amount, MONEY_MAX)
 	money_earned += amount
-	_update_hud()
 
 
 func _random_spawn_point() -> Vector2:
@@ -996,7 +999,6 @@ func _on_coin_collected(_coin, amount: int) -> void:
 	# Virtual Tank converts coins to shells instead of money (P2.11 §7 / EV-0128).
 	if tank != null and bool(tank.virtual_tank):
 		_profile().add_shells(amount)
-		_update_hud()
 		return
 	add_money(amount)
 
@@ -1005,7 +1007,6 @@ func _on_coin_collected(_coin, amount: int) -> void:
 func _on_coin_banked(coin) -> void:
 	if coin != null and not coin.dead:
 		_profile().add_shells(int(coin.amount()))
-		_update_hud()
 
 
 ## Hold-to-fire (SPECS §3.5): level 12 unlocks it at `11 - level/2` ticks, floored at 100 ms
@@ -1060,7 +1061,6 @@ func _tick_time_trial() -> void:
 	if time_trial_budget_ticks <= 0:
 		return
 	time_trial_elapsed += 1
-	_update_hud()
 	if time_trial_elapsed > time_trial_budget_ticks:
 		collect_all_coins()
 		complete_level()
@@ -1338,7 +1338,6 @@ func _process(_delta: float) -> void:
 		aim(get_global_mouse_position())
 	_sync_visuals()
 	_sync_fx()
-	_update_hud()
 
 
 ## The FX layer: one small tinted square per particle/laser spark. Squares keep the
@@ -1362,15 +1361,23 @@ func _sync_fx() -> void:
 		wanted.append({"pos": p["pos"], "kind": String(p["kind"]), "life": int(p["life"])})
 	for s in laser_sparks:
 		wanted.append({"pos": s["pos"], "kind": "laser", "life": int(s["life"])})
-	while _fx_layer.get_child_count() > wanted.size():
-		_fx_layer.get_child(_fx_layer.get_child_count() - 1).queue_free()
-	while _fx_layer.get_child_count() < wanted.size():
+	# `queue_free()` only queues the node: it stays a child until the frame ends, so a loop that
+	# waits for `get_child_count()` to shrink never terminates. That spin froze the main thread - the
+	# app then could not close on its own and had to be killed - so the surplus dots are detached
+	# first and freed afterwards, and `dots` is the working list both loops and the update walk use.
+	var dots: Array[Node] = _fx_layer.get_children()
+	while dots.size() > wanted.size():
+		var extra: Node = dots.pop_back()
+		_fx_layer.remove_child(extra)
+		extra.queue_free()
+	while dots.size() < wanted.size():
 		var dot := Sprite2D.new()
 		dot.texture = _fx_dot
 		dot.centered = true
 		_fx_layer.add_child(dot)
+		dots.append(dot)
 	for i in wanted.size():
-		var dot := _fx_layer.get_child(i) as Sprite2D
+		var dot := dots[i] as Sprite2D
 		dot.position = wanted[i]["pos"]
 		match String(wanted[i]["kind"]):
 			"smoke":
@@ -1691,18 +1698,3 @@ func _sync_visuals() -> void:
 		else:
 			visual.position = Vector2.ZERO
 		_draw_entity_frame(entity, visual, anim)
-
-
-func _update_hud() -> void:
-	# `_ready()` can run before `setup()` when the level is added to the tree first, so the tank may
-	# still be null here; the first tick after setup fills the label.
-	if _hud == null or tank == null:
-		return
-	# Money is drawn on the `MENUBAR`'s own green wallet plate, so the info line carries the counts
-	# the art does not (EGG/FISH/FOOD/WEAPON).
-	_hud.text = "Egg %d/4   Fish %d   Food %d   Weapon %d" % [
-		mini(egg_pieces, Progression.EGG_PIECES_TO_COMPLETE),
-		tank.entities_in(Sim.Phase.FISH).size(), tank.food_count(), weapon_level
-	]
-	if game_mode == MODE_TIME_TRIAL:
-		_hud.text += "   Time %ds" % time_trial_seconds_left()

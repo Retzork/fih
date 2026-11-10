@@ -1,7 +1,10 @@
 extends SceneTree
 ## screenshot - a development aid, not a game entry point: boots `main.tscn`, saves the menu, presses
 ## Adventure, then saves the level. Run windowed (the headless driver renders nothing):
-##   Godot --path . --script res://tools/godot/screenshot.gd
+##   Godot --path . --audio-driver Dummy --script res://tools/godot/screenshot.gd
+##
+## `--audio-driver Dummy` is deliberate: the port starts muted (Q-0056), and keeping a capture run off
+## WASAPI avoids the device-invalidation loop Godot can spin in when Windows drops the output device.
 
 const MENU_FRAMES := 200
 const LEVEL_FRAMES := 120

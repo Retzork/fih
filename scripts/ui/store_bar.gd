@@ -195,6 +195,15 @@ func refresh() -> void:
 			price_label.text = ""
 			continue
 		var id := int(row.get("slot", -1))
+		if id == Progression.EGG_ITEM:
+			# The egg's own widget draws this dome (art, piece cell and price) on every tank; the bar
+			# keeps the row and the click path, so nothing is drawn twice.
+			name_label.text = ""
+			price_label.text = ""
+			# The widget's own button covers this rect, so the bar's stays inert underneath.
+			button.disabled = true
+			button.mouse_default_cursor_shape = Control.CURSOR_ARROW
+			continue
 		name_label.text = Store.item_name(id)
 		var known := Store.price_known(row)
 		var affordable := known and (int(row.get("price", 0)) <= level.money)

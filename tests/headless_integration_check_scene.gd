@@ -108,10 +108,14 @@ func _run() -> void:
 		"the MENUBAR wallet plate shows the tank's money")
 	_expect(level.store_bar.get_node("Slot6/Price").text == "",
 		"an unstocked dome is empty (no SOLD text)")
-	_expect(_uses_font(level.egg_widget.get_node_or_null("Buy/Price"), UiFont.LABEL_FONT),
-		"the egg price uses Liddie12")
-	_expect(_uses_font(level.get_node_or_null("Hud/Info"), UiFont.HUD_FONT),
-		"the tank HUD uses Liddie15")
+	_expect(_uses_font(level.egg_widget.get_node_or_null("Buy/Price"), UiFont.SMALL_FONT),
+		"the egg price uses the bar's 8 px bold font")
+	# The counts live on the bar itself (the egg dome and the MENUBAR's wallet plate); a second text
+	# line under the buy row is a port artifact the owner had removed.
+	_expect(level.get_node_or_null("Hud/Info") == null,
+		"no info line sits below the buy row")
+	_expect(level.egg_widget.position == StoreBar.slot_rect(EggWidget.SLOT).position,
+		"the egg widget sits in the bar's empty dome (got %s)" % str(level.egg_widget.position))
 
 	_teardown(main)
 	await get_tree().process_frame
@@ -139,6 +143,65 @@ func _run() -> void:
 	_expect(boss_bar != null and boss_bar.visible, "Cyrax always draws an HP bar")
 	_expect(boss_bar != null and boss_bar.position == Vector2(-70.0, 77.0),
 		"the boss bar uses the same box rule (got %s)" % [_bar_position(boss)])
+
+	# --- 5-1's completion, end to end: the free egg dome is the fourth piece, then Main's
+	# Hatch -> Pets -> Bonus flow runs and hands the profile on to 5-2.
+	_expect(boss_level.egg_pieces == 3 and boss_level.egg_price == 0,
+		"5-1 opens on three pieces with a free egg (got %d at %d)" % [boss_level.egg_pieces, boss_level.egg_price])
+	_expect(boss_level.egg_widget.visible,
+		"tank 5 draws the same egg dome as the other tanks")
+	# The bar redraws on the sim tick (`refresh_if_changed`), so give the level one tick: a level
+	# that never ticks (a paused scene) still shows the pre-start rows.
+	_step(1)
+	var egg_row: Dictionary = StoreBar.row_at(boss_level, EggWidget.SLOT)
+	_expect(int(egg_row.get("slot", -1)) == Progression.EGG_ITEM and Store.price_known(egg_row),
+		"the seventh dome holds tank 5's free egg row (got %s)" % str(egg_row))
+	_expect(boss_level.store_bar.get_node("Slot6/Name").text == ""
+		and boss_level.store_bar.get_node("Slot6/Price").text == "",
+		"the bar leaves the egg dome to the widget (no text over the art)")
+	_expect(boss_level.egg_widget.get_node("Buy/Price").text == "FREE",
+		"the free row prices as FREE rather than '0' or the '?' unknown marker")
+	_expect(not boss_level.egg_widget.get_node("Buy").disabled,
+		"the egg dome is clickable at 200 money")
+	var shells_before: int = Game.profile.shells
+	var money_before: int = boss_level.money
+	var awards: Array = []
+	boss_level.level_completed.connect(func(t: int, l: int, pet: int) -> void:
+		awards.append([t, l, pet]))
+	_expect(boss_level.store_bar.press(EggWidget.SLOT), "the free egg dome buys the fourth piece")
+	_expect(boss_level.egg_pieces == 4 and boss_level.completed,
+		"the fourth piece completes 5-1 (got %d pieces)" % boss_level.egg_pieces)
+	_expect(boss_level.money == money_before,
+		"the free row takes nothing from the purse (got %d -> %d)" % [money_before, boss_level.money])
+	_expect(awards.size() == 1 and int(awards[0][2]) == Progression.FINAL_BOSS_PET,
+		"the completion reports Presto once (got %s)" % str(awards))
+	_expect(Game.profile.owns_pet(Progression.FINAL_BOSS_PET),
+		"Presto lands on the profile")
+	# The win bonus (5000, SPECS §1.2) and the bonus card's own payout (5000, §4.3) are both
+	# banked by the completion: the card displays a figure that is already on the profile.
+	_expect(Game.profile.shells == shells_before + Progression.FINAL_BOSS_SHELLS + 5000,
+		"the win bonus and the card payout bank once each (got %d shells)" % Game.profile.shells)
+	_expect(Game.profile.tank == 5 and Game.profile.level == 2 and Game.profile.bonus_adventure
+		and Game.profile.tank5_wins == 1,
+		"the profile moves to the 5-2 victory gate with the win counted")
+	# Main's own handler has run: it frees the level and mounts the award card.
+	_expect(boss_main._level == null, "Main releases the completed level")
+	_expect(boss_main._flow is HatchScreen and boss_main._flow.pet_index == Progression.FINAL_BOSS_PET,
+		"the between-level flow opens on Presto's award card")
+	if boss_main._flow is HatchScreen:
+		boss_main._flow.press_ok()
+	_expect(boss_main._flow is PetsScreen, "the award card leads to the pet selection")
+	if boss_main._flow is PetsScreen:
+		boss_main._flow.press_confirm()
+	# `payout_for(5, ADVENTURE, money, tank5_wins=1, 0)` = clamp(max(1, 0) * 5000, 0, 25000).
+	_expect(boss_main._flow is BonusScreen and boss_main._flow.payout == 5000,
+		"the bonus card shows the tank-5 payout (got %s)" % str(boss_main._flow.payout if boss_main._flow is BonusScreen else "none"))
+	if boss_main._flow is BonusScreen:
+		boss_main._flow.press_continue()
+	_expect(Game.profile.shells == shells_before + Progression.FINAL_BOSS_SHELLS + 5000,
+		"continuing past the card does not pay it again (got %d shells)" % Game.profile.shells)
+	_expect(boss_main._level != null and boss_main._level.tank_index == 5 and boss_main._level.level_index == 2,
+		"Continue starts the profile's 5-2 (got %s)" % ("%d-%d" % [boss_main._level.tank_index, boss_main._level.level_index] if boss_main._level != null else "none"))
 
 	_teardown(boss_main)
 	await get_tree().process_frame

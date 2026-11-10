@@ -1089,6 +1089,14 @@ before, so tank 1 level 1 now shows a single shelf (the guppy) exactly as §3 sa
 
 `tests/headless_progression_check.gd` pins the tables, the award map, the advance transitions, the
 profile's clamps and both completion paths (79 assertions).
+
+**2026-11-10 update (R3 + hatch art).** The early paragraphs are history. The egg no longer sits
+bottom-right on tanks 1-4: `EggWidget` draws the `EGGPIECES` cell in the seventh `MENUBAR` dome
+(`StoreBar.slot_rect(6)`) on every tank, over the same purple price plate, and tank 5's free row
+keeps that dome with its text blanked (`FREE` comes from the widget) - EV-0172. The dome placement
+is still port-only because the original widget rect is not recovered. Hatch, Pets and Bonus all
+mount; `HatchScreen` now draws the `HATCHSCREEN` incubator, the `HATCHANIMATION` strip and the pet
+cell (EV-0175), while Pets and Bonus remain text-only. The progression suite is now 86 assertions.
 ### Q-0054 - the in-tank store bar: geometry recovered, slot 7's x and the item art are not
 
 `FUN_005409B0` (EV-0150, `docs/evidence/p2.13-decompile-5409B0.txt`) is the tank's item-cache builder:
@@ -1137,13 +1145,19 @@ supplies the alpha). `masks/tailflop_.png` is that companion: white is the tail,
 `scripts/data/mask_alpha.gd` composes it onto the base sheet - the general mechanism for any masked
 sheet drawn on a coloured field.
 
-**2026-11-09 update (R10): the overlay is not drawn.** The port did composite and draw the rest
-cell at a port-measured (114, 274) offset and played the recovered one-shot flop, but the owner's
-windowed menu check showed it as a green strap across the baked tail. The cells are thin flat
-shapes whose screen placement the recovered code does not give, so no offset can be justified from
-evidence. The port therefore leaves the baked `SELECTORSCREEN` art alone; Q-0055 stays open as a
-missing placement/trigger, not a missing sprite. Re-enable only with a recovered screen rect (or a
-runtime capture) proving where the cells sit.
+**2026-11-09 update (R10): the overlay was removed.** The owner's windowed menu check saw a green
+strap across the baked tail, because the sheet was drawn without its mask (its field is opaque
+green) and with the wrong cell.
+
+**2026-11-10 update (owner review): the overlay is back, masked.** The owner read the baked-only
+mermaid as unfinished - the backdrop's pale flat tail is the shape that "isn't proper". With
+`MaskAlpha` composing `masks/tailflop_.png`, the sprite is transparent where it should be, and a
+windowed fit places cell 0 (the flop's last cell, so it doubles as the idle pose) at (120, 268)
+with `flip_h = true`: mirrored, its dark silhouette wraps the pale baked tail and the mermaid reads
+as one tail (`shot_menu.png`). The recovered playback is unchanged and now covered
+(`headless_menu_check` 28): `anim="once"`, `framemap="7,6,5,4,3,2,1,0"`, `framedelay="2"`,
+`begindelay="3"` on the 36 Hz clock, then the rest cell. Q-0055 stays open as a missing **exact**
+screen rect - the offset and the mirror are a port fit, not recovered bytes.
 
 Still not drawn for the same missing-placement reason: `MERYLLIPS`/`MERYLBLINK` overlays - the
 baked art already has her mouth and eyes, and the blink is a `once` animation with its own trigger.
@@ -1239,8 +1253,9 @@ Still **not recovered**, and therefore port defaults:
   `anim_cycle * 10 - 1`), which its note states outright - that one is recovered, so it is not on
   this clock.
 
-The menu mermaid's tail now plays its recovered one-shot flop when the menu opens and returns to the
-rest pose; Q-0055 records why the return is a port choice rather than holding the last cell.
+The menu mermaid's tail plays its recovered one-shot flop when the menu opens and returns to the
+rest pose; Q-0055 records the port-placed offset/mirror and why the return is a port choice rather
+than holding the last cell.
 
 ### Q-0058 - `Tank+0x178` has no located writer, so the remake shows alien HP bars by default
 
@@ -1272,6 +1287,19 @@ small text buttons; swapping them is a two-constant change (`UiFont.SELECTOR_BIG
 `SELECTOR_SMALL_FONT`). The menu tail still plays on the 36 Hz tick clock (Q-0034) as integer tick
 counts; only the erroneous "20 ms/30 ms" comment was corrected, not the recovered delays.
 
+### Q-0060 - the Hatch card's crack timing is the port's clock choice
+
+`HATCHANIMATION` ships three 57x60 cells but no `anim`/`framedelay` metadata in its manifest entry,
+so the original hatch screen's per-cell hold and pet-reveal point were not recovered. The port
+holds each cell for 0.3 s and shows the pet after 0.9 s (`HatchScreen.CRACK_SECONDS`,
+`crack_frame()`, `hatched()`); the windowed captures are `shot_tank5_award.png` /
+`shot_tank5_hatched.png`. Everything else on the screen is recovered art (`HATCHSCREEN` 640x480;
+the id-99 plate at (186,445,264,30), id-100 at (525,4,80,26)) with the "Please Wait..." and "Menu"
+labels. The strip and the pet cell are `MaskAlpha`-composited (`masks/_HatchANIMATION.png`,
+`masks/_<pet>.png`) because their PNG fields are opaque colours, and the composition is cropped per
+cell so the 800x240 pet sheets are never walked whole. Pets and Bonus remain text-only (Q-0053).
+Open: the real per-cell hold and the pet reveal point.
+
 ### Completion-pass updates (2026-11-08; implementation only, no new binary evidence)
 
 - **Q-0036 (coin kind):** the port tiers by stage through EV-0047 (`Level.coin_kind_for`:
@@ -1289,8 +1317,10 @@ counts; only the erroneous "20 ms/30 ms" comment was corrected, not the recovere
   roller shape (random unowned backdrop at 15000, kind 3; pet fallback when all six owned).
   Per-item art/tooltips/paging still need the kind byte binding.
 - **Q-0053 (progression screens):** partially closed. Hatch/Pets/Bonus are in (`Main` runs
-  Hatch -> Pets -> Bonus -> next level). The 160-tick bonus wait, the pre-bonus store,
-  score records and credits/trophy still need their triggers (Q-0013/Q-0016).
-- **F1 (export):** moot for the tailflop. The overlay is removed (R10, Q-0055), so no raw PNG is
-  loaded at runtime; `content.json` export inclusion stays open until a real export is run.
+  Hatch -> Pets -> Bonus -> next level); since 2026-11-10 Hatch also draws the recovered card art
+  (Q-0060, EV-0175). The 160-tick bonus wait, the pre-bonus store, score records and
+  credits/trophy still need their triggers (Q-0013/Q-0016).
+- **F1 (export):** the tailflop and Hatch sheets load their imported textures through `load()` +
+  `get_image()`, never `Image.load_from_file`, so no export-time raw-PNG warning is introduced;
+  `content.json` export inclusion stays open until a real export is run.
 

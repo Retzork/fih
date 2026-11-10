@@ -203,10 +203,23 @@ func _test_final_level() -> void:
 	var level := _make_level(4300)
 	var profile: Profile = ProfileScript.new()
 	level.profile = profile
+	var seen: Array = []
+	level.level_completed.connect(func(tank_no: int, level_no: int, pet: int) -> void:
+		seen.append([tank_no, level_no, pet]))
 	level.start_level(5, 1)
 	_expect(level.egg_pieces == 3 and level.egg_price == 0, "tank 5 opens at three pieces, free")
-	_expect(level.tank_store.size() == 1 and level.buy_item(0), "the single shelf buys the tank-5 egg")
+	_expect(level.tank_store.size() == 1 and int(level.tank_store[0]["shelf"]) == 6,
+		"tank 5's only row is the egg on the bar's seventh dome")
+	_expect(StoreScript.price_known(level.tank_store[0]),
+		"the free row is a known price, not the unrecovered marker")
+	_expect(level.egg_widget.visible, "tank 5 draws the egg in its dome like the other tanks")
+	var purse: int = level.money
+	_expect(level.buy_item(0), "the single shelf buys the tank-5 egg")
+	_expect(level.money == purse, "the free purchase leaves the purse alone (got %d)" % level.money)
 	_expect(level.completed, "one purchase completes tank 5")
+	_expect(not level.buy_item(0) and not level.buy_egg(), "a completed tank refuses the egg row")
+	_expect(level.egg_pieces == 4, "no fifth piece is recorded")
+	_expect(seen.size() == 1, "the completion fires once (got %d)" % seen.size())
 	_expect(profile.owns_pet(ProgressionScript.FINAL_BOSS_PET), "5-1 grants Presto")
 	_expect(profile.shells == ProgressionScript.FINAL_BOSS_SHELLS, "and pays 5000 Shells")
 	_expect(profile.tank5_wins == 1 and profile.bonus_adventure, "the profile records the win")

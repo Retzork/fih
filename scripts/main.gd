@@ -59,6 +59,11 @@ func _on_level_completed(tank_no: int, level_no: int, pet_index: int) -> void:
 	if _level != null:
 		payload = BonusScreen.payout_for(tank_no, Game.mode, _level.money,
 			Game.profile.tank5_wins, 0)
+		# SPECS §4.3 pays every bonus out through the clamped Shells setter. Time Trial and
+		# Challenge already bank their reward in `Level.complete_level`, so only the adventure's
+		# own payout (the tank-5 win bonus) is credited here, once, with the card that shows it.
+		if Game.mode == Game.Mode.ADVENTURE:
+			Game.profile.add_shells(payload)
 		_level.queue_free()
 		_level = null
 	_show_hatch(pet_index, tank_no, level_no, payload)
@@ -107,7 +112,9 @@ func _process(delta: float) -> void:
 	# ~4 ms of loading per frame: finishes in a second or two and keeps the window responsive.
 	if not Content.is_phase_complete(Content.Phase.LOADING):
 		Content.pump(4.0)
-	elif _level == null and _selector == null:
+	elif _level == null and _selector == null and _flow == null:
+		# `_flow` guards the between-level screens: a completed level nulls `_level` while Hatch,
+		# Pets and Bonus are up, and mounting the menu under them would draw it behind the cards.
 		# The menu comes first (P4.14): its buttons write `Game.mode` and ask for the level.
 		_selector = GameSelector.new()
 		_selector.name = "GameSelector"

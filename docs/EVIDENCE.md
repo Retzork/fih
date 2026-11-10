@@ -4417,3 +4417,87 @@ behavior or specs; follow up with a binary observation entry.
   (Q-0054): the per-kind item art and slot 7's x; the port draws the item name in the dome and
   the price on the plate. Pinned: `headless_store_ui_check` 40 assertions and
   `headless_integration_check` 40.
+
+### EV-0172 - P4.6/P4.5: the egg is the seventh `MENUBAR` dome, not a bottom-right widget (R3)
+- Date: 2026-11-10
+- Type: asset binding + port placement (owner review)
+- Source: `assets_raw/images/eggpieces.png` (138x39, three 46x39 cells); the `MENUBAR` dome x table
+  in EV-0171 (`FUN_005409B0`); `Progression.EGG_PRICES`/`STORE_TABLE` (the tank-5 egg is the free
+  row at slot 6); `scripts/ui/egg_widget.gd`, `scripts/ui/store_bar.gd`,
+  `scripts/tank/level.gd:_mount_egg_widget`; captures `shot_level.png`, `shot_tank5_bar.png`
+- Confidence: high for the art, the cell and the free-price row; the placement inside the dome is a
+  port fit (the original widget rect is unrecovered, Q-0053)
+- Notes: (1) **Why the earlier widget was invisible:** it was a `Node2D` child of the level, and the
+  bar lives on a `CanvasLayer`; `z_index` cannot cross layers. `Level._mount_egg_widget()` now
+  `reparent()`s it into the `Hud` layer after the bar, so it draws over the seventh dome on every
+  tank. (2) **Tank 5:** `StoreBar` keeps row 6 (the free egg) for the click data but blanks the
+  dome's name/price text, and the widget draws `FREE` on the same purple plate. The 0 is a recovered
+  price, not the unknown marker. (3) **Readout:** the `EGGPIECES` cells replace the old
+  "EGG n/4" text and the price sits on the plate; the port-only "Egg/Fish/Food/Weapon" info line and
+  its `Level._update_hud` were deleted. (4) Pinned: `headless_progression_check` 86,
+  `headless_integration_check` 60 (the widget's dome position and `FREE`).
+
+### EV-0173 - P4.14: the menu mermaid's `MERYLTAIL` overlay is drawn with its alpha mask (R10)
+- Date: 2026-11-10
+- Type: asset binding + port placement (owner review)
+- Source: `assets_raw/images/tailflop.png` (1904x165, eight 238x165 cells);
+  `assets_raw/masks/tailflop_.png` (same dimensions); `MERYLTAIL`'s resources.xml metadata
+  (`anim="once"`, `framemap="7,6,5,4,3,2,1,0"`, `framedelay="2"`, `begindelay="3"`);
+  `scripts/ui/game_selector.gd`; capture `shot_menu.png`
+- Confidence: high for the sheet, the mask, the playback and the composite; the screen offset and
+  mirror are a port fit (Q-0055)
+- Notes: (1) The old green strap was the unmasked sheet - its field is opaque green, so compositing
+  `tailflop_.png` through `MaskAlpha.apply()` is what makes the tail transparent. (2) The overlay is
+  mirrored (`TAIL_FLIP`) and parked at (120,268) so the dark cell wraps the backdrop's pale baked
+  tail instead of leaving two tails; cell 0 is the rest pose because the recovered flop ends on it.
+  (3) The sheet is loaded through its imported texture and `get_image()` (F1), never
+  `Image.load_from_file`. (4) Pinned by `headless_menu_check` 28 (cell size, begin delay, two-tick
+  cells, return to rest).
+
+### EV-0174 - P4.4: `_sync_fx`'s trim loop froze the rendered level; detaching first fixes it
+- Date: 2026-11-10
+- Type: runtime observation + code analysis
+- Source: `scripts/tank/level.gd:_sync_fx`; `tests/headless_render_check.gd` (17 assertions);
+  the frozen windowed capture run exited with `-805306369`
+- Confidence: high for the cause and the fix; the freeze is reproducible by expiring any effect
+  (the click laser spark lives five ticks)
+- Notes: (1) The old trimmer was `while _fx_layer.get_child_count() > wanted.size():
+  get_child(...).queue_free()`. `queue_free()` only queues: the node stays a child until the frame
+  ends, so the count never shrank and the loop never returned, hanging the main thread. (2) The fix
+  copies the children into a working array, `remove_child()`s each surplus dot, then `queue_free()`s
+  it; the same array feeds the grow loop and the per-dot update. (3) `headless_render_check` drives
+  the pool both ways and pins that a freed dot is detached immediately; the freeze and its cause are
+  summarized in the `PLAN.md` 2026-11-10 addendum.
+
+### EV-0175 - P4.6: the Hatch card draws `HATCHSCREEN`, the crack strip and the pet cell through `MaskAlpha`
+- Date: 2026-11-10
+- Type: asset binding + port timing
+- Source: `resources/content.json` `IMAGE_HATCHSCREEN` (640x480, 1 cell),
+  `IMAGE_HATCHANIMATION` (3x1 cells 57x60, `SpriteFrames`);
+  `assets_raw/masks/_HatchANIMATION.png` (171x60) and `assets_raw/masks/_presto.png` (800x240);
+  `scripts/ui/hatch_screen.gd`; captures `shot_tank5_award.png`, `shot_tank5_hatched.png`
+- Confidence: high for the art, the cell grid and the masking; the crack hold is a port choice
+  (Q-0060)
+- Notes: (1) `HATCHANIMATION`'s field is brown (~132,92,42), not black, so `SpriteKey.keyed()` (which
+  clears only black connected to the cell border) leaves a box; `MaskAlpha.apply()` uses the mask's
+  luminance and clears it. (2) `Content.texture()` is the first cell only, so the crack uses the
+  `SpriteFrames` sequence; each cell is composed from its `AtlasTexture` region, not the whole strip.
+  (3) The pet cell uses the same per-cell composition with the pet's own `masks/_<name>.png`; the
+  mask path is probed as `_<file>` then `<stem>_` (the extracted set has both conventions). Brinkley
+  has no mask and keeps the colour-key fallback. (4) The crack is three 0.3 s holds and the pet
+  appears at 0.9 s (Q-0060); `Please Wait...`/`Menu` keep the id-99/id-100 rects. (5) Pets and Bonus
+  remain text-only.
+
+### EV-0176 - P4.6: the 5-1 completion walk banks the tank-5 bonus once and keeps the menu down
+- Date: 2026-11-10
+- Type: implementation + test evidence
+- Source: `scripts/main.gd:_on_level_completed`/`_process`; `tests/headless_integration_check_scene.gd`
+  (60 assertions); `docs/PLAN.md` R8/§5d
+- Confidence: high for the tested path; the live timing/feel remains the owner's R8 playtest
+- Notes: (1) `Main._process` mounted the selector whenever `_level` was null, so the menu appeared
+  behind Hatch/Pets/Bonus; the `_flow` guard keeps it down until the between-level screens finish.
+  (2) The tank-5 5000-shell win bonus was computed for the card but never banked; adventure now
+  credits it once in `_on_level_completed` (Time Trial and Challenge already bank their reward in
+  `Level.complete_level`). (3) The integration suite walks the free egg dome (3 -> 4 pieces, no
+  money), Presto's grant, the 5000 + 5000 Shells, profile 5-2/`bonus_adventure`/`tank5_wins = 1`,
+  then Hatch -> Pets -> Bonus -> 5-2.

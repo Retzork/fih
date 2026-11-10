@@ -1,26 +1,37 @@
 class_name EggWidget
 extends Control
 ## The tank's egg-piece widget (P2.6 §3/§5). `buy_egg()` is the purchase API; this is the clickable
-## object that makes it reachable on tanks 1-4. Tank 5 sells the egg as a free store row instead, so
-## the widget hides there.
+## object that makes it reachable on tanks 1-4.
 ##
-## The original widget's rect was not recovered (Q-0053), so its placement here is presentation-only:
-## the recovered `EggPieces` art sits at the tank's bottom-right with the current piece count and
-## price. The click path itself is the recovered one: spend `egg_price`, add a piece, and complete the
-## level on the fourth.
+## Placement (2026-11-10, owner review): the **seventh `MENUBAR` dome** (store slot 6), which no store
+## row occupies on tanks 1-4 - the bar leaves that dome empty. Tank 5 sells the egg as that dome's
+## free row, so the bar keeps the row and the click; the widget still draws the dome there, which is
+## why `StoreBar` blanks that row's text (`StoreBar.refresh`).
+##
+## The widget's own rect was never recovered (Q-0053), so the dome placement is a presentation choice
+## that follows the bar it sits in; the piece count and the price are the recovered figures.
+##
+## The art is the progress readout: `EGGPIECES` ships three cells, from the bare shell to the whole
+## egg, so the piece count picks the cell. There is no recovered text label, so the exact count lives
+## in the tooltip rather than as another line drawn over the tank.
 
-const RECT := Rect2(500.0, 416.0, 128.0, 52.0)
 const EGG_ART := "IMAGE_EGGPIECES"
 const PIECES_TO_COMPLETE := 4
+## The eighth dome, at `SLOT_X[6]` in `StoreBar` (the recovered `FUN_005409B0` x table).
+const SLOT := 6
+## Inside the 60x58 slot: the 46x39 cell (`EGGPIECES` is 138x39, three cells) sits in the dome and
+## the price sits on the same purple plate as every other dome (`StoreBar.PRICE_RECT`).
+const ART_RECT := Rect2(7.0, 1.0, 46.0, 39.0)
+const PRICE_RECT := Rect2(2.0, 42.0, 56.0, 16.0)
 const GREY := Color8(0xCC, 0xCC, 0xCC)
 const PRICE_COLOR := Color8(0xF2, 0xE8, 0xC8)
 
 var level = null
 
 var _button: Button = null
-var _name: Label = null
 var _price: Label = null
 var _art: TextureRect = null
+var _frames: SpriteFrames = null
 var _last_signature := ""
 
 
@@ -32,44 +43,29 @@ func _autoload(node_name: String) -> Node:
 
 func setup(source) -> void:
 	level = source
-	position = RECT.position
-	size = RECT.size
+	var slot := StoreBar.slot_rect(SLOT)
+	position = slot.position
+	size = slot.size
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 200
-
-	var panel := Panel.new()
-	panel.name = "Panel"
-	panel.position = Vector2.ZERO
-	panel.size = RECT.size
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.0, 0.0, 0.0, 0.55)
-	style.border_color = Color8(0xF2, 0xE8, 0xC8, 0xAA)
-	style.set_border_width_all(2)
-	panel.add_theme_stylebox_override("panel", style)
-	add_child(panel)
 
 	_button = Button.new()
 	_button.name = "Buy"
 	_button.position = Vector2.ZERO
-	_button.size = RECT.size
+	_button.size = size
 	_button.flat = true
 	_button.focus_mode = Control.FOCUS_NONE
 	_button.pressed.connect(_on_pressed)
 	add_child(_button)
 
-	_name = Label.new()
-	_name.name = "Pieces"
-	_name.position = Vector2(54.0, 4.0)
-	_name.size = Vector2(70.0, 20.0)
-	UiFont.apply(_name, UiFont.TINY_FONT)
-	_button.add_child(_name)
-
 	_price = Label.new()
 	_price.name = "Price"
-	_price.position = Vector2(54.0, 26.0)
-	_price.size = Vector2(70.0, 20.0)
-	UiFont.apply(_price, UiFont.LABEL_FONT)
+	_price.position = PRICE_RECT.position
+	_price.size = PRICE_RECT.size
+	_price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_price.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiFont.apply(_price, UiFont.SMALL_FONT)
 	_button.add_child(_price)
 
 	refresh()
@@ -79,51 +75,48 @@ func _ready() -> void:
 	var content := _autoload("Content")
 	if content == null:
 		return
-	var frames: SpriteFrames = content.sprite_frames(EGG_ART)
-	if frames == null or frames.get_frame_count("default") == 0:
+	_frames = content.sprite_frames(EGG_ART)
+	if _frames == null or _frames.get_frame_count("default") == 0:
 		return
-	var texture := frames.get_frame_texture("default", 0)
+	var texture := _frames.get_frame_texture("default", 0)
 	if texture == null:
 		return
 	_art = TextureRect.new()
 	_art.name = "Egg"
 	_art.texture = texture
-	_art.position = Vector2(4.0, 7.0)
-	_art.size = Vector2(float(texture.get_width()), float(texture.get_height()))
+	_art.position = ART_RECT.position
+	_art.size = ART_RECT.size
 	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_art)
 	move_child(_art, 0)
+	refresh()
 
 
-## Redraw only when the purse, the piece count, the price or completion changed.
+## Redraw only when the purse, the piece count, the price, completion or the tank changed.
 func refresh_if_changed() -> void:
 	if level == null:
 		return
-	var signature := "%d:%d:%d:%s" % [
-		int(level.money), int(level.egg_pieces), int(level.egg_price), str(level.completed)
-	]
+	var signature := _signature()
 	if signature == _last_signature:
 		return
+	_last_signature = signature
 	refresh()
 
 
 func refresh() -> void:
 	if level == null or _button == null:
 		return
-	# Tank 5 sells the egg as a free store row (P2.6 §3); the widget is for the other four tanks.
-	visible = int(level.tank_index) != 5
-	if not visible:
-		return
-	_last_signature = "%d:%d:%d:%s" % [
-		int(level.money), int(level.egg_pieces), int(level.egg_price), str(level.completed)
-	]
+	_last_signature = _signature()
+	# The widget draws the dome on every tank; on tank 5 the bar's row supplies the same purchase.
+	visible = true
+	var pieces := mini(int(level.egg_pieces), PIECES_TO_COMPLETE)
 	var price := int(level.egg_price)
 	var known := price != Progression.PRICE_UNKNOWN
 	var affordable := known and (price <= 0 or int(level.money) >= price)
 	_button.disabled = bool(level.completed) or not known or not affordable
-	_name.text = "EGG %d/%d" % [mini(int(level.egg_pieces), PIECES_TO_COMPLETE), PIECES_TO_COMPLETE]
+	tooltip_text = "Egg %d/%d" % [pieces, PIECES_TO_COMPLETE]
 	if not known:
 		_price.text = "?"
 	elif price <= 0:
@@ -131,8 +124,25 @@ func refresh() -> void:
 	else:
 		_price.text = str(price)
 	var colour := PRICE_COLOR if affordable and not level.completed else GREY
-	_name.add_theme_color_override("font_color", colour if not level.completed else GREY)
 	_price.add_theme_color_override("font_color", colour)
+	_show_frame(pieces)
+
+
+## The cell for this piece count: the sheet runs from the bare shell (0) to the whole egg (2).
+func _show_frame(pieces: int) -> void:
+	if _art == null or _frames == null:
+		return
+	var last := _frames.get_frame_count("default") - 1
+	var texture := _frames.get_frame_texture("default", clampi(pieces - 1, 0, last))
+	if texture != null:
+		_art.texture = texture
+
+
+func _signature() -> String:
+	return "%d:%d:%d:%d:%s" % [
+		int(level.tank_index), int(level.money), int(level.egg_pieces),
+		int(level.egg_price), str(level.completed)
+	]
 
 
 ## Click the widget: buy one piece. Returns whether the purchase went through.

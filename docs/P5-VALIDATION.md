@@ -7,8 +7,8 @@ performance sanity (P5.4) and the packaging decision (P5.5) as reference evidenc
 cannot close until R8 (windowed tanks 2-4/5-1) and R9 (pet guards) pass. Every value below cites
 its `EV-` entry or its port code path; nothing here is new binary evidence.
 
-Test totals for the tree this document describes: **23 suites, 1212 assertions** (2026-11-09
-re-run: 22 `--script` suites at 1172 plus the scene-backed integration suite at 40). The boot
+Test totals for the tree this document describes: **24 suites, 1263 assertions** (2026-11-10
+re-run: 23 `--script` suites at 1203 plus the scene-backed integration suite at 60). The boot
 check exits 0. The pre-existing Ogg vendor-comment warnings and the ObjectDB/resource leak
 notices at exit are unchanged (AUDIT F2) and are not failures.
 
@@ -48,7 +48,7 @@ value ever moves.
 | 200 / 999999 / 5 / 2 | start money / Sandbox money / pellet price / pet capacity | EV-0128 | `Level._apply_mode_flags`, `Tank` |
 | 15000 | backdrop price in the store roller | EV-0141 | `Profile.BACKDROP_PRICE`, `Level.roll_stock` |
 | `[10,10,15,20,25,10]` + level - 1, 160 ticks | bonus timer base, post-completion wait | EV-0076 | `BonusScreen.payout_for` uses the payout switch; the wait stays with `Progression.resolve_start` (Q-0053) |
-| `5000*(counter-1)`, clamp 25000 | tank-5 bonus shells | EV-0076 | `BonusScreen.payout_for` |
+| `5000*(counter-1)`, clamp 25000 | tank-5 bonus shells | EV-0076 | `BonusScreen.payout_for`, banked by `Main._on_level_completed` (adventure only, once) |
 | 300 s / 600 s | Time Trial budget (tank 1 / 2-4) | EV-0127 | `Level.time_trial_budget_ticks` (ticks at 36 Hz) |
 | 150/150/175/200 ticks | Challenge price inflation period | EV-0127 | `Level.inflate_prices` (per-tick shape via `Store.inflate`) |
 | 76/24 % and 26/25/25/10/5/3/3/3 | Virtual Tank fish roll | EV-0128 | `Level.spawn_virtual_fish`, `VT_PRIZE` |
@@ -83,7 +83,7 @@ Statuses are what the headless suites already assert; anything that needs eyes i
 | Challenge (any) | per-item inflation, type-8 -> 0xC after wave 4, flat 2000-20000 shells, unlock byte | `headless_mode_check`, `headless_progression_check` |
 | Virtual Tank | no music, no wave, weighted spawner, coins -> shells, `sim<slot>.dat` | `headless_mode_check`, `headless_profile_check` |
 | Sandbox | 999999 money, price re-roll, no tank-5 case | `headless_mode_check` |
-| Between levels | Hatch -> Pets -> Bonus -> next level; tanks advance, Presto pays 5000 shells | `headless_profile_check`, windowed flow |
+| Between levels | Hatch -> Pets -> Bonus -> next level; tanks advance, Presto pays 5000 shells; Hatch draws the recovered card art, Pets/Bonus stay text-only | `headless_profile_check`, `headless_integration_check` (5-1 walk), `shot_tank5_*.png` |
 | Menus | selector gates ("Not Yet!"), Options sliders, Help 8 pages, Hall 4 tabs | `headless_menu_check`, `headless_profile_check` |
 
 Screenshots: `tools/godot/screenshot.gd` still captures menu/level/store windowed; the
@@ -151,4 +151,4 @@ Run:
 ```
 
 This boots the selector and pumps the loading bar to completion (exit 0). The full
-suite is the 23 headless checks plus the scene-backed integration check (see README).
+suite is the 24 headless checks plus the scene-backed integration check (see README).

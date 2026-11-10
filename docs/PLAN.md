@@ -1,16 +1,30 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-11-09 (REVIEW RESET: the completion pass was revoked by the owner after
-playing the build - the game is far from the original despite 23/23 suites green. The suites
+Last updated: 2026-11-10 (REVIEW RESET: the completion pass was revoked by the owner after
+playing the build - the game is far from the original despite 24/24 suites green. The suites
 prove modules, not the assembled game. P4 14/14 `[x]` and P5 5/5 `[x]` are reverted to `[~]`
 below; see the Review section at the end of this file for the confirmed defects, each with its
 reproduction. Do not re-mark anything `[x]` until the windowed playtest passes. Re-verified
-2026-11-09: all 23 suites pass - 22 script suites + the scene-backed integration suite,
-**1212 assertions** - and the 400-frame boot exits 0 with no script error; the remaining Ogg
+2026-11-10: all 24 suites pass - 23 script suites + the scene-backed integration suite,
+**1263 assertions** - and the 400-frame boot exits 0 with no script error; the remaining Ogg
 vendor-comment and ObjectDB/resource-at-exit notices are the known AUDIT F2 noise.)
 
-Next: **Review fixes in order.** R1 (200 starting money), R2 (HUD/money placement) and R4 (the tank's
-`MENUBAR` shop row, EV-0171) are fixed; R3 verified faithful, R7 is closed on evidence
+2026-11-10 addendum: the render path is covered now. `tests/headless_render_check.gd` (17
+assertions) pins `Level._sync_fx`'s dot pool to the effect lists in both directions; the old trimmer
+was `while get_child_count() > wanted: get_child(...).queue_free()`, and `queue_free()` does not
+shrink a parent inside the frame, so the loop never returned - a rendered level froze permanently the
+moment an effect expired (a click's laser spark lives 5 ticks), which is what the 2026-11-09 and
+2026-11-10 debug sessions hung on. Totals with it: **24 suites, 1263 assertions**.
+
+2026-11-10 UI addendum: the tank's egg moved from a bottom-right widget into the seventh `MENUBAR`
+dome (R3, EV-0172), and the Hatch card now draws the recovered `HATCHSCREEN` incubator, the
+`HATCHANIMATION` crack strip and the awarded pet's first cell (EV-0175). Both masked sheets are
+composited through `MaskAlpha` because their backgrounds are opaque fields, not the black key
+`SpriteKey` clears. The remaining between-level screens (Pets, Bonus) are text-only.
+
+Next: **Review fixes in order.** R1 (200 starting money), R2 (HUD/money placement), R3 (the egg in
+the seventh `MENUBAR` dome, EV-0172) and R4 (the tank's
+`MENUBAR` shop row, EV-0171) are fixed; R7 is closed on evidence
 (EV-0159/EV-0160/EV-0161/EV-0166/EV-0169: the bottom branch, the landing
 flag with no writer, Angie's re-lay, and the completed sweep - all seven `DropFood` sites read, every
 one 0 except Angie, and the loader's type-`0x1C` branch read too: bare Food ctor, no flag), R6 is
@@ -19,7 +33,8 @@ sheet row now come from `FUN_004DD7A0` per kind, so coins no longer all draw `MO
 closed by the recovered fish draw (EV-0164): the body sheet is `FUN_004D5AA0`'s swim/eat/hungry pick,
 the guppy's row is its stage (3 -> 2, 4 -> 3) and the carnivore's is row 4, so the eye-layer rule is
 answered (three/four tinted `SIM` layers) even though that colourised path stays unimplemented.
-Remaining: a windowed run of tanks 2-4 and 5-1 (R8) and the assembled feel. Audio is muted by
+Remaining: the owner's live playtest of tanks 2-4 and 5-1 (R8's windowed frames are captured -
+see the Review table) and the assembled feel. Audio is muted by
 default for now at the owner's request (Q-0056). The P4 lines below keep their evidence; only the
 premature `[x]` is withdrawn.
 
@@ -646,12 +661,14 @@ set.
     4th piece; `complete_level()` grants the pet, pays the final boss's 5000 Shells, advances the
     profile and emits `level_completed`, which `Main` uses to start the next level. Tank 5's egg
     is a store row (free, slot 6) that routes to `buy_egg`.
-  - The tank's egg widget is in (`scripts/ui/egg_widget.gd`): the recovered `EggPieces` art and a
-    click call `buy_egg()` from tanks 1-4 (tank 5 keeps its free store row). Its placement is
-    port-only because the original rect was not recovered (Q-0053).
-  - Not ported yet (Q-0053): the bonus rounds and the 160-frame wait, the Hatch/Pets screens, the
-    pre-bonus store, the elapsed-time and Challenge score records, and the credits/trophy screens
-    (Q-0013/Q-0016).
+  - The tank's egg widget is in (`scripts/ui/egg_widget.gd`): the recovered `EGGPIECES` cell for the
+    piece count, drawn in the seventh `MENUBAR` dome on every tank (2026-11-10, R3/EV-0172); tank 5's
+    free store row keeps the same dome and click. The dome placement is port-only because the
+    original widget rect was not recovered (Q-0053).
+  - Between-level screens: Hatch, Pets and Bonus mount and `Main` runs Hatch -> Pets -> Bonus -> next
+    level. Hatch draws the recovered card art (EV-0175); Pets and Bonus stay text-only. Not ported yet
+    (Q-0053): the bonus rounds themselves and the 160-frame wait, the pre-bonus store, the
+    elapsed-time and Challenge score records, and the credits/trophy screens (Q-0013/Q-0016).
 - [~] **P4.7** Pets implementation (per-pet tasks after P2.7 enumeration)
   (2026-11-03 - **foundation landed.** `scripts/entities/pet.gd` holds the roster as data (`DEFS`, 24 entries; 999 stays out) with family/speed/fixed-y/period cells that are 0 when unrecovered, the slot-81 gate order (pause -> tank 5 -> hostile aliens except Stanley), Stinky's bottom-lane chase with his 0..9 hide counter and per-pet coin predicate (bombs, snot, Niko's pearl, claimed coins, the star pair under a Penta), and Niko's 1224/1233/1440/1450 pearl cycle resetting to `rand % 50`. `Tank` gained `spawn_pet` and the tank-index/alien/Penta/source flags the gates read; `Coin` gained `claimed` (+0x198). `tests/headless_pet_check.gd` passes **45 assertions**. Angie (0x12) followed: her recovered target (`+0x1A0 > 0x5F`), the 30/60 px contact ranges and the `FUN_004D5630` phase write from 100 to 10, plus the corpse's ten-tick revive countdown and `Level._on_successor`'s live spawn - so a revived corpse now really returns as a live fish, and `tests/headless_pet_check.gd` passes **53 assertions**. Vert (0x06, 216 ticks, coin kind 2), Shrapnel (0x0B, the ctor-rolled 633..652, bomb coin 0x11 worth 150) and Nostradamus (0x15, 300..599, the 0x12 snot) then made the plain timer droppers real: **66 assertions**, and Angie's food re-lay (EV-0161) then took this suite to **73**. The other 18 pets idle (**Q-0044**). Pets now also **enter the tank**: `Level.spawn_owned_pets()` reads the profile's owned flags (`FUN_00501410`) at `start_level` and spawns each pet through `FUN_00544A90`'s randomized x 105..369 / y 20..539, and `_make_visual`/`_draw_entity_frame` draw every pet from its own 80x80 `Content` sheet (`IMAGE_STINKY`..`IMAGE_WALTER`) using the resource's `loop`/`pingpong`/`framedelay` metadata; `tests/headless_level_check.gd` passes **121 assertions**.)
 - [~] **P4.8** Aliens + waves (P2.8)
@@ -755,7 +772,7 @@ set.
   for the unfound 100 Hz gate.
 - [~] **P5.4** Performance sanity (target: trivial for a 2D game; check draw calls on tank scenes)
   - docs/P5-VALIDATION.md §P5.4. Dozens of one-sprite entities, no physics, no shaders,
-  cached colour-keying; 23 suites + 400-frame boot + 1200-frame integration all exit 0.
+  cached colour-keying; 24 suites + 400-frame boot + 1200-frame integration all exit 0.
 - [~] **P5.5** Packaging decision + README for running the remake
   - docs/P5-VALIDATION.md §P5.5. Forward Plus kept, canvas_items/keep at 640x480,
   content.json export inclusion, ssets_raw regeneration, personal-use note.
@@ -787,9 +804,12 @@ set.
   (Level.spawn_particle, drawn by _sync_fx). headless_weapon_check **23 assertions**.
 - **P4.10** - Larva (FUN_004F2930: fall y<64, payout lerp to (550,30) at 1/7, shells at
   y<40) with the Tank+0xDC click order before missiles; spawn_laser() draws the
-  FUN_00543640 spark at click-40,40 with laser_cell_for() rows by tier (Q-0023 kept open);
-  weapon level is in the HUD alongside the Time Trial clock. headless_weapon_check.
-- **P4.6/P4.14** - HatchScreen (award card incl. 999), PetsScreen (24 buttons, writes
+  FUN_00543640 spark at click-40,40 with laser_cell_for() rows by tier (Q-0023 kept open).
+  The port-only HUD info line that carried the weapon level and the Time Trial clock was removed
+  in the 2026-11-10 owner review (R2/R3), so neither has an on-screen readout until a recovered
+  widget places one. headless_weapon_check.
+- **P4.6/P4.14** - HatchScreen (award card incl. 999, and since 2026-11-10 the `HATCHSCREEN` art,
+  crack strip and masked pet cell - EV-0175), PetsScreen (24 buttons, writes
   profile+0x5A), BonusScreen (payout switch), OptionsDialog (sliders applied to the
   buses instantly), HelpScreen (8 pages + tutorial relabel), HallScreen (4 tabs) are in,
   and Main runs Hatch -> Pets -> Bonus -> next level. headless_profile_check **29 assertions**.
@@ -810,15 +830,15 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 | # | Defect (confirmed) | Evidence | Status |
 | --- | --- | --- | --- |
 | R1 | Starting money is 0. The original starts at 200 (999999 in Sandbox), so the player cannot buy the first guppy (100). | `Level.money` starts at 0 and `start_level` never sets it; `SPECS.md` §4.3, P2.11 §6. | FIXED: `STARTING_MONEY` 200 in `setup` + `_apply_mode_flags`; manual pellets spend 5 (VT free); suite pins 200 + the 5-spend. |
-| R2 | The level HUD is a debug label ("Shells 0 Fish 2 Food 1" + the FPS line). It misnames tank money as shells and shows no egg/wave/clock. | `Level._hud` debug text; `Main` debug overlay. | FIXED: the money is on the `MENUBAR` wallet plate (R4), and the info line below the bar carries "Egg %d/4 Fish Food Weapon" (+ Time in Trial); verified in `shot_level.png`. |
-| R3 | The egg widget does not read in the level shot (bottom-right empty). It must show pieces, price and state at 640x480. | `shot_level.png` (2026): no egg visible; `EggWidget.RECT` at (500,416). | WITHDRAWN: the fresh shot shows EGG 1/4 + 150 bottom-right. Port placement retained (Q-0053). |
+| R2 | The level HUD is a debug label ("Shells 0 Fish 2 Food 1" + the FPS line). It misnames tank money as shells and shows no egg/wave/clock. | `Level._hud` debug text; `Main` debug overlay. | FIXED: the money is on the `MENUBAR` wallet plate (R4), the egg is the bar's own seventh dome (R3), and the port-only "Egg/Fish/Food/Weapon" info line was deleted in the 2026-11-10 owner review. The debug overlay (FPS/tick) is still a dev aid; the weapon level and Time Trial clock now have no readout (recorded in P4.10). |
+| R3 | The egg widget does not read in the level shot (bottom-right empty). It must show pieces, price and state at 640x480. | `shot_level.png` (2026): no egg visible; old port rect at (500,416). | FIXED 2026-11-10 (owner review): the egg is not a bottom-right widget in the original - it sits on the **top bar**. `EggWidget` now draws the recovered `EGGPIECES` cell (one per piece count) over the purple price plate in the seventh `MENUBAR` dome (`StoreBar.slot_rect(6)`), and the port-only "Egg/Fish/Food/Weapon" info line under the buy row is deleted. `shot_level.png` (1-1: egg cell + 150) and `shot_tank5_bar.png` (5-1: whole egg + FREE) show it. Placement inside the dome is still port-chosen (Q-0053 keeps the widget rect unrecovered). |
 | R4 | The in-tank store bar reads SOLD everywhere on tank 1 level 1 and was bare floating text. Verify the per-tank table + hiding and the bar's presentation. | `shot_level.png` top bar; `Progression.HIDDEN` 1:1; `menubar.png`. | FIXED (2026-11-09, EV-0171): the bar draws the game's `MENUBAR` art (domes, MENU, wallet plate), the seven recovered slot x's align with its price plates, the wallet number is on the green plate, and an unstocked slot stays an empty dome. `FUN_005409B0` builds no widget for an item not for sale, so `SOLD` (the StoreScreen branch, EV-0135) is gone from the tank bar. Tank 1 L1 still stocks the guppy alone (P2.6 §3). Pinned by 40 store-UI + 40 integration assertions and re-shot windowed. |
 | R5 | All fish draw the same guppy body (SMALLSWIM rows). Carnivore/Ultravore/Beetlemuncher/Ball/Bi need their own sheets; hungry art (HUNGRYSWIM) needs the transition. | `Level._make_visual` draws `BODY_IMAGE` for every Fish; Q-0042. | FIXED on evidence (EV-0164): the sheet is `FUN_004D5AA0`'s pick (SMALLSWIM/HUNGRYSWIM, SMALLEAT/HUNGRYEAT while the eat timer or fed countdown runs) and the row is recovered (guppy 0/1/2, 3->2, 4->3; carnivore row 4), both drawn per tick and pinned by 16 new fish assertions. Residue (Q-0042): the other five classes' draw bodies (override slots recorded); the tinted `SIM` layer path is closed as a bounded negative (EV-0168 - the tint colours are runtime-only, no literal exists in the module, and the palette table is empty in the file). |
 | R6 | Coins all cycle the MONEY first row, so every coin looks identical. The kind -> row binding is still open (Q-0057). | `_draw_entity_frame` comment; Q-0057. | FIXED: slot 26 `FUN_004DD7A0` recovered (EV-0162/EV-0163) - the draw binds image + row per kind (`MONEY` 0..4 normal, `SHELLS` 0..3 + `MONEYBAG` virtual, `PEARL` for 0x06/0x0D); `Coin.sprite_image()`/`sprite_row()` + `_draw_entity_frame`, 154-assertion coin suite pins all 27 bindings plus 0x11's `MISCITEMS`+`SPARKS` pair (EV-0167) and 0x12's `PEANUT` (EV-0170); windowed render shows all six art variants. Residue (Q-0057/Q-0040): the diamond row's blue plate (no second colorkey is recovered); 0x11 and 0x12 now draw their recovered art (0x12's `PEANUT` is the blank shipped image, so the snot is invisible by design), while 0x10 still falls back to `MONEY` cell 0 (`+0x1A0` ramp unrecovered). |
 | R7 | Pellets fall but never land/bob. **Two evidence-backed answers**: dropped food has no landing transition (nothing writes `+0x190`; click/feed drops pass `flag = 0`) and sinks out after a 15-tick bottom life (EV-0159/EV-0160), while a pellet **does** land and bob when Angie re-lays it with `flag = 1` in her 30 px food contact (EV-0161). The port now does both. Sweep complete (EV-0166): the last two sites (`0x4E4DEF`, the tank's own `0x547DFD`) also pass 0, and the save body never writes `+0x190`; the loader's type-`0x1C` branch builds Food with its bare ctor, so no flag exists there (EV-0169). | `Food._advance`, `FUN_004D62D0`, `FUN_004FE740`. | FIXED: sink-out + Angie's re-lay implemented, both suite-pinned; no landing transition exists, so none was added. **Deviation D-0012:** `Food.SETTLE_TICKS` (single constant, shipped 20) rests an ordinary pellet on the floor that many ticks before the sink-out; 0 = faithful. |
-| R8 | No alien threat on tank 1 level 1 (by design, selection 0), but waves on 1-2/2-4/5-1 must be seen playing windowed: alien art, HP bar, missiles, coin drops. | `shot_level.png` has no aliens; integration advances time, windowed eye-check open (P5.2). | OPEN (windowed run of 2-4/5-1 still needed). |
+| R8 | No alien threat on tank 1 level 1 (by design, selection 0), but waves on 1-2/2-4/5-1 must be seen playing windowed: alien art, HP bar, missiles, coin drops. | `shot_level.png` has no aliens; integration advances time, windowed eye-check open (P5.2). | WINDOWED CAPTURES DONE 2026-11-10 (`tools/godot/shot_r8.gd`, Dummy audio, content 326/326): `shot_r8_1_2.png` (wave alien art + HP bar + a missile), `shot_r8_2_4.png` (two staged Destructors, both bars, volley), `shot_r8_5_1.png` (Cyrax 5000 hp + two Minisylvesters; only Cyrax's bar, and only that bar is drawn on tank 5 - P2.9 §5), `shot_r8_coins.png` (1-1: a grown guppy's real `coin_due` drop, stage-1 coin on screen). Bar geometry matches the pinned `(-70, 77)` / box-3 rule in every frame. The tank-5 egg dome is correct, not a missing price: item 11's 0 is a **recovered free price** (`STORE_TABLE[11] = {5: [0, 6]}`, `EGG_PRICES[5] = [0]`, row `free: true`), the widget draws that dome on every tank and prints `FREE` for it (`StoreBar` keeps the row and blanks its text), and the 150/500 egg figures seen elsewhere are `EGG_PRICES[1]` level 1/2. Still OPEN on the owner's *live* playtest (timing/feel, attacks landing); the harness fast-forwards without feeding, so its frames starve the fish (FISH 0) - that is the capture, not the game. |
 | R9 | Pets are text rows, not the original's fish-pet art/behaviour in the tank. | `Pet` wander + `IMAGE_<NAME>` sheet playback. | PARTIAL: pets draw their own sheets and 12 slot-81 bodies act; 8 guards remain (Q-0044). |
-| R10 | The menu mermaid's tail overlay drew a green strap across the baked art. | `GameSelector._add_mermaid_tail`; Q-0055; windowed menu. | FIXED: the overlay is removed and the baked `SELECTORSCREEN` tail is left alone - no placement evidence exists for the sheet (Q-0055 keeps the open visual item). `headless_menu_check` 21 assertions. |
+| R10 | The menu mermaid's tail overlay drew a green strap across the baked art. | `GameSelector._add_mermaid_tail`; Q-0055; windowed menu. | FIXED 2026-11-10 (owner review: the baked-only mermaid read as unfinished): the overlay is back, **masked** (`MaskAlpha` + `masks/tailflop_.png`, which is what the old green strap was) and fitted over the flat baked tail - mirrored, `TAIL_OFFSET` (120,268), resting on cell 0, then playing the recovered one-shot flop (framemap 7..0, 2 ticks a cell, 3-tick hold). `shot_menu.png` shows one tail. The placement stays a port fit, so Q-0055 keeps the open visual item. `headless_menu_check` 28 assertions pins the strip and playback. |
 
 Fixes land here as they are verified; this table is the source of truth for the review.
 

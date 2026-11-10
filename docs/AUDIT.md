@@ -90,7 +90,7 @@ task's documented scope was done, not that the system is connected or faithful.
 | content registry, typed handles, load phases | done | `headless_content_check` |
 | feeding, hunger, growth, death/corpses, coins | done for guppies; other species share the guppy art; shop-bought fish are unwired (G4) | `headless_fish_check`, `headless_coin_check`, `headless_level_check` |
 | store UI + in-tank bar | partial: 7 of 12 items available; fixed table, no stock roller/art/tooltips | `Store.ITEMS`, `headless_store_ui_check`, Q-0047/Q-0049/Q-0052 |
-| progression | partial: the egg widget buys pieces and completion advances on tanks 1-4; no bonus rounds, Hatch/Pets screens or credits | `headless_progression_check`, Q-0053, G12 |
+| progression | partial: the egg dome buys pieces on every tank and completion advances the profile; Hatch draws the recovered card art while Pets/Bonus remain text-only, the bonus rounds are not ported and nothing saves the profile | `headless_progression_check`, `headless_integration_check` (5-1 walk), Q-0053, G12 |
 | pets | partial: 6 of 24 bodies; only Stinky steers/collects; all owned pets spawn rather than the selected slots; two ctors use the global RNG | `pet.gd:150/152/289`, Q-0044, G8 |
 | aliens + waves | wired and visible: `start_level` arms the per-level type (with tank 1 level 2's 1750-tick start), 9..0xC compose 1+3/7+3/5+6/3+8, the type re-rolls after each wave, and each kind draws its recovered sheet plus the HP bar | `headless_level_check`, `headless_alien_check`, G1-G3 |
 | Cyrax boss | partial: sprite and always-on HP bar draw, but placeholder minions/pulse, 10-tick cooldown bypassed and HP never scaled | `level.gd:447`, `boss.gd`, G6 |
@@ -161,7 +161,7 @@ no code changes; G1/G2/G3/G13/G14 were fixed in the follow-up recorded in §5b.
 | G9 | coin production is a single placeholder | `_on_coin_due` (`level.gd:490`) always spawns kind 1 (15 shells); the stage -> kind table is Q-0036 | high-value fish and stages pay the same 15; the economy is flat |
 | G10 | saves write one fixed path and the profile is not persisted | `Level.save_path` is `userdata/adv1.dat` (`level.gd:81`); `Game.save_stem` has no caller; `Profile` has no serialization; `TankScalars.apply` restores `alien_selection` and `load_game` now arms `wave.selection` | every mode overwrites the Adventure slot; progress resets on restart; the loaded wave selection is armed, but per-mode stems and profile persistence remain |
 | G11 | most effect/audio signals have no consumer | no listener for `fish.hunger_warning`/`grew`, `coin.expired`/`banked`, `pet.cue`, `alien.cue`, `projectile.smoke_requested`/`burst_requested` or `wave.milestone` | no hunger/growth/pet/alien sounds, no smoke/burst/wave warnings; only drop/buy/click and music play |
-| G12 | progression and UI stop at the level boundary | `Main._on_level_completed` starts the next level directly (`main.gd:59`); no Hatch/Pets/Bonus/credits screens; store has no stock roller/art/tooltips; options/help/hall-of-fame absent | the Adventure loop has no between-level flow, and much of the original UI is missing |
+| G12 | progression and UI stop at the level boundary | `Main._on_level_completed` used to start the next level directly; the Hatch/Pets/Bonus screens now mount (Hatch has card art, Pets/Bonus text-only) but credits still have no trigger; store has no item art/tooltips; options/help/hall-of-fame are in | the Adventure loop runs between levels; remaining gaps are the bonus minigame, screen art and the unsaved profile |
 | G13 | the assembled menu flow had no suite | `headless_level_check` starts 1-3 through `start_level`; the boss suite builds a `Tank` and calls `spawn_boss` directly; store tests inject prices; the new scene-backed suite drives menu -> level -> wave -> boss through `Main` | modules were green but the assembled flow was unproven (fixed in §5b: the integration suite) |
 | G14 | level completion was unreachable on tanks 1-4 | `buy_egg` was called only from `buy_item` for `EGG_ITEM` (`level.gd:580`), and `STORE_TABLE[11]` stocks that row only on tank 5; no egg widget existed | Adventure could not advance past level 5 of any tank in normal play (fixed in §5b: the egg widget) |
 
@@ -178,7 +178,7 @@ mean the threat path is not a game yet.
 ## 5b. Follow-up fixes (2026-11-05)
 
 - **G14 fixed.** `scripts/ui/egg_widget.gd` draws the recovered `EggPieces` art and calls `buy_egg()`
-  on click; it is visible on tanks 1-4 (tank 5 keeps the free store row). Its rect is port-placed
+  on click; it now draws the seventh `MENUBAR` dome on every tank (§5d). Its rect is port-placed
   because the original widget rect was not recovered (Q-0053). The progression suite buys through
   `EggWidget.press()` instead of calling `buy_egg()` directly (79 assertions).
 - **G1/G2 fixed.** `Level.start_level()` arms the per-level selection from P2.6 §8 (including tank 1
@@ -241,8 +241,49 @@ All §5a rows and §6 priorities are closed against the recovered contract:
   perf, packaging). **Superseded 2026-11-08:** the completion pass was revoked after the owner's
   playtest; see `PLAN.md`'s Review table (R8/R9 open).
 
-Totals: **23 suites, 1212 assertions** (22 `--script` at 1172 + the scene-backed integration suite
-at 40), boot exit 0. The F2 Ogg/ObjectDB notices are unchanged and are not failures.
+Totals: **24 suites, 1263 assertions** (23 `--script` at 1203 + the scene-backed integration suite
+at 60), boot exit 0. The F2 Ogg/ObjectDB notices are unchanged and are not failures.
+
+## 5d. Tank UI and 5-1 completion check (2026-11-10)
+
+Owner review: the egg belongs on the **top bar**, not the bottom-right corner, and the port-only
+info line under the buy row should go.
+
+- **Egg on the bar.** `EggWidget` draws the recovered `EGGPIECES` cell (one per piece count) over the
+  purple price plate inside the seventh `MENUBAR` dome (`StoreBar.slot_rect(6)`), and the
+  "Egg/Fish/Food/Weapon" label is deleted from `Level`. The widget had been parented to the level's
+  Node2D tree, where the bar's CanvasLayer drew over it: `add_child()` does not move an owned node,
+  so it never appeared. `Level._mount_egg_widget()` now `reparent()`s it into the `Hud` layer after
+  the bar. On tank 5 the bar keeps the free row (and the click data) but blanks its text, so the same
+  art, not the word "Egg", fills that dome on every tank.
+- **5-1 end to end** (`headless_integration_check`, 60 assertions): from the production menu, the
+  free egg dome takes 3 -> 4 pieces with no money spent, completes the level, reports Presto once,
+  banks the 5000-shell win bonus plus the 5000-shell tank-5 bonus, moves the profile to 5-2 with
+  `bonus_adventure` and `tank5_wins = 1`, then walks Hatch -> Pets -> Bonus through the screens'
+  own buttons and starts 5-2 on Continue. `headless_progression_check` (86) pins the same purchase at
+  the row level plus the refusal after completion.
+- **Two flow bugs fixed by that walk.** `Main._process` re-mounted the game selector whenever
+  `_level` was null, so the main menu reappeared behind the Hatch/Pets/Bonus cards (now guarded by
+  `_flow`); and `Main` computed the bonus-card payout but never banked it, so the tank-5 5000 shells
+  were display-only (now credited once, adventure only - Time Trial and Challenge already bank their
+  reward in `Level.complete_level`).
+- **Menu mermaid tail.** The backdrop's baked tail is a flat pale shape, so the menu read as
+  unfinished without `MERYLTAIL`. The overlay is restored with its mask (`MaskAlpha` +
+  `masks/tailflop_.png` - the missing mask is what made the old attempt a green strap), fitted over
+  the baked tail (mirrored, offset (120,268), resting on cell 0) and playing the recovered one-shot
+  flop. Exact placement stays a port fit (Q-0055, R10).
+- **Hatch card art.** `HatchScreen` now draws the recovered 640x480 `HATCHSCREEN` incubator, the
+  three-cell `HATCHANIMATION` crack strip and the awarded pet's first cell. Both sheets keep an
+  opaque coloured field in the extracted PNGs, so `SpriteKey` (black border key) is the wrong tool:
+  the cells are composed with `MaskAlpha` against `masks/_HatchANIMATION.png` and the pet's own
+  `masks/_<name>.png`, cropped per cell so the 800x240 pet sheet is never walked whole. The crack
+  timing (0.3 s a cell, 0.9 s to the pet) is the port's clock choice (Q-0060). Pets and Bonus remain
+  text-only.
+- Still open: the Pets/Bonus card art (Q-0053) and the profile is
+  not written to disk by the game flow at all (`Profile.save_to_file` has no caller).
+
+Totals after this pass: **24 suites, 1263 assertions** (23 `--script` at 1203 + the scene-backed
+integration suite at 60), boot exit 0.
 
 ## 6. Priority for the next sessions
 
@@ -256,8 +297,8 @@ at 40), boot exit 0. The F2 Ogg/ObjectDB notices are unchanged and are not failu
    from the mode, or the mode lines should say "selection only".
 5. **Pets and persistence** (G8/G10): selected-slot spawning, movement for the implemented pets,
    per-tank RNG for the pet ctors, per-mode save stems and profile serialization.
-6. **Effects, UI and packaging** (G11/G12/F1): connect the cue signals, then the Hatch/Bonus/Pets
-   screens, options/help, and the export-safe asset loading.
+6. **Effects, UI and packaging** (G11/G12/F1): connect the cue signals, then the remaining
+   Pets/Bonus art, the bonus minigame and the export-safe asset loading.
 
 ## 7. Reproduction
 

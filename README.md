@@ -12,16 +12,23 @@ of the original (no source code). The game install is read-only; all behavioral 
 documentation index, repository map, analysis commands and handover checklist are in
 **[`docs/README.md`](docs/README.md)**.
 
-**Current status (2026-11-09):** Phase 2 is **closed**, 14/18 systems documented - P2.1-P2.4 and
+**Current status (2026-11-10):** Phase 2 is **closed**, 14/18 systems documented - P2.1-P2.4 and
 P2.7-P2.15 are done, P2.5 and P2.6 are substantially complete with tracked open questions, and only
 the optional P2.16 (screensaver) / P2.17 (cheats) remain. Phase 3 (assets) is complete.
 The 2026-11-08 completion pass was **revoked by the owner after a playtest**: the suites prove
 modules, not the assembled game. **The Review table in [`docs/PLAN.md`](docs/PLAN.md) is the
-current work list.** R1/R2 (starting money, HUD) and R5/R6/R7 (species art, coin art, pellet
-sink-out + Angie's re-lay) are fixed with evidence EV-0162..EV-0170; **R8 (windowed run of tanks
-2-4 and 5-1) and R9 (remaining pet guards) are open.** The suites still pass - **23 headless
-checks, 1212 assertions** (22 `--script` suites + the scene-backed integration suite, re-run
-2026-11-09) - which is necessary but not sufficient for the assembled feel. The port runs the
+current work list.** R1/R2/R3 (starting money, HUD, egg on the `MENUBAR` dome) and R5/R6/R7
+(species art, coin art, pellet sink-out + Angie's re-lay) are fixed with evidence
+EV-0162..EV-0176, and R10's masked mermaid tail plus the Hatch card art are in; **R8 (the owner's
+live playtest of tanks 2-4 and 5-1 - its windowed frames are captured) and R9 (remaining pet
+guards) are open.** The suites still pass - **24 headless
+checks, 1263 assertions** (23 `--script` suites + the scene-backed integration suite, re-run
+2026-11-10) - which is necessary but not sufficient for the assembled feel. The 2026-11-10 additions
+are the render path, the 5-1 completion walk, the egg in the bar's seventh dome and the Hatch
+card art: the level's effect layer is now covered
+(`headless_render_check`), because the
+freeze that hung the game (and the desktop with it) lived in `Level._sync_fx` - a `queue_free()` loop
+that no `render = false` suite could reach. The port runs the
 ~36 Hz reading of Q-0034. Validation lives in [`docs/P5-VALIDATION.md`](docs/P5-VALIDATION.md),
 with its status withdrawn pending R8.
 
@@ -78,16 +85,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 # the playable level: feeding, waves, shooting, pets (122 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_level_check.gd
 
+# the level's effect layer: the dot pool tracks the effect lists both ways (17 assertions)
+& "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_render_check.gd
+
 # the shop screen and the MENUBAR bar (40 assertions; exits 0 on pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_store_ui_check.gd
 
-# P2.6 progression: store tables, egg prices, pet awards, advance (79 assertions)
+# P2.6 progression: store tables, egg prices, pet awards, advance (86 assertions)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_progression_check.gd
 
-# the main menu: EV-0131 ids, mode writers and gates (21 assertions; exit 0 = pass)
+# the main menu: EV-0131 ids, mode writers, gates and the tail strip (28 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_menu_check.gd
 
-# the assembled path: menu -> level -> wave -> boss + UI fonts (40 assertions; exit 0 = pass)
+# the assembled path: menu -> level -> wave -> boss -> 5-1 completion (60 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . res://tests/headless_integration_check.tscn --quit-after 1200
 
 # the audio layer: buses, effect pool, music pairs (40 assertions; exit 0 = pass)
