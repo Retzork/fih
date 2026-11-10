@@ -4623,3 +4623,34 @@ behavior or specs; follow up with a binary observation entry.
   the recovered `x + width/2 - 20, y - 10` for the 80 px box - and it stayed over the pet for the 10
   captured frames. (3) The stage is the port's real tank screen: `MENUBAR` shop row, egg dome, fish
   and backdrop from the extracted art, with the debug FPS/tick overlay still on (R2's dev aid).
+
+### EV-0184 - R4: the tank bar is a `MenuButtonWidget` row - image plus green price, sized and measured
+- Date: 2026-11-10
+- Type: decompile + measured art + windowed visual
+- Source: `docs/evidence/p2.12-fn-5409B0.json` (`FUN_005409B0`),
+  `docs/evidence/p2.12-fn-5373C0.json` (`FUN_005373C0`), `assets_raw/images/menubar.png`;
+  `scripts/ui/store_bar.gd`, `scripts/ui/egg_widget.gd`; captures `shot_bar_tank1.png` (1-3) and
+  `shot_bar_tank5.png` (5-1)
+- Confidence: high for the widget class, the green label colour, the 58-px width and the plate/wallet
+  rects; medium for the 60-px height (pushed argument order) and for the per-item icon binding (the
+  `SCL_*` sheets are the shipped 40-px creature icons, but the original's own image id `0xBC` was not
+  resolved)
+- Notes: (1) `FUN_005409B0` resolves `Tank+0x2E4 + i*4` (negative = no row), caches
+  `Tank+0x404 + slot*4`, and builds through `FUN_005373C0(manager, i, listener)`, which chains the
+  `FUN_00475090` image-button ctor, installs `Sexy::MenuButtonWidget::vftable`, stores the item id at
+  `+0x188`, a 60-px label width at `+0x190`, zeroes `+0x124/+0x138/+0x13C`, loads image
+  `FUN_00564345(0xBC)` into `+0x120`, and writes the green `FUN_00433360(0x6E,0xFA,0x6E)` into its
+  label colour. So the tank button is an **image + price**, not the StoreScreen's kind-switching
+  `StoreButtonWidget`; the port's name text in the dome was the stand-in this replaces.
+  (2) The `vtable[0xA0]` call pushes `0x3C, 0x3A, 3, x`, i.e. `Resize(x, 3, 58, 60)`; the width is
+  confirmed by the art (the 45-px plates then leave 7 px on both sides), and the earlier 60x58 was
+  the same push order read in reverse. (3) `MENUBAR` measures: purple plates at x 25..69
+  (+69 per slot, matching the recovered slot x's + 7) and y 48..59, i.e. (7, 45, 45, 12) slot-local;
+  the green wallet plate spans 530..621 x 39..58. (4) Icon binding: the shipped 40x40 `SCL_*` sheets
+  cover carnivore/Ultravore/Starcatcher/Guppycruncher/Beetlemuncher/breeder, `FOOD` the two food
+  rows, `LASERUPGRADES` the weapon (cell = weapon level) and `SMALLSWIM` the guppy (the `SIM*` sheets
+  are eye-only, Q-0042). Every sheet is composed through `MaskAlpha`/`SpriteKey`; the star potion
+  ships no matching icon and keeps the price only. (5) The egg is fitted into a 40x34 window inside
+  its dome and its price uses the same measured plate, so it no longer spills over the rim.
+  (6) `headless_store_ui_check` 40 -> 43, `headless_integration_check` 60, totals **24 suites, 1333
+  assertions**.

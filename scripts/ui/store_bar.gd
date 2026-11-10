@@ -1,47 +1,70 @@
 class_name StoreBar
 extends Control
 ## The in-tank store bar: the row of item buttons along the top of the aquarium that sells fish and
-## upgrades in Adventure mode. Each button is a `Sexy::StoreButtonWidget` in the original, created by
-## `FUN_005409B0` (EV-0150) and cached on the tank at `Tank+0x404 + slot*4`; the tank owns the widgets
-## and the StoreScreen's shelf widgets are clients of the same rows (Q-0018).
+## upgrades in Adventure mode. The original builds each button with `FUN_005409B0`, which resolves the
+## tank's store slot (`Tank+0x2E4 + i*4`), calls `FUN_005373C0(manager, i, listener)` to make a
+## `Sexy::MenuButtonWidget`, and resizes it to `Rect(x[i], 3, 58, 60)`; the widgets are cached on the
+## tank at `Tank+0x404 + slot*4` (EV-0150/EV-0183). The eighth x is not a constant in the decompile
+## (the array's last element is pushed from the stack), so slot 7 stays unrecovered (Q-0054).
 ##
-## Recovered here: `FUN_005409B0` builds the widget at `Rect(x[slot], 3, 60, 58)`, where the x table is
-## `0x12, 0x57, 0x90, 0xD9, 0x122, 0x16B, 0x1B4` for slots 0-6. The eighth entry is not a constant in
-## the decompile (the array's last element is pushed from the stack), so slot 7's x is unrecovered and
-## Q-0054 records it - the port leaves that slot blank rather than guessing.
+## `FUN_005373C0` is what this bar now follows: a menu button with an **image** and a **label**, not a
+## text-only stand-in. It seeds the label colour green (`FUN_00433360(0x6E,0xFA,0x6E)`, EV-0183) and
+## a 60 px label width at `+0x190`; the price string is the label. The image is the item's own art -
+## the shipped 40x40 `SCL_*` creature icons, `FOOD` and `LASERUPGRADES` sheets - drawn in the dome
+## above the plate.
 ##
-## The bar is the game's own `MENUBAR` art (640x75): seven item domes with purple price plates, the
-## MENU button and the green wallet readout. `FUN_005409B0` positions each widget over one dome;
-## drawing the art is what makes the row read as the original's bar instead of floating text.
-## The per-kind item art (`+0x14C`, Q-0052) is still unrecovered, so the item name sits in the dome.
+## The bar is the game's own `MENUBAR` art (640x75). Its purple plates measure x 25..69 + 69*i,
+## y 48..59, i.e. (7, 45, 45, 12) inside a slot whose x is the recovered table; the green wallet
+## plate spans 530..621 x 39..58. Those measured rects place the icon and the price, so nothing is
+## guessed from a font metric.
 const BAR_IMAGE := "IMAGE_MENUBAR"
 const BAR_SIZE := Vector2(640.0, 75.0)
 ## The green wallet plate inside `MENUBAR` (green pixels span x 530..621, y 39..58).
 const MONEY_RECT := Rect2(530.0, 34.0, 100.0, 30.0)
-## The dome's text area and the purple price plate, both relative to a slot's top-left. The plate
-## spans screen y 48..59, i.e. y 45..56 inside the slot rect, so the 8 px line centres at y 50..58.
-const NAME_RECT := Rect2(2.0, 9.0, 56.0, 36.0)
-const PRICE_RECT := Rect2(2.0, 42.0, 56.0, 16.0)
+## The purple price plate under each dome, measured from the art: (7, 45, 45, 12) slot-local.
+const PLATE_RECT := Rect2(7.0, 45.0, 45.0, 12.0)
+## The label's layout box: the 12-px plate is shorter than the font's line, so the box is centred on
+## the plate (centre y 51) and the glyphs are drawn at their native size, not clipped.
+const PRICE_LABEL_RECT := Rect2(7.0, 42.0, 45.0, 18.0)
+## The dome's picture area: the shipped item icons are 40x40 and sit centred above the plate.
+const ICON_RECT := Rect2(9.0, 2.0, 40.0, 40.0)
 
 ## `FUN_005409B0`'s x table for slots 0-6; slot 7 is unrecovered (Q-0054).
 const SLOT_X := [0x12, 0x57, 0x90, 0xD9, 0x122, 0x16B, 0x1B4]
-## The widget rect's other three numbers from the same call: `y = 3`, 60 wide, 58 tall.
+## The widget rect's other three numbers from the same call: `y = 3`, 58 wide, 60 tall.
 const SLOT_Y := 3.0
-const SLOT_SIZE := Vector2(60.0, 58.0)
+const SLOT_SIZE := Vector2(58.0, 60.0)
 const SLOT_COUNT := 8
 
+## `FUN_005373C0` writes `FUN_00433360(0x6E,0xFA,0x6E)` into the button's label colour.
+const PRICE_COLOR := Color8(0x6E, 0xFA, 0x6E)
 const GREYED_COLOR := Color8(0xCC, 0xCC, 0xCC)
-const PRICE_COLOR := Color8(0xF2, 0xE8, 0xC8)
-## The name is engraved on the gold dome; the price sits on the purple plate.
-const NAME_COLOR := Color8(0x33, 0x20, 0x0E)
 const MONEY_COLOR := Color8(0xFF, 0xFF, 0xE8)
+
+## The item art each store item draws in its dome. The creature icons are the shipped 40x40
+## `SCL_*` sheets (one icon per sellable species); food and the weapon use their own sheets (the
+## `LASERUPGRADES` cell is the weapon level). Item 0 has no `SCL_` icon, so it uses the guppy body
+## sheet the tank draws (`SMALLSWIM`; `SIMSWIM1..3` are eye-only layers, Q-0042). Item 5 (star
+## potion) ships no matching icon; the dome keeps the price only.
+const ICON_ART := {
+	0: "IMAGE_SMALLSWIM",
+	1: "IMAGE_SCL_BREEDER",
+	2: "IMAGE_FOOD",
+	3: "IMAGE_FOOD",
+	4: "IMAGE_SCL_OSCAR",
+	6: "IMAGE_SCL_STARCATCHER",
+	7: "IMAGE_SCL_GRUBBER",
+	8: "IMAGE_SCL_GEKKO",
+	9: "IMAGE_SCL_ULTRA",
+	10: "IMAGE_LASERUPGRADES",
+}
 
 ## The level whose `tank_store` the bar sells from.
 var level: Level = null
 var _background: TextureRect = null
 var _money_label: Label = null
 var _buttons: Array[Button] = []
-var _labels: Array[Label] = []
+var _icons: Array[TextureRect] = []
 var _prices: Array[Label] = []
 var _last_money := -1
 var _last_stock := ""
@@ -107,23 +130,19 @@ func setup(target: Level) -> void:
 		button.pressed.connect(_on_slot_pressed.bind(shelf))
 		add_child(button)
 		_buttons.append(button)
-		var name_label := Label.new()
-		name_label.name = "Name"
-		name_label.position = NAME_RECT.position
-		name_label.size = NAME_RECT.size
-		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		name_label.add_theme_color_override("font_color", NAME_COLOR)
-		# The bar is a port stand-in for `FUN_005409B0` (its item art is Q-0054), so the two recovered
-		# 8 px fonts carry the name and the price at native size.
-		UiFont.apply(name_label, UiFont.TINY_FONT)
-		button.add_child(name_label)
-		_labels.append(name_label)
+		var icon := TextureRect.new()
+		icon.name = "Icon"
+		icon.position = ICON_RECT.position
+		icon.size = ICON_RECT.size
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(icon)
+		_icons.append(icon)
 		var price_label := Label.new()
 		price_label.name = "Price"
-		price_label.position = PRICE_RECT.position
-		price_label.size = PRICE_RECT.size
+		price_label.position = PRICE_LABEL_RECT.position
+		price_label.size = PRICE_LABEL_RECT.size
 		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price_label.add_theme_color_override("font_color", PRICE_COLOR)
@@ -164,6 +183,36 @@ func _add_money_readout() -> void:
 	add_child(_money_label)
 
 
+## The item art a store id draws in its dome, as the first cell of its shipped sheet (the weapon's
+## cell is its upgrade level). Null when the item ships no matching icon.
+func _icon_texture(id: int) -> Texture2D:
+	var art := String(ICON_ART.get(id, ""))
+	if art == "":
+		return null
+	var content := _autoload("Content")
+	if content == null or not content.has_image(art):
+		return null
+	var frames: SpriteFrames = content.sprite_frames(art)
+	if frames == null or frames.get_frame_count("default") == 0:
+		return null
+	var frame := 0
+	if id == 10 and level != null:
+		frame = clampi(int(level.weapon_level), 0, frames.get_frame_count("default") - 1)
+	var texture := frames.get_frame_texture("default", frame)
+	if texture == null:
+		return null
+	# These sheets have no transparency of their own (P3.3): their alpha lives in the `masks/_<name>`
+	# companion, exactly as the pets' sheets do. Compose the cell through `MaskAlpha`, and fall back
+	# to colour-keying when a sheet ships no mask.
+	var res: ImageRes = content.image(art)
+	var mask := HatchScreen.mask_for(res.path) if res != null else null
+	if mask != null:
+		var composed := HatchScreen.masked_cell(texture, mask)
+		if composed != null:
+			return composed
+	return SpriteKey.keyed(texture)
+
+
 ## Redraw the eight slots when the purse or the stock changed since the last call.
 func refresh_if_changed() -> void:
 	if level == null:
@@ -184,27 +233,27 @@ func refresh() -> void:
 	for shelf in _buttons.size():
 		var row := row_at(level, shelf)
 		var button := _buttons[shelf]
-		var name_label := _labels[shelf]
+		var icon := _icons[shelf]
 		var price_label := _prices[shelf]
 		if row.is_empty():
 			# `FUN_005409B0` builds no widget for an item that is not for sale, so the dome stays
 			# empty. `SOLD` belongs to the StoreScreen's sold-out branch, not to an empty tank slot.
 			button.disabled = true
 			button.mouse_default_cursor_shape = Control.CURSOR_ARROW
-			name_label.text = ""
+			icon.texture = null
 			price_label.text = ""
 			continue
 		var id := int(row.get("slot", -1))
 		if id == Progression.EGG_ITEM:
 			# The egg's own widget draws this dome (art, piece cell and price) on every tank; the bar
 			# keeps the row and the click path, so nothing is drawn twice.
-			name_label.text = ""
+			icon.texture = null
 			price_label.text = ""
 			# The widget's own button covers this rect, so the bar's stays inert underneath.
 			button.disabled = true
 			button.mouse_default_cursor_shape = Control.CURSOR_ARROW
 			continue
-		name_label.text = Store.item_name(id)
+		icon.texture = _icon_texture(id)
 		var known := Store.price_known(row)
 		var affordable := known and (int(row.get("price", 0)) <= level.money)
 		button.disabled = not known or level.completed

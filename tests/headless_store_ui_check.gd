@@ -74,8 +74,14 @@ func _test_bar() -> void:
 	_expect(BarScript.BAR_SIZE == Vector2(640, 75), "MENUBAR is the 640x75 top strip")
 	_expect(BarScript.MONEY_RECT.position == Vector2(530, 34),
 		"the wallet readout sits on MENUBAR's green plate")
-	_expect(BarScript.slot_rect(0) == Rect2(18, 3, 60, 58),
-		"the first in-tank slot is at x 0x12, y 3, 60x58 (FUN_005409B0)")
+	_expect(BarScript.slot_rect(0) == Rect2(18, 3, 58, 60),
+		"the first in-tank slot is at x 0x12, y 3, 58x60 (FUN_005409B0)")
+	_expect(BarScript.PLATE_RECT == Rect2(7, 45, 45, 12),
+		"the price sits on MENUBAR's measured purple plate")
+	_expect(BarScript.PRICE_COLOR == Color8(0x6E, 0xFA, 0x6E),
+		"the tank button's label is the recovered green (FUN_005373C0)")
+	_expect(BarScript.ICON_ART[4] == "IMAGE_SCL_OSCAR",
+		"the carnivore dome draws its shipped 40x40 icon, not a name")
 	_expect(BarScript.slot_rect(1).position.x == 87, "slot 1 starts at 0x57")
 	_expect(BarScript.slot_rect(6).position.x == 436, "slot 6 starts at 0x1B4")
 	_expect(BarScript.slot_rect(7) == Rect2(),
@@ -93,7 +99,7 @@ func _test_bar() -> void:
 		"a bar slot maps to its row and back")
 	var bar: Control = BarScript.new()
 	bar.setup(level)
-	_expect(bar._labels[4].text == "" and bar._prices[4].text == "",
+	_expect(bar._icons[4].texture == null and bar._prices[4].text == "",
 		"an unstocked dome stays empty - SOLD is the StoreScreen's branch, not an empty tank slot")
 	_expect(bar._money_label.text == str(level.money),
 		"the MENUBAR wallet plate shows the tank's money")

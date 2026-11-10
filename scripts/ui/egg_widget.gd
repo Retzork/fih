@@ -19,12 +19,15 @@ const EGG_ART := "IMAGE_EGGPIECES"
 const PIECES_TO_COMPLETE := 4
 ## The eighth dome, at `SLOT_X[6]` in `StoreBar` (the recovered `FUN_005409B0` x table).
 const SLOT := 6
-## Inside the 60x58 slot: the 46x39 cell (`EGGPIECES` is 138x39, three cells) sits in the dome and
-## the price sits on the same purple plate as every other dome (`StoreBar.PRICE_RECT`).
-const ART_RECT := Rect2(7.0, 1.0, 46.0, 39.0)
-const PRICE_RECT := Rect2(2.0, 42.0, 56.0, 16.0)
+## Inside the 58x60 slot: the 46x39 cell (`EGGPIECES` is 138x39, three cells) is fitted into the
+## 40x34 dome window, so it can never spill over the gold rim, and the price sits on the same
+## measured purple plate as every other dome (`StoreBar.PLATE_RECT`, 45x12 at (7, 45)).
+const ART_RECT := Rect2(9.0, 4.0, 40.0, 34.0)
+## The label box is centred on the 12-px plate (centre y 51) so the native glyphs are not clipped.
+const PRICE_RECT := Rect2(7.0, 42.0, 45.0, 18.0)
 const GREY := Color8(0xCC, 0xCC, 0xCC)
-const PRICE_COLOR := Color8(0xF2, 0xE8, 0xC8)
+## `FUN_005373C0` seeds the tank store buttons with the green label colour 0x6EFA6E.
+const PRICE_COLOR := Color8(0x6E, 0xFA, 0x6E)
 
 var level = null
 

@@ -156,9 +156,9 @@ func _run() -> void:
 	var egg_row: Dictionary = StoreBar.row_at(boss_level, EggWidget.SLOT)
 	_expect(int(egg_row.get("slot", -1)) == Progression.EGG_ITEM and Store.price_known(egg_row),
 		"the seventh dome holds tank 5's free egg row (got %s)" % str(egg_row))
-	_expect(boss_level.store_bar.get_node("Slot6/Name").text == ""
+	_expect(boss_level.store_bar.get_node("Slot6/Icon").texture == null
 		and boss_level.store_bar.get_node("Slot6/Price").text == "",
-		"the bar leaves the egg dome to the widget (no text over the art)")
+		"the bar leaves the egg dome to the widget (no icon or text over the art)")
 	_expect(boss_level.egg_widget.get_node("Buy/Price").text == "FREE",
 		"the free row prices as FREE rather than '0' or the '?' unknown marker")
 	_expect(not boss_level.egg_widget.get_node("Buy").disabled,
