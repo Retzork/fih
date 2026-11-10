@@ -91,14 +91,30 @@ func _test_bar() -> void:
 	level.render = false
 	level.setup(sim, 9191)
 	level.start_level(1, 3)
+	# EV-0185: the bar is on screen from the start, but a growth-gated shelf has no widget until its
+	# milestone; on 1-3 nothing is revealed until a guppy reaches medium size.
+	_expect(BarScript.row_at(level, 0).is_empty(), "1-3 opens with the guppy shelf hidden")
+	_expect(BarScript.row_at(level, 3).is_empty(), "the carnivore shelf waits for a large fish")
+	_expect(not level.egg_unlocked, "the egg dome waits for a bought carnivore on 1-3")
+	level.reveal_store_for_stage(2)
 	_expect(StoreScript.item_name(int(BarScript.row_at(level, 0).get("slot", -1))) == "Guppy",
-		"bar slot 0 sells the guppy on 1-3")
-	_expect(int(BarScript.row_at(level, 3).get("slot", -1)) == 4, "bar slot 3 sells the carnivore")
+		"a medium fish reveals the guppy shelf")
+	_expect(int(BarScript.row_at(level, 1).get("slot", -1)) == 2,
+		"the food shelves are revealed by the same medium milestone")
+	_expect(BarScript.row_at(level, 3).is_empty(), "the carnivore stays hidden at medium size")
+	level.reveal_store_for_stage(3)
+	_expect(int(BarScript.row_at(level, 3).get("slot", -1)) == 4, "a large fish reveals the carnivore")
 	_expect(BarScript.row_at(level, 7).is_empty(), "a bar slot past the stock is empty")
+	_expect(not level.egg_unlocked, "the egg still waits on the carnivore purchase")
+	level.reveal_store_after(4)
+	_expect(int(BarScript.row_at(level, 5).get("slot", -1)) == 10,
+		"buying the carnivore reveals the blaster shelf (guide 8.1.3)")
+	_expect(level.egg_unlocked, "the same purchase reveals the egg dome")
 	_expect(BarScript.row_index(level, 3) == 3 and BarScript.shelf_of(level, 3) == 3,
 		"a bar slot maps to its row and back")
 	var bar: Control = BarScript.new()
 	bar.setup(level)
+	bar.refresh()
 	_expect(bar._icons[4].texture == null and bar._prices[4].text == "",
 		"an unstocked dome stays empty - SOLD is the StoreScreen's branch, not an empty tank slot")
 	_expect(bar._money_label.text == str(level.money),

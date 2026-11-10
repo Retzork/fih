@@ -104,6 +104,11 @@ var tank_index := 1
 var egg_pieces := Progression.EGG_PIECES_AT_START
 ## The egg-piece price of this tank/level, or `Progression.PRICE_UNKNOWN` (P2.6 §3).
 var egg_price := Progression.PRICE_UNKNOWN
+## Milestone-gated shelves still hidden from the bar (EV-0185): item id -> rule. The bar itself is
+## always up; each entry is a growth stage or a `buy:<item>` prerequisite.
+var store_reveal: Dictionary = {}
+## Whether the egg dome is on the bar yet (large fish / food Lv 2 / a predator, EV-0185).
+var egg_unlocked := true
 ## Set once the level has completed, so a second egg purchase cannot complete it again.
 var completed := false
 ## The Adventure profile the completion writes to; `Main` hands over `Game.profile`. A level run
@@ -470,6 +475,7 @@ func _on_fish_hunger(_level_no: int) -> void:
 
 func _on_fish_grew(_fish, _stage: int) -> void:
 	play_sound("SOUND_GROW")
+	reveal_store_for_stage(_stage)
 
 
 func _on_projectile_smoke(at: Vector2) -> void:
@@ -658,9 +664,8 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	egg_pieces = Progression.egg_pieces_at_start(tank_index)
 	egg_price = Progression.egg_price(tank_index, level_index, game_mode)
 	stock_default_store()
-	# The hidden shelves are the `Tank+0x2E0 < Tank+0x2DC` state Blip unlocks (EV-0094); the level
-	# age and Wadsworth globals are per-level state, not profile state.
-	tank.store_locked = not Progression.hidden_items(tank_index, level_index).is_empty()
+	# `stock_default_store` already primed the hidden shelves (EV-0185); `store_locked` is the
+	# `Tank+0x2E0 < Tank+0x2DC` state Blip clears outright (EV-0094).
 	tank.age_ticks = 0
 	tank.wadsworth_count = 0
 	tank.wadsworth_mouth = Vector2.ZERO
@@ -838,9 +843,10 @@ func _on_pet_attack(target: Node2D, damage: float) -> void:
 func _on_pet_unlock() -> void:
 	if not tank.store_locked:
 		return
-	tank_store.clear()
-	for row in Progression.store_rows(tank_index, level_index, game_mode, true):
-		tank_store.append(row)
+	store_reveal.clear()
+	for row in tank_store:
+		row["hidden"] = false
+	egg_unlocked = true
 	tank.store_locked = false
 	if store_bar != null:
 		store_bar.refresh_if_changed()
@@ -1308,6 +1314,9 @@ func buy_item(index: int) -> bool:
 		return buy_egg()
 	if id < 0 or not Store.is_available(id):
 		return false
+	# A shelf the level has not revealed yet cannot be bought, even by a stored row (EV-0185).
+	if bool(row.get("hidden", false)):
+		return false
 	# A 0 price is the table's "not recovered" marker, so the row refuses rather than selling for free.
 	if not Store.price_known(row):
 		return false
@@ -1345,6 +1354,9 @@ func buy_item(index: int) -> bool:
 			weapon_level += 1
 		Store.KIND_STAR_POTION:
 			star_potion_armed = true
+	# Buying the milestone item reveals the shelves that wait on it (guide 8.1.3, EV-0185).
+	if kind == Store.KIND_FISH or kind == Store.KIND_STAR_POTION:
+		reveal_store_after(id)
 	return true
 
 
@@ -1369,8 +1381,59 @@ const STORE_SHELF_COUNT := 8
 ## `roll_stock()` overlays the one roller slot on top of it (Q-000?/EV-0141).
 func stock_default_store() -> void:
 	tank_store.clear()
-	for row in Progression.store_rows(tank_index, level_index, game_mode):
+	for row in Progression.store_rows(tank_index, level_index, game_mode, true):
 		tank_store.append(row)
+	_prime_store_reveals()
+
+
+## The shelves still hidden by a milestone (EV-0185): the bar is always on screen, but a growth-gated
+## item has no widget until its fish reaches the stage (2 medium, 3 large) or its prerequisite is
+## bought. `tank.store_locked` stays the `+0x2E0 < +0x2DC` reading Blip clears outright.
+func _prime_store_reveals() -> void:
+	store_reveal = Progression.reveal_rules(tank_index, level_index, game_mode)
+	for row in tank_store:
+		row["hidden"] = store_reveal.has(int(row.get("slot", -1)))
+	egg_unlocked = not store_reveal.has(Progression.EGG_ITEM)
+	tank.store_locked = not store_reveal.is_empty()
+
+
+## Reveal every shelf whose milestone is `stage` or lower (a fish grew).
+func reveal_store_for_stage(stage: int) -> void:
+	if store_reveal.is_empty():
+		return
+	var opened: Array[int] = []
+	for id: int in store_reveal:
+		var rule: Variant = store_reveal[id]
+		if rule is int and stage >= int(rule):
+			opened.append(id)
+	for id in opened:
+		_reveal_store_item(id)
+
+
+## Reveal every shelf whose prerequisite is `id` (it was just bought).
+func reveal_store_after(id: int) -> void:
+	if store_reveal.is_empty():
+		return
+	var opened: Array[int] = []
+	for other: int in store_reveal:
+		if String(store_reveal[other]) == "buy:%d" % id:
+			opened.append(other)
+	for other in opened:
+		_reveal_store_item(other)
+
+
+func _reveal_store_item(id: int) -> void:
+	store_reveal.erase(id)
+	for row in tank_store:
+		if int(row.get("slot", -1)) == id:
+			row["hidden"] = false
+	if id == Progression.EGG_ITEM:
+		egg_unlocked = true
+	tank.store_locked = not store_reveal.is_empty()
+	if store_bar != null:
+		store_bar.refresh_if_changed()
+	if egg_widget != null:
+		egg_widget.refresh()
 
 
 ## The stock roller (EV-0141, Q-0026): one slot is always a random **unowned** backdrop at
@@ -1448,6 +1511,13 @@ func load_game(path: String = "") -> bool:
 		return false
 	TankScalarsScript.apply(save.scalars, self)
 	tank_store = save.store.duplicate(true)
+	# The rows carry their own hidden flags, so a reloaded tank keeps the shelves it had revealed;
+	# the rule table is rebuilt from those flags (EV-0185).
+	store_reveal.clear()
+	for row: Dictionary in tank_store:
+		if bool(row.get("hidden", false)):
+			store_reveal[int(row.get("slot", -1))] = true
+	egg_unlocked = true
 	pet_flags = save.pet_flags.duplicate()
 	tank.tank_index = save.tank
 	level_index = save.level

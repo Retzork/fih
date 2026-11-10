@@ -25,7 +25,7 @@ const MONEY_RECT := Rect2(530.0, 34.0, 100.0, 30.0)
 const PLATE_RECT := Rect2(7.0, 45.0, 45.0, 12.0)
 ## The label's layout box: the 12-px plate is shorter than the font's line, so the box is centred on
 ## the plate (centre y 51) and the glyphs are drawn at their native size, not clipped.
-const PRICE_LABEL_RECT := Rect2(7.0, 42.0, 45.0, 18.0)
+const PRICE_LABEL_RECT := Rect2(7.0, 44.0, 45.0, 18.0)
 ## The dome's picture area: the shipped item icons are 40x40 and sit centred above the plate.
 const ICON_RECT := Rect2(9.0, 2.0, 40.0, 40.0)
 
@@ -90,7 +90,9 @@ static func row_at(target: Level, shelf: int) -> Dictionary:
 	if target == null:
 		return {}
 	for row: Dictionary in target.tank_store:
-		if int(row.get("shelf", -1)) == shelf:
+		# A shelf the level has not revealed yet has no widget, exactly like an unstocked one
+		# (EV-0185): the dome stays empty until its milestone happens.
+		if int(row.get("shelf", -1)) == shelf and not bool(row.get("hidden", false)):
 			return row
 	return {}
 
@@ -100,7 +102,7 @@ static func row_index(target: Level, shelf: int) -> int:
 	if target == null:
 		return -1
 	for i in target.tank_store.size():
-		if int(target.tank_store[i].get("shelf", -1)) == shelf:
+		if int(target.tank_store[i].get("shelf", -1)) == shelf and not bool(target.tank_store[i].get("hidden", false)):
 			return i
 	return -1
 

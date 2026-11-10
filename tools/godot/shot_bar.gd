@@ -51,6 +51,10 @@ func _run() -> void:
 		quit(1)
 		return
 	level.money = 5000
+	# The shelves are milestone-gated (EV-0185), so the capture stands in for a grown tank: a large
+	# fish reveals the predator, and a predator purchase reveals the blaster and the egg dome.
+	level.reveal_store_for_stage(3)
+	level.reveal_store_after(4)
 	if level.store_bar != null:
 		level.store_bar.refresh()
 	if level.egg_widget != null:

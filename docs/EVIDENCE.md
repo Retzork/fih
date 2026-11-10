@@ -4654,3 +4654,54 @@ behavior or specs; follow up with a binary observation entry.
   its dome and its price uses the same measured plate, so it no longer spills over the rim.
   (6) `headless_store_ui_check` 40 -> 43, `headless_integration_check` 60, totals **24 suites, 1333
   assertions**.
+
+### EV-0185 - R4: the bar never opens or closes - each shelf is revealed by a growth milestone
+- Date: 2026-11-10
+- Type: guide text + implementation; windowed capture
+- Source: GameFAQs walkthrough (TStodden, 2.002, 8.1.1-8.1.5 and 9) for tank 1's keypoint lists and
+  Time Trial's "once you get a medium-sized guppy, the entire shop bar will open up"; the
+  Insaniquarium Wiki's Blip page and TV Tropes ("opens all of the available items ... not even 5
+  seconds into the game") for the pet unlock; `docs/analysis/notes/p2.7-pets.md` §4.14 / EV-0094 for
+  the 200/720-tick thresholds; `scripts/progression/progression.gd` (`reveal_rules`),
+  `scripts/tank/level.gd` (`_prime_store_reveals`), `scripts/ui/store_bar.gd`,
+  `scripts/ui/egg_widget.gd`; captures `shot_bar_tank1.png` (1-3 with the shelves revealed)
+- Confidence: high for tank 1's list (the guide states it item by item) and for the mechanism (the
+  bar stays up; items are absent until unlocked, exactly what `FUN_005409B0`'s null return means);
+  medium for tanks 2-4's ordering (same pattern, not itemised - Q-0062)
+- Notes: (1) **The bar has no open/close timer.** The guide's tank 1 keypoints name the real rule:
+  1-1 guppy after a **medium** guppy, egg pieces after a **large** one; 1-2 food upgrades at medium
+  and egg pieces after buying Lv 2 food; 1-3..1-5 food at medium, carnivore at large, and the
+  blaster plus egg pieces after a carnivore is bought. The port starts every level with the
+  `MENUBAR` on screen and those shelves hidden, then reveals them from `_on_fish_grew` (stage 2 =
+  medium, 3 = large) and from a successful purchase. (2) **Blip** is the exception: `EV-0094`'s
+  branch fires while `Tank+0x2E0 < Tank+0x2DC` once the level age passes 200 ticks (720 as a
+  transformed Presto) and reveals every shelf at once, which is what "the pet that opens the shop
+  after a few seconds" is; `_on_pet_unlock` clears the hidden flags and the egg gate. (3) Time Trial
+  opens the whole bar on the first medium fish; Sandbox, Challenge and tank 5 start open (the challenge
+  reading is the port's, tank 5 sells only the egg). (4) `Progression.HIDDEN` stays the level's
+  opening stock - 1-1 genuinely has no carnivore or blaster row to reveal - so a hidden shelf is a
+  present row flagged `hidden`, never a fabricated price. (5) The price label moved from a box
+  centred at y 51 to (7, 44, 45, 18) centred at 53: the 8-px glyphs sat above the purple plate's
+  middle and now sit slightly below, as the owner asked. (6) `headless_store_ui_check` 43 -> 51
+  assertions (the hidden start, the medium and large reveals, the purchase reveal, the egg gate);
+  `headless_integration_check` 60 passes unchanged; totals **24 suites, 1341 assertions**.
+
+### EV-0186 - R10: the menu mermaid is the shipped art; the flop strip has no recovered position
+- Date: 2026-11-10
+- Type: measurement + windowed visual; a guess removed
+- Source: `assets_raw/images/selectorback.png` (`IMAGE_SELECTORSCREEN`), `tailflop.png` and
+  `masks/tailflop_.png`; `tools/godot/measure_mermaid.gd`, `tools/godot/preview_tail.gd`;
+  capture `shot_menu.png`; `scripts/ui/game_selector.gd`
+- Confidence: high for the measurements and for what the two frames show; the strip's screen
+  position stays unrecovered (Q-0055)
+- Notes: (1) The baked mermaid's green tail measures x 95..283, y 323..439 and ends in a rounded
+  **stump** at about (152, 405); `MERYLTAIL`'s cells are 238x165 transparent strips whose visible
+  fringe occupies only y 78..163 (cell 0: x 1..199, root notch at (107, 84)). (2) Four placements
+  were composited against that measurement (`shot_tail_candidates.png`): (150,270) plain and
+  mirrored, (150,300) flipped vertically and (120,300) mirrored+flipped. Every one draws a long
+  second tail across the baked one or over the button panel - the strip is not a fluke sized to the
+  baked stump, so no offset can make one silhouette. (3) `SELECTORSCREEN` is the shipped menu art and
+  already contains the mermaid; the port now draws exactly that and no longer mounts the strip, which
+  is why `shot_menu.png` shows one clean green tail. (4) `MERYLTAIL`'s recovered playback
+  (`framemap 7..0`, `framedelay 2`, `begindelay 3`) is kept as data and still pinned by
+  `headless_menu_check` (28 assertions); Q-0055 stays open for the draw position.

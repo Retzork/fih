@@ -1374,3 +1374,28 @@ Open: the real per-cell hold and the pet reveal point.
 - **Port choice:** the 90-tick dwell. The binary's draw is per attempt with no recovered lifetime, so
   the port holds the text for 2.5 s at the 36 Hz rate instead of a single frame. `PRESTO_NOTICE_TICKS`
   is the one constant to change when a lifetime is recovered.
+
+### Q-0062 - tanks 2-4's shelf reveal order is inferred from the guide's pattern
+
+The GameFAQs walkthrough itemises tank 1's keypoints (medium guppy -> guppy/food, large guppy ->
+carnivore/egg, buying a carnivore -> blaster + egg) and states tank 3's two predators, but it does not
+list tanks 2-4 item by item. `Progression.reveal_rules` therefore applies the same pattern to them:
+food at medium, the tank's next predator at large, the blaster and egg after that predator is bought;
+tank 2's star potion at large and its starcatcher after the potion; tank 3's beetlemuncher after the
+guppycruncher; tank 4's ultravore after the carnivore. That ordering is the port reading, not a
+recovered table - the binary's own slot writer (the `0x4F18xx` tutorial/growth path, Q-0018) is still
+unidentified, and EV-0185 records the guide evidence for the mechanism itself.
+
+### Store-bar reveal and the mermaid (2026-11-10; extends Q-0054 and Q-0055)
+
+- **EV-0185:** the bar is permanently on screen; shelves appear at growth/purchase milestones (tank 1
+  from the guide, tanks 2-4 per Q-0062), Blip forces all of them after 200 ticks (720 as Presto), Time
+  Trial opens the bar at the first medium fish. A hidden shelf keeps its row and price but draws no
+  widget, so no fabricated stock enters the save. The price label sits at (7, 44, 45, 18) so the 8-px
+  glyphs read slightly below the plate's middle.
+- **Q-0054:** the per-item icon binding from EV-0184 stands; the reveal state is `row.hidden`, which
+  `StoreBar.row_at`/`row_index` skip and `Level.buy_item` refuses, so an unrevealed shelf cannot be
+  bought from the bar or the StoreScreen.
+- **EV-0186 / Q-0055:** the menu mermaid's `MERYLTAIL` strip is measured and its playback kept, but
+  no recovered screen position exists and four composited placements all drew a second tail; the port
+  now draws the shipped `SELECTORSCREEN` mermaid alone. Q-0055 stays open for the draw position.
