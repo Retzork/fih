@@ -1350,3 +1350,18 @@ Open: the real per-cell hold and the pet reveal point.
   (`Pet._wadsworth_hide`), so the recovered writer drops straight in.
 - The mouth point is `position + (40,40)` (the 80x80 sprite centre) because the recovered globals store
   a point, not an offset from the pet.
+
+### Q-0061 - Presto's picker contents and its opening input are port bindings
+
+- OPEN (2026-11-10, raised by `scripts/ui/presto_picker.gd` for R9; source EV-0100, P2.7 §3.3/§4.20,
+  EV-0106, EV-0181).
+- Recovered: `FUN_0054C6F0` allocates the `Sexy::PetDialog` (0x2F8 bytes) through `FUN_005355C0`,
+  pushes screen id 0x1F, and the dialog carries the "PRESTO CHANGE-O" name; `FUN_004F89A0` gates on
+  `+0x238` and performs the swap.
+- Open: **which** pets the dialog lists (the wiki says every unlocked pet; the list itself was not
+  enumerated) and **which input** opens it (the wiki says right-click on the pet; the binding was not
+  traced). The port lists the owned pets minus the current index and binds the `P` key, beside the
+  port-only `S` shop key.
+- Non-blocking: the swap, its recharge gate, the cleanup and the level wiring are the recovered
+  parts; only the roster filter and the key are the port's choice. Recorded so a later pass replaces
+  them instead of shipping them as facts.

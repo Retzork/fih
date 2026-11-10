@@ -53,6 +53,7 @@ const HEALTH_BAR_TUBE_IMAGE := "IMAGE_HEALTHBARTUBE"
 const HEALTH_BAR_X := 10.0
 const HEALTH_BAR_BOTTOM_INSET := 3.0
 
+const PrestoPickerScript := preload("res://scripts/ui/presto_picker.gd")
 const TankSaveScript := preload("res://scripts/persistence/tank_save.gd")
 const SaveFilesScript := preload("res://scripts/persistence/save_files.gd")
 const TankScalarsScript := preload("res://scripts/persistence/tank_scalars.gd")
@@ -80,6 +81,8 @@ var backdrop_tint := Color8(0x42, 0x30, 0x29, 0xFF)
 var tank_store: Array[Dictionary] = []
 ## The open shop dialog, null while the store is closed (P4.5).
 var store_screen: Control = null
+## The open "PRESTO CHANGE-O" picker (`FUN_0054C6F0`, EV-0100), null while it is closed.
+var presto_picker: Control = null
 ## The in-tank store bar along the top of the aquarium (P4.5/P4.6), null until `_ready` builds it
 ## with rendering on.
 var store_bar: StoreBar = null
@@ -1145,6 +1148,57 @@ func open_store() -> void:
 
 
 
+## The level's live Presto, or null. `FUN_0054C6F0` opens the picker from Presto's own object, so a
+## tank without one has nothing to open.
+func presto_pet() -> Pet:
+	if tank == null:
+		return null
+	for entity in tank.entities_in(Sim.Phase.PETS):
+		var pet := entity as Pet
+		if pet != null and pet.index == PetScript.PRESTO:
+			return pet
+	return null
+
+
+## The gate `FUN_0054C6F0` runs before it builds the dialog: a live Presto whose `+0x238` recharge
+## has run out (`FUN_004F2650`), and no dialog already occupying the single slot.
+func can_open_presto_picker() -> bool:
+	if store_screen != null and is_instance_valid(store_screen):
+		return false
+	if presto_picker != null and is_instance_valid(presto_picker):
+		return false
+	var pet := presto_pet()
+	return pet != null and pet.can_transform()
+
+
+## Open the "PRESTO CHANGE-O" picker (`FUN_0054C6F0`: a `Sexy::PetDialog` on screen id 0x1F). The
+## original opens it from the pet's own input handler, which EV-0106 records as untraced; the port
+## binds the `P` key next to its existing `S` shop key (Q-0061) so the swap is reachable in play.
+func open_presto_picker() -> bool:
+	if not can_open_presto_picker():
+		return false
+	var screens := _autoload("Screens")
+	if screens == null:
+		return false
+	var picker := PrestoPickerScript.new()
+	picker.name = "PrestoPicker"
+	picker.setup(self, presto_pet())
+	if not screens.open_dialog(picker):
+		picker.queue_free()
+		return false
+	var game := _autoload("Game")
+	if game != null:
+		game.gameplay_paused = true
+	presto_picker = picker
+	return true
+
+
+func close_presto_picker() -> void:
+	if presto_picker != null and is_instance_valid(presto_picker):
+		presto_picker.close()
+	presto_picker = null
+
+
 ## `Tank::BuyItem` (P2.5 §3): resolve the row, check the price and the upgrade cap, spend, then apply.
 ## A row whose item has no ported effect (Q-0049) refuses without spending, so no money can vanish
 ## into an unimplemented purchase.
@@ -1338,6 +1392,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				load_game()
 			KEY_S:
 				open_store()
+			KEY_P:
+				open_presto_picker()
 		return
 	if event is not InputEventMouseButton:
 		return

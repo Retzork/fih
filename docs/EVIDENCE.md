@@ -4565,3 +4565,25 @@ behavior or specs; follow up with a binary observation entry.
   binding (Q-0030), so only the semantic `transform` cue is emitted; the "Recharging..." label and the
   `FUN_0054C6F0` picker stay UI work. (5) Walter's `+0x260/+0x264` punch state is not carried because
   no glove entity exists yet (Q-0044).
+
+### EV-0181 - P4.7 Presto's "CHANGE-O" picker: the dialog, its roster binding and the gate
+- Date: 2026-11-10
+- Type: implementation + test evidence (no new binary analysis)
+- Source: `scripts/ui/presto_picker.gd`; `scripts/tank/level.gd` (`presto_pet`,
+  `can_open_presto_picker`, `open_presto_picker`, `close_presto_picker`, the `KEY_P` binding);
+  `tests/headless_profile_check.gd` (44 assertions); binary source EV-0100, P2.7 §3.3/§4.20
+- Confidence: high for the dialog identity, the screen id and the recharge gate; the roster contents
+  and the opening input are port bindings (Q-0061)
+- Notes: (1) `FUN_0054C6F0` builds a `Sexy::PetDialog` (0x2F8 bytes) through `FUN_005355C0` and
+  pushes screen id 0x1F; the dialog's name is the note's "PRESTO CHANGE-O" and is now its title.
+  `PrestoPicker` is a modal `Control` in the `Screens` single-dialog slot, so the tank pauses while it
+  is up exactly like the shop. (2) The picker's contents were never enumerated, so the port lists the
+  **owned** pets minus the current index (the wiki's "every unlocked pet" is the only statement about
+  it); `press()` refuses unowned and same-index picks, and `FUN_004F89A0` does the rest through
+  `Pet.transform_to` (EV-0180). (3) The gate is `FUN_004F2650(+0x238) < 1`:
+  `can_open_presto_picker()` needs a live Presto with a spent recharge and a free dialog slot, so
+  "Recharging..." is the refusal reason rather than a timer this dialog draws. (4) The opening input
+  was not traced (EV-0106), so `Level` binds the port-only `P` key beside its existing `S` shop key;
+  the wiki's right-click binding stays unbound. (5) A swap spawns the target transformed through
+  `Level._on_pet_transform`, then the picker closes and the tank resumes; `headless_profile_check`
+  29 -> 44 assertions.

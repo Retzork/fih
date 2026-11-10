@@ -18,6 +18,8 @@ const BonusScript := preload("res://scripts/ui/bonus_screen.gd")
 const HelpScript := preload("res://scripts/ui/help_screen.gd")
 const HallScript := preload("res://scripts/ui/hall_screen.gd")
 const StoreScript := preload("res://scripts/economy/store.gd")
+const PetScript := preload("res://scripts/entities/pet.gd")
+const PickerScript := preload("res://scripts/ui/presto_picker.gd")
 
 var _failures := 0
 var _checks := 0
@@ -26,6 +28,7 @@ var _checks := 0
 func _init() -> void:
 	_test_hatch_and_bonus()
 	_test_pets_selection()
+	_test_presto_picker()
 	_test_help_pages()
 	_test_stock_roller()
 	_test_save_paths()
@@ -60,6 +63,59 @@ func _test_pets_selection() -> void:
 	profile.selected_pets[6] = 1
 	_expect(profile.selected_pets[6] == 1, "the selection writes profile+0x5A")
 	screen.queue_free()
+
+
+## The "PRESTO CHANGE-O" picker (`FUN_0054C6F0`, EV-0100/EV-0181): the roster binding, the recharge
+## gate, and the swap it asks the level for (which spawns the transformed target, EV-0180).
+func _test_presto_picker() -> void:
+	var sim: Node = SimScript.new()
+	var level: Level = LevelScript.new()
+	level.render = false
+	level.setup(sim, 77)
+	level.profile = ProfileScript.new()
+	for index in [0, 1, 2, PetScript.PRESTO, 0x10]:
+		level.profile.grant_pet(index)
+
+	_expect(not level.can_open_presto_picker(), "a tank without Presto has nothing to open")
+
+	var presto: Pet = level.tank.spawn_pet(PetScript.PRESTO, Vector2(300.0, 200.0))
+	presto.transform_requested.connect(level._on_pet_transform)
+	_expect(PickerScript.TITLE == "PRESTO CHANGE-O", "the dialog is the recovered CHANGE-O picker")
+	_expect(PickerScript.SCREEN_ID == 0x1F, "it pushes screen id 0x1F")
+	_expect(level.can_open_presto_picker(), "a ready Presto opens it")
+
+	var picker = PickerScript.new()
+	picker.setup(level, presto)
+	var offered: Array = picker.candidates()
+	_expect(str(offered) == "[0, 1, 2, 16]",
+		"it offers the owned pets in roster order, minus Presto itself (got %s)" % str(offered))
+	_expect(not picker.press(PetScript.WADSWORTH), "an unowned pet is refused")
+	_expect(not picker.press(PetScript.PRESTO), "and Presto itself is refused")
+
+	_expect(picker.press(0x10), "an owned pet swaps")
+	_expect(presto.dead, "the Presto object leaves the tank")
+	var swapped: Pet = null
+	for entity in level.tank.entities_in(SimScript.Phase.PETS):
+		var candidate := entity as Pet
+		if candidate != null and candidate.index == 0x10:
+			swapped = candidate
+	_expect(swapped != null, "the level spawned the chosen pet")
+	_expect(swapped != null and swapped.transformed, "which is marked transformed")
+	_expect(swapped != null and swapped.recharge == PetScript.PRESTO_RECHARGE,
+		"and inherits the 360-tick recharge")
+	_expect(not level.can_open_presto_picker(), "with Presto gone the picker is unreachable")
+
+	# The gate itself is `FUN_004F2650(+0x238) < 1`, not a second timer.
+	var again: Pet = level.tank.spawn_pet(PetScript.PRESTO, Vector2(180.0, 180.0))
+	again.recharge = PetScript.PRESTO_RECHARGE
+	_expect(not level.can_open_presto_picker(), "a recharging Presto cannot open it")
+	again.recharge = 0
+	_expect(level.can_open_presto_picker(), "a spent recharge can")
+
+	again.despawn()
+	level.tank.shutdown()
+	level.free()
+	sim.free()
 
 
 func _test_help_pages() -> void:
