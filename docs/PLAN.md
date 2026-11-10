@@ -6,7 +6,7 @@ prove modules, not the assembled game. P4 14/14 `[x]` and P5 5/5 `[x]` are rever
 below; see the Review section at the end of this file for the confirmed defects, each with its
 reproduction. Do not re-mark anything `[x]` until the windowed playtest passes. Re-verified
 2026-11-10: all 24 suites pass - 23 script suites + the scene-backed integration suite,
-**1263 assertions** - and the 400-frame boot exits 0 with no script error; the remaining Ogg
+**1303 assertions** - and the 400-frame boot exits 0 with no script error; the remaining Ogg
 vendor-comment and ObjectDB/resource-at-exit notices are the known AUDIT F2 noise.)
 
 2026-11-10 addendum: the render path is covered now. `tests/headless_render_check.gd` (17
@@ -14,7 +14,7 @@ assertions) pins `Level._sync_fx`'s dot pool to the effect lists in both directi
 was `while get_child_count() > wanted: get_child(...).queue_free()`, and `queue_free()` does not
 shrink a parent inside the frame, so the loop never returned - a rendered level froze permanently the
 moment an effect expired (a click's laser spark lives 5 ticks), which is what the 2026-11-09 and
-2026-11-10 debug sessions hung on. Totals with it: **24 suites, 1263 assertions**.
+2026-11-10 debug sessions hung on. Totals with it: **24 suites, 1303 assertions**.
 
 2026-11-10 UI addendum: the tank's egg moved from a bottom-right widget into the seventh `MENUBAR`
 dome (R3, EV-0172), and the Hatch card now draws the recovered `HATCHSCREEN` incubator, the
@@ -33,8 +33,10 @@ sheet row now come from `FUN_004DD7A0` per kind, so coins no longer all draw `MO
 closed by the recovered fish draw (EV-0164): the body sheet is `FUN_004D5AA0`'s swim/eat/hungry pick,
 the guppy's row is its stage (3 -> 2, 4 -> 3) and the carnivore's is row 4, so the eye-layer rule is
 answered (three/four tinted `SIM` layers) even though that colourised path stays unimplemented.
-Remaining: the owner's live playtest of tanks 2-4 and 5-1 (R8's windowed frames are captured -
-see the Review table) and the assembled feel. Audio is muted by
+R9 is narrowed to four named guards (EV-0177..EV-0180): Wadsworth, Gumbo, Blip and Presto now act in the
+tank, and only Seymour's aura writer, Amp's click, Nostradamus' sneeze and Walter's glove launch remain
+disabled rather than guessed. Remaining: the owner's live playtest of tanks 2-4 and 5-1 (R8's windowed
+frames are captured - see the Review table) and the assembled feel. Audio is muted by
 default for now at the owner's request (Q-0056). The P4 lines below keep their evidence; only the
 premature `[x]` is withdrawn.
 
@@ -837,7 +839,7 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 | R6 | Coins all cycle the MONEY first row, so every coin looks identical. The kind -> row binding is still open (Q-0057). | `_draw_entity_frame` comment; Q-0057. | FIXED: slot 26 `FUN_004DD7A0` recovered (EV-0162/EV-0163) - the draw binds image + row per kind (`MONEY` 0..4 normal, `SHELLS` 0..3 + `MONEYBAG` virtual, `PEARL` for 0x06/0x0D); `Coin.sprite_image()`/`sprite_row()` + `_draw_entity_frame`, 154-assertion coin suite pins all 27 bindings plus 0x11's `MISCITEMS`+`SPARKS` pair (EV-0167) and 0x12's `PEANUT` (EV-0170); windowed render shows all six art variants. Residue (Q-0057/Q-0040): the diamond row's blue plate (no second colorkey is recovered); 0x11 and 0x12 now draw their recovered art (0x12's `PEANUT` is the blank shipped image, so the snot is invisible by design), while 0x10 still falls back to `MONEY` cell 0 (`+0x1A0` ramp unrecovered). |
 | R7 | Pellets fall but never land/bob. **Two evidence-backed answers**: dropped food has no landing transition (nothing writes `+0x190`; click/feed drops pass `flag = 0`) and sinks out after a 15-tick bottom life (EV-0159/EV-0160), while a pellet **does** land and bob when Angie re-lays it with `flag = 1` in her 30 px food contact (EV-0161). The port now does both. Sweep complete (EV-0166): the last two sites (`0x4E4DEF`, the tank's own `0x547DFD`) also pass 0, and the save body never writes `+0x190`; the loader's type-`0x1C` branch builds Food with its bare ctor, so no flag exists there (EV-0169). | `Food._advance`, `FUN_004D62D0`, `FUN_004FE740`. | FIXED: sink-out + Angie's re-lay implemented, both suite-pinned; no landing transition exists, so none was added. **Deviation D-0012:** `Food.SETTLE_TICKS` (single constant, shipped 20) rests an ordinary pellet on the floor that many ticks before the sink-out; 0 = faithful. |
 | R8 | No alien threat on tank 1 level 1 (by design, selection 0), but waves on 1-2/2-4/5-1 must be seen playing windowed: alien art, HP bar, missiles, coin drops. | `shot_level.png` has no aliens; integration advances time, windowed eye-check open (P5.2). | WINDOWED CAPTURES DONE 2026-11-10 (`tools/godot/shot_r8.gd`, Dummy audio, content 326/326): `shot_r8_1_2.png` (wave alien art + HP bar + a missile), `shot_r8_2_4.png` (two staged Destructors, both bars, volley), `shot_r8_5_1.png` (Cyrax 5000 hp + two Minisylvesters; only Cyrax's bar, and only that bar is drawn on tank 5 - P2.9 §5), `shot_r8_coins.png` (1-1: a grown guppy's real `coin_due` drop, stage-1 coin on screen). Bar geometry matches the pinned `(-70, 77)` / box-3 rule in every frame. The tank-5 egg dome is correct, not a missing price: item 11's 0 is a **recovered free price** (`STORE_TABLE[11] = {5: [0, 6]}`, `EGG_PRICES[5] = [0]`, row `free: true`), the widget draws that dome on every tank and prints `FREE` for it (`StoreBar` keeps the row and blanks its text), and the 150/500 egg figures seen elsewhere are `EGG_PRICES[1]` level 1/2. Still OPEN on the owner's *live* playtest (timing/feel, attacks landing); the harness fast-forwards without feeding, so its frames starve the fish (FISH 0) - that is the capture, not the game. |
-| R9 | Pets are text rows, not the original's fish-pet art/behaviour in the tank. | `Pet` wander + `IMAGE_<NAME>` sheet playback. | PARTIAL: pets draw their own sheets and 12 slot-81 bodies act; 8 guards remain (Q-0044). |
+| R9 | Pets are text rows, not the original's fish-pet art/behaviour in the tank. | `Pet` wander + `IMAGE_<NAME>` sheet playback. PARTIAL 2026-11-10: Wadsworth's `+0x250` shelter now publishes the tank globals and stage 0/1 fish steer to his mouth instead of seeking food (EV-0177, D-0013); Gumbo steers to the corner opposite the nearest hostile on the 291/330 and 261/300 thresholds and his `+0x258` glow runs outside the alien-gated slot 81 (EV-0178); Blip's instant unlock reveals every hidden shelf once the level passes 200 ticks, 720 as a transformed body (EV-0179); Presto's `FUN_004F89A0` swap, 360-tick recharge and `FUN_004D6250` cleanup run through `Tank.spawn_pet(..., transformed)` and `Level._on_pet_transform` (EV-0180). Pets draw their own sheets and 16 slot-81 bodies act; **4 guards remain** (Seymour's `Tank+0x16C` writer, Amp's click/electrocute, Nostradamus' sneeze, Walter's glove launch - Q-0044). `headless_pet_check` 73 -> 113 assertions. |
 | R10 | The menu mermaid's tail overlay drew a green strap across the baked art. | `GameSelector._add_mermaid_tail`; Q-0055; windowed menu. | FIXED 2026-11-10 (owner review: the baked-only mermaid read as unfinished): the overlay is back, **masked** (`MaskAlpha` + `masks/tailflop_.png`, which is what the old green strap was) and fitted over the flat baked tail - mirrored, `TAIL_OFFSET` (120,268), resting on cell 0, then playing the recovered one-shot flop (framemap 7..0, 2 ticks a cell, 3-tick hold). `shot_menu.png` shows one tail. The placement stays a port fit, so Q-0055 keeps the open visual item. `headless_menu_check` 28 assertions pins the strip and playback. |
 
 Fixes land here as they are verified; this table is the source of truth for the review.

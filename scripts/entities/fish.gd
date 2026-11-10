@@ -138,6 +138,11 @@ const APPROACH_VY_DOWN := 1.3
 const APPROACH_VX_LIMIT := 4.0
 const APPROACH_VY_MIN := -3.0
 const APPROACH_VY_MAX := 4.0
+## Shelter approach (p2.3 §6, EV-0090): the three `+/-5/3/1` steps, against the same 5/10 px bands
+## `_steer_to` uses. The note gives the steps and the target, not the band distances.
+const SHELTER_COARSE := 5.0
+const SHELTER_FINE := 3.0
+const SHELTER_HAIR := 1.0
 ## Growth (P2.3 §7.5): 0/1 -> 2 by points, stage 2 -> 4 only on huge overshoot.
 const GROW_POP_TICKS := 10
 const GUPPY_OVERSHOOT_MULT := 15
@@ -390,18 +395,23 @@ func _advance() -> void:
 	if dead:
 		return
 
-	var target := _find_food()
-	var feeding := target != null and fullness < HUNGER_SEEK_LIMIT
-	if feeding:
-		# `can_seek` is the `+0x229` gate: it suppresses active steering only. Non-seekers still take
-		# the eat window when a pellet drifts into range, because the shared update calls slot 84.
-		if can_seek:
-			_steer_to(target)
-		_try_eat(target)
-		if dead:
-			return
-	if not (feeding and can_seek):
-		_swim()
+	# Wadsworth's shelter is `FUN_004F6970`'s top branch and outranks food seeking (p2.3 §6, EV-0090):
+	# a hidden Wadsworth exists, `+0x229` is set, and the fish is at stage 0/1.
+	if is_sheltering():
+		_steer_to_shelter(tank.wadsworth_mouth)
+	else:
+		var target := _find_food()
+		var feeding := target != null and fullness < HUNGER_SEEK_LIMIT
+		if feeding:
+			# `can_seek` is the `+0x229` gate: it suppresses active steering only. Non-seekers still take
+			# the eat window when a pellet drifts into range, because the shared update calls slot 84.
+			if can_seek:
+				_steer_to(target)
+			_try_eat(target)
+			if dead:
+				return
+		if not (feeding and can_seek):
+			_swim()
 
 	# Update tail order (FUN_004F6970): mode timers -> slot 81 coin scheduler -> dart/knockback ->
 	# clamps -> integration. The coin scheduler only runs when the target/food lists are empty.
@@ -552,6 +562,48 @@ func _steer_to(pellet: Food) -> void:
 	else:
 		if vy < APPROACH_VY_MAX:
 			vy += APPROACH_VY_DOWN
+
+	if int(position.y) <= int(min_y) and vy < 0.0:
+		vy = 0.0
+	if target_timer < 5:
+		target_timer += 1
+
+
+## `FUN_004F6970`'s shelter branch (p2.3 §6, EV-0090): `DAT_005e89d0 != 0 && fish+0x229 &&
+## stage[0x1A0] <= 1`. The port's `can_seek` is that `+0x229` byte and `stage` is `+0x1A0`, so the
+## condition is the recovered one; the mouth point comes from the tank's serialized globals.
+func is_sheltering() -> bool:
+	if tank == null or not can_seek or stage > 1:
+		return false
+	return int(tank.wadsworth_count) > 0
+
+
+## The shelter follow's own accel ladder: +/-5 far, +/-3 near, +/-1 inside the hair band, against the
+## mouth point rather than 20 px above a pellet.
+func _steer_to_shelter(mouth: Vector2) -> void:
+	var dx := position.x - mouth.x
+	if dx > APPROACH_FAR:
+		vx = maxf(vx - SHELTER_COARSE, -APPROACH_VX_LIMIT)
+	elif dx > APPROACH_NEAR:
+		vx = maxf(vx - SHELTER_FINE, -APPROACH_VX_LIMIT)
+	elif dx > 0.0:
+		vx = maxf(vx - SHELTER_HAIR, -APPROACH_VX_LIMIT)
+	elif dx >= -APPROACH_NEAR:
+		vx = minf(vx + SHELTER_HAIR, APPROACH_VX_LIMIT)
+	elif dx >= -APPROACH_FAR:
+		vx = minf(vx + SHELTER_FINE, APPROACH_VX_LIMIT)
+	else:
+		vx = minf(vx + SHELTER_COARSE, APPROACH_VX_LIMIT)
+
+	var dy := position.y - mouth.y
+	if dy > APPROACH_NEAR:
+		vy = maxf(vy - SHELTER_FINE, APPROACH_VY_MIN)
+	elif dy > 0.0:
+		vy = maxf(vy - SHELTER_HAIR, APPROACH_VY_MIN)
+	elif dy >= -APPROACH_NEAR:
+		vy = minf(vy + SHELTER_HAIR, APPROACH_VY_MAX)
+	else:
+		vy = minf(vy + SHELTER_FINE, APPROACH_VY_MAX)
 
 	if int(position.y) <= int(min_y) and vy < 0.0:
 		vy = 0.0

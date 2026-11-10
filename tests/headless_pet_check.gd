@@ -37,6 +37,10 @@ func _init() -> void:
 	_test_angie_revive()
 	_test_angie_relay()
 	_test_timer_drops()
+	_test_wadsworth_shelter()
+	_test_gumbo_corner()
+	_test_blip_unlock()
+	_test_presto_transform()
 
 	tank.shutdown()
 	sim.free()
@@ -325,6 +329,153 @@ func _test_timer_drops() -> void:
 	if snot.size() == 1:
 		_expect((snot[0].position - nose.position).distance_to(PetScript.SNOT_OFFSET) < 3.0,
 			"the snot lands at +15,+10")
+
+
+## Wadsworth (P2.7 §4.10, EV-0090): the 120-tick hide transition publishes the tank globals, a stage
+## 0/1 fish with `+0x229` steers to the mouth instead of swimming, a grown fish does not, and removal
+## runs `FUN_004D6250`'s count decrement.
+func _test_wadsworth_shelter() -> void:
+	tank.shutdown()
+	var whale: Pet = tank.spawn_pet(PetScript.WADSWORTH, Vector2(300.0, 200.0))
+	_step(PetScript.WADSWORTH_PERIOD - 1)
+	_expect(not whale.sheltering, "Wadsworth holds the hide state for the 120-tick period")
+	_expect(tank.wadsworth_count == 0, "no shelter before he hides")
+	_step(1)
+	_expect(whale.sheltering, "the period flips +0x250")
+	_expect(tank.wadsworth_count == 1, "a hidden Wadsworth increments the global count")
+	_expect(tank.wadsworth_mouth != Vector2.ZERO, "the mouth point is published")
+	# The mouth is written before his own steer step, so it trails one tick of movement (speed 4).
+	_step(1)
+	_expect((tank.wadsworth_mouth - (whale.position + PetScript.WADSWORTH_MOUTH)).length() <= 6.0,
+		"the mouth point sits at his head (mouth %s, pet %s)" % [str(tank.wadsworth_mouth), str(whale.position)])
+
+	# The mouth keeps following him while hidden.
+	var before := tank.wadsworth_mouth
+	var pos_before := whale.position
+	_step(3)
+	_expect(tank.wadsworth_mouth != before or whale.position == pos_before,
+		"the mouth point tracks his live position")
+
+	# A baby guppy shelters; a grown one does not (the recovered `stage <= 1` half).
+	var baby: Fish = tank.spawn_fish(0, Vector2(120.0, 120.0), 0)
+	var grown: Fish = tank.spawn_fish(0, Vector2(120.0, 120.0), 3)
+	_expect(baby.is_sheltering(), "a stage-0 fish steers to the shelter")
+	_expect(not grown.is_sheltering(), "a stage-3 fish ignores the shelter")
+	var start := baby.position.x
+	_step(3)
+	_expect(baby.position.x > start, "the sheltered guppy moves toward the mouth (%.1f -> %.1f)" % [start, baby.position.x])
+	baby.can_seek = false
+	_expect(not baby.is_sheltering(), "+0x229 false suppresses the shelter branch")
+
+	# Removal runs the cleanup half (FUN_004D6250).
+	whale.despawn()
+	_expect(tank.wadsworth_count == 0, "removal drops the hidden count back to 0")
+	_expect(tank.wadsworth_mouth == Vector2.ZERO, "and clears the mouth point")
+
+
+## Gumbo (P2.7 §4.13, EV-0093): the nearest hostile's side of the 291/330 and 261/300 thresholds
+## picks the opposite corner, and `+0x258` glows only while aliens exist.
+func _test_gumbo_corner() -> void:
+	tank.shutdown()
+	tank.aliens_present = false
+	var gumbo: Pet = tank.spawn_pet(PetScript.GUMBO, Vector2(300.0, 200.0))
+	_expect(not gumbo.glowing, "no glow with an empty field")
+
+	# A hostile up and to the left sends him to the bottom-right corner.
+	var alien = tank.spawn_alien(5, Vector2(100.0, 100.0))
+	tank.aliens_present = true
+	_step(1)
+	_expect(gumbo.glowing, "the lure glow is on while a hostile exists")
+	var corner_x := gumbo.position.x
+	var corner_y := gumbo.position.y
+	_step(1)
+	_expect(gumbo.position.x > corner_x, "he steers right, away from an alien at x 100")
+	_expect(gumbo.position.y > corner_y, "and down, away from an alien at y 100")
+
+	alien.despawn()
+	tank.aliens_present = false
+	tank.shutdown()
+
+
+## Blip (P2.7 §4.14, EV-0094): the unlock is armed only while rows stay hidden and fires once the level
+## age passes 200 ticks; a transformed Blip waits 720.
+func _test_blip_unlock() -> void:
+	tank.shutdown()
+	tank.store_locked = true
+	tank.age_ticks = 0
+	var blip: Pet = tank.spawn_pet(PetScript.BLIP, Vector2(300.0, 200.0))
+	var asked := [0]
+	blip.unlock_requested.connect(func() -> void: asked[0] += 1)
+
+	tank.age_ticks = PetScript.BLIP_UNLOCK_TICKS
+	_step(1)
+	_expect(not blip.unlocked, "age 200 is not past the threshold")
+	tank.age_ticks = PetScript.BLIP_UNLOCK_TICKS + 1
+	_step(1)
+	_expect(blip.unlocked, "age 201 unlocks")
+	_expect(asked[0] == 1, "the unlock is requested once (got %d)" % asked[0])
+	_step(10)
+	_expect(asked[0] == 1, "and never again on that pet")
+
+	tank.shutdown()
+	tank.store_locked = false
+	tank.age_ticks = 10_000
+	var idle: Pet = tank.spawn_pet(PetScript.BLIP, Vector2(300.0, 200.0))
+	_step(1)
+	_expect(not idle.unlocked, "an unlocked store means no request")
+
+	tank.shutdown()
+	tank.store_locked = true
+	tank.age_ticks = 500
+	var swapped: Pet = tank.spawn_pet(PetScript.BLIP, Vector2(300.0, 200.0), true)
+	_step(1)
+	_expect(not swapped.unlocked, "a transformed body waits for 720 (got age 500)")
+	tank.age_ticks = PetScript.BLIP_UNLOCK_TICKS_PRESTO + 1
+	_step(1)
+	_expect(swapped.unlocked, "and unlocks past 720")
+	tank.store_locked = false
+
+
+## Presto (P2.7 §4.20, EV-0100): 0 recharge on Presto itself, 360 on a normal pet, same-index swaps
+## ignored, the gate honoured, and the cleanup half run before the swap is requested.
+func _test_presto_transform() -> void:
+	tank.shutdown()
+	var presto: Pet = tank.spawn_pet(PetScript.PRESTO, Vector2(240.0, 200.0))
+	_expect(presto.recharge == 0, "Presto starts ready (ctor 0)")
+	_expect(presto.can_transform(), "and can swap immediately")
+	var asked: Array = []
+	presto.transform_requested.connect(func(pet_index: int, at: Vector2, facing: int) -> void:
+		asked.append([pet_index, at, facing]))
+	_expect(not presto.transform_to(PetScript.PRESTO), "a same-index target is ignored")
+	_expect(asked.is_empty(), "and requests nothing")
+	_expect(presto.transform_to(PetScript.ANGIE), "a different target swaps")
+	_expect(asked.size() == 1 and int(asked[0][0]) == PetScript.ANGIE, "the request carries the target")
+	_expect(presto.dead, "the Presto object is gone after the swap")
+
+	# A normal pet carries the 360-tick recharge and cannot swap until it runs out.
+	var angie: Pet = tank.spawn_pet(PetScript.ANGIE, Vector2(240.0, 200.0))
+	_expect(angie.recharge == PetScript.PRESTO_RECHARGE, "a normal pet starts at 360")
+	_expect(not angie.can_transform(), "so it cannot swap yet")
+	_expect(not angie.transform_to(PetScript.STINKY), "and the gate refuses")
+	_step(PetScript.PRESTO_RECHARGE)
+	_expect(angie.can_transform(), "after 360 ticks it is ready (got %d)" % angie.recharge)
+
+	# A transformed spawn is marked and carries the recharge.
+	var swapped: Pet = tank.spawn_pet(0x0F, Vector2(100.0, 100.0), true)
+	_expect(swapped.transformed, "a swap spawn is marked transformed")
+	_expect(swapped.recharge == PetScript.PRESTO_RECHARGE, "and inherits the recharge")
+
+	# The cleanup half: a hidden Wadsworth that is swapped away drops the global count.
+	tank.shutdown()
+	var whale: Pet = tank.spawn_pet(PetScript.WADSWORTH, Vector2(300.0, 200.0))
+	whale.set_sheltering(true)
+	_expect(tank.wadsworth_count == 1, "the shelter is live before the swap")
+	var meryl: Pet = tank.spawn_pet(PetScript.MERYL, Vector2(200.0, 200.0))
+	meryl.song_active = true
+	whale.cleanup()
+	meryl.cleanup()
+	_expect(tank.wadsworth_count == 0, "cleanup decrements the hidden count")
+	_expect(not meryl.song_active, "and clears Meryl's song marker")
 
 
 func _step(count: int) -> void:

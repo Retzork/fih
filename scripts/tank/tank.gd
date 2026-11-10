@@ -78,6 +78,15 @@ var pet_capacity := 2
 var wave_frozen := false
 ## After the boss dies, waves never resume.
 var waves_disabled := false
+## `Tank+0x444`: logic ticks since the level started. Blip's instant unlock reads it (EV-0094).
+var age_ticks := 0
+## `DAT_005e89d0`/`+0xD4`/`+0xD8` (EV-0090/EV-0144, tank-serialized): the hidden-Wadsworth count and
+## his mouth point. While the count is non-zero, a stage 0/1 fish with `+0x229` steers to the mouth
+## instead of seeking food (p2.3 §6).
+var wadsworth_count := 0
+var wadsworth_mouth := Vector2.ZERO
+## `Tank+0x2E0 < Tank+0x2DC`: the store still hides rows, so Blip's unlock (EV-0094) has work to do.
+var store_locked := false
 
 var _layers: Dictionary = {}
 
@@ -173,8 +182,10 @@ func spawn_dead_fish(
 
 
 ## Spawn a pet. Stinky's fixed lane is applied by the ctor, so the spawn keeps its own y.
-func spawn_pet(index: int, position: Vector2) -> Pet:
-	var pet: Pet = PetScript.create(index, position, rng)
+## `transformed` is Presto's `FUN_004F89A0` swap: the target is a real pet of its own index that
+## inherits the 360-tick recharge (`+0x230`/`+0x1C8` set, EV-0100).
+func spawn_pet(index: int, position: Vector2, transformed: bool = false) -> Pet:
+	var pet: Pet = PetScript.create(index, position, rng, transformed)
 	return spawn_at(pet, Sim.Phase.PETS, pet.position) as Pet
 
 
@@ -261,6 +272,10 @@ func shutdown() -> void:
 	boss_alive = false
 	wave_frozen = false
 	pet_capacity = 2
+	# Level-scoped globals: a hidden Wadsworth cannot outlive the level he was hidden in.
+	wadsworth_count = 0
+	wadsworth_mouth = Vector2.ZERO
+	age_ticks = 0
 	if sim != null:
 		sim.flush_backlog()
 

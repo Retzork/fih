@@ -652,6 +652,12 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	egg_pieces = Progression.egg_pieces_at_start(tank_index)
 	egg_price = Progression.egg_price(tank_index, level_index, game_mode)
 	stock_default_store()
+	# The hidden shelves are the `Tank+0x2E0 < Tank+0x2DC` state Blip unlocks (EV-0094); the level
+	# age and Wadsworth globals are per-level state, not profile state.
+	tank.store_locked = not Progression.hidden_items(tank_index, level_index).is_empty()
+	tank.age_ticks = 0
+	tank.wadsworth_count = 0
+	tank.wadsworth_mouth = Vector2.ZERO
 	reset_prices()
 	tank.tank_index = tank_index
 	_apply_mode_flags()
@@ -796,6 +802,8 @@ func spawn_owned_pets() -> int:
 		pet.birth_requested.connect(_on_pet_birth)
 		pet.food_requested.connect(_on_pet_food)
 		pet.attack_requested.connect(_on_pet_attack)
+		pet.unlock_requested.connect(_on_pet_unlock)
+		pet.transform_requested.connect(_on_pet_transform)
 		spawned += 1
 	return spawned
 
@@ -817,6 +825,32 @@ func _on_pet_attack(target: Node2D, damage: float) -> void:
 			(target as Boss).hit(int(damage), true)
 		else:
 			target.hit(int(damage), true)
+
+
+## Blip's instant unlock (EV-0094): `FUN_005409B0(i, 1)` makes every store item available, which is
+## the whole table - the level-gated shelves included.
+func _on_pet_unlock() -> void:
+	if not tank.store_locked:
+		return
+	tank_store.clear()
+	for row in Progression.store_rows(tank_index, level_index, game_mode, true):
+		tank_store.append(row)
+	tank.store_locked = false
+	if store_bar != null:
+		store_bar.refresh_if_changed()
+
+
+## Presto's swap (EV-0100): the target is a real pet of its own index at the same point, spawned
+## transformed so it inherits the 360-tick recharge. The old object already ran `cleanup()`.
+func _on_pet_transform(pet_index: int, at: Vector2, facing: int) -> void:
+	var pet: Pet = tank.spawn_pet(pet_index, at, true)
+	pet.facing = facing
+	pet.cue.connect(_on_pet_cue)
+	pet.birth_requested.connect(_on_pet_birth)
+	pet.food_requested.connect(_on_pet_food)
+	pet.attack_requested.connect(_on_pet_attack)
+	pet.unlock_requested.connect(_on_pet_unlock)
+	pet.transform_requested.connect(_on_pet_transform)
 
 
 ## `FUN_00544A90`'s randomized spawn point when the caller passes x = -1.
@@ -1037,6 +1071,7 @@ func fire_at(point: Vector2) -> bool:
 
 
 func _on_sim_tick(_tick: int) -> void:
+	tank.age_ticks += 1
 	if game_mode == MODE_CHALLENGE:
 		inflate_prices(1)
 	if game_mode == MODE_TIME_TRIAL and not completed:

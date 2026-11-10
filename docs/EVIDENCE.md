@@ -4501,3 +4501,67 @@ behavior or specs; follow up with a binary observation entry.
   `Level.complete_level`). (3) The integration suite walks the free egg dome (3 -> 4 pieces, no
   money), Presto's grant, the 5000 + 5000 Shells, profile 5-2/`bonus_adventure`/`tank5_wins = 1`,
   then Hatch -> Pets -> Bonus -> 5-2.
+
+### EV-0177 - P4.7 Wadsworth (R9): the shelter state, the tank globals and the fish follow
+- Date: 2026-11-10
+- Type: implementation + test evidence (no new binary analysis)
+- Source: `scripts/entities/pet.gd` (`_wadsworth_hide`, `set_sheltering`, `_clear_shelter`, `cleanup`);
+  `scripts/tank/tank.gd` (`wadsworth_count`, `wadsworth_mouth`); `scripts/entities/fish.gd`
+  (`is_sheltering`, `_steer_to_shelter`); binary source EV-0090, P2.7 §4.10, P2.3 §6, EV-0144
+- Confidence: high for the state, the globals, the fish predicate and the cleanup; the hide toggle and
+  the mouth offset are port bindings (D-0013)
+- Notes: (1) `+0x250` is `Pet.sheltering` - the natural name `hidden` collides with `Node2D.hidden`.
+  (2) While set he increments the tank's hidden count and publishes `position + (40,40)` as the mouth;
+  that write runs before his own steer step, so the point trails one tick of movement. (3) The fish
+  side reproduces `FUN_004F6970`'s top branch exactly as the note gives it - count non-zero, `+0x229`
+  (`can_seek`) and `stage <= 1` - and steers to the mouth with the ±5/3/1 ladder *instead of*
+  `_find_food`; the bands reuse the 5/10 px pair the food approach already uses, because P2.3 §6 gives
+  the three steps and the target but not the band distances. (4) `FUN_004D6250`'s half is
+  `Pet.cleanup()`, reached from `despawn()`, `_exit_tree()` and Presto's swap: hidden count -1 clamped
+  at 0, and the mouth cleared at 0. (5) `headless_pet_check` 73 -> 113 assertions.
+
+### EV-0178 - P4.7 Gumbo (R9): opposite-corner steering and the `+0x258` glow
+- Date: 2026-11-10
+- Type: implementation + test evidence (no new binary analysis)
+- Source: `scripts/entities/pet.gd` (`_steer_to_corner`, `_gumbo_glow`); binary source EV-0093,
+  P2.7 §4.13
+- Confidence: high for the thresholds and the glow; the corner points are a port fit
+- Notes: (1) `FUN_004E02D0` compares the nearest hostile against x 291/330 (0x123/0x14A) and y 261/300
+  (0x105/300); between a pair the current coordinate is kept, so he commits only once the alien is
+  clearly past a threshold. The target corner is not a recovered literal - the far tank bounds
+  (x 540/10, y 400/60) stand in for it. (2) The glow is maintained in `_advance`, **not** `_slot81`:
+  `FUN_004E9790`'s alien gate closes slot 81 for every pet but Stanley, which is exactly the state
+  that lights the glow. The first implementation put it in `_slot81` and `headless_pet_check` caught it.
+  (3) The wiki's fish lure stays disabled: EV-0093 found no branch that redirects guppies/breeders.
+
+### EV-0179 - P4.7 Blip (R9): the instant store unlock
+- Date: 2026-11-10
+- Type: implementation + test evidence (no new binary analysis)
+- Source: `scripts/entities/pet.gd:_blip_unlock`; `scripts/tank/tank.gd` (`store_locked`, `age_ticks`);
+  `scripts/tank/level.gd` (`_on_pet_unlock`, `_on_sim_tick`, `start_level`);
+  `scripts/progression/progression.gd:store_rows(include_hidden)`; binary source EV-0094, P2.7 §4.14
+- Confidence: high for the gate and the thresholds; the unlocked row set is a port binding
+- Notes: (1) `Tank.store_locked` is the port's `Tank+0x2E0 < Tank+0x2DC` and is seeded from
+  `Progression.hidden_items` at `start_level`; `Tank.age_ticks` is `+0x444`, incremented once per
+  `Level._on_sim_tick` and reset at level start. (2) The unlock fires once, at age > 200 (5.5 s), or
+  > 0x2D0 (720) when a transformed Presto runs the body. (3) `FUN_005409B0(i, 1)` for every item is
+  bound to rebuilding `tank_store` from `Progression.store_rows(..., include_hidden = true)`; the
+  level-locked shelves appearing is the port's reading of "every store item". (4) The wiki's hunger
+  arrows, entrance radar and HP meters are not in the body (EV-0094/EV-0106) and stay unimplemented.
+
+### EV-0180 - P4.7 Presto (R9): the transform, the recharge and the cleanup
+- Date: 2026-11-10
+- Type: implementation + test evidence (no new binary analysis)
+- Source: `scripts/entities/pet.gd` (`can_transform`, `transform_to`, `cleanup`, `recharge`);
+  `scripts/tank/tank.gd:spawn_pet(transformed)`; `scripts/tank/level.gd:_on_pet_transform`;
+  binary source EV-0100, P2.7 §4.20/§7.7
+- Confidence: high
+- Notes: (1) `+0x238` is 360 on a normal pet and 0 on Presto itself, set in `Pet.create`; it counts
+  down in `_advance` and `FUN_004F2650(+0x238) < 1` is `can_transform()`. (2) `FUN_004F89A0`'s order is
+  kept: ignore a same-index target, gate on the recharge, run the `FUN_004D6250` cleanup, ask, then
+  leave - `transform_requested` is what spawns. (3) `Level._on_pet_transform` spawns the target
+  through `Tank.spawn_pet(index, at, true)` so it is a normal body of its own index with `transformed`
+  set and the inherited 360 recharge, then rewires every signal. (4) Sound 0x122 has no `SOUND_*`
+  binding (Q-0030), so only the semantic `transform` cue is emitted; the "Recharging..." label and the
+  `FUN_0054C6F0` picker stay UI work. (5) Walter's `+0x260/+0x264` punch state is not carried because
+  no glove entity exists yet (Q-0044).

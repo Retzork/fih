@@ -109,13 +109,14 @@ static func egg_price(tank_no: int, level_no: int, mode: int = 0) -> int:
 
 ## The store rows this tank/level offers, ordered by the store slot the original places them at.
 ## A row is shaped like `Store.row_for` plus `shelf`, and `free` marks the tank-5 egg, whose 0 is a
-## recovered price rather than the "not recovered" marker.
-static func store_rows(tank_no: int, level_no: int, mode: int = 0) -> Array[Dictionary]:
+## recovered price rather than the "not recovered" marker. `include_hidden` is Blip's instant unlock
+## (`FUN_005409B0(i, 1)` for every item, EV-0094): the level-gated shelves join the table too.
+static func store_rows(tank_no: int, level_no: int, mode: int = 0, include_hidden: bool = false) -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	var hidden := hidden_items(tank_no, level_no)
 	for id in STORE_TABLE:
 		var per_tank: Dictionary = STORE_TABLE[id]
-		if not per_tank.has(tank_no) or hidden.has(id):
+		if not per_tank.has(tank_no) or (not include_hidden and hidden.has(id)):
 			continue
 		var spec: Array = per_tank[tank_no]
 		var price := int(spec[0])

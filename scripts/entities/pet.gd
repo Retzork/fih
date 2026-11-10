@@ -10,10 +10,14 @@ extends SimEntity
 ##
 ## Implemented: the roster table, Stinky's bottom-lane coin chase with his hide counter, Niko's pearl
 ## cycle (1224/1233/1440/1450 ticks, reset to `rand % 50`), Angie's corpse handoff (target
-## `+0x1A0 > 0x5F`, contact 30/60 px, phase 100 -> 10), and the two plain timer droppers Vert (216
-## ticks, coin kind 2), Shrapnel (633..652 ticks, coin kind 0x11) and Nostradamus (300..599 ticks,
-## the snot coin 0x12). The other 18 pets are represented
-## in `DEFS` but their slot-81 bodies are not written yet (Q-0044), so they idle.
+## `+0x1A0 > 0x5F`, contact 30/60 px, phase 100 -> 10), and the plain timer droppers Vert (216 ticks,
+## coin kind 2), Shrapnel (633..652 ticks, coin kind 0x11), Nostradamus (300..599 ticks, the snot coin
+## 0x12), Prego (930), Zorf (65), Meryl (1400), Nimbus, Brinkley, Stanley, Gash and Amp's charge.
+## R9 additions: Wadsworth's `+0x250` shelter with the tank globals and the fish follow (p2.3 §6),
+## Gumbo's opposite-corner steering + `+0x258` glow (EV-0093), Blip's instant store unlock
+## (EV-0094), and Presto's `FUN_004F89A0` transform with the `FUN_004D6250` cleanup (EV-0100).
+## Four bodies stay guards because their only proven half is unreached (Q-0044): Seymour's
+## `Tank+0x16C` writer, Amp's click/electrocute, Nostradamus' sneeze, and Walter's glove launch.
 ##
 ## Q-0044 (open): the note pins Stinky's speed (1.2) and fixed y (370) and Niko's four tick marks, but
 ## not the other pets' speeds, their fixed-y lanes, or most action periods (only the periods listed in
@@ -24,10 +28,15 @@ enum Family { OTHER, FISH }
 ## Roster indexes (P2.7 §1). 999 is a card only and is deliberately absent.
 const STINKY := 0x00
 const NIKO := 0x01
+const MERYL := 0x08
+const WADSWORTH := 0x09
 const VERT := 0x06
 const SHRAPNEL := 0x0B
+const GUMBO := 0x0C
+const BLIP := 0x0D
 const NOSTRADAMUS := 0x15
 const ANGIE := 0x12
+const PRESTO := 0x13
 const STANLEY := 0x16
 const PET_COUNT := 24
 
@@ -77,6 +86,34 @@ const NIKO_CLOSE := 1450
 const NIKO_RESET_MAX := 0x32
 const PEARL_KIND := 0x0F
 const PEARL_OFFSET := Vector2(1.0, -2.0)
+
+## Wadsworth (P2.7 §4.10, EV-0090): ctor `+0x224 = 120`; the hide state is `+0x250`, and while it is
+## set he increments the global hidden count and publishes his mouth point (`DAT_005e89d0/4/8`, which
+## the tank serializes). The note does not pin the writer that flips `+0x250`, so the port flips it on
+## the recovered 120-tick period (D-0013) rather than leaving the shelter unreachable.
+const WADSWORTH_PERIOD := 120
+const WADSWORTH_MOUTH := Vector2(40.0, 40.0)
+
+## Gumbo (P2.7 §4.13, EV-0093): no ctor branch. `FUN_004E02D0` compares the nearest hostile in
+## `Tank+0xF4`/`Tank+0xB8` against the x thresholds 0x123/0x14A (291/330) and the y thresholds
+## 0x105/300 and steers to the opposite corner; `+0x258` drives the lure glow while aliens exist.
+## The corner points themselves are not recovered literals, so the far tank bounds are the port fit;
+## the thresholds are the recovered part (Q-0044).
+const GUMBO_X_LOW := 291.0
+const GUMBO_X_HIGH := 330.0
+const GUMBO_Y_LOW := 261.0
+const GUMBO_Y_HIGH := 300.0
+const GUMBO_CORNER_X := [540.0, 10.0]
+const GUMBO_CORNER_Y := [400.0, 60.0]
+
+## Blip (P2.7 §4.14, EV-0094): the unlock fires while `Tank+0x2E0 < Tank+0x2DC` once the level age
+## `+0x444` passes 200 ticks (5.5 s), or 0x2D0 (720) when a transformed Presto is running the body.
+const BLIP_UNLOCK_TICKS := 200
+const BLIP_UNLOCK_TICKS_PRESTO := 0x2D0
+
+## Presto (P2.7 §4.20, EV-0100): `+0x238` is 360 on a normal pet and 0 on Presto itself (and in mode
+## 5, which the level applies). The gate is `FUN_004F2650(+0x238) < 1`; the swap is `FUN_004F89A0`.
+const PRESTO_RECHARGE := 360
 
 ## Stinky: fixed bottom lane, speed 1.2, hide counter max 9 (`+0x1B4`).
 const STINKY_SPEED := 1.2
@@ -158,10 +195,18 @@ signal birth_requested(at: Vector2)
 signal food_requested(quality_kind: int, at: Vector2)
 ## Melee/ball attacks (Itchy, Rufus, Gash, Stanley, Walter): the level applies damage.
 signal attack_requested(target: Node2D, damage: float)
+## Blip's instant store unlock (`FUN_005409B0` over every item, EV-0094): the level reveals its
+## hidden shelves and clears `Tank+0x2E0 < Tank+0x2DC`.
+signal unlock_requested
+## Presto's swap (`FUN_004F89A0`, EV-0100): the level spawns `pet_index` at `at` with the transformed
+## flag, so the new pet is a normal body of the target index that inherits the recharge.
+signal transform_requested(pet_index: int, at: Vector2, facing: int)
 
 var index := STINKY
 var vx := 0.0
 var vy := 0.0
+## Draw side, taken from the vx sign the way the pet render flips its sheet.
+var facing := 1
 var speed := 0.0
 ## Slot-81 counter (`+0x1B4`): only advances while the action gate is open.
 var action_timer := 0
@@ -171,15 +216,29 @@ var hide_counter := 0
 var pearl_taken := false
 ## Shrapnel's ctor roll (`+0x224`, 633..652); unused by the other pets.
 var drop_period := SHRAPNEL_MIN
+## Wadsworth's `+0x250` (named `sheltering`: `hidden` is Node2D's draw flag). While set, the tank
+## holds his count and mouth point.
+var sheltering := false
+## Gumbo's `+0x258`: the lure glow, on while a hostile alien is on the field.
+var glowing := false
+## Blip's one-shot latch.
+var unlocked := false
+## `+0x238` Presto recharge; 0 means available.
+var recharge := 0
+## `+0x230`/`+0x1C8`: this pet came out of a Presto swap.
+var transformed := false
 
 
-static func create(index_: int, pos: Vector2, rng: RandomNumberGenerator = null) -> Pet:
+static func create(index_: int, pos: Vector2, rng: RandomNumberGenerator = null, transformed_: bool = false) -> Pet:
 	var pet := Pet.new()
 	if not DEFS.has(index_):
 		push_error("Pet.create: unknown pet index %d" % index_)
 		index_ = STINKY
 	pet.index = index_
 	pet.position = pos
+	pet.transformed = transformed_
+	# The ctor's `+0x238` (EV-0100): 360 on a normal pet, 0 on Presto itself.
+	pet.recharge = 0 if index_ == PRESTO else PRESTO_RECHARGE
 	var def: Dictionary = DEFS[index_]
 	pet.speed = float(def["speed"])
 	# The tank owns the only RNG stream (SPECS §9.8); the global fallback keeps standalone
@@ -225,23 +284,63 @@ func action_gate_open() -> bool:
 	return true
 
 
+## `FUN_004D6250` (EV-0090/EV-0100): the cross-pet cleanup every removal runs. A hidden Wadsworth
+## leaves the global count (clamped at 0) and Meryl's song marker clears. `despawn()`, Presto's swap
+## and level teardown all come through here, which is what keeps the globals from leaking.
+func cleanup() -> void:
+	if sheltering:
+		sheltering = false
+		_clear_shelter()
+	if index == MERYL:
+		song_active = false
+
+
+func despawn() -> void:
+	if not dead:
+		cleanup()
+	super()
+
+
+func _exit_tree() -> void:
+	# A node freed without `despawn()` (level teardown, scene change) still runs the cleanup half.
+	cleanup()
+	super()
+
+
 func _advance() -> void:
+	if recharge > 0:
+		recharge -= 1
+	# Gumbo's `+0x258` glow follows the alien list, which is exactly the state that closes his
+	# slot-81 gate, so it is maintained outside the gated body (EV-0093).
+	if index == GUMBO:
+		_gumbo_glow()
 	if action_gate_open():
 		action_timer += 1
 		_slot81()
+	# A hidden Wadsworth publishes the point every fish reads, so it follows his live position.
+	if index == WADSWORTH and sheltering and tank != null:
+		tank.wadsworth_mouth = position + WADSWORTH_MOUTH
 	_steer()
+	if vx < -0.05:
+		facing = -1
+	elif vx > 0.05:
+		facing = 1
 	_contact()
 
 
-## `FUN_004E5900` branches (P2.7 §4): the recovered timer + melee + swimmer bodies.
-## Guards per note §7.10: Gumbo lure, Blip overlays, Amp click, Nostradamus sneeze,
-## Wadsworth sleep and Presto transform stay parameterised, not guessed.
+## `FUN_004E5900` branches (P2.7 §4): the recovered timer, melee, shelter, corner and swap bodies.
+## Guards per note §7.10: Seymour's `Tank+0x16C` writer, Amp's click, Nostradamus' sneeze and
+## Walter's glove launch stay parameterised, not guessed.
 func _slot81() -> void:
 	match index:
 		STINKY:
 			_stinky_hide()
 		NIKO:
 			_niko_cycle()
+		WADSWORTH:
+			_wadsworth_hide()
+		BLIP:
+			_blip_unlock()
 		VERT:
 			_vert_drop()
 		SHRAPNEL:
@@ -413,7 +512,78 @@ func _niko_cycle() -> void:
 			cue.emit("niko_close", position)
 		NIKO_CLOSE:
 			pearl_taken = false
-			action_timer = tank.randi_below(NIKO_RESET_MAX)
+			action_timer = tank.randi_below(NIKO_RESET_MAX)## Wadsworth (§4.10, EV-0090): on the recovered 120-tick period he toggles `+0x250`. While hidden the
+## tank's hidden count and mouth point are live, which is the target every stage 0/1 fish with
+## `+0x229` steers to (p2.3 §6). The predicates `FUN_004E7010`/`FUN_004E7130`/`FUN_004E3EA0` and
+## `FUN_004E9790`'s alien gate are the slot-81 gate this body already runs under.
+func _wadsworth_hide() -> void:
+	if action_timer < WADSWORTH_PERIOD:
+		return
+	action_timer = 0
+	set_sheltering(not sheltering)
+
+
+## Write the `+0x250` state and keep the globals in step with it. Safe to call twice.
+func set_sheltering(value: bool) -> void:
+	if value == sheltering:
+		return
+	sheltering = value
+	if tank == null:
+		return
+	if sheltering:
+		tank.wadsworth_count = int(tank.wadsworth_count) + 1
+		tank.wadsworth_mouth = position + WADSWORTH_MOUTH
+		cue.emit("shelter", position)
+	else:
+		_clear_shelter()
+		cue.emit("unshelter", position)
+
+
+func _clear_shelter() -> void:
+	if tank == null:
+		return
+	tank.wadsworth_count = maxi(int(tank.wadsworth_count) - 1, 0)
+	if int(tank.wadsworth_count) == 0:
+		tank.wadsworth_mouth = Vector2.ZERO
+
+
+## Gumbo (§4.13, EV-0093): `+0x258` is the lure glow, driven while any hostile is present. The kick
+## and the glow both live in `FUN_004E02D0`'s alien branch, so an empty field clears it.
+func _gumbo_glow() -> void:
+	glowing = tank != null and tank.alien_count() > 0
+
+
+## `FUN_004E02D0`'s corner pick: an alien left of 291 sends him right, one right of 330 sends him
+## left, and the y thresholds 261/300 pick top or bottom the same way. Between a pair of thresholds
+## his current coordinate is kept, so he only commits to a corner once the alien is clearly past one.
+func _steer_to_corner(alien_at: Vector2) -> void:
+	var target_x := position.x
+	if alien_at.x < GUMBO_X_LOW:
+		target_x = float(GUMBO_CORNER_X[0])
+	elif alien_at.x > GUMBO_X_HIGH:
+		target_x = float(GUMBO_CORNER_X[1])
+	var target_y := position.y
+	if alien_at.y < GUMBO_Y_LOW:
+		target_y = float(GUMBO_CORNER_Y[0])
+	elif alien_at.y > GUMBO_Y_HIGH:
+		target_y = float(GUMBO_CORNER_Y[1])
+	var toward := Vector2(target_x, target_y) - position
+	position.x += clampf(toward.x, -speed, speed)
+	position.y += clampf(toward.y, -speed, speed)
+
+
+## Blip (§4.14, EV-0094): while the store still has hidden rows and the level is older than 200
+## ticks (720 as a transformed Presto), `FUN_005409B0(i, 1)` runs for every item once. The wiki's
+## hunger arrows, radar and HP meters were not found in the body, so they stay unimplemented.
+func _blip_unlock() -> void:
+	if unlocked or tank == null or not bool(tank.store_locked):
+		return
+	var threshold := BLIP_UNLOCK_TICKS_PRESTO if transformed else BLIP_UNLOCK_TICKS
+	if int(tank.age_ticks) <= threshold:
+		return
+	unlocked = true
+	unlock_requested.emit()
+	cue.emit("unlock", position)
 
 
 ## Vert's 216-tick drop: the gate is normal play's always-true `FUN_004D70B0` answer.
@@ -486,6 +656,25 @@ func _angie_relay_food() -> void:
 		return
 
 
+## `FUN_004F89A0` (EV-0100): swap into `target` once `+0x238` has run out. The level owns spawning,
+## so this gates (`FUN_004F2650(+0x238) < 1`), runs the cleanup half and asks; `FUN_004F2650`'s
+## failure path also draws "Recharging...", which is UI, not simulation.
+func can_transform() -> bool:
+	return recharge < 1
+
+
+func transform_to(target: int) -> bool:
+	if tank == null or not DEFS.has(target) or target == index:
+		return false
+	if not can_transform():
+		return false
+	cue.emit("transform", position)
+	cleanup()
+	transform_requested.emit(target, position, facing)
+	despawn()
+	return true
+
+
 ## Stinky chases the nearest acceptable coin along his lane; Clyde (0x05) chases in 2D
 ## with the same predicate and never hides. Every other swimmer wanders inside the tank
 ## band until its target-selection branch is bound (Q-0044): the wander is a random point
@@ -516,6 +705,11 @@ func _steer() -> void:
 		position.x += clampf(delta.x, -step.x, step.x)
 		position.y += clampf(delta.y, -step.y, step.y)
 		return
+	if index == GUMBO and tank != null and tank.alien_count() > 0:
+		var alien := _nearest_alien()
+		if alien != null:
+			_steer_to_corner(alien.position)
+			return
 	_wander_timer += 1
 	if _wander_timer > 20:
 		_wander_timer = 0

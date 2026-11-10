@@ -1324,3 +1324,29 @@ Open: the real per-cell hold and the pet reveal point.
   `get_image()`, never `Image.load_from_file`, so no export-time raw-PNG warning is introduced;
   `content.json` export inclusion stays open until a real export is run.
 
+
+### R9 pet-body update (2026-11-10; port bindings, no new binary evidence)
+
+- **Q-0044 narrowed again.** Four more slot-81 bodies are in: Wadsworth's shelter and the fish
+  follow (EV-0177), Gumbo's opposite-corner steering and glow (EV-0178), Blip's instant store unlock
+  (EV-0179) and Presto's transform with the recharge and the cross-pet cleanup (EV-0180).
+  `headless_pet_check` covers all four (113 assertions).
+- **Still guarded, and why** - each needs the half the binary has not yielded: Seymour's aura (only
+  the `Tank+0x16C` consumer is proven, its writer is not, EV-0091), Amp's click -> electrocute path
+  (EV-0097), Nostradamus' "Sneeze of Power" (EV-0102) and Walter's glove launch (the glove entity,
+  hit table and effect fields are proven, the click binding and punch counter are not, EV-0104).
+  None of them is guessed; they stay inert until their trigger is recovered.
+- **Binding, not evidence.** Gumbo's corner points are the tank bounds, Blip's unlocked row set is the
+  whole table, and the shelter's accel bands reuse the fish's existing 5/10 px pair - the note gives
+  the constants' shape, not the literals. Recorded above and in the EV entries.
+
+### D-0013 - Wadsworth's hide toggle runs on his recovered 120-tick period
+
+- Date: 2026-11-10 (implementation, R9; source EV-0090, P2.7 §4.10)
+- Status: accepted for the port; replace it if the writer is ever isolated.
+- The binary proves the `+0x250` state, the hidden-count/mouth globals, `FUN_004D6250`'s cleanup and
+  the ctor period `+0x224 = 120`, but not the branch that flips the flag. The port flips it every 120
+  ticks of slot-81 time rather than leaving the whole shelter unreachable; the body is one function
+  (`Pet._wadsworth_hide`), so the recovered writer drops straight in.
+- The mouth point is `position + (40,40)` (the 80x80 sprite centre) because the recovered globals store
+  a point, not an offset from the pet.
