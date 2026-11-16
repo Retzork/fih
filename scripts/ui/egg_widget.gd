@@ -19,11 +19,18 @@ const EGG_ART := "IMAGE_EGGPIECES"
 const PIECES_TO_COMPLETE := 4
 ## The eighth dome, at `SLOT_X[6]` in `StoreBar` (the recovered `FUN_005409B0` x table).
 const SLOT := 6
-## Inside the 58x60 slot: the 46x39 cell (`EGGPIECES` is 138x39, three cells) is fitted into this
-## window and clipped to it, so the whole-egg cell cannot spill over the gold rim or the price plate
-## (owner review 2026-11-16). The price sits on the same measured purple plate as every other dome
-## (`StoreBar.PLATE_RECT`, 45x12 at (7, 45)).
-const ART_WINDOW := Rect2(10.0, 3.0, 38.0, 33.0)
+## Inside the 58x60 slot: the cell (`EGGPIECES` is 138x39, three cells of 46x39) is drawn over the
+## same violet badge every other item sits on and clipped to it, so the whole-egg cell cannot spill
+## over the gold rim or the price plate (owner review 2026-11-16). The base game's egg dome is a wide
+## violet disc with a big cream cup (1-1 recording, D-0023). Its cup is larger than this cell's: the
+## cell is `EGGPIECES`' progress art, not the store icon the original puts there (that icon atlas is
+## unrecovered, Q-0054), so the cell is fitted to the badge rather than scaled past it - at 1.25 the
+## pointed egg's top gets clipped flat, which looked worse than the smaller cup. The price sits on
+## the same measured purple plate as every other dome (`StoreBar.PLATE_RECT`, 45x12 at (7, 45)).
+const ART_WINDOW := StoreBar.ICON_RECT
+const ART_SCALE := 0.85
+## `EGGPIECES` cell size (138x39 / 3).
+const CELL_SIZE := Vector2(46.0, 39.0)
 ## The label box is centred on the 12-px plate (centre y 51) so the native glyphs are not clipped.
 const PRICE_RECT := Rect2(7.0, 42.0, 45.0, 18.0)
 const GREY := Color8(0xCC, 0xCC, 0xCC)
@@ -85,6 +92,14 @@ func _ready() -> void:
 	if _frames == null or _frames.get_frame_count("default") == 0:
 		return
 
+	# The badge first: it is what fills the dome once the cup art is on top.
+	var badge := TextureRect.new()
+	badge.name = "Badge"
+	badge.texture = StoreBar.badge_cell(null)
+	badge.position = ART_WINDOW.position
+	badge.size = ART_WINDOW.size
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(badge)
 	var texture := _masked(0)
 	if texture == null:
 		return
@@ -101,10 +116,10 @@ func _ready() -> void:
 	_art = TextureRect.new()
 	_art.name = "Egg"
 	_art.texture = texture
-	_art.position = Vector2.ZERO
-	_art.size = ART_WINDOW.size
+	_art.size = CELL_SIZE * ART_SCALE
+	_art.position = (ART_WINDOW.size - _art.size) * 0.5
 	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_art.stretch_mode = TextureRect.STRETCH_SCALE
 	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	window.add_child(_art)
 	refresh()
@@ -132,11 +147,12 @@ func refresh() -> void:
 	_button.disabled = bool(level.completed) or not known or not affordable
 	tooltip_text = "Egg %d/%d" % [pieces, PIECES_TO_COMPLETE]
 	if not known:
-		_price.text = "?"
+		_price.text = "$?"
 	elif price <= 0:
 		_price.text = "FREE"
 	else:
-		_price.text = str(price)
+		# The base game prints the same `$` prefix on the egg dome (`$150` on the 1-1 recording).
+		_price.text = "$%d" % price
 	var colour := PRICE_COLOR if affordable and not level.completed else GREY
 	_price.add_theme_color_override("font_color", colour)
 	_show_frame(pieces)

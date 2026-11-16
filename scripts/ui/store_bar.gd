@@ -24,17 +24,21 @@ const BAR_SIZE := Vector2(640.0, 75.0)
 ## so the port uses the same 26-px height `HatchScreen` gives the baked MENU plate. The label and
 ## frame are part of the `MENUBAR` art, so the control itself is a flat hit target.
 const MENU_RECT := Rect2(525.0, 4.0, 80.0, 26.0)
-## The green wallet plate inside `MENUBAR` (green pixels span x 530..621, y 39..58).
-const MONEY_RECT := Rect2(530.0, 34.0, 100.0, 30.0)
+## The green wallet plate inside `MENUBAR` (green pixels span x 530..621, y 39..58). The base game
+## puts a dark-green `$` in the plate's left badge and right-aligns the number in the green field.
+const MONEY_RECT := Rect2(546.0, 34.0, 74.0, 30.0)
+const MONEY_SIGN_RECT := Rect2(531.0, 36.0, 14.0, 26.0)
+const MONEY_SIGN_COLOR := Color8(0x36, 0x72, 0x0A)
 ## The purple price plate under each dome, measured from the art: (7, 45, 45, 12) slot-local.
 const PLATE_RECT := Rect2(7.0, 45.0, 45.0, 12.0)
 ## The label's layout box: a `Label` clips its glyphs to its own rect, and the 8-px font's line is
 ## taller than the 12-px plate, so the box is deliberately tall (centre y 51) and the glyphs are
 ## drawn at their native size - a shorter box cut the bottoms off the price digits.
 const PRICE_LABEL_RECT := Rect2(7.0, 30.0, 45.0, 42.0)
-## The dome's glass: the shipped item icons are full 40x40 cells, so they are fitted to 34x34 inside
-## the ring (a 1:1 draw put the fins across the gold rim).
-const ICON_RECT := Rect2(12.0, 5.0, 34.0, 34.0)
+## The dome's glass, measured off the base-game recording: the badge fills 44x33 at slot-local
+## (6, 9), ending just above the price plate at y 45. A smaller box left the dome's moulding showing
+## around the item, which the owner read as a shut lid (D-0022).
+const ICON_RECT := Rect2(6.0, 9.0, 44.0, 33.0)
 
 ## `FUN_005409B0`'s x table for slots 0-6; slot 7 is unrecovered (Q-0054).
 const SLOT_X := [0x12, 0x57, 0x90, 0xD9, 0x122, 0x16B, 0x1B4]
@@ -46,21 +50,23 @@ const SLOT_COUNT := 8
 ## `FUN_005373C0` writes `FUN_00433360(0x6E,0xFA,0x6E)` into the button's label colour.
 const PRICE_COLOR := Color8(0x6E, 0xFA, 0x6E)
 const GREYED_COLOR := Color8(0xCC, 0xCC, 0xCC)
-const MONEY_COLOR := Color8(0xFF, 0xFF, 0xE8)
+## The wallet number is the same green as every price (sampled #84EF89 in the recording).
+const MONEY_COLOR := PRICE_COLOR
 
 ## The fish icon is animated (D-0022, owner report: the base game swims the guppy in its dome): the
 ## bar plays the same stage-0 row of `SMALLSWIM` the tank draws - `SWIM_COLUMNS` cells, one per
 ## `AnimState.SHEET_FRAME_TICKS`, from the same column clock - instead of holding one cell still.
 const SWIM_COLUMNS := 10
 
-## The open glass face of the fish dome (D-0022, owner report "open background"): `MENUBAR` shades
-## the lower half of every dome as opaque moulding, which reads as a shut lid once an item sits in it.
-## The bar therefore paints the art's own lit-glass colour (sampled at the dome's brightest point,
-## `(0.969, 0.816, 0.404)`) into the icon cell itself, so the fish always sits *on* the glass. Baking
-## it into the cell (rather than drawing a disc behind the icon) is what keeps the fish whole: a
-## separate disc covered the head, because the icon box is wider than the dome's glass. Port-only
-## restyle: the shipped art is opaque here (its mask is white at every dome pixel).
-const GLASS_COLOR := Color(0.969, 0.816, 0.404)
+## The item badge (D-0023): the base game draws every stocked shelf as the item over a violet disc
+## that fills the dome - `$100` with a blue-violet badge behind the guppy, the egg cup over the same
+## violet in the seventh dome (measured from the owner's 1-1 recording: the badge is 44x33 logical,
+## i.e. the dome glass). Colours sampled from that recording: base #522488, brighter blue at the
+## right side #5132B3, lavender highlight #A489C7, dark floor #44052B. Port fit - the shipped icon
+## atlas that carries the badge is unrecovered (Q-0054), so the bar builds it from these samples.
+const BADGE_BASE := Color8(0x52, 0x24, 0x88)
+const BADGE_EDGE := Color8(0x51, 0x32, 0xB3)
+const BADGE_HIGHLIGHT := Color8(0xA4, 0x89, 0xC7)
 
 ## The item art each store item draws in its dome. The creature icons are the shipped 40x40
 ## `SCL_*` sheets (one icon per sellable species); food and the weapon use their own sheets (the
@@ -88,6 +94,7 @@ signal menu_pressed
 var level: Level = null
 var _background: TextureRect = null
 var _money_label: Label = null
+var _money_sign: Label = null
 var _menu_button: Button = null
 var _buttons: Array[Button] = []
 var _icons: Array[TextureRect] = []
@@ -220,13 +227,24 @@ func _add_menu_button() -> void:
 	add_child(_menu_button)
 
 
-## The wallet number on the art's green plate (`Tank::AddMoney`'s value).
+## The wallet on the art's green plate (`Tank::AddMoney`'s value): the dark-green `$` in the plate's
+## left badge and the number right-aligned in the green field, as the base game draws it.
 func _add_money_readout() -> void:
+	_money_sign = Label.new()
+	_money_sign.name = "MoneySign"
+	_money_sign.text = "$"
+	_money_sign.position = MONEY_SIGN_RECT.position
+	_money_sign.size = MONEY_SIGN_RECT.size
+	_money_sign.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_money_sign.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_money_sign.add_theme_color_override("font_color", MONEY_SIGN_COLOR)
+	UiFont.apply(_money_sign, UiFont.SMALL_FONT)
+	add_child(_money_sign)
 	_money_label = Label.new()
 	_money_label.name = "Money"
 	_money_label.position = MONEY_RECT.position
 	_money_label.size = MONEY_RECT.size
-	_money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_money_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_money_label.add_theme_color_override("font_color", MONEY_COLOR)
 	UiFont.apply(_money_label, UiFont.SMALL_FONT)
@@ -257,11 +275,15 @@ func _icon_texture(id: int) -> Texture2D:
 	# to colour-keying when a sheet ships no mask.
 	var res: ImageRes = content.image(art)
 	var mask := HatchScreen.mask_for(res.path) if res != null else null
+	var cell: Texture2D = null
 	if mask != null:
-		var composed := HatchScreen.masked_cell(texture, mask)
-		if composed != null:
-			return _body_crop(composed, art)
-	return _body_crop(SpriteKey.keyed(texture), art)
+		cell = HatchScreen.masked_cell(texture, mask)
+	if cell == null:
+		cell = SpriteKey.keyed(texture)
+	var body := _body_crop(cell, art)
+	if body == null or body.get_image() == null:
+		return null
+	return badge_cell(body.get_image())
 
 
 ## The guppy body sheet is 80x80 per cell with the fish inside a ~44-px centre; cropping that centre
@@ -293,8 +315,11 @@ func refresh() -> void:
 	_last_stock = str(level.tank_store.size()) + ":" + str(level.tank_store.hash())
 	if _money_label != null:
 		var game := _autoload("Game")
-		_money_label.visible = true if game == null else bool(game.show_money)
+		var show_money := true if game == null else bool(game.show_money)
+		_money_label.visible = show_money
 		_money_label.text = str(level.money)
+		if _money_sign != null:
+			_money_sign.visible = show_money
 	_swim_shelf = -1
 	for shelf in _buttons.size():
 		var row := row_at(level, shelf)
@@ -332,7 +357,8 @@ func refresh() -> void:
 		button.disabled = not known or level.completed
 		button.mouse_default_cursor_shape = (
 			Control.CURSOR_ARROW if button.disabled else Control.CURSOR_POINTING_HAND)
-		price_label.text = str(int(row.get("price", 0))) if known else "?"
+		# The base game's price label carries the currency sign (`$100` on the 1-1 recording, D-0023).
+		price_label.text = ("$%d" % int(row.get("price", 0))) if known else "$?"
 		var colour := PRICE_COLOR if affordable else GREYED_COLOR
 		price_label.add_theme_color_override("font_color", colour)
 	set_process(_swim_shelf >= 0)
@@ -401,35 +427,62 @@ func _compose_swim_frames() -> Array[Texture2D]:
 	if box.size.x < 8 or box.size.y < 8:
 		return out
 	for image in cells:
-		out.append(_glass_cell(image.get_region(box)))
+		out.append(badge_cell(image.get_region(box)))
 	return out
 
 
-## The icon cell with the dome's open glass face painted into it: a 34x34 canvas holding a soft-edged
-## disc of `GLASS_COLOR` (D-0022) with the fish fitted on top. The fish keeps a two-pixel margin so it
-## never reaches the disc's own edge.
-func _glass_cell(body: Image) -> Texture2D:
+## The icon cell: the item over the violet badge that fills the dome (D-0023). `ICON_RECT` is that
+## badge's own 44x33, so the texture draws 1:1 - the base game's domes are the badge, not a pale
+## glass face. The item is fitted three pixels inside the badge and centred.
+static func badge_cell(body: Image) -> Texture2D:
 	var width := int(ICON_RECT.size.x)
 	var height := int(ICON_RECT.size.y)
 	var canvas := Image.create(width, height, false, Image.FORMAT_RGBA8)
-	canvas.fill(Color(GLASS_COLOR.r, GLASS_COLOR.g, GLASS_COLOR.b, 0.0))
+	canvas.fill(Color(0.0, 0.0, 0.0, 0.0))
 	var centre := Vector2(width, height) * 0.5
-	var radius := centre.x - 0.5
 	for y in height:
 		for x in width:
-			var distance := Vector2(x + 0.5, y + 0.5).distance_to(centre)
-			var coverage := clampf((radius - distance) / 1.5, 0.0, 1.0)
-			if coverage > 0.0:
-				canvas.set_pixel(x, y, Color(GLASS_COLOR.r, GLASS_COLOR.g, GLASS_COLOR.b, coverage))
-	if body == null:
-		return ImageTexture.create_from_image(canvas)
-	var scale := minf(float(width - 4) / maxi(body.get_width(), 1), float(height - 4) / maxi(body.get_height(), 1))
-	var fitted := body.duplicate() as Image
-	fitted.resize(maxi(int(body.get_width() * scale), 1), maxi(int(body.get_height() * scale), 1),
-		Image.INTERPOLATE_BILINEAR)
-	canvas.blend_rect(fitted, Rect2i(Vector2i.ZERO, fitted.get_size()),
-		Vector2i((width - fitted.get_width()) / 2, (height - fitted.get_height()) / 2))
+			var dx := (x + 0.5 - centre.x) / centre.x
+			var dy := (y + 0.5 - centre.y) / centre.y
+			var inside := 1.0 - (dx * dx + dy * dy)
+			if inside <= 0.0:
+				continue
+			var coverage := clampf(inside * float(height) * 0.5, 0.0, 1.0)
+			var across := clampf(float(x) / float(width - 1), 0.0, 1.0)
+			var shade := clampf(1.15 - float(y) / float(height - 1) * 0.75, 0.42, 1.15)
+			var tint := BADGE_BASE.lerp(BADGE_EDGE, across * across)
+			canvas.set_pixel(x, y, Color(tint.r * shade, tint.g * shade, tint.b * shade, coverage))
+	_badge_highlight(canvas, Vector2(width * 0.29, height * 0.30), height * 0.14, 0.85)
+	_badge_highlight(canvas, Vector2(width * 0.24, height * 0.24), height * 0.05, 0.95)
+	if body != null:
+		# The base game's fish all but fills the badge (its tail crosses the dome ring), so the fit
+		# leaves only a two-pixel margin on the long side.
+		var scale := minf(float(width - 3) / maxi(body.get_width(), 1),
+			float(height - 2) / maxi(body.get_height(), 1))
+		var fitted := body.duplicate() as Image
+		fitted.resize(maxi(int(body.get_width() * scale), 1), maxi(int(body.get_height() * scale), 1),
+			Image.INTERPOLATE_BILINEAR)
+		canvas.blend_rect(fitted, Rect2i(Vector2i.ZERO, fitted.get_size()),
+			Vector2i((width - fitted.get_width()) / 2, (height - fitted.get_height()) / 2))
 	return ImageTexture.create_from_image(canvas)
+
+
+## A soft lavender blob on the badge, alpha-blended so it reads as the shipped highlight.
+static func _badge_highlight(canvas: Image, at: Vector2, radius: float, strength: float) -> void:
+	var reach := int(ceil(radius))
+	for dy in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var x := int(at.x) + dx
+			var y := int(at.y) + dy
+			if x < 0 or y < 0 or x >= canvas.get_width() or y >= canvas.get_height():
+				continue
+			var distance := Vector2(dx, dy).length()
+			if distance > radius:
+				continue
+			var alpha := (1.0 - distance / maxf(radius, 0.001)) * strength
+			var under := canvas.get_pixel(x, y)
+			canvas.set_pixel(x, y, under.blend(Color(BADGE_HIGHLIGHT.r, BADGE_HIGHLIGHT.g,
+				BADGE_HIGHLIGHT.b, alpha * under.a)))
 
 
 ## The box of an image's drawn pixels (alpha above the mask's antialiasing floor).
@@ -488,3 +541,5 @@ func _on_menu_pressed() -> void:
 func _on_show_money_changed(show: bool) -> void:
 	if _money_label != null:
 		_money_label.visible = show
+	if _money_sign != null:
+		_money_sign.visible = show

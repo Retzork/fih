@@ -1586,6 +1586,33 @@ Open: the real per-cell hold and the pet reveal point.
   purse. The swim row was measured at ten cells with the column advancing every five ticks (0 -> 1 at
   tick 56, 2 at 61).
 
+### D-0023 - The bar follows the base-game recording: `$` prices, the green wallet and the violet badge
+
+- Date: 2026-11-16 (owner supplied a 26 s recording of the shipped game at Tank 1-1, 636x504)
+- Status: accepted for the port. Layout and colours are measured off that recording; the badge is a
+  port fit because the icon atlas that carries it is unrecovered (Q-0054).
+- **What the recording shows** (bar cropped at 2x from t = 5 s / 12 s / 20 s):
+  - prices read `$100` and `$150` - the `$` is part of the label text;
+  - the wallet plate is a dark-green `$` (#36720A) in its left badge with the number right-aligned
+    in the green field in the same bright green as the prices (#84EF89);
+  - every stocked shelf is the item over a violet disc that fills the dome: base #522488, a bluer
+    edge at the right (#5132B3), a lavender highlight (#A489C7) at the upper left, dark floor
+    #44052B. The badge measures 44x33 logical, slot-local (6, 9);
+  - the fish all but fills that badge - its tail crosses the dome ring;
+  - the egg dome is the same violet disc with a cream cup, `$150`.
+- **What changed.** `ICON_RECT` is 44x33 at (6, 9) (was 34x34 at (12, 5)); `StoreBar.badge_cell()`
+  builds the violet badge from the sampled colours (vertical shading, bluer right edge, lavender
+  highlight) and every icon - the guppy's ten swim cells, the food/predator/blaster sheets and the
+  egg's cell - is drawn onto it, so the earlier pale `GLASS_COLOR` disc is gone. Price labels print
+  `"$%d"` in both the bar and the egg widget, and the wallet splits into `MONEY_SIGN_RECT` (`$`) and
+  a right-aligned number in `MONEY_RECT` (546, 34, 74, 30).
+- **Not matched.** The recording's egg cup is larger than any cell of `EGGPIECES` - that sheet is the
+  progress art, not the store icon - so the cup is drawn fitted (scale 0.85) over the badge; at 1.25
+  the pointed egg's top clips flat, which looked worse. The recording's badge highlight is a bluish
+  crescent where the port draws the sampled lavender blob.
+- Verified by stacking our captured 1-1 bar under the recording's bar, and by
+  `headless_store_ui_check` 50 (the wallet split is pinned there).
+
 ### Q-0061 - Presto's picker contents and its opening input are port bindings
 
 - OPEN (2026-11-10, raised by `scripts/ui/presto_picker.gd` for R9; source EV-0100, P2.7 §3.3/§4.20,

@@ -72,8 +72,11 @@ func _test_bar() -> void:
 	_expect(BarScript.BAR_IMAGE == "IMAGE_MENUBAR",
 		"the bar is the game's own MENUBAR art, not a blank Control")
 	_expect(BarScript.BAR_SIZE == Vector2(640, 75), "MENUBAR is the 640x75 top strip")
-	_expect(BarScript.MONEY_RECT.position == Vector2(530, 34),
-		"the wallet readout sits on MENUBAR's green plate")
+	# D-0023: the base game's wallet is a dark-green `$` in the plate's badge with the number
+	# right-aligned in the green field, so the plate splits into two labels.
+	_expect(BarScript.MONEY_RECT.position == Vector2(546, 34)
+		and BarScript.MONEY_SIGN_RECT.position == Vector2(531, 36),
+		"the wallet number is right-aligned in the field with a `$` in the plate's badge")
 	_expect(BarScript.slot_rect(0) == Rect2(18, 3, 58, 60),
 		"the first in-tank slot is at x 0x12, y 3, 58x60 (FUN_005409B0)")
 	_expect(BarScript.PLATE_RECT == Rect2(7, 45, 45, 12),
