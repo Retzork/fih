@@ -53,29 +53,14 @@ const MONEY_COLOR := Color8(0xFF, 0xFF, 0xE8)
 ## `AnimState.SHEET_FRAME_TICKS`, from the same column clock - instead of holding one cell still.
 const SWIM_COLUMNS := 10
 
-## The open glass face of a stocked dome (D-0022, owner report "open background"): `MENUBAR` shades
+## The open glass face of the fish dome (D-0022, owner report "open background"): `MENUBAR` shades
 ## the lower half of every dome as opaque moulding, which reads as a shut lid once an item sits in it.
-## The bar fills that area with the art's own lit-glass colour (sampled at the dome's brightest point,
-## `(0.969, 0.816, 0.404)`) and draws the icon on top, so the dome reads as an open face. Port-only
+## The bar therefore paints the art's own lit-glass colour (sampled at the dome's brightest point,
+## `(0.969, 0.816, 0.404)`) into the icon cell itself, so the fish always sits *on* the glass. Baking
+## it into the cell (rather than drawing a disc behind the icon) is what keeps the fish whole: a
+## separate disc covered the head, because the icon box is wider than the dome's glass. Port-only
 ## restyle: the shipped art is opaque here (its mask is white at every dome pixel).
 const GLASS_COLOR := Color(0.969, 0.816, 0.404)
-const GLASS_CENTRE := Vector2(29.0, 21.0)
-const GLASS_RADIUS := 17.0
-
-
-## The disc a stocked dome draws before its icon.
-class DomeGlass:
-	extends Control
-	var tint := Color.WHITE
-	var centre := Vector2.ZERO
-	var radius := 15.0
-
-	func _draw() -> void:
-		# A soft edge: three rings of rising alpha keep the fill from cutting a hard circle
-		# across the dome's own shading.
-		draw_circle(centre, radius, Color(tint.r, tint.g, tint.b, 0.55))
-		draw_circle(centre, radius - 1.5, Color(tint.r, tint.g, tint.b, 0.8))
-		draw_circle(centre, radius - 3.0, tint)
 
 ## The item art each store item draws in its dome. The creature icons are the shipped 40x40
 ## `SCL_*` sheets (one icon per sellable species); food and the weapon use their own sheets (the
@@ -110,7 +95,6 @@ var _prices: Array[Label] = []
 var _last_money := -1
 var _last_stock := ""
 ## The composed swim cells of the fish icon and the slot/time they are being played on.
-var _glasses: Array = []
 var _swim_frames: Array[Texture2D] = []
 var _swim_loaded := false
 var _swim_shelf := -1
@@ -174,18 +158,6 @@ func setup(target: Level) -> void:
 	_add_menu_button()
 	for shelf in SLOT_X.size():
 		var rect := slot_rect(shelf)
-		# The dome's open face sits under the icon, added before the button so it draws first.
-		var glass := DomeGlass.new()
-		glass.name = "Glass%d" % shelf
-		glass.position = Vector2.ZERO
-		glass.size = rect.size
-		glass.tint = GLASS_COLOR
-		glass.centre = GLASS_CENTRE
-		glass.radius = GLASS_RADIUS
-		glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		glass.visible = false
-		add_child(glass)
-		_glasses.append(glass)
 		var button := Button.new()
 		button.name = "Slot%d" % shelf
 		button.position = rect.position
@@ -336,7 +308,6 @@ func refresh() -> void:
 			button.mouse_default_cursor_shape = Control.CURSOR_ARROW
 			icon.texture = null
 			price_label.text = ""
-			_glasses[shelf].visible = false
 			continue
 		var id := int(row.get("slot", -1))
 		if id == Progression.EGG_ITEM:
@@ -344,13 +315,10 @@ func refresh() -> void:
 			# keeps the row and the click path, so nothing is drawn twice.
 			icon.texture = null
 			price_label.text = ""
-			# The egg art already fills this dome, so the open face would cover it.
-			_glasses[shelf].visible = false
 			# The widget's own button covers this rect, so the bar's stays inert underneath.
 			button.disabled = true
 			button.mouse_default_cursor_shape = Control.CURSOR_ARROW
 			continue
-		_glasses[shelf].visible = true
 		if id == 0:
 			# The guppy dome plays its own swim row (D-0022) rather than one held cell.
 			_ensure_swim_frames()
@@ -433,8 +401,35 @@ func _compose_swim_frames() -> Array[Texture2D]:
 	if box.size.x < 8 or box.size.y < 8:
 		return out
 	for image in cells:
-		out.append(ImageTexture.create_from_image(image.get_region(box)))
+		out.append(_glass_cell(image.get_region(box)))
 	return out
+
+
+## The icon cell with the dome's open glass face painted into it: a 34x34 canvas holding a soft-edged
+## disc of `GLASS_COLOR` (D-0022) with the fish fitted on top. The fish keeps a two-pixel margin so it
+## never reaches the disc's own edge.
+func _glass_cell(body: Image) -> Texture2D:
+	var width := int(ICON_RECT.size.x)
+	var height := int(ICON_RECT.size.y)
+	var canvas := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	canvas.fill(Color(GLASS_COLOR.r, GLASS_COLOR.g, GLASS_COLOR.b, 0.0))
+	var centre := Vector2(width, height) * 0.5
+	var radius := centre.x - 0.5
+	for y in height:
+		for x in width:
+			var distance := Vector2(x + 0.5, y + 0.5).distance_to(centre)
+			var coverage := clampf((radius - distance) / 1.5, 0.0, 1.0)
+			if coverage > 0.0:
+				canvas.set_pixel(x, y, Color(GLASS_COLOR.r, GLASS_COLOR.g, GLASS_COLOR.b, coverage))
+	if body == null:
+		return ImageTexture.create_from_image(canvas)
+	var scale := minf(float(width - 4) / maxi(body.get_width(), 1), float(height - 4) / maxi(body.get_height(), 1))
+	var fitted := body.duplicate() as Image
+	fitted.resize(maxi(int(body.get_width() * scale), 1), maxi(int(body.get_height() * scale), 1),
+		Image.INTERPOLATE_BILINEAR)
+	canvas.blend_rect(fitted, Rect2i(Vector2i.ZERO, fitted.get_size()),
+		Vector2i((width - fitted.get_width()) / 2, (height - fitted.get_height()) / 2))
+	return ImageTexture.create_from_image(canvas)
 
 
 ## The box of an image's drawn pixels (alpha above the mask's antialiasing floor).

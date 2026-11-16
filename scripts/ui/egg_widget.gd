@@ -37,6 +37,8 @@ var _price: Label = null
 var _art: TextureRect = null
 var _frames: SpriteFrames = null
 var _last_signature := ""
+## Composed cells by index, so the mask pass runs once per piece count.
+var _cells := {}
 
 
 func _autoload(node_name: String) -> Node:
@@ -83,12 +85,12 @@ func _ready() -> void:
 	if _frames == null or _frames.get_frame_count("default") == 0:
 		return
 
-	var texture := _frames.get_frame_texture("default", 0)
+	var texture := _masked(0)
 	if texture == null:
 		return
-	# The art is clipped to the dome's glass: the cell is opaque and carries its own purple dome
-	# window, so the clip is what keeps it inside the gold rim and off the price plate instead of
-	# reading as a png pasted across the bar (owner review 2026-11-16).
+	# The cell is composed through its alpha companion (`masks/_EggPieces.png`, see `_masked`) and then
+	# clipped to the dome's glass, so the purple window the art draws stays inside the gold rim and
+	# off the price plate instead of landing as a square patch on the bar (owner review 2026-11-16).
 	var window := Control.new()
 	window.name = "Window"
 	window.position = ART_WINDOW.position
@@ -145,9 +147,29 @@ func _show_frame(pieces: int) -> void:
 	if _art == null or _frames == null:
 		return
 	var last := _frames.get_frame_count("default") - 1
-	var texture := _frames.get_frame_texture("default", clampi(pieces - 1, 0, last))
+	var texture := _masked(clampi(pieces - 1, 0, last))
 	if texture != null:
 		_art.texture = texture
+
+
+## One cell composed with the sheet's alpha companion (`masks/_EggPieces.png`). The shipped cell is
+## opaque, so its purple dome window used to land as a square patch across the bar's gold rim (owner
+## review 2026-11-16); through the mask the window is the dome shape the art itself draws.
+func _masked(index: int) -> Texture2D:
+	if _cells.has(index):
+		return _cells[index]
+	if _frames == null:
+		return null
+	var texture := _frames.get_frame_texture("default", index)
+	if texture == null:
+		return null
+	var content := _autoload("Content")
+	var res: ImageRes = content.image(EGG_ART) if content != null else null
+	var mask := HatchScreen.mask_for(res.path) if res != null else null
+	var composed := HatchScreen.masked_cell(texture, mask) if mask != null else null
+	var cell := composed if composed != null else texture
+	_cells[index] = cell
+	return cell
 
 
 

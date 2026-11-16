@@ -1564,14 +1564,21 @@ Open: the real per-cell hold and the pet reveal point.
   the dome's own shading showing around a small fish, which is what read as a shut lid.
 - **Open glass.** `MENUBAR` shades the lower half of every dome as opaque moulding, and its alpha
   companion (`masks/_menubar.png`, 640x75) is white at every dome pixel: the shipped art cannot be
-  transparent glass and no "open" variant exists in the assets. The bar therefore fills the dome
-  interior before drawing the icon - `GLASS_COLOR` is the art's own lit-glass colour sampled at
-  (0.969, 0.816, 0.404), a circle of radius 17 at (29, 21) drawn as three soft-edged rings so the
-  fill does not cut a hard circle across the dome. Unstocked domes and the egg dome keep the bare
-  art, since the egg's own art already fills its dome.
-- Verified with the windowed probe: ten cells compose, the column advances every five ticks (0 -> 1
-  at tick 56, 2 at 61), and the filled and bare domes were captured side by side before choosing the
-  fill.
+  transparent glass and no "open" variant exists in the assets. The bar therefore paints the art's
+  own lit-glass colour (`GLASS_COLOR`, sampled at 0.969, 0.816, 0.404) **into the icon cell**: a
+  34x34 canvas holding a soft-edged disc with the fish fitted two pixels inside it. Baking it into
+  the cell, rather than drawing a disc behind the icon, is what keeps the fish whole - a separate
+  disc sat forward of the icon and covered the fish's head, because the icon box is wider than the
+  dome's glass (found on the 1-2/1-3 walkthrough). Unstocked domes keep the bare art.
+- **Egg dome.** `EGGPIECES` ships an alpha companion too (`masks/_EggPieces.png`). Drawing the raw
+  cell put an opaque purple square across the bar's gold rim; the `EggWidget` now composes every
+  piece cell through that mask (cached per piece count), so the purple reads as the dome window the
+  art draws. The price keeps the measured plate and the greyed colour when the purse is short.
+- Verified on a 1-2 and 1-3 walkthrough with a slot-by-slot dump: 1-2 stocks shelves 0-2 at
+  100/200/300 plus the 500 egg dome; 1-3 stocks 0-3 and 5 at 100/200/300/1000/1000 plus the 2000 egg
+  dome; every stocked shelf has an icon, every empty one none, and the price digit colour follows the
+  purse. The swim row was measured at ten cells with the column advancing every five ticks (0 -> 1 at
+  tick 56, 2 at 61).
 
 ### Q-0061 - Presto's picker contents and its opening input are port bindings
 
