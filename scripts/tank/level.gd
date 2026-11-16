@@ -32,6 +32,8 @@ const SPAWN_MIN := Vector2(80.0, 160.0)
 const SPAWN_MAX := Vector2(480.0, 300.0)
 ## The drawn tank rect (`AQUARIUM1..6` are 640x480).
 const TANK_SIZE := Vector2(640.0, 480.0)
+## The bottom-right level readout (port addition, D-0020): `TankScreen` draws no level number.
+const LEVEL_LABEL_RECT := Rect2(534.0, 452.0, 100.0, 22.0)
 ## Guppy swim frames are three separate images (`SIMSWIM1..3`, 40x40).
 const FISH_IMAGES := ["IMAGE_SIMSWIM1", "IMAGE_SIMSWIM2", "IMAGE_SIMSWIM3"]
 ## The guppy body sheet: 10 frames per row, one row per growth stage (`SMALLSWIM`, 50 frames). The
@@ -171,6 +173,8 @@ var alien_selection := 0
 var wave: WaveClock = null
 ## The clickable egg-piece widget (P4.6); tank 5 sells the egg as a store row instead.
 var egg_widget = null
+## The bottom-right tank-level readout (D-0020); null while rendering is off.
+var level_label: Label = null
 ## How many waves have spawned this session (the original's `Tank+0x45C`).
 var waves_spawned := 0
 ## Composite recipes spawn two member kinds at one point; the clock emits the recipe twice.
@@ -271,6 +275,7 @@ func _ready() -> void:
 	debug_panel.action_requested.connect(_on_debug_action)
 	_mount_egg_widget()
 	_add_backdrop()
+	_add_level_label()
 
 
 ## The egg widget lives in the bar's empty seventh dome, so it has to draw with the bar: a
@@ -285,6 +290,37 @@ func _mount_egg_widget() -> void:
 		return
 	egg_widget.reparent(layer)
 	egg_widget.refresh()
+
+
+## The tank/level number in the bottom-right corner (port addition, D-0020 - the owner asked to see
+## which level is running; `TankScreen` itself draws no such label). It lives on the same `Hud` layer
+## as the bar so it draws over the water, and it ignores the mouse.
+func _add_level_label() -> void:
+	if level_label != null:
+		return
+	var layer := get_node_or_null("Hud")
+	if layer == null:
+		return
+	var label := Label.new()
+	label.name = "LevelLabel"
+	label.position = LEVEL_LABEL_RECT.position
+	label.size = LEVEL_LABEL_RECT.size
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	UiFont.apply(label, UiFont.SMALL_FONT)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(label)
+	level_label = label
+	_refresh_level_label()
+
+
+## Draw the current tank-level (`1-3`); `start_level` and `load_game` call this whenever the pair
+## changes, so the readout needs no per-frame work.
+func _refresh_level_label() -> void:
+	if level_label == null:
+		return
+	level_label.text = "%d-%d" % [tank_index, level_index]
 
 
 ## The tank backdrop (`+0x3E8`, 1..6 -> `TANKBACKDROP1..6`), drawn behind every entity.
@@ -680,6 +716,7 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	egg_pieces = Progression.egg_pieces_at_start(tank_index)
 	egg_price = Progression.egg_price(tank_index, level_index, game_mode)
 	stock_default_store()
+	_refresh_level_label()
 	# The bar builds a widget for every row with `A >= 0` on its first frame (EV-0144), so the
 	# `Tank+0x2E0 < Tank+0x2DC` latch Blip clears (EV-0094) starts clear; only a check or an old
 	# save can set it.
@@ -1508,6 +1545,7 @@ func load_game(path: String = "") -> bool:
 	pet_flags = save.pet_flags.duplicate()
 	tank.tank_index = save.tank
 	level_index = save.level
+	_refresh_level_label()
 	for entity in tank.entities_in(Sim.Phase.FISH):
 		tank.despawn(entity)
 	TankSnapshotScript.restore(tank, save)
