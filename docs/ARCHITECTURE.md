@@ -165,7 +165,10 @@ per-type lists on the tank and are advanced by the tank's update.
   the global `randi()`/`randf()`: a second stream makes level runs unreproducible (SPECS.md §9.8).
 - **The pause gate lives in one place.** `Tank.paused` (the original's `Tank+0x94`) OR'd with an
   injected `pause_source.gameplay_paused` (`Game` in the real app). Injecting it keeps headless checks
-  free of autoloads while leaving the tank the single answer to "is the level running".
+  free of autoloads while leaving the tank the single answer to "is the level running". `Level.setup()`
+  performs that injection (`tank.pause_source = _autoload("Game")`), and `Level._on_sim_tick()` early-returns
+  while the tank is paused, so the level clock, wave clock and particle updates freeze with the entities
+  instead of continuing behind a modal.
 
 `Food` is the first concrete entity and the template for the rest: constants named after the field
 offset and update step they came from (`+0x188` quality, `+0x18C` kind, `+0x190` landed, `+0x60`
@@ -201,6 +204,8 @@ The rest of the table is the checklist for which P4 task owns which phase regist
    work through signals - a few hundred entities on a 36 Hz tick would dominate the frame.
 3. **One shared pause gate.** `Game.gameplay_paused` is the original's `Tank+0x94`: pets and alien
    actions read it; it is not `get_tree().paused`, because screens and dialogs keep running.
+   `Level.setup()` wires it into `Tank.pause_source`, and `Level._on_sim_tick()` stops the level clock
+   while it is set.
 4. **No direct cross-system reach-through.** A system asks the tank for typed queries (nearest
    pellet, live aliens, coin list), it does not walk another system's children.
 5. **Input belongs to screens.** The staged click handler of SPECS.md §1.5 is one function on the tank
@@ -219,6 +224,16 @@ Fonts are part of that data. `scripts/ui/ui_font.gd` maps a screen's role to a m
 `font_size`; nothing scales a BMFont to a non-native size, and no outline is added because the
 outline fonts bake theirs (EV-0157, Q-0059). Resolution goes through the scene root, so a screen can
 apply fonts while it builds a control, before `add_child`.
+
+The in-tank Options dialog (`OptionsDialog`, D-0016) is the shipped panel, not a generic form: the
+masked `Dialogue-panel`, `DialogButton2`, `Checkbutton` and slider sheets (P3.3, `MaskAlpha.compose()`),
+Music/Sound FX sliders, Fullscreen/Custom Cursors/Hardware Acceleration checkboxes, Help/OK and, over
+a live tank, Back to Main Menu. `OptionSlider` and `OptionCheck` draw the native track/thumb and
+46x45 icon metrics because the engine widgets' theme margins move the reference offsets. Opening it
+sets `Game.gameplay_paused`; OK/Escape resumes the same level, Help swaps in the tutorial `HelpScreen`
+while staying paused, and Back runs the D-0014 save/teardown/remount path. The main-menu variant is
+the plain base panel (no Back row, no port-only debug block). The tank MENU -> Options entry itself
+is the owner-directed D-0015 divergence; the binary's id-99 dispatch still closes the tank.
 
 The original has exactly one add-window slot, so a second open is a caller bug and is refused with
 a warning.
@@ -268,22 +283,22 @@ a running remake:
 # the Projectile entity (64 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_projectile_check.gd
 
-# the level: feeding loop, wave wiring, shooting, pet session (122 assertions; exit 0 = pass)
+# the level: feeding loop, wave wiring, shooting, pet session, pause gate (153 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_level_check.gd
 
-# the store screen and the MENUBAR bar (40 assertions; exit 0 = pass)
+# the store screen and the MENUBAR bar (54 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_store_ui_check.gd
 
-# progression, eggs and level completion (79 assertions; exit 0 = pass)
+# progression, eggs and level completion (86 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_progression_check.gd
 
-# the main menu: EV-0131 ids, mode writers and gates (21 assertions; exit 0 = pass)
+# the main menu: EV-0131 ids, mode writers and gates (28 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_menu_check.gd
 
-# the assembled path: menu -> level -> wave -> boss + UI fonts (40 assertions; exit 0 = pass)
+# the assembled path: menu -> level -> wave -> boss, in-tank Options + UI fonts (116 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . res://tests/headless_integration_check.tscn --quit-after 1200
 
-# the pet base, roster, the implemented pets and Angie's food re-lay (73 assertions; exit 0 = pass)
+# the pet base, roster, the implemented pets and Angie's food re-lay (113 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_pet_check.gd
 
 # the alien kinds, attacks, eating, the HP-bar geometry and the wave clock (65 assertions; exit 0 = pass)
@@ -392,7 +407,10 @@ same menu path and checks the scheduled Cyrax boss and its sprite. It never call
 `arm_wave` or `start_boss`. It also checks that the alien and missile sprites are centred on their
 boxes, the Destructor's HP bar is the full 127-px fill at 150 hp and 64 px at 75, and the menu,
 store, in-tank bar, egg widget and HUD each use their recovered bitmap font at the manifest's native
-size (40 assertions).
+size. The tank MENU leg presses the real bar button, asserts the shipped-art/masked Options panel,
+`Tank.pause_source`, a frozen level clock/hunger/wave clock, no save on open, the dialog's
+money/guppy/grow actions, the mixer, Show Money, OK resume and the Back to Menu save/release path;
+the menu-mode leg asserts the plain base panel, stored checkboxes and the Help request (116 assertions).
 
 `tests/headless_save_check.gd` covers the tank-save framing: every header field, the class-`0x1F` skip, the round trip through `to_bytes()`/`from_bytes()`, the `42+E+S` / `454+E+S` / `658+E+S` section offsets, the size law, the `+0x110` object shift, and the loader's version gate (`0x34` rejected, `0x35` accepted, short/truncated files refused) - 38 assertions. `tests/headless_save_files_check.gd` covers the file layer: the per-mode stems and paths, a real write/read round trip under `user://`, the on-disk version refusal, a missing file, and the Adventure-only profile match - 21 assertions. `tests/headless_tank_snapshot_check.gd` covers the snapshot glue: capture (fish only, header stamped, store rows and pet flags preserved), the magic-tagged record in a 0x140 slot, a byte-level round trip through `TankSave`, restore into a fresh tank, the exclusion of non-fish entries, and the 316-byte scalar block (money, food levels, pet capacity, backdrop, wave selection and countdown, the `+0x440` star potion flag and the tint bytes, with the offsets the note gives and the clamps), plus the level-level pair `Level.save_game`/`load_game` through real disk (header, store table, money in the scalar block, fish count, wallet/food restore, fish replaced not merged, and a missing file returning false) - 54 assertions. Shots take their damage from `Tank.shot_damage()` (`3 * pet_capacity`, not a hard-coded multiplier), and `Level.start_level()` reads the boss from its schedule table (`Level.boss_kind_for`), so the fight is entered rather than started by hand.
 
@@ -447,7 +465,7 @@ scripts/autoload/audio.gd         two mixers: effect-slot pool and looping music
 scripts/autoload/screens.gd       screen stack + single modal slot
 scripts/data/image_res.gd         resolved image handle: grid, SpriteFrames, tick delays
 scripts/data/anim_state.gd        tick-driven playback: anim mode, per-frame delays, phase
-scripts/data/mask_alpha.gd        P3.3 alpha model: a mask's luminance becomes the alpha
+scripts/data/mask_alpha.gd        P3.3 alpha model: a mask's luminance becomes the alpha; compose()
 scripts/economy/store.gd          the twelve store items, prices and purchase rules
 scripts/progression/progression.gd  P2.6 tables: stock, egg prices, pet award, advance
 scripts/persistence/profile.gd    Adventure profile: tank/level, Shells, owned pets, gates
@@ -472,7 +490,10 @@ scripts/ui/store_bar.gd           in-tank store bar: eight buy slots (FUN_005409
 scripts/ui/hatch_screen.gd        Hatch award card (P4.6)
 scripts/ui/pets_screen.gd         24-button pet selection, writes profile+0x5A (P4.6)
 scripts/ui/bonus_screen.gd        bonus payout card + payout switch (P4.6)
-scripts/ui/options_dialog.gd      sliders on the buses + checkboxes (P4.14)
+scripts/ui/options_dialog.gd      shipped-art Options panel: sliders/checks, pause, debug block (P4.14, D-0016)
+scripts/ui/option_slider.gd       native 156x17 track + 33x32 thumb slider control
+scripts/ui/option_check.gd        native 46x45 checkbox + 39 px label offset
+scripts/ui/debug_panel.gd         port-only F1 debug overlay (D-0014)
 scripts/ui/help_screen.gd         8-page help/tutor screen (P4.14)
 scripts/ui/hall_screen.gd         4-tab hall of fame (P4.14)
 scripts/persistence/tank_save.gd  tank save framing (0x36 header, sections, store rows)
@@ -486,18 +507,18 @@ tools/godot/verify_fonts.gd       font manifest verification
 tools/godot/screenshot.gd         windowed menu/level/store captures
 tests/headless_sim_check.gd       20-assertion contract check for the tick driver
 tests/headless_content_check.gd   51-assertion contract check for the content registry
-tests/headless_entity_check.gd    38-assertion check for the entity seam and Food
+tests/headless_entity_check.gd    43-assertion check for the entity seam and Food
 tests/headless_fish_check.gd      121-assertion check for Fish (P2.2-P2.4, incl. the draw binding)
-tests/headless_coin_check.gd     143-assertion check for Coin (P2.5 §5)
+tests/headless_coin_check.gd     154-assertion check for Coin (P2.5 §5)
 tests/headless_projectile_check.gd  64-assertion check for Projectile (P2.10 §5)
-tests/headless_level_check.gd     121-assertion check for the level, feeding and waves
-tests/headless_store_ui_check.gd  34-assertion check for the shop screen and bar
-tests/headless_progression_check.gd  79-assertion check for P2.6 progression and completion
-tests/headless_menu_check.gd      37-assertion check for the main menu (P4.14)
-tests/headless_pet_check.gd       73-assertion check for the pet base, roster, steering and slot-81 bodies (P2.7)
+tests/headless_level_check.gd     153-assertion check for the level, feeding, waves and the pause gate
+tests/headless_store_ui_check.gd  54-assertion check for the shop screen, bar and MENU target
+tests/headless_progression_check.gd  86-assertion check for P2.6 progression and completion
+tests/headless_menu_check.gd      28-assertion check for the main menu (P4.14)
+tests/headless_pet_check.gd       113-assertion check for the pet base, roster, steering and slot-81 bodies (P2.7)
 tests/headless_mode_check.gd      28-assertion check for game modes + G4/G7/G9 wiring (P4.11)
 tests/headless_weapon_check.gd    23-assertion check for Larva, laser, cues + particles (P4.10)
-tests/headless_profile_check.gd   29-assertion check for screens, roller, saves, profile JSON (P4.6/P4.12/P4.14)
+tests/headless_profile_check.gd   56-assertion check for screens, roller, saves, profile JSON (P4.6/P4.12/P4.14)
 tests/headless_golden_check.gd    22-assertion check for the golden tank saves (P2.13)
 tests/headless_alien_check.gd     65-assertion check for aliens and the wave clock (P2.8)
 tests/headless_boss_check.gd      46-assertion check for the Cyrax fight (P2.9)
@@ -506,7 +527,8 @@ tests/headless_save_files_check.gd  21-assertion check for the save file layer
 tests/headless_tank_snapshot_check.gd  54-assertion check for capture/restore
 tests/headless_audio_check.gd     40-assertion check for the audio layer (P2.14)
 tests/headless_anim_check.gd      18-assertion check for sprite playback and keying
-tests/headless_integration_check.tscn  37-assertion menu -> level -> wave -> boss integration
+tests/headless_render_check.gd    17-assertion check for the effect-dot pool
+tests/headless_integration_check.tscn  116-assertion menu -> level -> wave -> boss + Options integration
 tests/headless_integration_check_scene.gd  the scene-backed integration test body
 docs/P5-VALIDATION.md             P5.1-P5.5: differential table, playtest checklist, timing, perf, packaging
 ```

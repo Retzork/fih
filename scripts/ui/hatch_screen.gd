@@ -184,17 +184,7 @@ static func masked_cell(texture: Texture2D, mask: Image) -> Texture2D:
 ## The alpha companion for an `assets_raw` sheet (P3.3): `masks/_<file>` for most, `<stem>_` for
 ## the original suffix convention (`tailflop_.png`). Returns null when the sheet has none.
 static func mask_for(image_path: String) -> Image:
-	if image_path == "":
-		return null
-	var file := image_path.get_file()
-	var stem := file.trim_suffix(".png")
-	for path in ["res://assets_raw/masks/_%s" % file, "res://assets_raw/masks/%s_.png" % stem]:
-		if not ResourceLoader.exists(path):
-			continue
-		var texture := load(path) as Texture2D
-		if texture != null:
-			return texture.get_image()
-	return null
+	return MaskAlpha.mask_for(image_path)
 
 
 func _add_background() -> void:

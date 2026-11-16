@@ -62,12 +62,17 @@ const PREDATOR := {1: 4, 2: 6, 3: 7, 4: 4}
 
 
 ## The reveal rules for a level (`{}` = everything on the bar from the start). Tank 1 follows the
-## guide's keypoint lists literally: 1-1 guppy at medium and egg pieces at large; 1-2 food upgrades
-## at medium and egg pieces after Lv 2 food; 1-3..1-5 food at medium, carnivore at large, blaster and
-## egg pieces after a carnivore. Tanks 2-4 follow the same pattern (food at medium, the tank's next
-## predator at large, the blaster/egg after it) because the guide states the pattern but not each
-## tank's list; that ordering is the port reading recorded in Q-0062. Time Trial opens the whole bar
-## on the first medium fish; Sandbox starts open.
+## guide's keypoint lists: 1-1 egg pieces at large; 1-2 food upgrades at medium and egg pieces after
+## Lv 2 food; 1-3..1-5 food at medium, carnivore at large, blaster and egg pieces after a carnivore.
+## Tanks 2-4 follow the same pattern (food at medium, the tank's next predator at large, the
+## blaster/egg after it) because the guide states the pattern but not each tank's list; that
+## ordering is the port reading recorded in Q-0062. Time Trial opens the whole bar on the first
+## medium fish; Sandbox starts open.
+##
+## The fish shelf is **never** gated (owner review 2026-11-16, D-0017): the bar opened with every
+## dome empty on 1-1 and 1-3, so there was nothing to buy with the 200 starting shells until a stock
+## fish grew on its own. A tank always sells its opening fish from the first frame; only the food,
+## predator, blaster and egg shelves wait for their milestone.
 static func reveal_rules(tank_no: int, level_no: int, mode: int = 0) -> Dictionary:
 	if tank_no == TANKS or mode == MODE_CHALLENGE:
 		return {}
@@ -75,11 +80,11 @@ static func reveal_rules(tank_no: int, level_no: int, mode: int = 0) -> Dictiona
 		var all := {}
 		for id in STORE_TABLE:
 			all[id] = 2
-		all[11] = 2
+		all[EGG_ITEM] = 2
 		return all
-	var rules := {0: 2, 1: 2, 2: 2, 3: 2}
+	var rules := {2: 2, 3: 2}
 	if tank_no == 1 and level_no == 1:
-		return {0: 2, 11: 3}
+		return {11: 3}
 	if tank_no == 1 and level_no == 2:
 		return {2: 2, 3: 2, 11: "buy:2"}
 	var predator := int(PREDATOR.get(tank_no, 4))

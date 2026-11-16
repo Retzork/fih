@@ -4740,3 +4740,138 @@ behavior or specs; follow up with a binary observation entry.
   2 ticks a frame, 3-tick hold) and returns to cell 0; `headless_menu_check` 28 passes unchanged.
   (4) Q-0055 keeps the exact draw position open - only the fit is port choice, the art and timing are
   recovered.
+
+### EV-0189 - TankScreen MENU is id 99; "Leave Game?" is the Options confirm, not the tank menu
+- Date: 2026-11-11
+- Type: static analysis (Ghidra) + port wiring + headless coverage
+- Source: `docs/evidence/p2.12-fn-52CB40.json/.txt` (TankScreen ctor), `p2.12-fn-51B6C0.txt`
+  (TankScreen click dispatch), `p2.12-fn-552100.json` (main-menu transition), `p2.12-fn-54E7C5.json`
+  (Leave Game confirm), `p2.12-fn-535430.json` (OptionsDialog handler), `p2.12-fn-54ED21.json`
+  (pause box); `scripts/ui/store_bar.gd`, `scripts/tank/level.gd`, `scripts/main.gd`,
+  `scripts/ui/debug_panel.gd`, `scripts/entities/fish.gd`
+- Confidence: high for the dispatch, the button rect and the Options ownership; the 26-px MENU
+  height is a port fit because the binary's height comes from the button object
+- Notes: (1) The TankScreen ctor `FUN_0052CB40` creates the button with
+  `FUN_00506820(99, in_ECX + 0x22, ...)` and places it through `vtable+0xA0(0x20D, 4, 0x50,
+  button[0xF])`. The width is the literal `0x50` (80 px); the fourth argument is the button's own
+  measured height, not a literal, so the port borrows the 26-px MENU plate height `HatchScreen`
+  already uses. The id is **99**, not 100: 100 is HatchScreen's "Menu" id (P2.12 10.11).
+  (2) `FUN_0051B6C0(99)` runs `FUN_0054AED0()` (the TankScreen close helper) then
+  `FUN_00552100()` (go to the main menu). There is no save call in that path. Id 4 instead runs
+  `FUN_0054AED0()` + `FUN_00552E50(-1)`, which opens a `Sexy::StoryScreen` - so `FUN_00552E50` is
+  not an in-tank menu entry; the note's line 888 role is corrected to "StoryScreen opener".
+  (3) `FUN_0054E760` builds "Leave Game?" / "Do you want to return to the\nmain menu?\n\nYour game
+  will be saved." and is reached only from `FUN_00535430` (OptionsDialog click handler) case 3,
+  gated on `mode != 5`, a live tank and `FUN_00537BF0()`; it is the Options "Back to Main Menu"
+  confirm, not the tank MENU. (4) The "GAME PAUSED" box is a third, separate path:
+  `FUN_0054ECA0` pushes "GAME PAUSED" / "Click to resume game" / "Resume Game" through
+  `vtable+0x120(0x12, 1, ...)` while `in_ECX[0x1CC]` is set. (5) Port wiring: `StoreBar` adds a
+  flat hit target over the baked `MENUBAR` MENU label at (525, 4, 80, 26);
+  `press_menu()` plays the click, calls `Level.request_menu()` and emits `menu_pressed`.
+  `Level.request_menu()` emits `menu_requested`; `Main._on_menu_requested()` saves to the level's
+  `save_path` as a port safety net (D-0014 - the binary does not save here), clears the pause,
+  shuts the tank down, frees the level and calls `_mount_selector()` in the same frame.
+  (6) Coverage: `headless_store_ui_check` 51 -> 54 (MENU rect, hit target, forwarding),
+  `headless_level_check` 122 -> 149 (the port-only debug dispatcher and actions),
+  `headless_integration_check` 60 -> 67 (hidden panel, F1, money, grow button, MENU
+  release/mount/save). Totals **24 suites, 1378 assertions**. The debug cheats themselves are
+  port-only and carry no binary claim (D-0014).
+
+### EV-0190 - Windowed check: MENU returns to the selector; F1/F2/F3/F10 act in the rendered tank
+- Date: 2026-11-11
+- Type: windowed rendered probe with synthetic input + screenshots
+- Source: `tools/godot/shot_menu_debug.gd`; captures `shot_menu_tank.png`, `shot_menu_return.png`,
+  `shot_debug_panel.png`; `scripts/ui/store_bar.gd`, `scripts/tank/level.gd`, `scripts/main.gd`
+- Confidence: high for the probe's assertions and the three frames; this is not the owner's live
+  playtest
+- Notes: (1) The probe boots the real `scenes/main.tscn` windowed (`--audio-driver Dummy`), waits
+  for the Content LoadingThread phase (326/326), and starts Adventure through
+  `GameSelector.press(1, {})` - the same path as the menu. (2) It sends a synthetic left click at
+  the centre of the `Menu` button's global rect (525, 4, 80, 26). `Main` released the level,
+  mounted a fresh `GameSelector` and wrote `user://shot_menu_debug.dat` (the D-0014 safety net);
+  `shot_menu_return.png` shows the selector. (3) On a second level, `F1` showed the panel,
+  `F2` took money 200 -> 1200, `F3` took the first live fish stage 0 -> 1 and `F10` took the FISH
+  phase 2 -> 3; `shot_debug_panel.png` shows the panel over the tank with 1200 on the wallet
+  plate and the baked MENUBAR MENU label at top right. (4) Exit 0; the Ogg vendor-comment warnings
+  and the ObjectDB/resource-at-exit notices are the known AUDIT F2 noise. (5) This verifies the
+  rendered wiring, not timing/feel; the owner's live playtest (R8 and the assembled feel) stays
+  open.
+
+### EV-0191 - Port flow: tank MENU opens the in-tank Options dialog (owner-directed)
+- Date: 2026-11-14
+- Type: port behavior change (owner request) + headless integration coverage + windowed probe
+- Source: `scripts/main.gd` (`_on_menu_requested`, `_close_options`, `_leave_tank`),
+  `scripts/ui/options_dialog.gd`, `scripts/ui/store_bar.gd`, `scripts/autoload/game.gd`,
+  `tests/headless_integration_check_scene.gd`, `tools/godot/shot_menu_debug.gd`; captures
+  `shot_menu_tank.png`, `shot_menu_options.png`, `shot_menu_return.png`, `shot_debug_panel.png`
+- Confidence: high for the port wiring and the probe; the binary's own id-99 dispatch is still
+  close-tank + main menu (EV-0189), so this is a deliberate divergence, not a recovered behavior
+- Notes: (1) The owner reported that the tank MENU went straight to the main menu and asked for
+  the in-level settings UI instead. `StoreBar.press_menu()` -> `Level.request_menu()` ->
+  `Main._on_menu_requested()` now mounts the existing `OptionsDialog` through
+  `Screens.open_dialog()` and sets `Game.gameplay_paused`; the level stays mounted and no save is
+  written. (2) OK or Escape closes the dialog and resumes the same tank. "Back to Menu" closes
+  it, saves to the level's `save_path` (the D-0014 safety net), shuts the tank down, frees the
+  level and mounts `GameSelector` - the old leave-tank path. (3) `Level._unhandled_input()`
+  ignores tank clicks/hotkeys while any modal dialog owns `Screens.dialog()`, so F1..F10/S/P and
+  feeding cannot run behind Options. (4) The Show Money checkbox is live: `Game.show_money` has a
+  setter and `show_money_changed`; the dialog seeds from it and `StoreBar` hides/shows the wallet
+  plate. (5) Windowed probe: MENU opened Options with the tank mounted and paused and wrote no
+  save; OK closed it and resumed; a second MENU -> Back to Menu released the level, mounted the
+  selector and wrote the save; F1/F2/F3/F10 still behaved (200 -> 1200 money, stage 0 -> 1, FISH
+  2 -> 3). Exit 0; Ogg vendor-comment and ObjectDB/resource-at-exit notices are the known noise.
+  (6) Coverage: `headless_integration_check` 67 -> 81 assertions; all 24 suites pass,
+  **1392 assertions**. D-0015 records the decision.
+
+### EV-0192 - In-tank Options: base art/layout, masked sheets, real pause, debug block, Help
+- Date: 2026-11-15
+- Type: port UI implementation (base layout from recovered evidence) + headless integration and
+  windowed probe
+- Source: `scripts/ui/options_dialog.gd`, `scripts/ui/option_slider.gd`,
+  `scripts/ui/option_check.gd`, `scripts/data/mask_alpha.gd`, `scripts/tank/level.gd`,
+  `scripts/tank/tank.gd`, `scripts/main.gd`, `scripts/ui/game_selector.gd`,
+  `scripts/ui/help_screen.gd`, `scripts/ui/hatch_screen.gd`, `scripts/ui/store_bar.gd`,
+  `scripts/entities/fish.gd`, `scripts/autoload/game.gd`,
+  `tests/headless_integration_check_scene.gd`, `tests/headless_level_check.gd`,
+  `tests/headless_store_ui_check.gd`, `tools/godot/shot_menu_debug.gd`; captures
+  `shot_menu_options.png`, `shot_menu_help.png`, `shot_menu_tank.png`, `shot_menu_return.png`,
+  `shot_debug_panel.png`
+- Confidence: high for the port wiring and the headless/windowed assertions. The base dialog's
+  contents and ids are recovered (P2.12 §11.3); the debug block, Show Money placement and the
+  Custom Cursors/Hardware Acceleration storage are port-only (D-0014/D-0016).
+- Notes: (1) **Base contents** (P2.12 §11.3): Music/Sound FX sliders (ids 5/6), Fullscreen/Custom
+  Cursors/Hardware Acceleration checkboxes (ids 7/8/9), Help (id 1) and OK; the in-level dialog
+  also carries Back to Main Menu (id 3), whose visibility is the `+0x18C` byte. The Steam build
+  hides Register, the web link and Check Updates. "Show Money" is not a base Options checkbox: it
+  is the TankScreen INI option (`TankScreen+0x83C`, P2.5), so the port puts it in the labelled
+  debug block. (2) **Art**: `Dialogue-panel` 240x240 (9-slice 32/44), `DialogButton2` 288x33
+  (three 96x33 frames), `Checkbutton`/`unCheckbutton` 46x45, `slidertrack` 156x17 and
+  `SLIDERWIDGET` 33x32. Every sheet is opaque and ships a `masks/_<file>` alpha companion (P3.3);
+  `MaskAlpha.compose()` now builds the cut-out texture, and the dialog/slider/checkbox use it. The
+  windowed before/after shows the black panel corners and brown widget tiles disappearing. The
+  new helper is shared: `HatchScreen.mask_for()` delegates to `MaskAlpha.mask_for()` with no
+  behavior change. (3) **Controls**: `OptionSlider` keeps the native track/thumb sizes (an engine
+  HSlider stretches the track to the control height); `OptionCheck` draws the 46x45 icon and puts
+  the label 39 px after its left edge, matching the reference, because an engine CheckBox's
+  stylebox content margins pushed "CUSTOM CURSORS" past the panel. Both fall back to flat blocks
+  without `Content` (`--script` suites). (4) **Pause**: the original's shared Tank+0x94 gate was
+  being written but never read - `Tank.pause_source` had no production assignment, so entities
+  kept ticking behind every modal. `Level.setup()` now sets `tank.pause_source = _autoload("Game")`;
+  `Tank.is_paused()` freezes entities and `Level._on_sim_tick()` early-returns so the level clock,
+  wave clock, particles and store refresh freeze; `Level._process()` no longer re-aims held fire.
+  The integration suite asserts `pause_source == Game`, `tank.is_paused()`, frozen `age_ticks`,
+  frozen wave timer and frozen fish fullness, then one tick of progress after OK. (5) **Help**
+  replaces Options with the existing dimmed tutorial `HelpScreen` (one `Screens` modal slot) and
+  keeps the tank paused; Escape and the "Back to Game" button close it and resume. (6) The
+  main-menu Options is the plain base panel: no Back row, no debug block; its Help button asks the
+  selector to swap modals. In-level the Show Money toggle sits in the debug block and its label
+  carries `ON`/`OFF`; the bar's wallet plate follows the shared `Game.show_money` signal. (7)
+  **Coverage**: `headless_integration_check` 81 -> 116 (base art and
+  masked corners, pause freeze, dialog money/guppy/grow, mixer, Show Money, OK/resume, menu-mode
+  panel, Help request), `headless_level_check` 149 -> 153 (shared `PauseSource` gate), all 24
+  suites pass, **1431 assertions**; the 400-frame boot exits 0. The windowed probe prints
+  `pause frozen age=12 wave=0 fullness=415`, drives the dialog's money button (200 -> 1200) and
+  guppy/grow (FISH 2 -> 3, new stage 1) while `still_paused=true`, then OK (clock resumes), Help
+  (Escape closes), Back to Menu (level released, selector mounted, save written) and the F1/F2/F3/
+  F10 leg (200 -> 1200, stage 0 -> 1, FISH 2 -> 3). Ogg vendor-comment and ObjectDB/
+  resource-at-exit notices are the known noise. D-0016 records the decision.

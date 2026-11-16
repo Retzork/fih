@@ -12,6 +12,12 @@ extends Node2D
 
 var _level: Level = null
 var _selector: GameSelector = null
+## The in-tank settings dialog opened by MENU (D-0015), null while it is closed.
+var _options_dialog: OptionsDialog = null
+## The in-tank Help modal opened from Options, null while it is closed.
+var _help_dialog: Control = null
+## The port-only debug dialog opened from Options' DEBUG row (D-0017), null while it is closed.
+var _debug_dialog: DebugDialog = null
 var _frames := 0
 var _elapsed := 0.0
 var _flow: Control = null
@@ -44,6 +50,7 @@ func _on_start_requested(mode: int) -> void:
 	_level.setup(Sim, 4242)
 	_level.profile = Game.profile
 	_level.level_completed.connect(_on_level_completed)
+	_level.menu_requested.connect(_on_menu_requested)
 	# P2.6 §1.1: the adventure's current tank and level, with that tank's store table and egg price.
 	var start := Progression.resolve_start(Game.profile.tank, Game.profile.level)
 	Game.profile.tank = int(start["tank"])
@@ -52,9 +59,143 @@ func _on_start_requested(mode: int) -> void:
 	_level.start_level(Game.profile.tank, Game.profile.level)
 
 
+## The tank MENU button (TankScreen id 99). The binary tears the tank screen down with
+## `FUN_0054AED0()` and rebuilds the main menu with `FUN_00552100()` (EV-0189); the owner asked for
+## the port's MENU to open the settings UI first instead (D-0015). OK/Escape closes the dialog and
+## resumes the same tank; the dialog's "Back to Menu" runs the binary's leave-tank path below.
+func _on_menu_requested() -> void:
+	if _level == null or _options_dialog != null:
+		return
+	var dialog := OptionsDialog.new()
+	dialog.name = "OptionsDialog"
+	dialog.in_level = true
+	dialog.closed.connect(_close_options)
+	dialog.back_to_menu.connect(_leave_tank)
+	dialog.debug_requested.connect(_on_options_debug)
+	dialog.help_requested.connect(_on_options_help)
+	if not Screens.open_dialog(dialog):
+		dialog.queue_free()
+		return
+	_options_dialog = dialog
+	# A held fire button must not keep aiming behind the modal.
+	_level.holding_fire = false
+	Game.gameplay_paused = true
+
+
+## Options' DEBUG row: swap the settings dialog for the port-only debug dialog (D-0017). The
+## Screens autoload owns a single modal slot, so Options closes first - the same handover the Help
+## path does - and the tank stays paused.
+func _on_options_debug() -> void:
+	if _level == null or _options_dialog == null or _debug_dialog != null:
+		return
+	Screens.close_dialog()
+	_options_dialog = null
+	var dialog := DebugDialog.new()
+	dialog.name = "DebugDialog"
+	dialog.closed.connect(_close_debug)
+	dialog.action_requested.connect(_on_debug_action)
+	if not Screens.open_dialog(dialog):
+		dialog.queue_free()
+		return
+	_debug_dialog = dialog
+
+
+## A debug button: run the port-only action on the live level. `Level.debug_action()` is the same
+## dispatcher the F2..F10 keys use (D-0014); the tank stays paused while it runs.
+func _on_debug_action(action: StringName) -> void:
+	if _level == null:
+		return
+	_level.debug_action(action)
+
+
+## Close the debug dialog and go back to Options, so the owner returns to the settings rather than
+## to a resumed tank they did not ask for (D-0017).
+func _close_debug() -> void:
+	if _debug_dialog == null:
+		return
+	Screens.close_dialog()
+	_debug_dialog = null
+	_on_menu_requested()
+
+
+## Options' Help button: replace the dialog with the existing Help modal and keep the tank paused.
+## The HelpScreen's own Menu button returns to the tank (`_close_help`), not the main menu.
+func _on_options_help() -> void:
+	if _level == null or _options_dialog == null:
+		return
+	Screens.close_dialog()
+	_options_dialog = null
+	var wrapper := Control.new()
+	wrapper.name = "HelpDialog"
+	wrapper.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrapper.mouse_filter = Control.MOUSE_FILTER_STOP
+	var dim := ColorRect.new()
+	dim.color = Color(0.0, 0.0, 0.0, 0.55)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrapper.add_child(dim)
+	var help := HelpScreen.new()
+	help.name = "HelpScreen"
+	help.setup(true)
+	help.closed.connect(_close_help)
+	wrapper.add_child(help)
+	if not Screens.open_dialog(wrapper):
+		wrapper.queue_free()
+		return
+	_help_dialog = wrapper
+
+
+## Close the in-tank Help modal and resume the same tank.
+func _close_help() -> void:
+	if _help_dialog == null:
+		return
+	Screens.close_dialog()
+	_help_dialog = null
+	Game.gameplay_paused = false
+
+
+## Drop the debug dialog without reopening Options (the level is going away).
+func _close_debug_only() -> void:
+	_debug_dialog = null
+	Screens.close_dialog()
+
+
+## Close the in-tank Options dialog and resume the same level.
+func _close_options() -> void:
+	if _options_dialog == null:
+		return
+	Screens.close_dialog()
+	_options_dialog = null
+	Game.gameplay_paused = false
+
+
+## The binary's id-99 leave-tank path: save as a port safety net (D-0014, because menu starts do
+## not auto-resume yet), free the level's entities and mount a fresh `GameSelector` immediately.
+func _leave_tank() -> void:
+	_close_options()
+	if _level == null:
+		return
+	var err: Error = _level.save_game()
+	if err != OK:
+		push_warning("Main: could not save before returning to the menu (error %d)" % err)
+	Game.gameplay_paused = false
+	if _level.tank != null:
+		_level.tank.shutdown()
+	_level.queue_free()
+	_level = null
+	_mount_selector()
+
+
 ## A completed level: the profile has already advanced (P2.6 §1.2/§10.4). The between-level
 ## flow is Hatch (award card) -> Pets (selection) -> Bonus (payout) -> next level (P4.6).
 func _on_level_completed(tank_no: int, level_no: int, pet_index: int) -> void:
+	# A debug action (the egg button) can complete the level while Options is open. Close the
+	# modals first so the Hatch/Pets/Bonus flow is not left under a dead dialog.
+	if _options_dialog != null:
+		_close_options()
+	if _debug_dialog != null:
+		_close_debug_only()
+	if _help_dialog != null:
+		_close_help()
 	var payload := 0
 	if _level != null:
 		payload = BonusScreen.payout_for(tank_no, Game.mode, _level.money,
@@ -108,18 +249,27 @@ func _clear_flow() -> void:
 	_flow = null
 
 
+## Mount the main menu once the content is loaded and nothing else owns the screen. `_flow` guards
+## the between-level cards: a completed level nulls `_level` while Hatch/Pets/Bonus are up, and the
+## menu must not draw under them. The menu comes first (P4.14): its buttons write `Game.mode` and
+## ask for the level. The tank MENU button calls this directly so the return is one frame.
+func _mount_selector() -> void:
+	if _selector != null or _level != null or _flow != null:
+		return
+	if not Content.is_phase_complete(Content.Phase.LOADING):
+		return
+	_selector = GameSelector.new()
+	_selector.name = "GameSelector"
+	_selector.start_requested.connect(_on_start_requested)
+	_screens_layer.add_child(_selector)
+
+
 func _process(delta: float) -> void:
 	# ~4 ms of loading per frame: finishes in a second or two and keeps the window responsive.
 	if not Content.is_phase_complete(Content.Phase.LOADING):
 		Content.pump(4.0)
 	elif _level == null and _selector == null and _flow == null:
-		# `_flow` guards the between-level screens: a completed level nulls `_level` while Hatch,
-		# Pets and Bonus are up, and mounting the menu under them would draw it behind the cards.
-		# The menu comes first (P4.14): its buttons write `Game.mode` and ask for the level.
-		_selector = GameSelector.new()
-		_selector.name = "GameSelector"
-		_selector.start_requested.connect(_on_start_requested)
-		_screens_layer.add_child(_selector)
+		_mount_selector()
 	_elapsed += delta
 	_frames += 1
 	if _elapsed < 1.0:

@@ -308,11 +308,16 @@ func _open_options() -> void:
 		return
 	var dialog := OptionsDialog.new()
 	dialog.name = "OptionsDialog"
+	# The main-menu Options is the base dialog: no Back to Main Menu row and no debug block.
+	dialog.in_level = false
 	dialog.closed.connect(func() -> void: screens.close_dialog())
 	dialog.back_to_menu.connect(func() -> void:
 		screens.close_dialog()
 		if game != null:
 			game.gameplay_paused = false)
+	dialog.help_requested.connect(func() -> void:
+		screens.close_dialog()
+		_open_help())
 	if not screens.open_dialog(dialog):
 		dialog.queue_free()
 
@@ -340,5 +345,6 @@ func _open_help() -> void:
 		return
 	var screen := HelpScreen.new()
 	screen.name = "HelpScreen"
-	screen.closed.connect(func() -> void: screen.queue_free())
-	screens.open_dialog(screen)
+	screen.closed.connect(func() -> void: screens.close_dialog())
+	if not screens.open_dialog(screen):
+		screen.queue_free()

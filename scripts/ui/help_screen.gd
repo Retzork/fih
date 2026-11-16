@@ -70,3 +70,10 @@ func _on_next() -> void:
 		_refresh()
 	else:
 		closed.emit()
+
+
+## Escape returns to the caller (the tank or the menu), the same as the Menu button.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		closed.emit()
+		get_viewport().set_input_as_handled()

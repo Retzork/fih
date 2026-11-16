@@ -19,6 +19,11 @@ extends Control
 ## guessed from a font metric.
 const BAR_IMAGE := "IMAGE_MENUBAR"
 const BAR_SIZE := Vector2(640.0, 75.0)
+## The tank-screen MENU button (`FUN_00506820(99, ...)`, id 99): its recovered rect starts at
+## (0x20D, 4) and is 0x50 wide; the fourth argument is the button's own height field, not a literal,
+## so the port uses the same 26-px height `HatchScreen` gives the baked MENU plate. The label and
+## frame are part of the `MENUBAR` art, so the control itself is a flat hit target.
+const MENU_RECT := Rect2(525.0, 4.0, 80.0, 26.0)
 ## The green wallet plate inside `MENUBAR` (green pixels span x 530..621, y 39..58).
 const MONEY_RECT := Rect2(530.0, 34.0, 100.0, 30.0)
 ## The purple price plate under each dome, measured from the art: (7, 45, 45, 12) slot-local.
@@ -61,10 +66,15 @@ const ICON_ART := {
 	10: "IMAGE_LASERUPGRADES",
 }
 
+## The tank MENU was pressed (TankScreen id 99 -> `FUN_0054AED0` + `FUN_00552100`); the bar has
+## already forwarded the request to `Level.request_menu()`.
+signal menu_pressed
+
 ## The level whose `tank_store` the bar sells from.
 var level: Level = null
 var _background: TextureRect = null
 var _money_label: Label = null
+var _menu_button: Button = null
 var _buttons: Array[Button] = []
 var _icons: Array[TextureRect] = []
 var _prices: Array[Label] = []
@@ -123,6 +133,10 @@ func setup(target: Level) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_add_background()
 	_add_money_readout()
+	var game := _autoload("Game")
+	if game != null and not game.show_money_changed.is_connected(_on_show_money_changed):
+		game.show_money_changed.connect(_on_show_money_changed)
+	_add_menu_button()
 	for shelf in SLOT_X.size():
 		var rect := slot_rect(shelf)
 		var button := Button.new()
@@ -172,6 +186,19 @@ func _add_background() -> void:
 	_background.size = BAR_SIZE
 	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_background)
+
+
+## The tank MENU hit target over the baked `MENUBAR` label. `FUN_00506820(99, ...)` creates it as
+## a text button, but the shipped bar already draws the word and frame, so a flat button is enough.
+func _add_menu_button() -> void:
+	_menu_button = Button.new()
+	_menu_button.name = "Menu"
+	_menu_button.position = MENU_RECT.position
+	_menu_button.size = MENU_RECT.size
+	_menu_button.flat = true
+	_menu_button.focus_mode = Control.FOCUS_NONE
+	_menu_button.pressed.connect(_on_menu_pressed)
+	add_child(_menu_button)
 
 
 ## The wallet number on the art's green plate (`Tank::AddMoney`'s value).
@@ -246,6 +273,8 @@ func refresh() -> void:
 	_last_money = level.money
 	_last_stock = str(level.tank_store.size()) + ":" + str(level.tank_store.hash())
 	if _money_label != null:
+		var game := _autoload("Game")
+		_money_label.visible = true if game == null else bool(game.show_money)
 		_money_label.text = str(level.money)
 	for shelf in _buttons.size():
 		var row := row_at(level, shelf)
@@ -296,3 +325,26 @@ func press(shelf: int) -> bool:
 
 func _on_slot_pressed(shelf: int) -> void:
 	press(shelf)
+
+
+## Press the tank MENU button (TankScreen id 99). The original's handler
+## (`FUN_0051B6C0(99)`) tears the tank screen down with `FUN_0054AED0()` and rebuilds the main menu
+## with `FUN_00552100()`; the transition itself belongs to `Level`/`Main`, so the bar only forwards
+## the request. `menu_pressed` stays available for checks and future HUD listeners.
+func press_menu() -> void:
+	var audio := _autoload("Audio")
+	if audio != null:
+		audio.play_click()
+	if level != null:
+		level.request_menu()
+	menu_pressed.emit()
+
+
+func _on_menu_pressed() -> void:
+	press_menu()
+
+
+## The Options "Show Money" checkbox: hide or show the wallet plate without rebuilding the bar.
+func _on_show_money_changed(show: bool) -> void:
+	if _money_label != null:
+		_money_label.visible = show

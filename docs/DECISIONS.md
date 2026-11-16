@@ -1351,6 +1351,124 @@ Open: the real per-cell hold and the pet reveal point.
 - The mouth point is `position + (40,40)` (the 80x80 sprite centre) because the recovered globals store
   a point, not an offset from the pet.
 
+### D-0014 - The debug panel/cheats are port-only; MENU saves as a port safety net
+
+- Date: 2026-11-11 (implementation, owner request; source EV-0189, EV-0046, P2.17)
+- Status: accepted for the port. The debug actions carry no binary claim; replace them if a real
+  cheat path is ever recovered.
+- **Debug panel.** `scripts/ui/debug_panel.gd` is a playtest aid, not a recovered feature. The
+  original's known cheat path is `FUN_005404A0` (Wavy/Prego sounds/Void/Space/Zombie toggles,
+  EV-0046); no instant-money, grow, feed, egg, weapon, store-reveal or spawn-guppy cheat was
+  recovered, and P2.17's string search found no cheat console/menu text. `Level.debug_action()`
+  is the single dispatcher; the panel buttons and the `F2`-`F10` keys both go through it. `F1`
+  toggles the panel. `F5`/`F9` keep their existing save/load meaning.
+- **Why the panel does not pause.** The simulation keeps ticking while it is open, so a playtest
+  can observe growth/hunger/coin timing with the controls visible. The panel is built only when
+  rendering is on (`Level.render`); the headless suites call `debug_action()` directly.
+- **MENU save.** `FUN_0051B6C0(99)` closes the tank screen and goes straight to the main menu with
+  no save call (EV-0189). The port's leave-tank path saves to the level's `save_path` first,
+  because a menu-started level does not auto-resume the previous run yet. The save is a safety
+  net, not a claim about the original; remove it once menu starts resume the tank the way
+  `FUN_0054CB20()` does. **Updated by D-0015:** the save now runs only from the Options dialog's
+  "Back to Menu" button (`Main._leave_tank()`), not when the tank MENU is first pressed.
+- **MENU transition.** `StoreBar.press_menu()` -> `Level.request_menu()` -> `Main` (save, clear
+  pause, `Tank.shutdown()`, free the level, `_mount_selector()` in the same frame). The binary's
+  two helpers map to close-tank + rebuild-menu; the port does not route through the Options
+  "Leave Game?" confirm or the pause box, which are separate paths (EV-0189).
+  **Superseded by D-0015 (2026-11-14):** the tank MENU now opens the in-tank Options dialog; the
+  save/teardown/remount path above runs only from that dialog's "Back to Menu" button.
+
+### D-0015 - The tank MENU opens the in-tank Options dialog (owner-directed port divergence)
+
+- Date: 2026-11-14 (implementation, owner request; source EV-0191, EV-0189, P2.12 §10.11)
+- Status: accepted for the port. This is a deliberate divergence: the binary's TankScreen id 99
+  still runs `FUN_0054AED0()` + `FUN_00552100()` (close tank, rebuild menu, no save). Do not cite
+  the new flow as recovered behavior; cite EV-0189 for the original and EV-0191 for the port.
+- The owner asked for the pop-up MENU in the level to open the settings UI. `StoreBar.press_menu()`
+  -> `Level.request_menu()` -> `Main._on_menu_requested()` now mounts the existing `OptionsDialog`
+  through `Screens.open_dialog()` and pauses the tank (`Game.gameplay_paused`). The level stays
+  mounted; opening the dialog alone writes no save.
+- OK and Escape close the dialog and resume the same tank. "Back to Menu" closes the dialog and
+  runs the old leave-tank path: save to the level's `save_path` (the D-0014 safety net), shut the
+  tank down, free the level, mount `GameSelector`. The binary's "Leave Game?" confirm and the
+  "GAME PAUSED" box remain separate paths and are not used here.
+- While any modal dialog owns `Screens.dialog()`, `Level._unhandled_input()` ignores tank clicks
+  and hotkeys, so F1..F10/S/P and feeding cannot fire behind the dialog.
+- The Show Money checkbox is live (`Game.show_money` + `show_money_changed`); the in-tank wallet
+  plate follows it. D-0016 corrects where it lives: Show Money is the TankScreen INI option
+  (P2.5, `TankScreen+0x83C`), not a base Options checkbox, so the rebuilt dialog puts it in the
+  labelled port-only debug block.
+
+### D-0016 - The in-tank Options uses the shipped dialog's art/layout; the debug block is port-only
+
+- Date: 2026-11-15 (implementation, owner request; source EV-0192, EV-0191, P2.12 §11.3, P2.5)
+- Status: accepted for the port. The base Options contents are recovered (P2.12 §11.3); the
+  debug block and the custom-cursor/hardware-acceleration storage are explicitly port-only.
+- **Art.** The dialog draws the shipped `Dialogue-panel` (240x240, 9-slice margins 32/44),
+  `DialogButton2` (288x33, three 96x33 frames purple/hover/pressed) and the `Checkbutton`/
+  `unCheckbutton` (46x45) and slider `slidertrack` (156x17) / `SLIDERWIDGET` (33x32) cells. All
+  six sheets are opaque, so they are composed with their `masks/_<file>` companions through
+  `MaskAlpha.compose()` (P3.3); without the mask the rounded panel corners and the widget tiles
+  draw as black/brown rectangles. The menu panel keeps the reference rect (154,32,328,312); the
+  in-level panel grows downward to 460 px to hold Back to Main Menu and the debug block.
+- **Controls.** `OptionSlider` and `OptionCheck` are small port controls, not engine HSlider/
+  CheckBox: the engine widgets add theme content margins and stretch the track, which moved the
+  labels off the reference offsets (the checkbox label starts 39 px after the icon, not 46+8).
+  Both resolve `Content` lazily and fall back to flat blocks under `--script`.
+- **Base options.** Music and Sound FX write the `Audio` mixer instantly (the port still starts
+  muted, Q-0056). Fullscreen is a real `DisplayServer.window_set_mode()` toggle. Custom Cursors
+  and Hardware Acceleration only store `Game.custom_cursors` / `Game.hardware_acceleration`;
+  no cursor layer or runtime renderer switch exists in the port, so they are stubs, not recovered
+  behavior.
+- **Port-only block.** The debug grid is labelled "DEBUG (PORT-ONLY)" and reaches the live level
+  through `Main._on_options_debug_action()` -> `Level.debug_action()` (D-0014): money, grow, feed,
+  egg, max weapon, reveal store, spawn guppy. Show Money is the TankScreen INI option (P2.5,
+  `TankScreen+0x83C`), **not** a base Options checkbox, so it lives in this block; its label
+  carries ON/OFF and the bar's wallet plate follows `Game.show_money_changed`. The block is hidden
+  in the main-menu Options, which is the plain base panel with no Back row.
+- **Pause.** Opening Options sets `Game.gameplay_paused`. `Level.setup()` now assigns
+  `Tank.pause_source = Game` (previously nothing did, so the flag was written but never read);
+  `Tank.is_paused()` freezes entities and `Level._on_sim_tick()` early-returns so the level clock,
+  wave clock, particles and store refresh freeze too. `Level._process()` also stops re-aiming held
+  fire. This is the original's shared Tank+0x94 gate, not a scene-tree pause.
+- **Help.** The Help button replaces Options with the existing dimmed tutorial `HelpScreen` while
+  the tank stays paused; its Menu button (relabelled "Back to Game") and Escape both close it and
+  resume the same tank. It is not a second stacked modal (Screens has one slot).
+- The tank MENU -> Options flow itself remains the D-0015 divergence; this entry only fixes the
+  dialog's contents and the pause path.
+
+### D-0017 - Debug controls get their own dialog; the fish shelf is never reveal-gated; the egg cell is clipped to its dome
+
+- Date: 2026-11-16 (owner playtest review; source D-0014/D-0016, EV-0185, P2.6 §3/§5)
+- Status: accepted for the port. Owner-directed: the 2026-11-15 in-tank Options shipped with the
+  debug grid pasted over the base panel's bottom frame, and the shop bar opened with no shelf on
+  1-1 / 1-3.
+- **DebugDialog.** The port-only controls (D-0014) moved out of `OptionsDialog` into
+  `scripts/ui/debug_dialog.gd`: its own masked `Dialogue-panel` modal with a two-column button
+  grid, the Show Money toggle and CLOSE. The in-level Options carries one `DEBUG` row that hands
+  the single `Screens` modal slot to it; CLOSE hands the slot back to Options, so the detour never
+  resumes the tank by itself. `Main._on_debug_action()` still dispatches through
+  `Level.debug_action()`. Nothing here is recovered behaviour - the binary has no cheat
+  console/menu (P2.17).
+- **Shared skin.** `scripts/ui/dialog_skin.gd` is the single owner of the masked
+  `Dialogue-panel` / `DialogButton2` composition (9-slice margins, three button frames); both
+  dialogs build from it instead of each carrying a copy. D-0016's art rules are unchanged.
+- **Options layout.** One checkbox per row (FULLSCREEN / CUSTOM CURSORS / HARDWARE ACCELERATION):
+  side by side, the 8 px outlined "FULLSCREEN" label ran into the second box's icon. The in-level
+  panel grows to 328x384 only for the MAIN MENU + DEBUG row.
+- **Fish shelf.** `Progression.reveal_rules()` no longer gates item 0 on any tank. With the guide's
+  keypoint lists applied literally, 1-1 and 1-3 opened with every dome empty, so the 200 starting
+  shells could not buy a fish until a stock guppy grew on its own. The food, predator, blaster and
+  egg shelves keep their milestones; EV-0185's "1-1 guppy at medium" line is withdrawn as a port
+  reading (it was a guide keypoint, not a binary claim). `headless_store_ui_check` pins the opening
+  shelf.
+- **Egg dome.** The shipped `EGGPIECES` cell carries its own purple dome window and is opaque: the
+  `masks/_EggPieces.png` companion has no transparency at all (measured 2026-11-16: 5,382 of 5,382
+  pixels at alpha 255), and `menubar.png` is opaque at every dome pixel (255) too, so drawing the
+  cell *behind* the bar is not an option. `EggWidget` therefore draws the cell over the bar's
+  `MENUBAR` art, clipped to the dome's glass window (38x33 at (10, 3)), so it can no longer spill
+  across the gold rim or the price plate.
+
 ### Q-0061 - Presto's picker contents and its opening input are port bindings
 
 - OPEN (2026-11-10, raised by `scripts/ui/presto_picker.gd` for R9; source EV-0100, P2.7 §3.3/§4.20,

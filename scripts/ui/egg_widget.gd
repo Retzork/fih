@@ -19,10 +19,11 @@ const EGG_ART := "IMAGE_EGGPIECES"
 const PIECES_TO_COMPLETE := 4
 ## The eighth dome, at `SLOT_X[6]` in `StoreBar` (the recovered `FUN_005409B0` x table).
 const SLOT := 6
-## Inside the 58x60 slot: the 46x39 cell (`EGGPIECES` is 138x39, three cells) is fitted into the
-## 40x34 dome window, so it can never spill over the gold rim, and the price sits on the same
-## measured purple plate as every other dome (`StoreBar.PLATE_RECT`, 45x12 at (7, 45)).
-const ART_RECT := Rect2(9.0, 4.0, 40.0, 34.0)
+## Inside the 58x60 slot: the 46x39 cell (`EGGPIECES` is 138x39, three cells) is fitted into this
+## window and clipped to it, so the whole-egg cell cannot spill over the gold rim or the price plate
+## (owner review 2026-11-16). The price sits on the same measured purple plate as every other dome
+## (`StoreBar.PLATE_RECT`, 45x12 at (7, 45)).
+const ART_WINDOW := Rect2(10.0, 3.0, 38.0, 33.0)
 ## The label box is centred on the 12-px plate (centre y 51) so the native glyphs are not clipped.
 const PRICE_RECT := Rect2(7.0, 42.0, 45.0, 18.0)
 const GREY := Color8(0xCC, 0xCC, 0xCC)
@@ -81,19 +82,29 @@ func _ready() -> void:
 	_frames = content.sprite_frames(EGG_ART)
 	if _frames == null or _frames.get_frame_count("default") == 0:
 		return
+
 	var texture := _frames.get_frame_texture("default", 0)
 	if texture == null:
 		return
+	# The art is clipped to the dome's glass: the cell is opaque and carries its own purple dome
+	# window, so the clip is what keeps it inside the gold rim and off the price plate instead of
+	# reading as a png pasted across the bar (owner review 2026-11-16).
+	var window := Control.new()
+	window.name = "Window"
+	window.position = ART_WINDOW.position
+	window.size = ART_WINDOW.size
+	window.clip_contents = true
+	window.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(window)
 	_art = TextureRect.new()
 	_art.name = "Egg"
 	_art.texture = texture
-	_art.position = ART_RECT.position
-	_art.size = ART_RECT.size
+	_art.position = Vector2.ZERO
+	_art.size = ART_WINDOW.size
 	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_art)
-	move_child(_art, 0)
+	window.add_child(_art)
 	refresh()
 
 
@@ -140,6 +151,9 @@ func _show_frame(pieces: int) -> void:
 	var texture := _frames.get_frame_texture("default", clampi(pieces - 1, 0, last))
 	if texture != null:
 		_art.texture = texture
+
+
+
 
 
 func _signature() -> String:

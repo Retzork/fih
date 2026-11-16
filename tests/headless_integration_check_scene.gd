@@ -117,7 +117,186 @@ func _run() -> void:
 	_expect(level.egg_widget.position == StoreBar.slot_rect(EggWidget.SLOT).position,
 		"the egg widget sits in the bar's empty dome (got %s)" % str(level.egg_widget.position))
 
+	# The port-only debug panel (D-0014): hidden at start, toggled by F1, and its actions run
+	# through the same Level dispatcher the keys use.
+	_expect(level.debug_panel != null and not level.debug_panel.visible,
+		"the debug panel is built hidden")
+	_expect(level.toggle_debug_panel() and level.debug_panel.visible,
+		"F1 shows the debug panel")
+	var money_before_debug: int = level.money
+	_expect(level.debug_action(&"money") and level.money > money_before_debug,
+		"the debug money action reaches the live level")
+	_expect(level.debug_panel.button_for(&"grow") != null,
+		"the debug panel carries a grow button")
+
+	# The tank MENU button (TankScreen id 99): the owner-directed port flow opens the settings UI
+	# over the paused tank (D-0015). The dialog is the base game's Options panel plus the port-only
+	# debug block; OK resumes the same level, "Back to Menu" runs the binary's leave-tank path with
+	# the D-0014 save safety net.
+	var menu_save := "user://headless_integration_menu.dat"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(menu_save))
+	level.save_path = menu_save
+	level.store_bar.press_menu()
+	_expect(main._level == level, "MENU keeps the tank mounted")
+	_expect(main._options_dialog is OptionsDialog, "MENU opens the Options dialog")
+	_expect(Screens.dialog() == main._options_dialog, "the Options dialog owns the modal slot")
+	_expect(Game.gameplay_paused, "the tank pauses while Options is open")
+	_expect(level.tank.pause_source == Game, "Level.setup wires Tank.pause_source to Game")
+	_expect(level.tank.is_paused(), "the shared pause gate reaches the tank")
+	_expect(not FileAccess.file_exists(menu_save), "opening Options alone does not write a save")
+	var options: OptionsDialog = main._options_dialog
+	# The base layout: the Dialogue-panel art, title plaque, two sliders and three checkboxes.
+	var panel := options.panel as NinePatchRect
+	# The raw `Dialogue-panel`/`Checkbutton`/slider sheets are opaque; the dialog composes their
+	# `masks/_<file>` companions (P3.3), so a transparent corner proves the mask was applied.
+	_expect(panel != null and _masked_art(panel.texture, Vector2i(240, 240)),
+		"the dialog draws the masked base Dialogue-panel art")
+	var title := options.control(&"Title") as Label
+	_expect(title != null and title.text == "OPTIONS", "the title plaque reads OPTIONS")
+	var music_track: TextureRect = null
+	if options.music_slider != null:
+		music_track = options.music_slider.get_node_or_null("Track") as TextureRect
+	_expect(music_track != null and _masked_art(music_track.texture, Vector2i(156, 17)),
+		"the Music slider draws the masked base SLIDERTRACK art")
+	var sfx_thumb: TextureRect = null
+	if options.sfx_slider != null:
+		sfx_thumb = options.sfx_slider.get_node_or_null("Thumb") as TextureRect
+	_expect(sfx_thumb != null and _masked_art(sfx_thumb.texture, Vector2i(33, 32)),
+		"the Sound FX slider draws the masked base SLIDERWIDGET thumb")
+	var fullscreen_icon := options.control(&"Fullscreen").get_node_or_null("Icon") as TextureRect
+	_expect(fullscreen_icon != null and _masked_art(fullscreen_icon.texture, Vector2i(46, 45)),
+		"the checkboxes draw the masked base Checkbutton art")
+	for node_name: String in ["Music", "SoundFX", "Fullscreen", "CustomCursors",
+			"HardwareAcceleration", "Help", "OK", "BackToMenu", "Debug"]:
+		_expect(options.control(StringName(node_name)) != null, "the dialog has %s" % node_name)
+	var back_row := options.control(&"BackToMenu") as Button
+	_expect(back_row != null and back_row.visible,
+		"the in-level dialog shows Back to Main Menu")
+	# The debug controls are their own dialog (D-0017), opened from Options' DEBUG row; Main owns the
+	# action dispatch, so the buttons reach the live level while the tank stays paused.
+	_expect(options.control(&"DebugSection") == null,
+		"the debug grid no longer shares the Options panel")
+	var money_before_dialog: int = level.money
+	(options.control(&"Debug") as Button).pressed.emit()
+	_expect(main._debug_dialog is DebugDialog, "DEBUG swaps Options for the debug dialog")
+	_expect(main._options_dialog == null, "Options closes behind the debug dialog")
+	_expect(Screens.dialog() == main._debug_dialog, "the debug dialog owns the modal slot")
+	_expect(level.tank.is_paused(), "the debug dialog keeps the tank paused")
+	var debug_dialog: DebugDialog = main._debug_dialog
+	var money_button := debug_dialog.debug_button_for(&"money")
+	_expect(money_button != null, "the debug dialog has a money button")
+	if money_button != null:
+		money_button.pressed.emit()
+	_expect(level.money == money_before_dialog + Level.DEBUG_MONEY_STEP,
+		"the debug dialog's money button reaches the live level (got %d)" % level.money)
+	var fish_before_dialog: int = _live_fish(level.tank).size()
+	var guppy_button := debug_dialog.debug_button_for(&"guppy")
+	if guppy_button != null:
+		guppy_button.pressed.emit()
+	_expect(_live_fish(level.tank).size() == fish_before_dialog + 1,
+		"the debug dialog's guppy button spawns a fish")
+	var fish_after_guppy: Array = _live_fish(level.tank)
+	var new_fish: Fish = fish_after_guppy.back() if not fish_after_guppy.is_empty() else null
+	var grow_button := debug_dialog.debug_button_for(&"grow")
+	if grow_button != null:
+		grow_button.pressed.emit()
+	_expect(new_fish != null and new_fish.stage > 0,
+		"the debug dialog's grow button advances the new guppy (got %s)" % (str(new_fish.stage) if new_fish != null else "none"))
+	# Show Money is the TankScreen option and lives in this dialog (D-0017).
+	_expect(debug_dialog.show_money_box != null and debug_dialog.show_money_box.button_pressed,
+		"Show Money is seeded from the shared setting")
+	debug_dialog.show_money_box.button_pressed = false
+	_expect(not level.store_bar.get_node("Money").visible,
+		"unchecking Show Money hides the wallet plate")
+	debug_dialog.show_money_box.button_pressed = true
+	_expect(level.store_bar.get_node("Money").visible, "rechecking Show Money restores it")
+	# CLOSE hands the modal slot back to Options, still paused.
+	var debug_close := debug_dialog.panel.get_node_or_null("Close") as Button
+	_expect(debug_close != null, "the debug dialog has a CLOSE button")
+	if debug_close != null:
+		debug_close.pressed.emit()
+	_expect(main._debug_dialog == null, "CLOSE leaves the debug dialog")
+	_expect(main._options_dialog is OptionsDialog, "CLOSE returns to Options")
+	_expect(Game.gameplay_paused, "the tank stays paused through the debug detour")
+	options = main._options_dialog
+	# Pause is real: the level clock, a fish's hunger and the wave clock all freeze.
+	var paused_age: int = level.tank.age_ticks
+	var paused_fullness: int = new_fish.fullness if new_fish != null else -1
+	var paused_wave: int = level.wave.timer if level.wave != null else -1
+	_step(10)
+	_expect(level.tank.age_ticks == paused_age, "Options freezes the level clock")
+	if new_fish != null:
+		_expect(new_fish.fullness == paused_fullness, "Options freezes fish hunger")
+	_expect(level.wave == null or level.wave.timer == paused_wave, "Options freezes the wave clock")
+	# The two mixers stay reachable; the port still starts muted (Q-0056).
+	options.set_music_percent(50.0)
+	_expect(is_equal_approx(Audio.music_volume, 0.5), "the Music slider writes the mixer")
+	options.set_music_percent(0.0)
+	options.set_sfx_percent(25.0)
+	_expect(is_equal_approx(Audio.sfx_volume, 0.25), "the Sound FX slider writes the mixer")
+	options.set_sfx_percent(0.0)
+	var ok := options.control(&"OK") as Button
+	_expect(ok != null, "the Options dialog has an OK button")
+	if ok != null:
+		ok.pressed.emit()
+	_expect(main._options_dialog == null and Screens.dialog() == null, "OK closes Options")
+	_expect(not Game.gameplay_paused, "OK releases the shared pause flag")
+	_expect(not level.tank.is_paused(), "OK releases the tank's pause gate")
+	_expect(main._level == level, "OK returns to the same tank")
+	var resumed_age: int = level.tank.age_ticks
+	_step(1)
+	_expect(level.tank.age_ticks == resumed_age + 1, "the level clock resumes after OK")
+
+	level.store_bar.press_menu()
+	_expect(main._options_dialog != null, "MENU can reopen Options")
+	var back := main._options_dialog.control(&"BackToMenu") as Button
+	_expect(back != null, "the Options dialog has a Back to Menu button")
+	if back != null:
+		back.pressed.emit()
+	_expect(main._level == null, "Back to Menu releases the live level")
+	_expect(main._selector is GameSelector, "Back to Menu mounts the main menu again")
+	_expect(FileAccess.file_exists(menu_save), "Back to Menu saves the tank before leaving (D-0014)")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(menu_save))
+
 	_teardown(main)
+	await get_tree().process_frame
+
+	# The main-menu Options is the base panel only: no Back row, no debug block. It still owns the
+	# base controls, and Help reports to its owner instead of opening a second modal itself.
+	var menu_options := OptionsDialog.new()
+	menu_options.name = "MenuOptionsProbe"
+	menu_options.in_level = false
+	add_child(menu_options)
+	_expect(menu_options.control(&"BackToMenu") == null,
+		"menu Options hides Back to Main Menu")
+	_expect(menu_options.control(&"Debug") == null,
+		"menu Options hides the port-only DEBUG row")
+	var menu_panel := menu_options.panel as NinePatchRect
+	_expect(menu_panel != null and menu_panel.size == OptionsDialog.PANEL_MENU_RECT.size,
+		"menu Options keeps the base panel height")
+	var help_requested := [false]
+	menu_options.help_requested.connect(func() -> void: help_requested[0] = true)
+	var help_button := menu_options.control(&"Help") as Button
+	if help_button != null:
+		help_button.pressed.emit()
+	_expect(help_requested[0], "the Help button reports its request")
+	# `OptionCheck` mirrors BaseButton's `button_pressed` name; writing it emits `toggled`.
+	var custom_box := menu_options.control(&"CustomCursors")
+	if custom_box != null:
+		custom_box.set("button_pressed", true)
+	_expect(Game.custom_cursors, "Custom Cursors stores the port setting")
+	if custom_box != null:
+		custom_box.set("button_pressed", false)
+	var hardware_box := menu_options.control(&"HardwareAcceleration")
+	if hardware_box != null:
+		hardware_box.set("button_pressed", true)
+	_expect(Game.hardware_acceleration, "Hardware Acceleration stores the port setting")
+	if hardware_box != null:
+		hardware_box.set("button_pressed", false)
+	menu_options.set_music_percent(40.0)
+	_expect(is_equal_approx(Audio.music_volume, 0.4), "menu Options still drives the mixer")
+	menu_options.set_music_percent(0.0)
+	menu_options.queue_free()
 	await get_tree().process_frame
 
 	var boss_main = await _start_from_menu(5, 1)
@@ -334,6 +513,14 @@ func _finish() -> void:
 		return
 	print("headless_integration_check: PASS (%d assertions)" % _checks)
 	get_tree().quit(0)
+
+
+## A texture whose alpha companion was composed (P3.3): native size and a clear corner.
+func _masked_art(texture: Texture2D, expected: Vector2i) -> bool:
+	if texture == null:
+		return false
+	var image := texture.get_image()
+	return image != null and image.get_size() == expected and image.get_pixel(0, 0).a < 0.01
 
 
 func _expect(condition: bool, what: String) -> void:

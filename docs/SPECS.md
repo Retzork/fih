@@ -386,6 +386,17 @@ Options lives in one dialog: Register/Help/web/Back-to-menu/Check-updates action
 from the mixer, three checkboxes. `MusicVolume`/`SfxVolume` persist as integer percent and apply
 instantly (P2.14 §6).
 
+**Port implementation (D-0015/D-0016, EV-0192).** The dialog is the Steam build's visible subset:
+masked `Dialogue-panel` (240x240, 9-slice 32/44), `DialogButton2` (three 96x33 frames),
+`Checkbutton`/`unCheckbutton` (46x45), `slidertrack` (156x17) and `SLIDERWIDGET` (33x32), with
+`OptionSlider`/`OptionCheck` keeping the native metrics and the measured 39-px checkbox label
+offset. Music/SFX write the mixer; Fullscreen is a real `DisplayServer.window_set_mode`; Custom
+Cursors/Hardware Acceleration are stored port stubs. In-level the MENU opens it over the paused
+tank (`Game.gameplay_paused` -> `Tank.pause_source`), adds Back to Main Menu and the labelled
+port-only debug block; Help swaps in the tutorial HelpScreen while staying paused. The main-menu
+variant hides Back and the debug block. The MENU -> Options entry is a deliberate owner divergence
+from the binary's id-99 close-tank dispatch.
+
 ---
 
 ## 7. Persistence

@@ -20,6 +20,7 @@ const FoodScript := preload("res://scripts/entities/food.gd")
 const AlienScript := preload("res://scripts/entities/alien.gd")
 const PetScript := preload("res://scripts/entities/pet.gd")
 const EggWidgetScript := preload("res://scripts/ui/egg_widget.gd")
+const DebugPanelScript := preload("res://scripts/ui/debug_panel.gd")
 const WaveClockScript := preload("res://scripts/tank/wave_clock.gd")
 const LarvaScript := preload("res://scripts/entities/larva.gd")
 
@@ -89,6 +90,9 @@ var _presto_notice_label: Label = null
 ## The in-tank store bar along the top of the aquarium (P4.5/P4.6), null until `_ready` builds it
 ## with rendering on.
 var store_bar: StoreBar = null
+## The port-only cheat panel (D-0014), hidden until F1; null in `render = false` runs. Untyped so
+## the preloaded script does not have to resolve a global class name at parse time.
+var debug_panel = null
 ## The 24 per-pet presence flags as last saved. Pet bodies are only partly implemented, so a load
 ## records the flags without spawning the pets back (P4.7).
 var pet_flags: Array[int] = []
@@ -119,6 +123,9 @@ var profile: Profile = null
 ## Challenge mode records the run instead). The Hatch/Pets screens are not ported (Q-0053), so
 ## `Main` uses this to start the next level.
 signal level_completed(tank_no: int, level_no: int, pet_index: int)
+## The tank MENU button (TankScreen id 99 -> `FUN_0054AED0` + `FUN_00552100`): `Main` saves the
+## tank, frees this level and rebuilds the main menu.
+signal menu_requested
 
 ## The game mode the selector writes (P2.12 EV-0131): 0 adventure, 1 time trial, 3 sandbox,
 ## 4 challenge, 5 virtual tank. Mode branches live in `start_level` and `_on_sim_tick`
@@ -220,6 +227,10 @@ func setup(sim_node: Node, seed_value: int = 4242) -> void:
 	add_child(tank)
 	_sim = sim_node
 	tank.setup(sim_node, seed_value)
+	# `Tank.is_paused()` reads this shared gate (`Game.gameplay_paused`, the original's Tank+0x94).
+	# Without the wiring the flag was written by the store/Options/presto paths but never read, so
+	# entities kept ticking behind every modal. Tests may set their own source after `setup()`.
+	tank.pause_source = _autoload("Game")
 	tank.entity_spawned.connect(_on_entity_spawned)
 	_ensure_wave()
 	# The egg widget is built even when rendering is off, so the headless checks can drive the same
@@ -252,6 +263,14 @@ func _ready() -> void:
 	store_bar.name = "StoreBar"
 	layer.add_child(store_bar)
 	store_bar.setup(self)
+	# Port-only cheat panel (D-0014). It starts hidden and never pauses the simulation, so a
+	# long-running playtest can keep growing/feeding while the panel is open.
+	debug_panel = DebugPanelScript.new()
+	debug_panel.name = "DebugPanel"
+	layer.add_child(debug_panel)
+	debug_panel.setup()
+	debug_panel.visible = false
+	debug_panel.action_requested.connect(_on_debug_action)
 	_mount_egg_widget()
 	_add_backdrop()
 
@@ -1083,6 +1102,11 @@ func fire_at(point: Vector2) -> bool:
 
 
 func _on_sim_tick(_tick: int) -> void:
+	# The shared pause gate must stop the level's own clock too, not just the entities: time-trial
+	# budget, particles, store refresh and held fire all live here. The original's tank update is
+	# gated as one unit (Tank+0x94), so a paused tank freezes every counter.
+	if tank == null or tank.is_paused():
+		return
 	tank.age_ticks += 1
 	_tick_presto_notice()
 	if game_mode == MODE_CHALLENGE:
@@ -1543,9 +1567,150 @@ func _capture_pet_flags() -> Array[int]:
 	return flags
 
 
+# --- debug (port-only) -------------------------------------------------------
+
+## How much the debug money cheat adds per press.
+const DEBUG_MONEY_STEP := 1000
+
+
+## The tank MENU button's request. The original's `FUN_0051B6C0(99)` removes the tank screen and
+## calls `FUN_00552100()` to rebuild the main menu; `Main` owns that transition and the save.
+func request_menu() -> void:
+	menu_requested.emit()
+
+
+## Dispatch one debug action. Returns true when it changed something. These actions are
+## **port-only** (D-0014): the shipped game has no cheat console recovered, so nothing here is
+## claimed as original behavior. The panel and the F2..F10 keys both come through this one entry.
+func debug_action(action: StringName) -> bool:
+	match action:
+		&"money":
+			return debug_add_money()
+		&"grow":
+			return debug_grow_all()
+		&"feed":
+			return debug_feed_all()
+		&"egg":
+			return debug_egg_piece()
+		&"weapon":
+			return debug_max_weapon()
+		&"reveal":
+			return debug_reveal_store()
+		&"guppy":
+			return debug_spawn_guppy()
+	return false
+
+
+## Add shells through the normal clamped `AddMoney` path.
+func debug_add_money(amount: int = DEBUG_MONEY_STEP) -> bool:
+	if amount <= 0 or money >= MONEY_MAX:
+		return false
+	add_money(amount)
+	if store_bar != null:
+		store_bar.refresh()
+	return true
+
+
+## Advance every growable fish one step (stage < 2 -> +1, then the stage-4 overshoot form). The
+## normal `grew` signal still fires, so the store milestones reveal exactly as they do in play.
+func debug_grow_all() -> bool:
+	if tank == null:
+		return false
+	var changed := false
+	for entity in tank.entities_in(Sim.Phase.FISH):
+		var fish := entity as Fish
+		if fish != null and fish.debug_grow():
+			changed = true
+	return changed
+
+
+## Fill every fish to its species' eat cap.
+func debug_feed_all() -> bool:
+	if tank == null:
+		return false
+	var changed := false
+	for entity in tank.entities_in(Sim.Phase.FISH):
+		var fish := entity as Fish
+		if fish != null and fish.debug_feed():
+			changed = true
+	return changed
+
+
+## Buy the next egg piece for free. The fourth piece completes the level through the normal path,
+## which is also the quickest way to exercise the Hatch/Pets/Bonus flow.
+func debug_egg_piece() -> bool:
+	if completed or egg_pieces >= Progression.EGG_PIECES_TO_COMPLETE:
+		return false
+	egg_pieces += 1
+	if egg_pieces >= Progression.EGG_PIECES_TO_COMPLETE:
+		complete_level()
+		return true
+	if egg_widget != null:
+		egg_widget.refresh()
+	if store_bar != null:
+		store_bar.refresh()
+	return true
+
+
+## Jump the weapon/capacity field to its recovered maximum (level 12, EV-0151/EV-0174).
+func debug_max_weapon() -> bool:
+	if tank == null or weapon_level >= Store.WEAPON_MAX:
+		return false
+	weapon_level = Store.WEAPON_MAX
+	if store_bar != null:
+		store_bar.refresh()
+	return true
+
+
+## Clear every growth/purchase gate on the store bar and open the egg dome.
+func debug_reveal_store() -> bool:
+	if tank == null:
+		return false
+	var changed := not store_reveal.is_empty() or not egg_unlocked
+	for id in store_reveal.keys():
+		_reveal_store_item(int(id))
+	for row in tank_store:
+		if bool(row.get("hidden", false)):
+			row["hidden"] = false
+			changed = true
+	egg_unlocked = true
+	tank.store_locked = false
+	if store_bar != null:
+		store_bar.refresh()
+	if egg_widget != null:
+		egg_widget.refresh()
+	return changed
+
+
+## Add one guppy in the normal spawn band, wired like every other spawned fish.
+func debug_spawn_guppy() -> bool:
+	if tank == null:
+		return false
+	spawn_guppy(_random_spawn_point())
+	return true
+
+
+## Show/hide the panel. Returns its new visibility; false when rendering is off (no panel).
+func toggle_debug_panel() -> bool:
+	if debug_panel == null:
+		return false
+	debug_panel.visible = not debug_panel.visible
+	return debug_panel.visible
+
+
+func _on_debug_action(action: StringName) -> void:
+	debug_action(action)
+
+
 # --- input -------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
+	# A modal dialog owns input while it is up (Options, store, Presto): the tank must not drop
+	# food behind it or run its F1..F10/S/P hotkeys. Mouse clicks usually stop in the full-rect
+	# dialog already; this also covers keyboard events.
+	var screens := _autoload("Screens")
+	if screens != null and screens.dialog() != null:
+		return
 	if event is InputEventMouseMotion and holding_fire:
 		aim(get_global_mouse_position())
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -1554,10 +1719,26 @@ func _unhandled_input(event: InputEvent) -> void:
 			fire_target = get_global_mouse_position()
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_F1:
+				toggle_debug_panel()
+			KEY_F2:
+				debug_action(&"money")
+			KEY_F3:
+				debug_action(&"grow")
+			KEY_F4:
+				debug_action(&"feed")
 			KEY_F5:
 				save_game()
+			KEY_F6:
+				debug_action(&"egg")
+			KEY_F7:
+				debug_action(&"weapon")
+			KEY_F8:
+				debug_action(&"reveal")
 			KEY_F9:
 				load_game()
+			KEY_F10:
+				debug_action(&"guppy")
 			KEY_S:
 				open_store()
 			KEY_P:
@@ -1593,7 +1774,8 @@ func _process(_delta: float) -> void:
 	if not render or tank == null:
 		return
 	# Held fire follows the live cursor (the event path only sees motion, which stops at the edges).
-	if holding_fire:
+	# A paused tank keeps drawing but must not re-aim: the modal owns the pointer.
+	if holding_fire and not tank.is_paused():
 		aim(get_global_mouse_position())
 	_sync_visuals()
 	_sync_fx()

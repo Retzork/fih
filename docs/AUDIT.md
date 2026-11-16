@@ -98,7 +98,7 @@ task's documented scope was done, not that the system is connected or faithful.
 | modes | Adventure only; Challenge inflates prices only; Time Trial/Virtual Tank rules absent; the mode flags have no writers | `tank.gd:48-66`, G7 |
 | saves | fish-only entity records; per-mode save stem unused (always `adv1`); profile not persisted; a loaded wave selection is now armed | `level.gd:81`, `profile.gd`, G10 |
 | audio | two mixers, 256-slot pool, music pairs; most effect cues have no consumer; no battle loop | `headless_audio_check`, G11 |
-| menus/UI | game selector and shop with their recovered native BMFonts; options/help/hall-of-fame absent; button labels are port text; loading bar is the debug pump | `headless_menu_check`, Q-0050/Q-0055/Q-0059 |
+| menus/UI | game selector and shop with their recovered native BMFonts; button labels are port text; loading bar is the debug pump (options/help/hall-of-fame were absent at this baseline; they are in per §5b G10, and the in-tank Options was rebuilt on the shipped art in §5e) | `headless_menu_check`, Q-0050/Q-0055/Q-0059 |
 | validation/packaging | absent | P5.1-P5.5 |
 
 ## 5. Findings
@@ -284,6 +284,37 @@ info line under the buy row should go.
 
 Totals after this pass: **24 suites, 1263 assertions** (23 `--script` at 1203 + the scene-backed
 integration suite at 60), boot exit 0.
+
+## 5e. In-tank Options dialog (2026-11-15)
+
+Owner request: the tank MENU should open the settings UI, not leave the level. This is a deliberate
+port divergence (D-0015) - the binary's TankScreen id 99 still closes the tank and rebuilds the menu
+(EV-0189). The dialog itself follows the shipped Options panel (D-0016, EV-0192):
+
+- **Art/layout.** `Dialogue-panel` (240x240, 9-slice 32/44), `DialogButton2` (three 96x33 frames),
+  `Checkbutton`/`unCheckbutton` (46x45), `slidertrack` (156x17) and `SLIDERWIDGET` (33x32). All six
+  sheets are opaque, so they are composed with their `masks/_<file>` companions through
+  `MaskAlpha.compose()`; without the mask the panel corners and widget tiles draw black/brown.
+  `OptionSlider` and `OptionCheck` keep the native track/thumb sizes and the measured 39-px
+  checkbox label offset, because the engine HSlider/CheckBox theme margins move them.
+- **Base options.** Music and Sound FX write the mixer instantly (the port still starts muted,
+  Q-0056); Fullscreen is a real `DisplayServer.window_set_mode`; Custom Cursors and Hardware
+  Acceleration are stored port stubs (`Game.custom_cursors` / `Game.hardware_acceleration`).
+  Help and OK are present; the in-level dialog also carries Back to Main Menu.
+- **Port-only debug block.** Labelled "DEBUG (PORT-ONLY)" and wired through
+  `Main._on_options_debug_action()` -> `Level.debug_action()` (D-0014): money, grow, feed, egg, max
+  weapon, reveal store, spawn guppy. Show Money is the TankScreen INI option (`TankScreen+0x83C`,
+  P2.5), not a base Options checkbox; its label carries ON/OFF and the bar's wallet plate follows
+  `Game.show_money_changed`. The main-menu Options hides Back and the whole debug block.
+- **Pause.** Opening Options sets `Game.gameplay_paused`; `Level.setup()` wires it into
+  `Tank.pause_source`, `Tank.is_paused()` freezes entities and `Level._on_sim_tick()` early-returns
+  so the level clock, wave clock, hunger and particles freeze. OK/Escape resume the same tank.
+- **Help.** The Help button replaces Options with the dimmed tutorial `HelpScreen` while the tank
+  stays paused; Escape and the "Back to Game" button close it and resume.
+- **Verification.** `headless_integration_check` 81 -> 116 and `headless_level_check` 149 -> 153;
+  all 24 suites pass, **1431 assertions**; the 400-frame boot exits 0; the windowed probe freezes
+  `age/wave/fullness`, drives the dialog's money/guppy/grow actions while paused, then exercises OK,
+  Help+Escape, Back to Menu and the F1/F2/F3/F10 leg. Still open: the owner's live playtest (R8).
 
 ## 6. Priority for the next sessions
 

@@ -26,6 +26,8 @@ const SAVE_SUFFIX := {
 }
 
 signal mode_changed(mode: int)
+## The Options "Show Money" checkbox changed; the in-tank wallet plate follows it.
+signal show_money_changed(show: bool)
 
 ## Active mode. Written only by the main-menu buttons and the level-start dispatcher.
 var mode: int = Mode.ADVENTURE
@@ -39,7 +41,21 @@ var profile := Profile.new()
 var gameplay_paused := false
 
 ## OptionsDialog's "Show Money" checkbox (P2.12 §11): the HUD money line toggles on it.
-var show_money := true
+var show_money := true:
+	set(value):
+		if value == show_money:
+			return
+		show_money = value
+		show_money_changed.emit(value)
+
+## OptionsDialog's "Custom Cursors" checkbox. The base dialog carries the control (P2.12 §11.3,
+## ids 7/8/9); the port has no custom-cursor layer reconstructed yet, so this is a stored
+## preference only (port stub, D-0016).
+var custom_cursors := false
+
+## OptionsDialog's "Hardware Acceleration" checkbox. Godot picks its rendering driver at boot, so
+## the port stores the choice but cannot switch it at runtime (port stub, D-0016).
+var hardware_acceleration := false
 
 
 func set_mode(new_mode: int) -> void:

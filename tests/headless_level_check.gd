@@ -18,6 +18,13 @@ const WaveClockScript := preload("res://scripts/tank/wave_clock.gd")
 
 const GUPPY := FishScript.Species.GUPPY
 
+
+## Minimal stand-in for the `Game` autoload's shared pause flag (the production pause source).
+class PauseSource:
+	extends Node
+
+	var gameplay_paused := false
+
 var _failures := 0
 var _checks := 0
 var sim: Node
@@ -48,6 +55,7 @@ func _init() -> void:
 	_test_alien_eating()
 	_test_food_cap()
 	_test_pet_session()
+	_test_debug_actions()
 
 	level.tank.shutdown()
 	level.free()
@@ -373,6 +381,21 @@ func _test_pause() -> void:
 	level.tank.paused = false
 	_step(1)
 	_expect(fish.fullness == 499, "unpausing resumes hunger (got %d)" % fish.fullness)
+	# The production gate is `Tank.pause_source` (Game). Both the entities and Level's own clock
+	# must freeze: `_on_sim_tick` used to advance age/particles/time-trial behind every modal.
+	var source := PauseSource.new()
+	level.tank.pause_source = source
+	source.gameplay_paused = true
+	var paused_age: int = level.tank.age_ticks
+	_step(5)
+	_expect(level.tank.age_ticks == paused_age, "the shared pause gate freezes the level clock")
+	_expect(fish.fullness == 499, "the shared pause gate freezes hunger")
+	source.gameplay_paused = false
+	_step(1)
+	_expect(level.tank.age_ticks == paused_age + 1, "clearing the shared pause resumes the level clock")
+	_expect(fish.fullness == 498, "clearing the shared pause resumes hunger (got %d)" % fish.fullness)
+	level.tank.pause_source = null
+	source.free()
 
 
 func _test_wave_spawn() -> void:
@@ -459,6 +482,89 @@ func _test_food_cap() -> void:
 	_expect(level.drop_food(Vector2(320.0, 250.0)) != null,
 		"only the special is left, so the cap does not block")
 	level.food_quantity = LevelScript.FOOD_QUANTITY_MAX
+
+
+## D-0014: the port-only debug dispatcher, isolated on its own level so the egg completion cannot
+## disturb the play-loop scenarios above.
+func _test_debug_actions() -> void:
+	var debug_sim: Node = SimScript.new()
+	var debug_level: Level = LevelScript.new()
+	debug_level.render = false
+	debug_level.setup(debug_sim, 7777)
+	debug_level.start_level(1, 3)
+
+	debug_level.money = 0
+	_expect(debug_level.debug_action(&"money"), "the debug panel's money action runs")
+	_expect(debug_level.money == LevelScript.DEBUG_MONEY_STEP,
+		"the money cheat adds its step through AddMoney (got %d)" % debug_level.money)
+	_expect(not debug_level.debug_action(&"unknown"), "an unknown debug action changes nothing")
+
+	var fish: Fish = null
+	for entity in debug_level.tank.entities_in(SimScript.Phase.FISH):
+		if entity is Fish and not entity.dead:
+			fish = entity
+			break
+	_expect(fish != null, "the debug level has a live fish to grow")
+	if fish != null:
+		fish.stage = 0
+		fish.food_points = 0
+		debug_level.sounds_played.clear()
+		_expect(debug_level.debug_action(&"grow"), "the grow action advances a stage-0 fish")
+		_expect(fish.stage == 1 and fish.food_points == 0,
+			"the guppy reaches stage 1 through the natural growth tail (got %d)" % fish.stage)
+		_expect(debug_level.sounds_played.has("SOUND_GROW"),
+			"debug growth still fires the grew cue")
+		fish.stage = 2
+		_expect(fish.debug_grow() and fish.stage == 4,
+			"a stage-2 fish takes the natural overshoot form")
+		_expect(not fish.debug_grow(), "a stage-4 fish refuses another growth step")
+		fish.fullness = 0
+		_expect(debug_level.debug_action(&"feed"), "the feed action fills the fish")
+		_expect(fish.fullness == int(FishScript.SPECIES[fish.species]["eat_cap"]),
+			"the fish reaches its species' eat cap (got %d)" % fish.fullness)
+		_expect(not debug_level.debug_action(&"feed"), "a full tank refuses another feeding")
+
+	_expect(not debug_level.egg_unlocked, "1-3 opens with the egg dome gated")
+	_expect(debug_level.debug_action(&"reveal"), "the reveal action clears the store gates")
+	_expect(debug_level.egg_unlocked and not debug_level.tank.store_locked,
+		"every shelf and the egg dome are open after reveal")
+	var hidden := false
+	for row in debug_level.tank_store:
+		if bool(row.get("hidden", false)):
+			hidden = true
+	_expect(not hidden, "no store row stays hidden after reveal")
+
+	debug_level.weapon_level = 2
+	_expect(debug_level.debug_action(&"weapon") and debug_level.weapon_level == Store.WEAPON_MAX,
+		"the weapon cheat jumps to level 12")
+	_expect(not debug_level.debug_action(&"weapon"), "a maxed weapon refuses another jump")
+
+	var guppies: int = debug_level.tank.entities_in(SimScript.Phase.FISH).size()
+	_expect(debug_level.debug_action(&"guppy"), "the spawn cheat adds a guppy")
+	_expect(debug_level.tank.entities_in(SimScript.Phase.FISH).size() == guppies + 1,
+		"the spawned guppy joins the FISH phase")
+
+	debug_level.egg_pieces = 1
+	_expect(debug_level.debug_action(&"egg"), "the egg cheat buys a piece for free")
+	_expect(debug_level.egg_pieces == 2, "the piece count rises to 2")
+	debug_level.debug_action(&"egg")
+	_expect(debug_level.debug_action(&"egg"), "the fourth piece completes the level")
+	_expect(debug_level.egg_pieces == 4 and debug_level.completed,
+		"the egg cheat reaches the normal completion path")
+	_expect(not debug_level.debug_action(&"egg"), "a completed level refuses more egg pieces")
+
+	var menu_hits := []
+	var on_menu := func() -> void: menu_hits.append(true)
+	debug_level.menu_requested.connect(on_menu)
+	debug_level.request_menu()
+	_expect(menu_hits.size() == 1, "the MENU request reaches Main's handler")
+	debug_level.menu_requested.disconnect(on_menu)
+	_expect(not debug_level.toggle_debug_panel(),
+		"a render=false level has no debug panel to toggle")
+
+	debug_level.tank.shutdown()
+	debug_level.free()
+	debug_sim.free()
 
 
 func _live_fish() -> Array:

@@ -1,12 +1,18 @@
 # Master plan - Insaniquarium Deluxe (v1.1 Steam) -> Godot 4.7 remake
 
-Last updated: 2026-11-10 (REVIEW RESET: the completion pass was revoked by the owner after
+Last updated: 2026-11-16 (OWNER REVIEW 2: the in-tank Options' debug grid moved to its own
+`DebugDialog`, the options layout rebuilt on one checkbox per row, the shop bar's fish shelf is no
+longer milestone-gated (1-1 opens with the guppy at 100), and the egg cell is clipped to its dome -
+R11, D-0017; **all 24 suites pass, 1440 assertions**. The 2026-11-15 review reset below still
+stands for R8 (owner's live playtest) and R9 (the four pet guards).)
+
+Last updated: 2026-11-15 (REVIEW RESET: the completion pass was revoked by the owner after
 playing the build - the game is far from the original despite 24/24 suites green. The suites
 prove modules, not the assembled game. P4 14/14 `[x]` and P5 5/5 `[x]` are reverted to `[~]`
 below; see the Review section at the end of this file for the confirmed defects, each with its
 reproduction. Do not re-mark anything `[x]` until the windowed playtest passes. Re-verified
-2026-11-10: all 24 suites pass - 23 script suites + the scene-backed integration suite,
-**1341 assertions** - and the 400-frame boot exits 0 with no script error; the remaining Ogg
+2026-11-15: all 24 suites pass - 23 script suites + the scene-backed integration suite,
+**1431 assertions** - and the 400-frame boot exits 0 with no script error; the remaining Ogg
 vendor-comment and ObjectDB/resource-at-exit notices are the known AUDIT F2 noise.)
 
 2026-11-10 addendum: the render path is covered now. `tests/headless_render_check.gd` (17
@@ -25,6 +31,47 @@ dome (R3, EV-0172), and the Hatch card now draws the recovered `HATCHSCREEN` inc
 composited through `MaskAlpha` because their backgrounds are opaque fields, not the black key
 `SpriteKey` clears. The remaining between-level screens (Pets, Bonus) are text-only.
 
+2026-11-11 MENU/debug addendum: the tank MENU button is wired. The original's TankScreen id
+99 runs `FUN_0054AED0()` + `FUN_00552100()` (close tank, main menu) and does not save; the port's
+`StoreBar.press_menu()` -> `Level.request_menu()` -> `Main._on_menu_requested()` saves as a safety
+net, shuts the tank down, frees the level and remounts the selector in the same frame (EV-0189,
+D-0014). The "Leave Game?" confirm is the Options "Back to Main Menu" path, not the tank MENU.
+The port-only debug panel is also in: `F1` toggles it, `F2` money, `F3` grow, `F4` feed, `F6`
+egg, `F7` max weapon, `F8` reveal store, `F10` spawn guppy (D-0014); the original's only recovered
+cheat path remains `FUN_005404A0`'s mode toggles, so none of these actions is claimed as shipped
+behavior. `headless_store_ui_check` 54, `headless_level_check` 149,
+`headless_integration_check` 67 - totals **24 suites, 1378 assertions** (all exit 0; the rendered
+MENU return and F1/F2/F3/F10 path is captured in EV-0190). *Superseded by the 2026-11-14 addendum
+below: the tank MENU now opens the in-tank Options dialog before any save/teardown.*
+
+2026-11-14 MENU/settings addendum: the tank MENU now opens the in-tank `OptionsDialog` over the
+paused tank instead of going straight to the main menu (owner request; D-0015, EV-0191). OK or
+Escape closes the dialog and resumes the same level; "Back to Menu" runs the old leave-tank path
+(save via the D-0014 safety net, shut the tank down, free the level, mount `GameSelector`).
+Opening Options alone writes no save, and `Level._unhandled_input()` ignores tank clicks/hotkeys
+while a modal owns `Screens.dialog()`. The Show Money checkbox is live (`Game.show_money` +
+`show_money_changed`), so the wallet plate follows it. `headless_integration_check` 67 -> 81;
+all 24 suites pass, **1392 assertions**; the windowed probe is captured in EV-0191
+(`shot_menu_options.png`). *Superseded by the 2026-11-15 addendum below: the dialog now uses the
+shipped art/layout and the tank pause is wired through `Tank.pause_source`.*
+
+2026-11-15 Options-dialog addendum: the in-tank Options now uses the shipped dialog's art and
+layout (D-0016, EV-0192). `Dialogue-panel`, `DialogButton2`, `Checkbutton`/`unCheckbutton` and
+the slider track/thumb are composed through their `masks/_<file>` companions (P3.3), so the
+rounded panel and widget cut-outs are transparent instead of black. Two small controls replace
+the engine widgets that could not match the native metrics: `OptionSlider` (156x17 track, 33x32
+thumb) and `OptionCheck` (46x45 icon, label 39 px after the icon). The dialog carries Music/Sound
+FX, Fullscreen (a real `DisplayServer.window_set_mode`), Custom Cursors and Hardware Acceleration
+(stored port stubs), Help/OK and, in-level, Back to Main Menu; the port-only debug block (D-0014)
+is labelled and adds Show Money. Opening Options now genuinely pauses the tank: `Level.setup()`
+wires `Tank.pause_source = Game`, `Level._on_sim_tick()` early-returns while paused, and held fire
+stops re-aiming, so the level clock, hunger, wave clock and particles all freeze. Help replaces
+the dialog with the dimmed tutorial HelpScreen and keeps the tank paused; Escape closes it. The
+main-menu Options hides Back to Main Menu and the debug block. `headless_integration_check`
+81 -> 116, `headless_level_check` 149 -> 153; all 24 suites pass, **1431 assertions**; the
+windowed probe (`shot_menu_options.png`, EV-0192) pins the frozen clock and drives
+money/guppy/grow through the dialog.
+
 Next: **Review fixes in order.** R1 (200 starting money), R2 (HUD/money placement), R3 (the egg in
 the seventh `MENUBAR` dome, EV-0172) and R4 (the tank's
 `MENUBAR` shop row, EV-0171) are fixed; R7 is closed on evidence
@@ -39,9 +86,11 @@ answered (three/four tinted `SIM` layers) even though that colourised path stays
 R9 is narrowed to four named guards (EV-0177..EV-0180): Wadsworth, Gumbo, Blip and Presto now act in the
 tank, and only Seymour's aura writer, Amp's click, Nostradamus' sneeze and Walter's glove launch remain
 disabled rather than guessed. Remaining: the owner's live playtest of tanks 2-4 and 5-1 (R8's windowed
-frames are captured - see the Review table) and the assembled feel. Audio is muted by
-default for now at the owner's request (Q-0056). The P4 lines below keep their evidence; only the
-premature `[x]` is withdrawn.
+frames are captured - see the Review table), the assembled feel, and the 2026-11-15 owner playtest
+of the in-tank MENU settings flow (the base-art Options over a genuinely paused tank; OK/Escape
+resume; Help; "Back to Menu" returns to the selector) before it is called done. The windowed probe
+for that flow and for F1/F2/F3/F10 is captured in EV-0192 (EV-0191 is the earlier flow-only pass). Audio is muted by default for now at the owner's request
+(Q-0056). The P4 lines below keep their evidence; only the premature `[x]` is withdrawn.
 
 ## Phase 2 history (retained)
 
@@ -736,7 +785,8 @@ set.
     `choose()` exposing the dispatch so both gates are testable and `press()` writing
     `Game.set_mode` then emitting `start_requested`. Time Trial needs `tanks_unlocked >= 2`,
     Challenge needs `adventure_done`, and both answer "Not Yet!" without writing a mode.
-    Options, hall of fame and help are recognised but have no screen (Q-0050). `Main` now mounts
+    Options, hall of fame and help were recognised but had no screen at that pass (Q-0050, since
+    closed - see the screen bullets below). `Main` now mounts
     the selector once the content phases finish and starts the level on `start_requested`, so the
     chosen mode reaches `Level.game_mode` (Challenge therefore inflates prices from the menu).
   - The screen itself is now the original art: `SELECTORSCREEN` (640x480, mermaid + the
@@ -748,24 +798,39 @@ set.
     so they use a 22 px row inside the art's small purple slot. The labels are port text drawn
     over the empty slots: the original's button words are baked into per-button bitmaps
     (`DAT_005e8D80` and friends) that are not extracted yet.
-  - The menu mermaid's tail is **baked into `SELECTORSCREEN`**; the port leaves it alone (R10).
-    `MERYLTAIL` is the separate sprite the original flops with, but its cells are flat thin shapes
-    with no recovered placement - drawing one over the baked tail produced a green strap, so the
-    overlay is disabled. P3.3's alpha model (`scripts/data/mask_alpha.gd`, `masks/tailflop_.png`)
-    remains the mechanism if a recovered screen rect or runtime capture ever places the cells
-    (Q-0055); the recovered `anim: once`/`framemap`/delays are recorded but unused.
+  - The menu mermaid's tail is **baked into `SELECTORSCREEN`**; `MERYLTAIL` is the separate fin
+    the original flops with. The port overlays it at `TAIL_SCALE` 0.6 with its notch on the baked
+    stump (R10, EV-0188) and plays the recovered one-shot flop (`anim: once`, `framemap` 7..0,
+    2-tick frames). The placement stays a port fit because no screen rect was recovered (Q-0055);
+    the art, mask and timing are recovered. P3.3's alpha model (`scripts/data/mask_alpha.gd`,
+    `masks/tailflop_.png`) supplies the cut-out.
   - Every UI surface now draws with the game's own fonts (`scripts/ui/ui_font.gd`): the selector's
     art slots and small buttons use the two `Init` JungleFever outline fonts at 10/17 px, the store's
     Shell counter and prices use `CONTINUUMBOLD12` (`DAT_005e8CE4`), and the bar, egg widget and HUD
     use the recovered Tiny/TinyBold/Liddie set. Fonts are drawn at the manifest's native pixel size
     with no engine outline over the baked one; the global -> id mapping is EV-0157 and the selector's
     17/10 split is the unresolved part (Q-0059).
-  - The assembled path is now checked by `tests/headless_integration_check.tscn` (40 assertions):
+  - The tank MENU button is a real control now (EV-0189, EV-0191): a flat hit target over the baked
+    `MENUBAR` label at `StoreBar.MENU_RECT` (525, 4, 80, 26; the height is the HatchScreen plate
+    because the binary takes it from the button object). `press_menu()` -> `Level.request_menu()`
+    -> `Main._on_menu_requested()` opens the in-tank `OptionsDialog` over the paused tank
+    (D-0015, an owner-directed port divergence). The dialog is the shipped Options panel - masked
+    `Dialogue-panel`/`DialogButton2`/`Checkbutton` art, Music/Sound FX sliders, Fullscreen/Custom
+    Cursors/Hardware Acceleration, Help/OK, plus in-level Back to Main Menu (D-0016, EV-0192) -
+    with a clearly labelled port-only debug block (D-0014). OK/Escape resume the same level; "Back
+    to Menu" saves as a port safety net, shuts the tank down, frees the level and remounts the
+    selector in the same frame (D-0014). The original's id-99 dispatch closes the tank screen and
+    rebuilds the menu without a save; the Options "Leave Game?" confirm and the pause box are
+    separate paths. The port-only debug panel (`F1`; `F2`-`F10` actions) is documented in D-0014.
+  - The assembled path is now checked by `tests/headless_integration_check.tscn` (116 assertions):
     it mounts `Main`, presses Adventure through the real `GameSelector`, starts 2-4, advances the
     production wave and the Destructor's real missile, then starts 5-1 through the same menu path
-    and asserts the scheduled Cyrax boss. It also checks the centred alien/missile sprites and the
-    HP bar (full 127-px fill, cut to 64 px at half hp) and the native font of every UI surface. It
-    never calls `start_level`, `arm_wave` or
+    and asserts the scheduled Cyrax boss. It also drives the tank MENU through Options (base art
+    and masked sheets, `Tank.pause_source`/frozen level+wave clock+hunger, no save on open, Show
+    Money, the dialog's money/guppy/grow buttons, OK resume, Back to Menu save/release), checks the
+    menu-mode Options (no Back row/debug block, Help request, stored checkboxes, mixer), and checks
+    the centred alien/missile sprites and the HP bar (full 127-px fill, cut to 64 px at half hp)
+    and the native font of every UI surface. It never calls `start_level`, `arm_wave` or
     `start_boss`; this closes audit G13.
 
 ## P5 - Validation & polish
@@ -849,6 +914,8 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 | R8 | No alien threat on tank 1 level 1 (by design, selection 0), but waves on 1-2/2-4/5-1 must be seen playing windowed: alien art, HP bar, missiles, coin drops. | `shot_level.png` has no aliens; integration advances time, windowed eye-check open (P5.2). | WINDOWED CAPTURES DONE 2026-11-10 (`tools/godot/shot_r8.gd`, Dummy audio, content 326/326): `shot_r8_1_2.png` (wave alien art + HP bar + a missile), `shot_r8_2_4.png` (two staged Destructors, both bars, volley), `shot_r8_5_1.png` (Cyrax 5000 hp + two Minisylvesters; only Cyrax's bar, and only that bar is drawn on tank 5 - P2.9 §5), `shot_r8_coins.png` (1-1: a grown guppy's real `coin_due` drop, stage-1 coin on screen). Bar geometry matches the pinned `(-70, 77)` / box-3 rule in every frame. The tank-5 egg dome is correct, not a missing price: item 11's 0 is a **recovered free price** (`STORE_TABLE[11] = {5: [0, 6]}`, `EGG_PRICES[5] = [0]`, row `free: true`), the widget draws that dome on every tank and prints `FREE` for it (`StoreBar` keeps the row and blanks its text), and the 150/500 egg figures seen elsewhere are `EGG_PRICES[1]` level 1/2. Still OPEN on the owner's *live* playtest (timing/feel, attacks landing); the harness fast-forwards without feeding, so its frames starve the fish (FISH 0) - that is the capture, not the game. |
 | R9 | Pets are text rows, not the original's fish-pet art/behaviour in the tank. | `Pet` wander + `IMAGE_<NAME>` sheet playback. PARTIAL 2026-11-10: Wadsworth's `+0x250` shelter now publishes the tank globals and stage 0/1 fish steer to his mouth instead of seeking food (EV-0177, D-0013); Gumbo steers to the corner opposite the nearest hostile on the 291/330 and 261/300 thresholds and his `+0x258` glow runs outside the alien-gated slot 81 (EV-0178); Blip's instant unlock reveals every hidden shelf once the level passes 200 ticks, 720 as a transformed body (EV-0179); Presto's `FUN_004F89A0` swap, 360-tick recharge and `FUN_004D6250` cleanup run through `Tank.spawn_pet(..., transformed)` and `Level._on_pet_transform` (EV-0180). Pets draw their own sheets and 16 slot-81 bodies act; **4 guards remain** (Seymour's `Tank+0x16C` writer, Amp's click/electrocute, Nostradamus' sneeze, Walter's glove launch - Q-0044). `headless_pet_check` 73 -> 113 assertions. The `FUN_0054C6F0` "PRESTO CHANGE-O" picker is also in - owned pets minus Presto, gated on `+0x238`, port-only `P` key (EV-0181), and a refused attempt draws the recovered "Recharging..." text over the pet (EV-0182); both were then captured windowed through the real main path (EV-0183). |
 | R10 | The menu mermaid's tail overlay drew a green strap across the baked art. | `GameSelector`; Q-0055; windowed menu. | FIXED 2026-11-10 (EV-0188, superseding EV-0186's removal): the baked tail stops in a stump at ~(152,405) and `MERYLTAIL` is the missing fin. At 1:1 it read as a second tail, so it is drawn at `TAIL_SCALE` 0.6 with its notch on the stump (`TAIL_OFFSET` 110,360) and plays the recovered one-shot flop. `shot_menu.png` shows the fin trailing from the tail; the placement stays a port fit (Q-0055), art and timing are recovered, `headless_menu_check` 28 passes. |
+
+| R11 | 2026-11-16 owner playtest: the in-level Options' debug grid hung over the base panel's bottom frame; the shop bar opened with every dome empty (nothing to buy on 1-1 / 1-3 with the 200 starting shells); the egg cell drew across the gold dome and its price plate. | `shot_menu_options.png`, `shot_level.png`, `shot_egg_tank1/5.png`; `Progression.reveal_rules`; `EggWidget`. | FIXED (D-0017): the port-only controls are their own `DebugDialog` (two-column grid, Show Money, CLOSE) reached from an in-level DEBUG row, and CLOSE hands the modal slot back to Options; both dialogs build from `scripts/ui/dialog_skin.gd`; Options puts one checkbox per row and grows only for the MAIN MENU/DEBUG row; the fish shelf is never reveal-gated (food/predator/blaster/egg keep their milestones); the `EGGPIECES` cell is clipped to the dome's glass (38x33 at (10, 3)) so it stays inside the rim. `headless_store_ui_check` pins the opening guppy shelf; `headless_integration_check` pins the DEBUG swap and the return path. Totals **24 suites, 1440 assertions** (was 1431). |
 
 Fixes land here as they are verified; this table is the source of truth for the review.
 

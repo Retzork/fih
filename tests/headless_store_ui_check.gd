@@ -91,14 +91,15 @@ func _test_bar() -> void:
 	level.render = false
 	level.setup(sim, 9191)
 	level.start_level(1, 3)
-	# EV-0185: the bar is on screen from the start, but a growth-gated shelf has no widget until its
-	# milestone; on 1-3 nothing is revealed until a guppy reaches medium size.
-	_expect(BarScript.row_at(level, 0).is_empty(), "1-3 opens with the guppy shelf hidden")
+	# EV-0185 + D-0017: the bar is on screen from the start and the opening fish shelf is never
+	# gated; the food/predator/blaster/egg shelves still wait for their milestone.
+	_expect(StoreScript.item_name(int(BarScript.row_at(level, 0).get("slot", -1))) == "Guppy",
+		"1-3 opens with the guppy shelf on the bar (D-0017)")
 	_expect(BarScript.row_at(level, 3).is_empty(), "the carnivore shelf waits for a large fish")
 	_expect(not level.egg_unlocked, "the egg dome waits for a bought carnivore on 1-3")
 	level.reveal_store_for_stage(2)
 	_expect(StoreScript.item_name(int(BarScript.row_at(level, 0).get("slot", -1))) == "Guppy",
-		"a medium fish reveals the guppy shelf")
+		"the guppy shelf is still stocked after the medium milestone")
 	_expect(int(BarScript.row_at(level, 1).get("slot", -1)) == 2,
 		"the food shelves are revealed by the same medium milestone")
 	_expect(BarScript.row_at(level, 3).is_empty(), "the carnivore stays hidden at medium size")
@@ -123,6 +124,19 @@ func _test_bar() -> void:
 	expect_purchase(bar, level, "the bar buys from its own slot")
 	_expect(bar._money_label.text == "0", "the wallet plate follows the purchase")
 	_expect(not bar.press(7), "an empty bar slot buys nothing")
+	_expect(BarScript.MENU_RECT == Rect2(525, 4, 80, 26),
+		"the tank MENU target is the recovered (0x20D, 4, 0x50) rect")
+	var menu := bar.get_node_or_null("Menu") as Button
+	_expect(menu != null and menu.position == BarScript.MENU_RECT.position
+		and menu.size == BarScript.MENU_RECT.size,
+		"the MENU hit target covers the baked label")
+	var menu_hits := []
+	var on_menu := func() -> void: menu_hits.append(true)
+	level.menu_requested.connect(on_menu)
+	bar.press_menu()
+	_expect(menu_hits.size() == 1,
+		"the bar's MENU reaches the level's MENU request (TankScreen id 99)")
+	level.menu_requested.disconnect(on_menu)
 	bar.free()
 	level.tank.shutdown()
 	level.free()

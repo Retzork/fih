@@ -7,8 +7,8 @@ performance sanity (P5.4) and the packaging decision (P5.5) as reference evidenc
 cannot close until R8 (windowed tanks 2-4/5-1) and R9 (pet guards) pass. Every value below cites
 its `EV-` entry or its port code path; nothing here is new binary evidence.
 
-Test totals for the tree this document describes: **24 suites, 1330 assertions** (2026-11-10
-re-run: 23 `--script` suites at 1203 plus the scene-backed integration suite at 60). The boot
+Test totals for the tree this document describes: **24 suites, 1440 assertions** (2026-11-16
+re-run: 23 `--script` suites at 1315 plus the scene-backed integration suite at 125). The boot
 check exits 0. The pre-existing Ogg vendor-comment warnings and the ObjectDB/resource leak
 notices at exit are unchanged (AUDIT F2) and are not failures.
 
@@ -84,10 +84,11 @@ Statuses are what the headless suites already assert; anything that needs eyes i
 | Virtual Tank | no music, no wave, weighted spawner, coins -> shells, `sim<slot>.dat` | `headless_mode_check`, `headless_profile_check` |
 | Sandbox | 999999 money, price re-roll, no tank-5 case | `headless_mode_check` |
 | Between levels | Hatch -> Pets -> Bonus -> next level; tanks advance, Presto pays 5000 shells; Hatch draws the recovered card art, Pets/Bonus stay text-only | `headless_profile_check`, `headless_integration_check` (5-1 walk), `shot_tank5_*.png` |
-| Menus | selector gates ("Not Yet!"), Options sliders, Help 8 pages, Hall 4 tabs | `headless_menu_check`, `headless_profile_check` |
+| Menus | selector gates ("Not Yet!"), base-art Options (in-level pause/debug/Back, menu mode plain), Help 8 pages, Hall 4 tabs | `headless_menu_check`, `headless_profile_check`, `headless_integration_check` |
 
-Screenshots: `tools/godot/screenshot.gd` still captures menu/level/store windowed; the
-headless driver renders nothing, so the art check stays a human step.
+Screenshots: `tools/godot/screenshot.gd` still captures menu/level/store windowed;
+`tools/godot/shot_menu_debug.gd` drives the in-tank MENU -> Options -> Help/Back flow and writes
+`shot_menu_options.png`. The headless driver renders nothing, so the art check stays a human step.
 
 ## P5.3 - Timing / feel
 
@@ -116,7 +117,7 @@ captured at spawn). Entity counts in play stay in the dozens (a few dozen fish, 
 24 pets, a wave of aliens), each doing O(1) arithmetic per tick; the phase walk is a
 copy of the bucket (needed after the mid-tick despawn fix). No profiling run was needed
 beyond the boot check: the 400-frame headless boot and the 1200-frame integration scene
-both exit 0 with no script error, and the full 23-suite run is seconds, not minutes.
+both exit 0 with no script error, and the full 24-suite run is seconds, not minutes.
 
 The one perf note that matters: `_sync_visuals` and `_sync_fx` rebuild per-entity state
 every frame while rendering, which is the right shape for this count; if a future level

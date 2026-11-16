@@ -710,6 +710,36 @@ func _apply_growth() -> void:
 		grew.emit(self, stage)
 
 
+## Port-only debug growth (D-0014): one natural step, with the same `grew` signal and Sylvester
+## resize as eating would produce. Stage > 1 takes the natural overshoot form (4), and a fish
+## already at 4 - or a species whose `stage` is a sprite row (5/6/7) - refuses.
+func debug_grow() -> bool:
+	if dead or stage >= 4:
+		return false
+	if stage < 2:
+		stage += 1
+	else:
+		stage = 4
+	food_points = 0
+	grow_timer = GROW_POP_TICKS
+	fullness = maxi(fullness, 500)
+	if species == Species.MINISYLVESTER and stage == 2:
+		_apply_sylvester_size(2)
+	grew.emit(self, stage)
+	return true
+
+
+## Port-only debug feeding (D-0014): fill the fish to its species' own eat cap.
+func debug_feed() -> bool:
+	if dead:
+		return false
+	var cap := int(SPECIES[species]["eat_cap"])
+	if fullness >= cap:
+		return false
+	fullness = cap
+	return true
+
+
 ## `FUN_004D9D50(2)`: Sylvester's stage-1 -> stage-2 form is 160x160 with a widened tank band and
 ## the position shifted back by the 40 px the box grew on each side.
 func _apply_sylvester_size(new_stage: int) -> void:

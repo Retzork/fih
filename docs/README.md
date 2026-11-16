@@ -1,6 +1,6 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Progress audit (2026-11-05, re-run 2026-11-07):** all 19 headless suites re-run green on this checkout (1010 assertions after the projectile homing follow-up, EV-0158; at the 2026-11-05 audit baseline it was 992; the scene-backed integration suite covers menu -> level -> wave -> boss, the alien/boss HP bars and the native UI fonts); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md). **Review reset (2026-11-08):** the completion pass was revoked by the owner after a playtest - the suites prove modules, not the assembled game. `PLAN.md`'s Review table is the current work list (R8/R9 open); all 24 suites still pass (1330 assertions, re-run 2026-11-10).
+**Progress audit (2026-11-05, re-run 2026-11-07):** all 19 headless suites re-run green on this checkout (1010 assertions after the projectile homing follow-up, EV-0158; at the 2026-11-05 audit baseline it was 992; the scene-backed integration suite covers menu -> level -> wave -> boss, the alien/boss HP bars and the native UI fonts); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md). **Review reset (2026-11-08):** the completion pass was revoked by the owner after a playtest - the suites prove modules, not the assembled game. `PLAN.md`'s Review table is the current work list (R8/R9 open); all 24 suites still pass (1431 assertions, re-run 2026-11-15).
 
 **Handover status: Phase 2 closed (2026-11-02).** Phase 0, Phase 1 and Phase 3 are complete; Phase 2
 is 14/18 with **every technical system decoded** and `SPECS.md` written - only the two optional items
@@ -16,8 +16,10 @@ constructors and their click handlers, the dialog base plus all ten dialog ctors
 handlers); what is left there are the tracked open questions.
 **Phase 4 and Phase 5 are in review (2026-11-09):** the 2026-11-08 completion pass was revoked by
 the owner after a playtest, so P4.4-P4.14 and P5.1-P5.5 are back to `[~]`. All 24 headless checks
-pass (1330 assertions), but the Review table in `PLAN.md` is the source of truth: R1/R2/R3/R4/R5/R6/R7
-and R10 are fixed, R8 (the owner's live playtest of tanks 2-4/5-1) and R9 (pet guards) remain.
+pass (1431 assertions, re-run 2026-11-15), but the Review table in `PLAN.md` is the source of truth:
+R1/R2/R3/R4/R5/R6/R7 and R10 are fixed, R8 (the owner's live playtest of tanks 2-4/5-1) and R9 (pet
+guards) remain. The 2026-11-15 pass also rebuilt the in-tank Options dialog on the shipped art and
+wired the shared pause gate (`D-0016`, `EV-0192`).
 
 ## Start here
 
@@ -44,8 +46,17 @@ and R10 are fixed, R8 (the owner's live playtest of tanks 2-4/5-1) and R9 (pet g
 | P1 target identity | Complete (10/10) |
 | P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In review (3/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, 16 slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser, all modes; 24 headless checks green (1330 assertions), but R8/R9 keep the assembled game unverified |
+| P4 Godot implementation | In review (3/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, 16 slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser, all modes; 24 headless checks green (1431 assertions), but R8/R9 keep the assembled game unverified |
 | P5 validation / polish | In review (0/5): `P5-VALIDATION.md` withdrawn pending R8/R9 |
+
+- **2026-11-15 in-tank Options (D-0015/D-0016, EV-0192):** the tank MENU opens the shipped-art
+  Options panel over a genuinely paused tank (`Game.gameplay_paused` -> `Tank.pause_source`).
+  `Dialogue-panel`/`DialogButton2`/`Checkbutton`/slider sheets are composed with their alpha masks;
+  `OptionSlider`/`OptionCheck` keep the native metrics. Music/SFX sliders, Fullscreen, Custom Cursors
+  and Hardware Acceleration, Help/OK and in-level Back to Main Menu are in, plus the labelled
+  port-only debug block. Help swaps in the tutorial HelpScreen while the tank stays paused. The
+  main-menu variant is the plain base panel. The MENU -> Options entry remains the owner-directed
+  divergence; the binary's id-99 dispatch still closes the tank.
 
 - **P2.12 menus & UI flow (2026-10-29, first pass):** every screen class is a widget container plus
   an embedded `Sexy::ButtonListener` at `+0x88` (manager at `+0x8C`, callbacks get `object+0x88`),
