@@ -32,8 +32,18 @@ const SPAWN_MIN := Vector2(80.0, 160.0)
 const SPAWN_MAX := Vector2(480.0, 300.0)
 ## The drawn tank rect (`AQUARIUM1..6` are 640x480).
 const TANK_SIZE := Vector2(640.0, 480.0)
-## The bottom-right level readout (port addition, D-0020): `TankScreen` draws no level number.
-const LEVEL_LABEL_RECT := Rect2(534.0, 452.0, 100.0, 22.0)
+## The bottom-right level readout (port addition, D-0020): `TankScreen` draws no level number. It
+## sits on a small plate rather than loose text - the bar's own purple price plate, cut out of
+## `MENUBAR` and 9-sliced (`LEVEL_PLATE_SOURCE` is bar-local `StoreBar.PLATE_RECT` on slot 0).
+## Drawn at the plate's own 45x12 size: 9-slicing it to a wider box smeared the plate's baked
+## highlight across the middle, so the readout uses the art 1:1 instead.
+const LEVEL_PLATE_RECT := Rect2(583.0, 456.0, 45.0, 12.0)
+## The label box is taller than the 12-px plate and centred on it (both centre on y 462): a 12-tall box
+## puts the 8-px glyphs' baseline below the plate's bottom edge.
+const LEVEL_LABEL_RECT := Rect2(583.0, 450.0, 45.0, 24.0)
+const LEVEL_PLATE_SOURCE := Rect2(25.0, 48.0, 45.0, 12.0)
+## The same green `FUN_005373C0` writes into every store button label.
+const LEVEL_LABEL_COLOR := Color8(0x6E, 0xFA, 0x6E)
 ## Guppy swim frames are three separate images (`SIMSWIM1..3`, 40x40).
 const FISH_IMAGES := ["IMAGE_SIMSWIM1", "IMAGE_SIMSWIM2", "IMAGE_SIMSWIM3"]
 ## The guppy body sheet: 10 frames per row, one row per growth stage (`SMALLSWIM`, 50 frames). The
@@ -301,18 +311,39 @@ func _add_level_label() -> void:
 	var layer := get_node_or_null("Hud")
 	if layer == null:
 		return
+	_add_level_plate(layer)
 	var label := Label.new()
 	label.name = "LevelLabel"
 	label.position = LEVEL_LABEL_RECT.position
 	label.size = LEVEL_LABEL_RECT.size
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	label.add_theme_color_override("font_color", LEVEL_LABEL_COLOR)
 	UiFont.apply(label, UiFont.SMALL_FONT)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(label)
 	level_label = label
 	_refresh_level_label()
+
+
+## The plate under the readout: the bar's purple price plate, 9-sliced so the rounded ends keep their
+## native width at the readout's size. Skipped without content, which leaves the plain label.
+func _add_level_plate(layer: Node) -> void:
+	if _content == null or not _content.has_image("IMAGE_MENUBAR"):
+		return
+	var res: ImageRes = _content.image("IMAGE_MENUBAR")
+	if res == null or res.texture == null:
+		return
+	var patch := AtlasTexture.new()
+	patch.atlas = res.texture
+	patch.region = LEVEL_PLATE_SOURCE
+	var plate := TextureRect.new()
+	plate.name = "LevelPlate"
+	plate.texture = patch
+	plate.position = LEVEL_PLATE_RECT.position
+	plate.size = LEVEL_PLATE_RECT.size
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(plate)
 
 
 ## Draw the current tank-level (`1-3`); `start_level` and `load_game` call this whenever the pair

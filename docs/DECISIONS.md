@@ -1523,10 +1523,16 @@ Open: the real per-cell hold and the pet reveal point.
 - Date: 2026-11-16 (owner request)
 - Status: accepted for the port. **Port addition, not recovered behaviour**: `TankScreen` draws no
   level readout, so this is a HUD extra and nothing in it claims a binary writer.
-- **What.** `Level` adds a `LevelLabel` to its `Hud` CanvasLayer at `LEVEL_LABEL_RECT`
-  (534, 452, 100, 22), right-aligned, `FONT_TINYBOLD` in white, mouse-transparent. Text is
-  `"%d-%d" % [tank_index, level_index]` - the same pair the save and the selector use, so 1-3 reads
-  `1-3`.
+- **What.** `Level` adds a `LevelLabel` to its `Hud` CanvasLayer, centred in `LEVEL_LABEL_RECT`
+  (583, 450, 45, 24), `FONT_TINYBOLD` in the store buttons' green `0x6EFA6E`, mouse-transparent.
+  Text is `"%d-%d" % [tank_index, level_index]` - the same pair the save and the selector use, so 1-3
+  reads `1-3`.
+- **The plate.** The readout sits on the bar's own purple price plate: a `TextureRect` with an
+  `AtlasTexture` of `MENUBAR`'s measured plate (`LEVEL_PLATE_SOURCE` = (25, 48, 45, 12), bar-local
+  slot 0's `StoreBar.PLATE_RECT`) at `LEVEL_PLATE_RECT` (583, 456, 45, 12), drawn 1:1. Two earlier
+  attempts are recorded so they are not repeated: 9-slicing the plate to 84x16 smeared its baked
+  highlight across the middle, and a 12-px label box put the 8-px glyphs' baseline below the plate's
+  bottom edge, so the label box is 24 tall and centred on the plate's centre (y 462).
 - **When it changes.** `_refresh_level_label()` runs from `_add_level_label()`, `start_level()` and
   `load_game()`; nothing polls it per frame. With `render = false` (headless checks) the label is
   never built and the getter stays null.
