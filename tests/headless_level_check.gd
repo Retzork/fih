@@ -325,9 +325,14 @@ func _test_food_animation() -> void:
 	if pellet == null:
 		return
 	pellet.anim_frame = 0
+	pellet.anim_cycle = 3
 	_expect(level._food_frame(pellet) == 0, "frame 0 starts the pellet animation")
+	pellet.anim_frame = 2
+	_expect(level._food_frame(pellet) == 0, "a column lasts anim_cycle ticks, so tick 2 is still column 0")
+	pellet.anim_frame = 3
+	_expect(level._food_frame(pellet) == 1, "tick 3 starts column 1 (D-0024)")
 	pellet.anim_frame = 25
-	_expect(level._food_frame(pellet) == 5, "25 ticks is the sixth tumbler column")
+	_expect(level._food_frame(pellet) == 8, "25 ticks over three-tick columns is column 8")
 	pellet.anim_frame = 29
 	_expect(level._food_frame(pellet) == 9 and pellet.anim_frame < 30,
 		"cycle 3 wraps at 29, so the last column drawn is 9")

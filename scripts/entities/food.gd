@@ -46,10 +46,10 @@ const SETTLE_TICKS := 20
 const HOMING_TARGET := Vector2(550.0, 30.0)
 const HOMING_DIVISOR := 7.0
 const SUCK_OUT_X := 40.0
-## Step 2: `[0x5E]` is the sheet frame itself - it advances one frame per tick and wraps at
-## `[0x5F] * 10 - 1`, so the 10 is the sheet's column count, not a tick delay per frame. The pellet
-## sheet is 10x5: cycle 3 uses rows 0-2 (30 frames), cycle 4 rows 0-3 (40), which is exactly the
-## wrap range.
+## Step 2: `[0x5E]` advances one per tick and wraps at `[0x5F] * 10 - 1`; the ten is the tumbler's
+## column count and `[0x5F]` (3 or 4) is the ticks each column is held (D-0024). `column()` divides
+## the counter back down, so a run is ten frames and the ctor's random 3/4 is the pellet's own spin
+## rate rather than a pointless longer counter.
 const ANIM_FRAMES_PER_CYCLE := 10
 ## Quality 3 = star potion (splashes on death); variant 2 = breeding pellet (removed silently).
 const QUALITY_STAR := 3
@@ -113,6 +113,15 @@ static func create(
 ## Edible pellets are what fish may target (P2.3 §7 gates on the countdown).
 func is_edible() -> bool:
 	return inedible == 0
+
+
+## D-0024: the tumbler column `[0x5E]` / `[0x5F]`, 0..9. Holding each column `anim_cycle` ticks is
+## what the wrap range means: ten columns times three or four ticks. One column per tick - the old
+## reading - spun the ten-frame tumbler 3.6 turns a second at the port's 36 Hz, which read as a
+## flicker beside the base game's slow tumble; the rest of the engine holds columns too (coins five
+## ticks, `AnimState` five).
+func column() -> int:
+	return mini(int(anim_frame) / maxi(anim_cycle, 1), ANIM_FRAMES_PER_CYCLE - 1)
 
 
 ## "Special" pellets are exempt from the `food_quantity` cap (P2.3 §2).

@@ -1011,7 +1011,10 @@ Two things therefore stay open:
   P2.7/P2.8/P2.9 timers imply (Q-0034) it is 3.6/s, which is what the pellet should look like.
 
 So the pellet tumbler is an independent argument for the 36 Hz reading of Q-0034, and an easy one
-to settle by eye: at 100 Hz the pellet blurs, at 36 Hz it spins at a readable rate. The port runs the 36 Hz reading (Q-0034's port decision) and draws `anim_frame % 10` inside row 0 (`Level._food_frame`).
+to settle by eye: at 100 Hz the pellet blurs, at 36 Hz it spins at a readable rate. **Superseded in
+part by D-0024**: the frame unit is a three-to-four-tick hold per column (`Food.column()`), not one
+column per tick - at one per tick the tumbler ran 3.6 turns a second, which the owner rejected on
+sight. The row binding above stands.
 
 `tests/headless_level_check.gd` pins the column arithmetic (frames 25 -> 5, 29 -> 9).
 
@@ -1249,7 +1252,7 @@ Still **not recovered**, and therefore port defaults:
   recovered a second colorkey, so the port does not key one - this is a visible fidelity gap, not a
   presentation choice.
 - **the fish body's row** is the growth stage (0..4), which the art supports and P2.2 §Render notes.
-- **the food pellet** keeps the simulation's `anim_frame` (one column per tick, wrapped at
+- **the food pellet** keeps the simulation's `anim_frame` (one column per `anim_cycle` ticks, D-0024, wrapped at
   `anim_cycle * 10 - 1`), which its note states outright - that one is recovered, so it is not on
   this clock.
 
@@ -1585,6 +1588,29 @@ Open: the real per-cell hold and the pet reveal point.
   dome; every stocked shelf has an icon, every empty one none, and the price digit colour follows the
   purse. The swim row was measured at ten cells with the column advancing every five ticks (0 -> 1 at
   tick 56, 2 at 61).
+
+### D-0024 - Feeding happens at the mouth, and the tumbler holds each column
+
+- Date: 2026-11-16 (owner: "the animation and collision for the pellet is way off")
+- Status: accepted. Both halves change port behaviour that had been inferred, not recovered
+  constants; EV-0193 carries the measurements.
+- **Tumbler.** `[0x5E]` still advances once per tick and wraps at `[0x5F] * 10`, but the drawn column
+  is `[0x5E] / [0x5F]` (`Food.column()`), not `[0x5E] % 10`. Ten columns held three or four ticks is
+  what the wrap range means, it is the only reading where the ctor's random 3/4 has an effect (the
+  pellet's spin rate), and it matches the engine's other sprite clocks (coins, `AnimState`). One
+  column per tick drew a ten-frame tumbler in 0.28 s - 3.6 turns a second, which reads as a flicker.
+  The port now runs one run in 30-40 ticks, about a second.
+- **Mouth.** `Fish.mouth_point()` is `position + (40 + facing * 16, 43)`, the front tip of the
+  80x80 `SMALLSWIM` cell measured off the art (fish spans x 23..54, y 24..54, mouth at (24, 43)).
+  The recovered 35 px eat window and 50 px anticipation window are unchanged; they are now measured
+  from that point instead of the body centre, so a pellet is taken at the face. Measured before:
+  a guppy consumed a pellet 31 px left of and 10 px above its centre - at its tail, after swimming
+  past it. After: 28 px in front of the mouth, and a pellet behind the fish is out of reach.
+- **Kept.** The approach ladder still aims the object origin (dx against the pellet, dy against 20 px
+  above it), which leaves the pellet ~32 px from the mouth at the equilibrium - inside the recovered
+  window, which is why the mouth window is 35 and not smaller.
+- **Limit.** The 16/3 px mouth offset is measured off the sprite, not a traced constant; a fish whose
+  art puts its mouth elsewhere would need its own offset (only the guppy is drawn this way today).
 
 ### D-0023 - The bar follows the base-game recording: `$` prices, the green wallet and the violet badge
 

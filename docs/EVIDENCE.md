@@ -4875,3 +4875,37 @@ behavior or specs; follow up with a binary observation entry.
   (Escape closes), Back to Menu (level released, selector mounted, save written) and the F1/F2/F3/
   F10 leg (200 -> 1200, stage 0 -> 1, FISH 2 -> 3). Ogg vendor-comment and ObjectDB/
   resource-at-exit notices are the known noise. D-0016 records the decision.
+
+### EV-0193 - The pellet: columns are held `[0x5F]` ticks, and fish feed at the mouth
+- Date: 2026-11-16
+- Type: port behaviour measurement against the owner's base-game recording + the extracted sheets
+- Source: `scripts/entities/food.gd` (`column()`), `scripts/entities/fish.gd` (`mouth_point`,
+  `_try_eat`), `scripts/tank/level.gd` (`_food_frame`), `tools` probes (deleted), the owner's
+  `Recording 2026-11-16 123332.mp4`
+- Owner report: "the animation and collision for the pellet is way off compared to the base game".
+- (1) **Sheet layout, re-checked.** `assets_raw/images/food.png` is 400x200 = 10x5 cells of 40x40.
+  Dumped at 2x: row 0 brown pellets, 1 green capsules, 2 red/white pills, 3 green flasks, 4 yellow
+  droplets - the ten columns are one tumbler run, so the rows are kinds and the drawn frame must be
+  `row * 10 + column` (unchanged). The three flask cells of row 3 carry an **opaque cyan
+  background**; a star-potion pellet drawn from it would show a cyan box until the art is keyed.
+- (2) **Tumbler rate.** The port advanced `Food.anim_frame` one per tick and drew `anim_frame % 10`,
+  i.e. ten columns in ten ticks: 0.28 s per run, **3.6 turns a second** at the port's 36 Hz - a
+  flicker. Probe log before the change: `t=76 anim=33 col=3, t=77 anim=34 col=4, ... t=83 anim=0`
+  (column and counter moved 1:1). The wrap range `[0x5F] * 10` with ten columns means the counter
+  holds each column `[0x5F]` = 3 or 4 ticks, which is the only reading where the ctor's random 3/4
+  changes anything: the pellet's own spin rate. The port now draws `anim_frame / anim_cycle`.
+  Probe after: `cycle=4`, `anim=2 col=0, anim=4 col=1, anim=8 col=2, anim=12 col=3, ...`, one run in
+  40 ticks = 1.1 s. The engine's other sprites hold columns too (coins `FRAME_TICKS`, `AnimState` 5).
+- (3) **Where a fish eats.** The eat test was `|centre - pellet| <= 35` on both axes, with the centre
+  `position + (40, 40)`. Probe: a guppy origin at (231.6, 161.4) consumed a pellet at (240, 190.5) -
+  31 px left of and 10 px above its centre, i.e. **at the fish's tail**, after it had swum past.
+  The 35 px window is recovered (P2.3 §7.3, EV-0149 slot 86); what was wrong is the point it is
+  measured from. The `SMALLSWIM` stage-0 cell (80x80) puts the fish at x 23..54, y 24..54 with its
+  mouth tip at (24, 43): 16 px ahead of the cell centre and 3 px below it, mirrored by facing.
+  `Fish.mouth_point()` is that point and `_try_eat` measures from it. Probe after: the same guppy
+  takes the pellet with it 28 px in front of the mouth; a pellet behind the fish sits 46 px from the
+  mouth and is now out of reach.
+- (4) **Coverage**: `headless_level_check` 155 -> 157 (a column holds `anim_cycle` ticks; tick 3 is
+  column 1, tick 25 is column 8), `headless_fish_check` 121, `headless_entity_check` 43,
+  `headless_store_ui_check` 50, all pass. Not re-shot: the pellet art is the base sheet, so a still
+  cannot show the tumble rate; the probe log is the evidence.

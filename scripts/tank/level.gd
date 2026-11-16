@@ -2132,7 +2132,8 @@ func _keyed_cell(id: String, cell: int) -> Texture2D:
 
 
 ## The pellet has no free-running animation: `anim_frame` is the simulation's own counter, advanced
-## one per tick and wrapped at `anim_cycle * 10 - 1`; it picks the tumbler column of the `FOOD` sheet.
+## one per tick and wrapped at `anim_cycle * 10 - 1`; `Food.column()` turns it into the tumbler
+## column of the `FOOD` sheet, each column held `anim_cycle` ticks (D-0024).
 ## `FOOD` is 10x5 and its rows are food kinds, so the drawn frame is `row * 10 + column`.
 ##
 ## Which row a quality/variant draws is **not** recovered (Q-0051): the port follows the sheet's own
@@ -2151,7 +2152,7 @@ func _food_row(food: Food) -> int:
 
 
 func _food_frame(food: Food) -> int:
-	return _food_row(food) * FOOD_SHEET_COLUMNS + int(food.anim_frame) % FOOD_SHEET_COLUMNS
+	return _food_row(food) * FOOD_SHEET_COLUMNS + food.column()
 
 
 func _sync_visuals() -> void:

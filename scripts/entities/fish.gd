@@ -120,9 +120,16 @@ const HUNGER_FLOOR := -1000
 const HUNGER_DEATH := -500
 const HUNGER_SEEK_LIMIT := 500
 const HUNGER_HINTS := [-1, -200, -400]
-## Eating (P2.3 §7.3): ~35 px eat window, ~50 px mouth-open anticipation.
+## Eating (P2.3 §7.3): ~35 px eat window, ~50 px mouth-open anticipation, measured from the mouth
+## (D-0024). The windows are the recovered numbers; what moved is the point they are measured from.
 const EAT_WINDOW := 35.0
 const EAT_ANTICIPATION := 50.0
+## The mouth in the 80x80 body cell, measured off `SMALLSWIM`'s stage-0 frame: the fish spans x 23..54,
+## y 24..54 of the cell and its mouth is the front tip at (24, 43), i.e. 16 px ahead of the cell centre
+## and 3 px below it, mirrored by facing. Feeding used to be measured from the body centre, so a pellet
+## 30 px from the mouth still vanished - the owner's "collision is way off" (D-0024).
+const MOUTH_AHEAD := 16.0
+const MOUTH_DROP := 3.0
 const EAT_FX_TICKS := 8
 const ANTICIPATION_TICKS := 0x14
 ## Food approach (P2.2 §5.5): ±5/±10 px bands; vx ±4, vy -3..+4.
@@ -611,11 +618,17 @@ func _steer_to_shelter(mouth: Vector2) -> void:
 		target_timer += 1
 
 
-## P2.3 §7.3: a ~35 px window consumes, ~50 px only opens the mouth (anticipation).
+## The mouth point: the cell centre offset by the measured mouth tip, flipped with the facing.
+func mouth_point() -> Vector2:
+	return position + Vector2(40.0 + facing * MOUTH_AHEAD, 40.0 + MOUTH_DROP)
+
+
+## P2.3 §7.3: a ~35 px window consumes, ~50 px only opens the mouth (anticipation) - both from the
+## mouth, so the pellet is taken at the face rather than at the belly (D-0024).
 func _try_eat(pellet: Food) -> void:
-	var fish_center := position + Vector2(40.0, 40.0)
-	var dx := absf(fish_center.x - pellet.position.x)
-	var dy := absf(fish_center.y - pellet.position.y)
+	var mouth := mouth_point()
+	var dx := absf(mouth.x - pellet.position.x)
+	var dy := absf(mouth.y - pellet.position.y)
 	if dx <= EAT_WINDOW and dy <= EAT_WINDOW:
 		_consume(pellet)
 	elif dx <= EAT_ANTICIPATION and dy <= EAT_ANTICIPATION:
