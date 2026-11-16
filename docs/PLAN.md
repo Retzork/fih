@@ -3,7 +3,12 @@
 Last updated: 2026-11-16 (OWNER REVIEW 2: the in-tank Options' debug grid moved to its own
 `DebugDialog`, the options layout rebuilt on one checkbox per row, the shop bar's fish shelf is no
 longer milestone-gated (1-1 opens with the guppy at 100), and the egg cell is clipped to its dome -
-R11, D-0017; R12 then fixed the dialogs' proportions and added NEXT LEVEL, D-0018; R13 opened the tank bar to the level's whole stock, D-0019, and R14 put the level number in the tank's bottom-right corner, D-0020 - **all 24 suites pass, 1447 assertions**. The 2026-11-15 review reset below still
+R11, D-0017; R12 then fixed the dialogs' proportions and added NEXT LEVEL, D-0018; R13 opened the tank bar to the level's whole stock, D-0019, R14 put the level number in the tank's bottom-right corner, D-0020, and R15 animated the guppy dome and opened its glass, D-0022 - **all 24 suites pass, 1447 assertions**.
+
+**Owner vocabulary (D-0021):** when the owner writes "the shop", "the tank shop" or "the shop bar",
+they mean the **in-tank store bar** (`scripts/ui/store_bar.gd` plus `EggWidget`) - the row of domes
+above the aquarium. The Fish Emporium window (`scripts/ui/store_screen.gd`, opened with S, and the
+one Virtual Tank sells from) is never what they mean unless they name it. The 2026-11-15 review reset below still
 stands for R8 (owner's live playtest) and R9 (the four pet guards).)
 
 Last updated: 2026-11-15 (REVIEW RESET: the completion pass was revoked by the owner after
@@ -923,6 +928,8 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 | R13 | 2026-11-16 owner playtest: "the shop didn't open properly, it just has the fish png and the background still closed, but can be purchased" - 1-1/1-2 showed one dome plus a hidden egg dome. | `shot_menu_tank.png`; `Progression.reveal_rules`, `Level._prime_store_reveals`, `StoreBar.row_at`, `EggWidget.refresh`, `StoreScreen.refresh`. | FIXED (D-0019): the milestone reveal was a port invention. `Tank+0x2DC` counts the rows with `A >= 0` and `FUN_005409B0` builds a widget for each in one `while (+0x2E0 < +0x2DC)` sweep (EV-0144), so `stock_default_store()` now stocks exactly the level's `§3` rows, the egg dome shows its price from the first frame and `row.hidden` is gone; Blip's `FUN_005409B0(i, 1)` (and F8 / REVEAL STORE) adds the level-gated rows instead, keeping rolled prices. `StoreScreen` also stops printing `SOLD` on a shelf the tank never stocks. Pinned by `headless_store_ui_check` 50 (the whole 1-3 bar) and `headless_level_check` 155 (1-3 opens with its whole stock); totals **24 suites, 1447 assertions**. |
 
 | R14 | 2026-11-16 owner request: no way to tell which level is running while in the tank. | `shot_menu_tank.png`; `Level`. | ADDED (D-0020): port-only `LevelLabel` on the `Hud` layer at (534, 452, 100, 22), right-aligned `FONT_TINYBOLD`, text `"%d-%d"` from `tank_index`/`level_index`; refreshed by `_add_level_label`, `start_level` and `load_game`, never per frame. Nothing claimed from the binary. `headless_level_check` 155 and `headless_integration_check` 134 still pass; totals **24 suites, 1447 assertions**. |
+
+| R15 | 2026-11-16 owner report: "the thing behind the fish image should open" / "like base game, the fish swimming animation with open background" - the guppy dome showed one still cell over the art's dark moulding. | `StoreBar`; `masks/_menubar.png`; the filled-vs-bare dome captures. | FIXED (D-0022): the fish dome plays the tank's own swim row - ten `SMALLSWIM` stage-0 columns on `AnimState.column_at`'s 5-tick clock - with all ten sharing one union-bbox crop so the fish fills the dome at a stable size. The dome's lower half is opaque `MENUBAR` moulding (the mask is white at every dome pixel, so no transparent art exists), so a stocked dome is filled with the art's own lit-glass colour, radius 17 at (29, 21) as three soft rings, before the icon; unstocked and egg domes keep the bare art. `headless_store_ui_check` 50, `headless_menu_check` 28, `headless_integration_check` 134 and boot all clean. |
 
 Fixes land here as they are verified; this table is the source of truth for the review.
 

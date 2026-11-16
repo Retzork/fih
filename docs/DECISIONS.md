@@ -1533,6 +1533,46 @@ Open: the real per-cell hold and the pet reveal point.
 - Verified against `shot_menu_tank.png` (1-1 in the corner) with `headless_level_check` 155,
   `headless_integration_check` 134 and the boot run all clean.
 
+### D-0021 - "The shop" in owner reports is the in-tank bar, not the Fish Emporium
+
+- Date: 2026-11-16 (owner correction)
+- Status: accepted. Read every future owner report with this mapping before touching either screen.
+- **"The shop" / "the tank shop" / "the shop bar"** = the in-tank store bar: `scripts/ui/store_bar.gd`
+  (`StoreBar`, the row of seven domes above the aquarium, built by `FUN_005409B0`) together with the
+  egg dome the `EggWidget` draws in the seventh slot. Everything the owner has reported so far under
+  the word "shop" - the empty bar, the fish icon, "the background still closed", "can be purchased"
+  - is about this bar.
+- **The Fish Emporium** = `scripts/ui/store_screen.gd` (`StoreScreen`, the STORESCREEN room opened
+  with S; Virtual Tank shops there too). The owner calls it "the virtual tank shop" or names it
+  directly; it is *not* what "the shop" means.
+- **Why it matters.** R13's report ("the shop didn't open properly") was read as the bar and fixed as
+  the bar (D-0019); this entry keeps that reading on record so a later session does not chase
+  `StoreScreen` for a bar report, or the bar for an Emporium report.
+
+### D-0022 - The guppy dome swims, and a stocked dome is filled with the art's own lit glass
+
+- Date: 2026-11-16 (owner report: "the fish swimming animation with open background")
+- Status: accepted for the port. The swim row is the tank's own animation; the glass fill is a
+  port-only restyle of the base art, not recovered behaviour.
+- **Swim row.** `StoreBar` plays the stage-0 row of `SMALLSWIM` - all ten columns, one per
+  `AnimState.SHEET_FRAME_TICKS`, through `AnimState.column_at(0, Sim.tick_count, 10)`. That is the
+  same clock and the same cells the tank's guppy uses, so the dome shows the live animal rather than
+  one held cell. The ten cells are composed once, on the first frame that draws the fish dome
+  (mask composite, then crop), and kept.
+- **Crop.** All ten cells share one crop box - the union of their opaque pixels - so the fish fills
+  the dome and does not breathe in scale from cell to cell. The earlier fixed 44x44 centre crop left
+  the dome's own shading showing around a small fish, which is what read as a shut lid.
+- **Open glass.** `MENUBAR` shades the lower half of every dome as opaque moulding, and its alpha
+  companion (`masks/_menubar.png`, 640x75) is white at every dome pixel: the shipped art cannot be
+  transparent glass and no "open" variant exists in the assets. The bar therefore fills the dome
+  interior before drawing the icon - `GLASS_COLOR` is the art's own lit-glass colour sampled at
+  (0.969, 0.816, 0.404), a circle of radius 17 at (29, 21) drawn as three soft-edged rings so the
+  fill does not cut a hard circle across the dome. Unstocked domes and the egg dome keep the bare
+  art, since the egg's own art already fills its dome.
+- Verified with the windowed probe: ten cells compose, the column advances every five ticks (0 -> 1
+  at tick 56, 2 at 61), and the filled and bare domes were captured side by side before choosing the
+  fill.
+
 ### Q-0061 - Presto's picker contents and its opening input are port bindings
 
 - OPEN (2026-11-10, raised by `scripts/ui/presto_picker.gd` for R9; source EV-0100, P2.7 §3.3/§4.20,

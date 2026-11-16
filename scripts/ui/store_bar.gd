@@ -48,6 +48,35 @@ const PRICE_COLOR := Color8(0x6E, 0xFA, 0x6E)
 const GREYED_COLOR := Color8(0xCC, 0xCC, 0xCC)
 const MONEY_COLOR := Color8(0xFF, 0xFF, 0xE8)
 
+## The fish icon is animated (D-0022, owner report: the base game swims the guppy in its dome): the
+## bar plays the same stage-0 row of `SMALLSWIM` the tank draws - `SWIM_COLUMNS` cells, one per
+## `AnimState.SHEET_FRAME_TICKS`, from the same column clock - instead of holding one cell still.
+const SWIM_COLUMNS := 10
+
+## The open glass face of a stocked dome (D-0022, owner report "open background"): `MENUBAR` shades
+## the lower half of every dome as opaque moulding, which reads as a shut lid once an item sits in it.
+## The bar fills that area with the art's own lit-glass colour (sampled at the dome's brightest point,
+## `(0.969, 0.816, 0.404)`) and draws the icon on top, so the dome reads as an open face. Port-only
+## restyle: the shipped art is opaque here (its mask is white at every dome pixel).
+const GLASS_COLOR := Color(0.969, 0.816, 0.404)
+const GLASS_CENTRE := Vector2(29.0, 21.0)
+const GLASS_RADIUS := 17.0
+
+
+## The disc a stocked dome draws before its icon.
+class DomeGlass:
+	extends Control
+	var tint := Color.WHITE
+	var centre := Vector2.ZERO
+	var radius := 15.0
+
+	func _draw() -> void:
+		# A soft edge: three rings of rising alpha keep the fill from cutting a hard circle
+		# across the dome's own shading.
+		draw_circle(centre, radius, Color(tint.r, tint.g, tint.b, 0.55))
+		draw_circle(centre, radius - 1.5, Color(tint.r, tint.g, tint.b, 0.8))
+		draw_circle(centre, radius - 3.0, tint)
+
 ## The item art each store item draws in its dome. The creature icons are the shipped 40x40
 ## `SCL_*` sheets (one icon per sellable species); food and the weapon use their own sheets (the
 ## `LASERUPGRADES` cell is the weapon level). Item 0 has no `SCL_` icon, so it uses the guppy body
@@ -80,6 +109,12 @@ var _icons: Array[TextureRect] = []
 var _prices: Array[Label] = []
 var _last_money := -1
 var _last_stock := ""
+## The composed swim cells of the fish icon and the slot/time they are being played on.
+var _glasses: Array = []
+var _swim_frames: Array[Texture2D] = []
+var _swim_loaded := false
+var _swim_shelf := -1
+var _swim_column := -1
 
 
 ## Resolve an autoload only when the bar is inside the scene tree. The headless checks call
@@ -139,6 +174,18 @@ func setup(target: Level) -> void:
 	_add_menu_button()
 	for shelf in SLOT_X.size():
 		var rect := slot_rect(shelf)
+		# The dome's open face sits under the icon, added before the button so it draws first.
+		var glass := DomeGlass.new()
+		glass.name = "Glass%d" % shelf
+		glass.position = Vector2.ZERO
+		glass.size = rect.size
+		glass.tint = GLASS_COLOR
+		glass.centre = GLASS_CENTRE
+		glass.radius = GLASS_RADIUS
+		glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		glass.visible = false
+		add_child(glass)
+		_glasses.append(glass)
 		var button := Button.new()
 		button.name = "Slot%d" % shelf
 		button.position = rect.position
@@ -276,6 +323,7 @@ func refresh() -> void:
 		var game := _autoload("Game")
 		_money_label.visible = true if game == null else bool(game.show_money)
 		_money_label.text = str(level.money)
+	_swim_shelf = -1
 	for shelf in _buttons.size():
 		var row := row_at(level, shelf)
 		var button := _buttons[shelf]
@@ -288,6 +336,7 @@ func refresh() -> void:
 			button.mouse_default_cursor_shape = Control.CURSOR_ARROW
 			icon.texture = null
 			price_label.text = ""
+			_glasses[shelf].visible = false
 			continue
 		var id := int(row.get("slot", -1))
 		if id == Progression.EGG_ITEM:
@@ -295,11 +344,21 @@ func refresh() -> void:
 			# keeps the row and the click path, so nothing is drawn twice.
 			icon.texture = null
 			price_label.text = ""
+			# The egg art already fills this dome, so the open face would cover it.
+			_glasses[shelf].visible = false
 			# The widget's own button covers this rect, so the bar's stays inert underneath.
 			button.disabled = true
 			button.mouse_default_cursor_shape = Control.CURSOR_ARROW
 			continue
-		icon.texture = _icon_texture(id)
+		_glasses[shelf].visible = true
+		if id == 0:
+			# The guppy dome plays its own swim row (D-0022) rather than one held cell.
+			_ensure_swim_frames()
+			_swim_shelf = shelf
+			_swim_column = _swim_column_at()
+			icon.texture = _swim_frames[_swim_column] if not _swim_frames.is_empty() else null
+		else:
+			icon.texture = _icon_texture(id)
 		var known := Store.price_known(row)
 		var affordable := known and (int(row.get("price", 0)) <= level.money)
 		button.disabled = not known or level.completed
@@ -308,6 +367,92 @@ func refresh() -> void:
 		price_label.text = str(int(row.get("price", 0))) if known else "?"
 		var colour := PRICE_COLOR if affordable else GREYED_COLOR
 		price_label.add_theme_color_override("font_color", colour)
+	set_process(_swim_shelf >= 0)
+
+
+## Advance the fish icon's swim cell. The column is a pure function of the sim tick, the same clock
+## the tank's own guppy uses (`AnimState.column_at`), so the dome keeps the game's cadence instead of
+## a per-frame flicker.
+func _process(_delta: float) -> void:
+	if _swim_shelf < 0 or _swim_frames.is_empty():
+		return
+	var column := mini(_swim_column_at(), _swim_frames.size() - 1)
+	if column == _swim_column:
+		return
+	_swim_column = column
+	var icon := _icons[_swim_shelf]
+	if icon != null:
+		icon.texture = _swim_frames[column]
+
+
+## Compose the swim row once, on the first frame that has to draw the fish dome.
+func _ensure_swim_frames() -> void:
+	if _swim_loaded:
+		return
+	_swim_loaded = true
+	_swim_frames = _compose_swim_frames()
+
+
+func _sim_tick() -> int:
+	var sim := _autoload("Sim")
+	return int(sim.tick_count) if sim != null else 0
+
+
+func _swim_column_at() -> int:
+	return AnimState.column_at(0, _sim_tick(), SWIM_COLUMNS)
+
+
+## The fish icon's swim cells: every column of the stage-0 row, composed through the sheet's mask.
+## All ten are cropped with **one** box - the union of their opaque pixels - so the fish fills the
+## dome and does not breathe in scale from cell to cell (the earlier fixed 44x44 crop left the dome's
+## own shading showing around a small fish, which the owner read as a shut lid, D-0022).
+func _compose_swim_frames() -> Array[Texture2D]:
+	var content := _autoload("Content")
+	var art := String(ICON_ART.get(0, ""))
+	var out: Array[Texture2D] = []
+	if content == null or art == "" or not content.has_image(art):
+		return out
+	var frames: SpriteFrames = content.sprite_frames(art)
+	if frames == null:
+		return out
+	var res: ImageRes = content.image(art)
+	var mask := HatchScreen.mask_for(res.path) if res != null else null
+	var cells: Array[Image] = []
+	var box := Rect2i()
+	for column in mini(frames.get_frame_count("default"), SWIM_COLUMNS):
+		var texture := frames.get_frame_texture("default", column)
+		if texture == null:
+			continue
+		var composed := HatchScreen.masked_cell(texture, mask) if mask != null else null
+		var image := (composed if composed != null else SpriteKey.keyed(texture)).get_image()
+		if image == null:
+			continue
+		cells.append(image)
+		var cell_box := _opaque_box(image)
+		box = cell_box if box.size == Vector2i.ZERO else box.merge(cell_box)
+	if box.size.x < 8 or box.size.y < 8:
+		return out
+	for image in cells:
+		out.append(ImageTexture.create_from_image(image.get_region(box)))
+	return out
+
+
+## The box of an image's drawn pixels (alpha above the mask's antialiasing floor).
+static func _opaque_box(image: Image) -> Rect2i:
+	var min_x := image.get_width()
+	var min_y := image.get_height()
+	var max_x := -1
+	var max_y := -1
+	for y in image.get_height():
+		for x in image.get_width():
+			if image.get_pixel(x, y).a > 0.06:
+				min_x = mini(min_x, x)
+				min_y = mini(min_y, y)
+				max_x = maxi(max_x, x)
+				max_y = maxi(max_y, y)
+	if max_x < min_x or max_y < min_y:
+		return Rect2i()
+	return Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
 
 
 ## Click a bar slot: it buys the row that sits there. Returns whether the purchase went through.
