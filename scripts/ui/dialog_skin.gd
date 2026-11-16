@@ -13,6 +13,11 @@ const BUTTON_IMAGE := "IMAGE_DIALOGBUTTON"
 ## `Dialogue-panel.png` is 240x240; these margins keep the corner brackets, the title plaque and the
 ## side plates out of the stretched middle.
 const PANEL_PATCH := Vector2i(32, 44)
+## Both dialogs draw the art at this width - 240 * 1.25, a uniform scale of the sheet, so the title
+## plaque and the corner brackets keep the art's own proportions instead of stretching sideways
+## (owner review 2026-11-16). Height stays per-dialog; only the fixed top band holds ornaments, so a
+## taller panel does not distort the plaque.
+const PANEL_WIDTH := 300.0
 ## `DialogButton2.png` is a three-frame 96x33 strip (purple / hover blue / pressed dark blue).
 const BUTTON_FRAME := Vector2(96.0, 33.0)
 const TITLE_COLOR := Color8(0xFF, 0xD8, 0x20)
@@ -94,13 +99,21 @@ static func button(node_name: String, text: String, at: Vector2, size: Vector2,
 	return button
 
 
-## One 96x33 frame of the button strip, stretched to the button's rect.
+## One 96x33 frame of the button strip, 9-sliced so the brass end caps and their rivets keep their
+## native width however wide the row is. Stretching the whole 96-px frame to a 264-px button smeared
+## those caps into fat blobs (owner review 2026-11-16).
+const BUTTON_CAP := Vector2i(20, 6)
+
 static func _frame(sheet: Texture2D, frame: int) -> StyleBoxTexture:
 	var atlas := AtlasTexture.new()
 	atlas.atlas = sheet
 	atlas.region = Rect2(BUTTON_FRAME.x * frame, 0.0, BUTTON_FRAME.x, BUTTON_FRAME.y)
 	var style := StyleBoxTexture.new()
 	style.texture = atlas
+	style.texture_margin_left = BUTTON_CAP.x
+	style.texture_margin_right = BUTTON_CAP.x
+	style.texture_margin_top = BUTTON_CAP.y
+	style.texture_margin_bottom = BUTTON_CAP.y
 	style.content_margin_left = 0.0
 	style.content_margin_right = 0.0
 	style.content_margin_top = 0.0

@@ -168,15 +168,19 @@ func refresh() -> void:
 	if _shell != null:
 		_shell.text = str(level.money)
 	for index in SLOT_RECTS.size():
-		var state := row_state(row_at(index), level.money)
+		var row := row_at(index)
+		var state := row_state(row, level.money)
+		# A shelf this tank never stocks draws nothing at all: `FUN_005409B0` builds no widget for an
+		# item with `A = -1`, so SOLD belongs only to a stocked row `Store.is_available()` refuses.
+		var unstocked := row.is_empty()
 		if index < _names.size() and _names[index] != null:
-			_names[index].text = "" if bool(state["sold_out"]) else String(state["name"])
+			_names[index].text = "" if unstocked or bool(state["sold_out"]) else String(state["name"])
 			_names[index].add_theme_color_override(
 				"font_color", GREYED_COLOR if bool(state["greyed"]) else Color.WHITE)
 		if index < _prices.size() and _prices[index] != null:
 			var price := _prices[index]
 			price.text = price_text(state)
-			price.visible = true
+			price.visible = not unstocked
 			price.add_theme_color_override(
 				"font_color", GREYED_COLOR if bool(state["greyed"]) else PRICE_COLOR)
 

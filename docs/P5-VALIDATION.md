@@ -7,8 +7,8 @@ performance sanity (P5.4) and the packaging decision (P5.5) as reference evidenc
 cannot close until R8 (windowed tanks 2-4/5-1) and R9 (pet guards) pass. Every value below cites
 its `EV-` entry or its port code path; nothing here is new binary evidence.
 
-Test totals for the tree this document describes: **24 suites, 1440 assertions** (2026-11-16
-re-run: 23 `--script` suites at 1315 plus the scene-backed integration suite at 125). The boot
+Test totals for the tree this document describes: **24 suites, 1447 assertions** (2026-11-16
+re-run: 23 `--script` suites at 1313 plus the scene-backed integration suite at 134). The boot
 check exits 0. The pre-existing Ogg vendor-comment warnings and the ObjectDB/resource leak
 notices at exit are unchanged (AUDIT F2) and are not failures.
 

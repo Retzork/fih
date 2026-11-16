@@ -102,9 +102,9 @@ static func row_at(target: Level, shelf: int) -> Dictionary:
 	if target == null:
 		return {}
 	for row: Dictionary in target.tank_store:
-		# A shelf the level has not revealed yet has no widget, exactly like an unstocked one
-		# (EV-0185): the dome stays empty until its milestone happens.
-		if int(row.get("shelf", -1)) == shelf and not bool(row.get("hidden", false)):
+		# Every row the level sells owns a widget from the first frame (EV-0144), so an empty dome is
+		# simply a shelf this tank never stocks.
+		if int(row.get("shelf", -1)) == shelf:
 			return row
 	return {}
 
@@ -114,7 +114,7 @@ static func row_index(target: Level, shelf: int) -> int:
 	if target == null:
 		return -1
 	for i in target.tank_store.size():
-		if int(target.tank_store[i].get("shelf", -1)) == shelf and not bool(target.tank_store[i].get("hidden", false)):
+		if int(target.tank_store[i].get("shelf", -1)) == shelf:
 			return i
 	return -1
 

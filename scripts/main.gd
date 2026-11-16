@@ -51,6 +51,7 @@ func _on_start_requested(mode: int) -> void:
 	_level.profile = Game.profile
 	_level.level_completed.connect(_on_level_completed)
 	_level.menu_requested.connect(_on_menu_requested)
+	_level.skip_level_requested.connect(_on_level_skip)
 	# P2.6 §1.1: the adventure's current tank and level, with that tank's store table and egg price.
 	var start := Progression.resolve_start(Game.profile.tank, Game.profile.level)
 	Game.profile.tank = int(start["tank"])
@@ -183,6 +184,25 @@ func _leave_tank() -> void:
 	_level.queue_free()
 	_level = null
 	_mount_selector()
+
+
+## The port-only NEXT LEVEL (D-0018). `Level.debug_next_level()` already walked the profile on, so
+## this only closes whatever modal is up and swaps the level - the Hatch/Pets/Bonus cards are
+## skipped on purpose.
+func _on_level_skip() -> void:
+	if _level == null:
+		return
+	if _debug_dialog != null:
+		_close_debug_only()
+	if _options_dialog != null:
+		_close_options()
+	var mode: int = Game.mode
+	Game.gameplay_paused = false
+	if _level.tank != null:
+		_level.tank.shutdown()
+	_level.queue_free()
+	_level = null
+	_on_start_requested(mode)
 
 
 ## A completed level: the profile has already advanced (P2.6 §1.2/§10.4). The between-level

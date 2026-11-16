@@ -1469,6 +1469,55 @@ Open: the real per-cell hold and the pet reveal point.
   `MENUBAR` art, clipped to the dome's glass window (38x33 at (10, 3)), so it can no longer spill
   across the gold rim or the price plate.
 
+### D-0018 - The dialogs draw the base art at a uniform 1.25 scale; NEXT LEVEL is a debug skip
+
+- Date: 2026-11-16 (owner playtest review; source D-0017, D-0014)
+- Status: accepted for the port; owner-directed follow-up to D-0017.
+- **Proportions.** `DialogSkin.PANEL_WIDTH` is 300 - the 240-px `Dialogue-panel` at a uniform 1.25
+  scale - and both dialogs use it, so the title plaque and the corner brackets keep the art's own
+  proportions instead of stretching 1.37x sideways (the menu panel was 328 wide). Heights stay
+  per-dialog (Options 312 menu / 380 in-level, Debug 336): only the fixed top band carries an
+  ornament, so a taller panel does not distort the plaque.
+- **Buttons.** `DialogButton2` is now 9-sliced (`BUTTON_CAP` 20x6) instead of stretched whole, so a
+  264-px row keeps the brass end caps and their rivets at their native width. Stretching the 96-px
+  frame to 3x is what made the menu's buttons read as fat smeared pills.
+- **Debug grid.** Two columns of 128x33; Show Money is a full-width row under the grid (as the
+  ninth grid cell it left an empty slot), so the panel closes at 336 instead of 360.
+- **NEXT LEVEL.** `Level.debug_next_level()` walks the profile one level on (rolling into the next
+  tank after level 5) and emits the new `skip_level_requested`; `Main._on_level_skip()` closes any
+  modal, tears the level down and starts the next one **without** the Hatch/Pets/Bonus cards. It is
+  a playtest aid, not recovered behaviour: the binary's own advance is the continue path with its
+  cards (P2.6 §1.2), which stays untouched.
+- Totals after the change: 24 suites, 1452 assertions (`headless_level_check` 156,
+  `headless_integration_check` 134).
+
+### D-0019 - The tank bar has no in-level reveal: a level's whole stock is on it from the first frame
+
+- Date: 2026-11-16 (owner playtest; supersedes the EV-0185 reveal table introduced under D-0014/D-0017)
+- Status: accepted for the port.
+- **Owner report.** "The shop didn't open properly, it just has the fish png and the background still
+  closed, but can be purchased": 1-1 and 1-2 showed one dome (or two, once a fish grew) and the egg
+  dome stayed hidden, so the bar read as an empty shop that only happened to sell a fish.
+- **The binary has no such gate.** `Tank+0x2DC` is the count of rows with `A >= 0` and `Tank+0x2E0`
+  is a "widgets built" latch: `FUN_005409B0` builds one widget per in-stock row and the
+  `while (+0x2E0 < +0x2DC)` loop only runs until every such row has one (EV-0144, P2.13). Nothing
+  hides a stocked shelf behind a growth stage, so the earlier milestone table was a port invention
+  read off the guide's keypoint lists even though the guide describes tutorials, not gates.
+- **What changed.** `Progression.reveal_rules`/`PREDATOR` are deleted, with `Level.store_reveal`,
+  `_prime_store_reveals`, `reveal_store_for_stage/after`, the `row.hidden` flag, `Level.egg_unlocked`
+  and the `buy_item` hidden check. `stock_default_store()` now stocks exactly `Progression.store_rows`
+  (the `§3` `A = -1` gating still decides what a level sells), the egg dome shows its price from the
+  first frame, and a save's stale `hidden` keys are dropped on load.
+- **Blip still means something.** `Tank.store_locked` (`+0x2E0 < +0x2DC` as the port reads it) now
+  genuinely only means "some rows lack a widget", which an eagerly built bar clears; `_unlock_store_rows()`
+  performs the recovered `FUN_005409B0(i, 1)` effect (the level-gated rows join the bar, prices kept),
+  and F8 / REVEAL STORE is the same call on demand.
+- **StoreScreen.** Unstocked shelves draw nothing rather than the literal `SOLD`: the original builds
+  no widget for `A = -1`, so `SOLD` belongs only to a stocked row `Store.is_available()` refuses.
+- Checks: `headless_store_ui_check` now pins the whole 1-3 bar (guppy, both food shelves, carnivore,
+  blaster) and the priced egg dome; `headless_level_check` pins that 1-3 opens with its whole stock
+  and that the reveal action reports no change where the level hides nothing.
+
 ### Q-0061 - Presto's picker contents and its opening input are port bindings
 
 - OPEN (2026-11-10, raised by `scripts/ui/presto_picker.gd` for R9; source EV-0100, P2.7 §3.3/§4.20,

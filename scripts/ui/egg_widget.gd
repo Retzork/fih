@@ -123,9 +123,6 @@ func refresh() -> void:
 	if level == null or _button == null:
 		return
 	_last_signature = _signature()
-	# The dome is on the bar on every tank, but only once the egg is revealed (EV-0185: 1-1 after a
-	# large guppy, 1-2 after food Lv 2, 1-3+ after a predator; always from the start on tank 5).
-	visible = bool(level.egg_unlocked)
 	var pieces := mini(int(level.egg_pieces), PIECES_TO_COMPLETE)
 	var price := int(level.egg_price)
 	var known := price != Progression.PRICE_UNKNOWN
@@ -157,9 +154,9 @@ func _show_frame(pieces: int) -> void:
 
 
 func _signature() -> String:
-	return "%d:%d:%d:%d:%s:%s" % [
+	return "%d:%d:%d:%d:%s" % [
 		int(level.tank_index), int(level.money), int(level.egg_pieces),
-		int(level.egg_price), str(level.completed), str(level.egg_unlocked)
+		int(level.egg_price), str(level.completed)
 	]
 
 

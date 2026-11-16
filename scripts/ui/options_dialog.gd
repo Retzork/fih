@@ -24,13 +24,16 @@ signal debug_requested
 const OptionSliderScript := preload("res://scripts/ui/option_slider.gd")
 const OptionCheckScript := preload("res://scripts/ui/option_check.gd")
 
-## The panel rects measured from the 640x480 reference screenshot. Menu mode is the visible base
-## panel; in-level adds the MAIN MENU / DEBUG row, so the panel grows downward.
-const PANEL_MENU_RECT := Rect2(154.0, 32.0, 328.0, 312.0)
-const PANEL_LEVEL_RECT := Rect2(154.0, 14.0, 328.0, 384.0)
+## The panel rects measured from the 640x480 reference screenshot. `DialogSkin.PANEL_WIDTH` (300) is
+## the art's own 240 px at a uniform 1.25 scale, so the plaque and the corner brackets keep their
+## proportions (owner review 2026-11-16). Menu mode is the visible base panel; in-level adds the
+## MAIN MENU / DEBUG row, so the panel grows downward.
+const PANEL_MENU_RECT := Rect2(170.0, 44.0, DialogSkin.PANEL_WIDTH, 312.0)
+const PANEL_LEVEL_RECT := Rect2(170.0, 12.0, DialogSkin.PANEL_WIDTH, 380.0)
 
-const BUTTON_SIZE := Vector2(288.0, 33.0)
-const HALF_BUTTON_WIDTH := 140.0
+const BUTTON_SIZE := Vector2(264.0, 33.0)
+const HALF_BUTTON_WIDTH := 128.0
+const BUTTON_LEFT := 16.0
 ## The first button row's y; each following row sits one button height (+5) lower.
 const BUTTON_TOP := 221.0
 const BUTTON_PITCH := 38.0
@@ -71,13 +74,13 @@ func _ready() -> void:
 # --- construction ------------------------------------------------------------
 
 func _build_sliders() -> void:
-	_add_label("MusicLabel", "MUSIC", Vector2(34.0, 61.0), Vector2(100.0, 20.0))
-	_add_label("SoundLabel", "SOUND FX", Vector2(34.0, 94.0), Vector2(100.0, 20.0))
+	_add_label("MusicLabel", "MUSIC", Vector2(24.0, 61.0), Vector2(100.0, 20.0))
+	_add_label("SoundLabel", "SOUND FX", Vector2(24.0, 94.0), Vector2(100.0, 20.0))
 
 	var audio := _autoload("Audio")
 	music_slider = OptionSliderScript.new()
 	music_slider.name = "Music"
-	music_slider.position = Vector2(144.0, 53.0)
+	music_slider.position = Vector2(128.0, 53.0)
 	music_slider.size = Vector2(156.0, 32.0)
 	if audio != null:
 		music_slider.value = float(audio.music_volume) * 100.0
@@ -86,7 +89,7 @@ func _build_sliders() -> void:
 
 	sfx_slider = OptionSliderScript.new()
 	sfx_slider.name = "SoundFX"
-	sfx_slider.position = Vector2(144.0, 86.0)
+	sfx_slider.position = Vector2(128.0, 86.0)
 	sfx_slider.size = Vector2(156.0, 32.0)
 	if audio != null:
 		sfx_slider.value = float(audio.sfx_volume) * 100.0
@@ -106,23 +109,24 @@ func _build_checkboxes() -> void:
 	# One box per row (owner review 2026-11-16): side by side, "FULLSCREEN" ran into the second
 	# box's icon because the 8 px outlined font is wider than the reference's label. The 46x45
 	# `Checkbutton` texture is mostly transparent padding, so 34 px rows do not collide.
-	_add_check("Fullscreen", "FULLSCREEN", Vector2(26.0, 112.0), 270.0, fullscreen, _on_fullscreen)
-	_add_check("CustomCursors", "CUSTOM CURSORS", Vector2(26.0, 146.0), 270.0, custom,
+	_add_check("Fullscreen", "FULLSCREEN", Vector2(22.0, 112.0), 264.0, fullscreen, _on_fullscreen)
+	_add_check("CustomCursors", "CUSTOM CURSORS", Vector2(22.0, 146.0), 264.0, custom,
 		_on_custom_cursors)
-	_add_check("HardwareAcceleration", "HARDWARE ACCELERATION", Vector2(26.0, 180.0), 270.0,
+	_add_check("HardwareAcceleration", "HARDWARE ACCELERATION", Vector2(22.0, 180.0), 264.0,
 		hardware, _on_hardware)
 
 
 func _build_buttons() -> void:
-	_add_dialog_button("Help", "HELP", Vector2(18.0, BUTTON_TOP), BUTTON_SIZE, _on_help)
-	_add_dialog_button("OK", "OK", Vector2(18.0, BUTTON_TOP + BUTTON_PITCH), BUTTON_SIZE, _on_ok)
+	_add_dialog_button("Help", "HELP", Vector2(BUTTON_LEFT, BUTTON_TOP), BUTTON_SIZE, _on_help)
+	_add_dialog_button("OK", "OK", Vector2(BUTTON_LEFT, BUTTON_TOP + BUTTON_PITCH), BUTTON_SIZE,
+		_on_ok)
 	if not in_level:
 		return
 	# The leave path and the port-only debug entry share one row so the base panel stays compact.
 	var row := BUTTON_TOP + BUTTON_PITCH * 2.0
 	var half := Vector2(HALF_BUTTON_WIDTH, BUTTON_SIZE.y)
-	_add_dialog_button("BackToMenu", "MAIN MENU", Vector2(18.0, row), half, _on_back)
-	_add_dialog_button("Debug", "DEBUG", Vector2(18.0 + HALF_BUTTON_WIDTH + 8.0, row), half,
+	_add_dialog_button("BackToMenu", "MAIN MENU", Vector2(BUTTON_LEFT, row), half, _on_back)
+	_add_dialog_button("Debug", "DEBUG", Vector2(BUTTON_LEFT + HALF_BUTTON_WIDTH + 8.0, row), half,
 		_on_debug)
 
 

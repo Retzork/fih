@@ -91,26 +91,17 @@ func _test_bar() -> void:
 	level.render = false
 	level.setup(sim, 9191)
 	level.start_level(1, 3)
-	# EV-0185 + D-0017: the bar is on screen from the start and the opening fish shelf is never
-	# gated; the food/predator/blaster/egg shelves still wait for their milestone.
+	# D-0019: `FUN_005409B0` builds a widget for every row with `A >= 0` in one `while (+0x2E0 <
+	# +0x2DC)` sweep (EV-0144), so the bar opens with the level's whole stock - nothing waits for a
+	# growth milestone and the egg dome is on the bar from the first frame.
 	_expect(StoreScript.item_name(int(BarScript.row_at(level, 0).get("slot", -1))) == "Guppy",
-		"1-3 opens with the guppy shelf on the bar (D-0017)")
-	_expect(BarScript.row_at(level, 3).is_empty(), "the carnivore shelf waits for a large fish")
-	_expect(not level.egg_unlocked, "the egg dome waits for a bought carnivore on 1-3")
-	level.reveal_store_for_stage(2)
-	_expect(StoreScript.item_name(int(BarScript.row_at(level, 0).get("slot", -1))) == "Guppy",
-		"the guppy shelf is still stocked after the medium milestone")
-	_expect(int(BarScript.row_at(level, 1).get("slot", -1)) == 2,
-		"the food shelves are revealed by the same medium milestone")
-	_expect(BarScript.row_at(level, 3).is_empty(), "the carnivore stays hidden at medium size")
-	level.reveal_store_for_stage(3)
-	_expect(int(BarScript.row_at(level, 3).get("slot", -1)) == 4, "a large fish reveals the carnivore")
+		"1-3 opens with the guppy shelf on the bar")
+	_expect(int(BarScript.row_at(level, 1).get("slot", -1)) == 2, "and the first food shelf")
+	_expect(int(BarScript.row_at(level, 2).get("slot", -1)) == 3, "and the second food shelf")
+	_expect(int(BarScript.row_at(level, 3).get("slot", -1)) == 4, "and the carnivore shelf")
+	_expect(int(BarScript.row_at(level, 5).get("slot", -1)) == 10, "and the blaster shelf")
+	_expect(level.egg_price == 2000, "1-3's egg dome is priced from the first frame")
 	_expect(BarScript.row_at(level, 7).is_empty(), "a bar slot past the stock is empty")
-	_expect(not level.egg_unlocked, "the egg still waits on the carnivore purchase")
-	level.reveal_store_after(4)
-	_expect(int(BarScript.row_at(level, 5).get("slot", -1)) == 10,
-		"buying the carnivore reveals the blaster shelf (guide 8.1.3)")
-	_expect(level.egg_unlocked, "the same purchase reveals the egg dome")
 	_expect(BarScript.row_index(level, 3) == 3 and BarScript.shelf_of(level, 3) == 3,
 		"a bar slot maps to its row and back")
 	var bar: Control = BarScript.new()

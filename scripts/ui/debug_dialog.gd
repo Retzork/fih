@@ -14,19 +14,25 @@ extends Control
 signal closed
 signal action_requested(action: StringName)
 
-## The panel sits inside the 640x480 reference like the base dialog, a little lower and narrower so
-## it reads as its own window rather than an Options variant.
-const PANEL_RECT := Rect2(164.0, 62.0, 312.0, 336.0)
+## The panel sits inside the 640x480 reference like the base dialog, a little lower so it reads as
+## its own window, and at the same `DialogSkin.PANEL_WIDTH` (the art's 240 px at a uniform 1.25
+## scale), so both dialogs share the plaque's proportions (owner review 2026-11-16).
+const PANEL_RECT := Rect2(170.0, 56.0, DialogSkin.PANEL_WIDTH, 336.0)
 const TITLE := "DEBUG"
 const SUBTITLE := "PORT-ONLY (D-0014)"
-const GRID_AT := Vector2(22.0, 66.0)
+const GRID_AT := Vector2(16.0, 64.0)
 const COLUMNS := 2
-const BUTTON_SIZE := Vector2(130.0, 33.0)
-const GRID_GAP := Vector2(8.0, 6.0)
-const CLOSE_AT := Vector2(22.0, 244.0)
+const BUTTON_SIZE := Vector2(128.0, 33.0)
+const GRID_GAP := Vector2(8.0, 4.0)
+## Show Money takes a full-width row under the grid: as the ninth grid cell it left an empty one.
+const SHOW_MONEY_AT := Vector2(16.0, 214.0)
+const SHOW_MONEY_SIZE := Vector2(268.0, 33.0)
+const CLOSE_AT := Vector2(16.0, 254.0)
 const CLOSE_SIZE := Vector2(268.0, 33.0)
 
 ## `[id, label]` in grid order; the ids are `Level.debug_action()`'s, the labels are the buttons'.
+## `next_level` walks the profile on without the Hatch/Pets/Bonus cards (D-0018), which is the
+## quickest way to reach a tank during a playtest.
 const ACTIONS := [
 	["money", "MONEY +1000"],
 	["grow", "GROW FISH"],
@@ -35,6 +41,7 @@ const ACTIONS := [
 	["weapon", "MAX WEAPON"],
 	["reveal", "REVEAL STORE"],
 	["guppy", "SPAWN GUPPY"],
+	["next_level", "NEXT LEVEL"],
 ]
 
 ## Port-only: the Show Money toggle, seeded from the shared setting.
@@ -93,14 +100,10 @@ func _build_grid(content: Node) -> void:
 func _build_show_money(content: Node) -> void:
 	# The TankScreen's ShowMoney option (P2.5), not a base Options checkbox. The label carries the
 	# state because the debug grid has no checkbox art.
-	var index := ACTIONS.size()
-	var at := GRID_AT + Vector2(
-		(index % COLUMNS) * (BUTTON_SIZE.x + GRID_GAP.x),
-		float(index / COLUMNS) * (BUTTON_SIZE.y + GRID_GAP.y))
 	var game := _autoload("Game")
 	var show_on := game != null and bool(game.show_money)
-	show_money_box = DialogSkin.button("ShowMoney", _show_money_text(show_on), at, BUTTON_SIZE,
-		content)
+	show_money_box = DialogSkin.button("ShowMoney", _show_money_text(show_on), SHOW_MONEY_AT,
+		SHOW_MONEY_SIZE, content)
 	show_money_box.toggle_mode = true
 	show_money_box.set_pressed_no_signal(show_on)
 	show_money_box.toggled.connect(_on_show_money)

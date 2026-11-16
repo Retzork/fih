@@ -524,15 +524,22 @@ func _test_debug_actions() -> void:
 			"the fish reaches its species' eat cap (got %d)" % fish.fullness)
 		_expect(not debug_level.debug_action(&"feed"), "a full tank refuses another feeding")
 
-	_expect(not debug_level.egg_unlocked, "1-3 opens with the egg dome gated")
-	_expect(debug_level.debug_action(&"reveal"), "the reveal action clears the store gates")
-	_expect(debug_level.egg_unlocked and not debug_level.tank.store_locked,
-		"every shelf and the egg dome are open after reveal")
-	var hidden := false
-	for row in debug_level.tank_store:
-		if bool(row.get("hidden", false)):
-			hidden = true
-	_expect(not hidden, "no store row stays hidden after reveal")
+	# D-0019: the bar opens with the level's whole stock, so the reveal action has nothing to add on a
+	# level that hides nothing (1-3) and reports no change.
+	_expect(not debug_level.tank.store_locked and not debug_level.tank_store.is_empty(),
+		"1-3 opens with its whole stock on the bar")
+	_expect(debug_level.egg_price == 2000, "and the egg dome already priced")
+	_expect(not debug_level.debug_action(&"reveal"),
+		"the reveal action reports no change where the level hides nothing")
+
+	# D-0018: NEXT LEVEL walks the profile on and asks its owner to restart (no award cards).
+	var skips := []
+	debug_level.skip_level_requested.connect(func() -> void: skips.append(true))
+	var profile_level := int(debug_level._profile().level)
+	_expect(debug_level.debug_action(&"next_level"), "the next-level action is dispatched")
+	_expect(int(debug_level._profile().level) == profile_level + 1,
+		"next level moves the profile on by one (got %d)" % int(debug_level._profile().level))
+	_expect(skips.size() == 1, "and asks its owner to restart the level")
 
 	debug_level.weapon_level = 2
 	_expect(debug_level.debug_action(&"weapon") and debug_level.weapon_level == Store.WEAPON_MAX,

@@ -384,6 +384,34 @@ func _run() -> void:
 
 	_teardown(boss_main)
 	await get_tree().process_frame
+
+	# --- D-0018: the debug dialog's NEXT LEVEL advances and restarts without the award cards.
+	var skip_main = await _start_from_menu(1, 1)
+	if skip_main != null and skip_main._level != null:
+		var before_level = skip_main._level
+		before_level.store_bar.press_menu()
+		var debug_row := skip_main._options_dialog.control(&"Debug") as Button
+		_expect(debug_row != null, "the in-level Options still offers the DEBUG row")
+		if debug_row != null:
+			debug_row.pressed.emit()
+		var jump: Button = null
+		if skip_main._debug_dialog != null:
+			jump = skip_main._debug_dialog.debug_button_for(&"next_level")
+		_expect(jump != null, "the debug dialog has a NEXT LEVEL button")
+		if jump != null:
+			jump.pressed.emit()
+		_expect(skip_main._debug_dialog == null and skip_main._options_dialog == null,
+			"NEXT LEVEL closes both dialogs")
+		_expect(skip_main._level != null and skip_main._level != before_level,
+			"NEXT LEVEL mounts a fresh level")
+		var landed = skip_main._level
+		_expect(landed != null and landed.tank_index == 1 and landed.level_index == 2,
+			"NEXT LEVEL lands on 1-2 (got %s)" % ("%d-%d" % [landed.tank_index, landed.level_index] if landed != null else "none"))
+		_expect(not Game.gameplay_paused, "NEXT LEVEL leaves the tank running")
+	else:
+		_expect(false, "the NEXT LEVEL leg could not start a level")
+	_teardown(skip_main)
+	await get_tree().process_frame
 	_finish()
 
 
