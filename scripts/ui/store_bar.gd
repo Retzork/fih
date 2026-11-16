@@ -90,6 +90,16 @@ const ICON_ART := {
 ## already forwarded the request to `Level.request_menu()`.
 signal menu_pressed
 
+## Dome art by item id, composed once per run (D-0025). `refresh()` runs whenever the purse changes -
+## so on every coin - and building a dome is a mask composite plus a 44x33 per-pixel badge; seven
+## stocked domes cost 17 ms a refresh, a whole frame, which the owner felt as a stutter on pickups.
+## `null` is cached too: an item whose sheet or mask is missing is just as expensive to miss again.
+## Keyed by the item id, with the weapon's upgrade level appended because that picks its cell.
+static var _icon_cache := {}
+## The bare badge, composed once and shared by every dome that has no item on it - the egg widget's
+## backdrop, which used to build its own copy per widget.
+static var _badge_placeholder: Texture2D = null
+
 ## The level whose `tank_store` the bar sells from.
 var level: Level = null
 var _background: TextureRect = null
@@ -286,6 +296,25 @@ func _icon_texture(id: int) -> Texture2D:
 	return badge_cell(body.get_image())
 
 
+## The dome art for `id`, composed once and reused (D-0025).
+func icon_for(id: int) -> Texture2D:
+	var key := str(id)
+	if id == 10:
+		key = "10:%d" % (int(level.weapon_level) if level != null else 0)
+	if _icon_cache.has(key):
+		return _icon_cache[key]
+	var texture := _icon_texture(id)
+	_icon_cache[key] = texture
+	return texture
+
+
+## The empty badge, composed once: the egg dome and any item without art sit on this one texture.
+static func badge_placeholder() -> Texture2D:
+	if _badge_placeholder == null:
+		_badge_placeholder = badge_cell(null)
+	return _badge_placeholder
+
+
 ## The guppy body sheet is 80x80 per cell with the fish inside a ~44-px centre; cropping that centre
 ## keeps it the same visual size as the 40x40 `SCL_` icons (port fit: the original's own icon image id
 ## is unrecovered, Q-0054). Cropping happens **after** the mask composite, which needs the full cell.
@@ -351,7 +380,7 @@ func refresh() -> void:
 			_swim_column = _swim_column_at()
 			icon.texture = _swim_frames[_swim_column] if not _swim_frames.is_empty() else null
 		else:
-			icon.texture = _icon_texture(id)
+			icon.texture = icon_for(id)
 		var known := Store.price_known(row)
 		var affordable := known and (int(row.get("price", 0)) <= level.money)
 		button.disabled = not known or level.completed
@@ -379,7 +408,8 @@ func _process(_delta: float) -> void:
 		icon.texture = _swim_frames[column]
 
 
-## Compose the swim row once, on the first frame that has to draw the fish dome.
+## Compose the swim row once, on the first frame that has to draw the fish dome (its ten cells are as
+## expensive as the other domes, and `refresh()` must not redo them on a coin - D-0025).
 func _ensure_swim_frames() -> void:
 	if _swim_loaded:
 		return

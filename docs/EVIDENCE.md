@@ -4909,3 +4909,31 @@ behavior or specs; follow up with a binary observation entry.
   column 1, tick 25 is column 8), `headless_fish_check` 121, `headless_entity_check` 43,
   `headless_store_ui_check` 50, all pass. Not re-shot: the pellet art is the base sheet, so a still
   cannot show the tumble rate; the probe log is the evidence.
+
+### EV-0194 - A coin no longer rebuilds the bar's domes
+- Date: 2026-11-16
+- Type: port performance fix, measured
+- Source: `scripts/ui/store_bar.gd` (`_icon_cache`, `icon_for`, `badge_placeholder`),
+  `scripts/ui/egg_widget.gd`, `tests/headless_store_ui_check.gd`, a windowed timing probe (deleted)
+- (1) **Where the time went.** `StoreBar.refresh()` draws each dome through `_icon_texture()`, which
+  composites the item's cell through its mask (`HatchScreen.masked_cell`) and then builds a fresh
+  badge in `badge_cell()`: a 44x33 canvas, a per-pixel shading loop, two highlight blobs and a
+  bilinear resize of the item. `Level` calls `refresh_if_changed()` on every tick and `refresh()`
+  runs whenever the purse moves, so that whole cost was paid **on every coin**.
+- (2) **Measured.** A windowed probe stocked seven real domes (ids 1, 2, 4, 6, 7, 8, 9, `shelf`
+  assigned so `row_at` finds them), warmed one refresh and timed 100 refreshes with the purse
+  moving: **17,365.6 us per refresh** (17.4 ms, i.e. a whole 60 Hz frame per pickup). After the
+  cache: **153.2 us per refresh** (15.3 ms for 100) - 113x less. What remains is the price labels,
+  the button states and the wallet, which is what a pickup should touch.
+- (3) **The cache.** `StoreBar._icon_cache` holds one texture per item id for the run; the weapon
+  (id 10) appends its upgrade level because that picks its cell, so it gets one entry per level
+  bought. `null` results are cached too - an item whose sheet or mask is missing is as expensive to
+  miss again. The bare badge is `StoreBar._badge_placeholder`, composed on first use and shared with
+  the egg dome, which used to build its own copy per widget. The fish dome's ten swim cells were
+  already composed once (`_swim_loaded`).
+- (4) **Risk taken knowingly.** The cache lives as long as the process: the art is run-constant, and
+  a `Content` reload (no code path today) would leave stale textures behind.
+- (5) **Coverage**: `headless_store_ui_check` 50 -> 53 (every stocked dome is filed under its id,
+  the weapon under `10:<level>`; a purse change reuses the same texture; the bare badge is one
+  shared instance), `headless_level_check` 157, `headless_integration_check` 134, the 400-frame boot
+  exits 0.

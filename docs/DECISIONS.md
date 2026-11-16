@@ -1589,6 +1589,23 @@ Open: the real per-cell hold and the pet reveal point.
   purse. The swim row was measured at ten cells with the column advancing every five ticks (0 -> 1 at
   tick 56, 2 at 61).
 
+### D-0025 - Domes are composed once per item, not per refresh
+
+- Date: 2026-11-16 (owner: a coin pickup should only redraw the plates and the wallet)
+- Status: accepted. EV-0194 has the measurement.
+- **Why.** `refresh()` builds each dome from Image ops - a mask composite plus a 44x33 per-pixel
+  badge with two highlight blobs and a bilinear item fit - and `Level` calls it whenever the purse
+  moves, i.e. on every coin. Seven stocked domes measured **17.4 ms per refresh**, a whole frame.
+- **What changed.** `StoreBar._icon_cache` keeps one texture per item id for the run; the weapon
+  appends its upgrade level (`10:<level>`) because that picks its cell. `null` is cached as well,
+  since a missing sheet is just as costly to miss again. The bare badge lives in
+  `StoreBar.badge_placeholder()` and the egg dome shares it instead of building its own. The fish
+  dome's swim row was already composed once.
+- **Result.** The same probe reads **153 us per refresh**, 113x less; only the price labels, the
+  button states and the wallet are touched by a pickup.
+- **Limit.** The cache lasts for the process: the art is run-constant, and nothing reloads `Content`
+  today, but a future asset reload would have to clear `_icon_cache` and `_badge_placeholder`.
+
 ### D-0024 - Feeding happens at the mouth, and the tumbler holds each column
 
 - Date: 2026-11-16 (owner: "the animation and collision for the pellet is way off")

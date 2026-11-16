@@ -109,6 +109,9 @@ func _test_bar() -> void:
 		"a bar slot maps to its row and back")
 	var bar: Control = BarScript.new()
 	bar.setup(level)
+	# In the tree so the `Content` autoload resolves and the domes really compose (D-0025's cache is
+	# only meaningful with art to build).
+	root.add_child(bar)
 	bar.refresh()
 	_expect(bar._icons[4].texture == null and bar._prices[4].text == "",
 		"an unstocked dome stays empty - SOLD is the StoreScreen's branch, not an empty tank slot")
@@ -131,6 +134,21 @@ func _test_bar() -> void:
 	_expect(menu_hits.size() == 1,
 		"the bar's MENU reaches the level's MENU request (TankScreen id 99)")
 	level.menu_requested.disconnect(on_menu)
+	# D-0025: a dome's art is composed once. Rebuilding it on every refresh cost 17 ms with seven
+	# stocked domes - a whole frame, on every coin - for art that only changes when the weapon levels.
+	# A `--script` run pumps no frames, so `Content` has no loaded images and the cached art is null
+	# here; what these pin is that `refresh()` files each stocked dome under its id instead of
+	# composing a new one, and that the bare badge is a single shared texture.
+	_expect(BarScript._icon_cache.has("2") and BarScript._icon_cache.has("3")
+		and BarScript._icon_cache.has("4") and BarScript._icon_cache.has("10:%d" % int(level.weapon_level)),
+		"a refresh caches every stocked dome under its item id (the weapon under its level)")
+	var oscar: Texture2D = bar.icon_for(4)
+	level.money += 5
+	bar.refresh()
+	_expect(bar._icons[3].texture == oscar and BarScript._icon_cache["4"] == oscar,
+		"a purse change redraws the plates and wallet without composing a new dome")
+	_expect(BarScript.badge_placeholder() == BarScript.badge_placeholder(),
+		"the bare badge is composed once and shared (the egg dome's backdrop)")
 	bar.free()
 	level.tank.shutdown()
 	level.free()

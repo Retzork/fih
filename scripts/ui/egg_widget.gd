@@ -95,7 +95,7 @@ func _ready() -> void:
 	# The badge first: it is what fills the dome once the cup art is on top.
 	var badge := TextureRect.new()
 	badge.name = "Badge"
-	badge.texture = StoreBar.badge_cell(null)
+	badge.texture = StoreBar.badge_placeholder()
 	badge.position = ART_WINDOW.position
 	badge.size = ART_WINDOW.size
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
