@@ -3,7 +3,7 @@
 Last updated: 2026-11-16 (OWNER REVIEW 2: the in-tank Options' debug grid moved to its own
 `DebugDialog`, the options layout rebuilt on one checkbox per row, the shop bar's fish shelf is no
 longer milestone-gated (1-1 opens with the guppy at 100), and the egg cell is clipped to its dome -
-R11, D-0017; R12 then fixed the dialogs' proportions and added NEXT LEVEL, D-0018; R13 opened the tank bar to the level's whole stock, D-0019, R14 put the level number in the tank's bottom-right corner, D-0020, R15 animated the guppy dome, D-0022, and R16 matched the bar to a recording of the shipped game, D-0023, and R17 fixed the pellet's tumble and its eat point, D-0024, R18 cached the bar's domes, D-0025, and R19 reviewed that bar work, D-0026, and R20 took the badge geometry and the price colour from the recording's own measurements, D-0027 - **all 24 suites pass, 1464 assertions**.
+R11, D-0017; R12 then fixed the dialogs' proportions and added NEXT LEVEL, D-0018; R13 opened the tank bar to the level's whole stock, D-0019, R14 put the level number in the tank's bottom-right corner, D-0020, R15 animated the guppy dome, D-0022, and R16 matched the bar to a recording of the shipped game, D-0023, and R17 fixed the pellet's tumble and its eat point, D-0024, R18 cached the bar's domes, D-0025, and R19 reviewed that bar work, D-0026, and R20 took the badge geometry and the price colour from the recording's own measurements, D-0027 - **all 24 suites pass, 1469 assertions**.
 
 **Owner vocabulary (D-0021):** when the owner writes "the shop", "the tank shop" or "the shop bar",
 they mean the **in-tank store bar** (`scripts/ui/store_bar.gd` plus `EggWidget`) - the row of domes
@@ -943,6 +943,8 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 
 | R21 | 2026-11-18 owner: the recording's hunger hint and "Tank 1-1" are not drawn - add them with the measured strings, positions and colours, and say whether the level plate should move back. | Bottom-strip crops at t=0 and t=2, ink-column scan of both strings, all 15 shipped fonts measured, 2x captures of our 1-1 fed / first-line / last-line. | ADDED (D-0028, EV-0197): `Tank  1-1` bottom-left in `#A89460` at (13, 453) and the hint centred in `#AEF762` on a 2-px `#004A00` outline at (0, 454), both in `CONTINUUMBOLD14`/`12`; the hint has the base's two wordings, keyed to -1 and -400 of `Fish.HUNGER_HINTS`. Answer: the level plate should go - the base has no readout in that corner and the tank name now shows the pair. Not changed: the dev `Debug` FPS line shares that row. `headless_level_check` 165, `headless_store_ui_check` 57, `headless_menu_check` 28, `headless_fish_check` 121, `headless_integration_check` 134, boot clean. |
 
+
+| R22 | 2026-11-18 owner: the base keeps the shop's prices bright green with a short wallet (45 against a $100 guppy); the port still greyed them with `GREYED_COLOR`. | EV-0196 (3), `StoreScreen.row_state`/`refresh`, `headless_store_ui_check`. | FIXED (D-0029, EV-0198): funds no longer touch a price's colour on any surface - `StoreScreen.greyed` is sold-out/unknown-price only and `price_color(state)` holds the single `PRICE_COLOR`/`GREYED_COLOR` choice; the bar and egg dome were already green at any balance (D-0027). The check pins the store screen's price colour at a short and a sufficient purse and the bar's `$100` at wallet 45; `headless_store_ui_check` 62. |
 Fixes land here as they are verified; this table is the source of truth for the review.
 
 

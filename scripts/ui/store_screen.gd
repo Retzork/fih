@@ -37,6 +37,8 @@ const SOLD_TEXT := "SOLD"
 const PRICE_OFFSET := Vector2(13.0, 108.0)
 const PRICE_ICON_OFFSET := Vector2(25.0, 3.0)
 ## Price colour `FUN_00433360(0x6E, 0xFA, 0x6E)`; the greyed-out line is `0xCCCCCC` with no icon.
+## Grey belongs to a shelf with nothing to sell (SOLD) or a figure the table never recovered -
+## never to a purse that is short: the base keeps a price green at any balance (D-0029).
 const PRICE_COLOR := Color(110.0 / 255.0, 250.0 / 255.0, 110.0 / 255.0)
 const GREYED_COLOR := Color(0.8, 0.8, 0.8)
 ## Name line: the port's own addition (the original's name text lives on the tooltip), placed above
@@ -120,6 +122,8 @@ func row_at(index: int) -> Dictionary:
 ## The drawing state of one row: what the name and price lines say and whether they are greyed.
 ## `sold_out` rows are the ones `Store.is_available()` refuses - the port's stand-in for kind 0
 ## ("Sorry, this is sold out. Check back tomorrow!", P2.12 §6c) until the kind byte is bound.
+## `affordable` is reported but no longer greys anything: a price the purse cannot pay is drawn
+## exactly like one it can (D-0029), so `greyed` is only the sold-out / unknown-price pair.
 static func row_state(row: Dictionary, money: int) -> Dictionary:
 	var id := int(row.get("slot", -1))
 	if id < 0:
@@ -142,8 +146,14 @@ static func row_state(row: Dictionary, money: int) -> Dictionary:
 		"price_known": price_known,
 		"sold_out": sold_out,
 		"affordable": affordable,
-		"greyed": sold_out or not price_known or not affordable,
+		"greyed": sold_out or not price_known,
 	}
+
+
+## The colour of a row's price line: the recovered green for everything on sale, grey only for a
+## sold-out shelf or an unrecovered figure.
+static func price_color(state: Dictionary) -> Color:
+	return GREYED_COLOR if bool(state["greyed"]) else PRICE_COLOR
 
 
 ## What the price line says: the literal `SOLD` on an unavailable row, `?` when the table never
@@ -181,8 +191,7 @@ func refresh() -> void:
 			var price := _prices[index]
 			price.text = price_text(state)
 			price.visible = not unstocked
-			price.add_theme_color_override(
-				"font_color", GREYED_COLOR if bool(state["greyed"]) else PRICE_COLOR)
+			price.add_theme_color_override("font_color", price_color(state))
 
 
 func _on_slot_pressed(index: int) -> void:

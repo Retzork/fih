@@ -5045,3 +5045,22 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Our capture** (2x, `hud_mild`/`hud_hungry`): the row reproduces the recording's placement,
   width, mixed case and both wordings. Not matched: the tank name is ~12 px wider than the base's
   and the purple level plate still shows at the bottom right (D-0028 recommends dropping it).
+
+## EV-0198 - The store screen still greyed a price the purse could not pay
+- Date: 2026-11-18
+- Type: code reading against the recording measurement already on file (EV-0196 (3): wallet 45,
+  `$100` guppy shelf, price bright green) + headless assertions
+- Source: `scripts/ui/store_screen.gd` (`row_state`, `price_color`, `refresh`),
+  `tests/headless_store_ui_check.gd`
+- (1) **What was left.** D-0027 removed the bar's and the egg dome's affordability colour, but
+  `StoreScreen.row_state()` still computed `greyed = sold_out or not price_known or not affordable`,
+  and `refresh()` painted both the name and the price with `GREYED_COLOR` from it. With the wallet
+  short, the Fish Emporium's price line was `#CCCCCC` where the base keeps `0x6EFA6E`.
+- (2) **The change.** `greyed` is `sold_out or not price_known`; a new `price_color(state)` holds the
+  only `PRICE_COLOR`/`GREYED_COLOR` choice and is what `refresh()` uses. `affordable` stays in the
+  state dictionary. Nothing else in the port references the grey: the bar sets `PRICE_COLOR` on every
+  price label at every refresh, and `EggWidget.refresh()` does the same.
+- (3) **Pinned.** `headless_store_ui_check` now asserts `price_color()` is `PRICE_COLOR` for the
+  guppy at wallet 50 (the recording's shortage case), `PRICE_COLOR` at exactly enough, and
+  `GREYED_COLOR` only for a sold-out row; plus the bar's own `$100` shelf stays green at wallet 45.
+  57 -> 62 assertions, PASS; `headless_level_check` 165, `headless_integration_check` 134, boot clean.

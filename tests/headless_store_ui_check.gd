@@ -1,6 +1,6 @@
 extends SceneTree
 ## Headless check for the store screen (P4.5): the recovered shelf rects, the price-line offsets and
-## the row states the shop draws (sold out / greyed / affordable).
+## the row states the shop draws (sold out / unknown price / short purse).
 ##
 ##   & "<godot>" --headless --path . --script res://tests/headless_store_ui_check.gd
 
@@ -52,7 +52,15 @@ func _test_states() -> void:
 	var guppy := StoreScript.row_for(0)
 	var guppy_state := ScreenScript.row_state(guppy, 100)
 	var poor := ScreenScript.row_state(guppy, 50)
-	_expect(not bool(poor["affordable"]) and bool(poor["greyed"]), "a row above the purse is greyed out")
+	# D-0029: the base game keeps a `$100` shelf bright green at a wallet of 45, so a short purse is
+	# reported as `affordable == false` and nothing else - the price line is not recoloured.
+	_expect(not bool(poor["affordable"]), "a row above the purse is still reported unaffordable")
+	_expect(not bool(poor["greyed"]) and ScreenScript.price_color(poor) == ScreenScript.PRICE_COLOR,
+		"but a short purse does not grey the price line (wallet 45 against a $100 guppy)")
+	_expect(ScreenScript.price_color(guppy_state) == ScreenScript.PRICE_COLOR,
+		"an affordable row is the same green")
+	_expect(ScreenScript.price_color(ScreenScript.row_state({}, 99999)) == ScreenScript.GREYED_COLOR,
+		"only a sold-out shelf takes the grey (0xCCCCCC, no icon)")
 	_expect(String(poor["name"]) == "Guppy" and int(poor["price"]) == 100, "the guppy row has its label and price")
 	var exact := ScreenScript.row_state(guppy, 100)
 	_expect(bool(exact["affordable"]) and not bool(exact["greyed"]), "exactly enough shells buys the row")
@@ -130,6 +138,13 @@ func _test_bar() -> void:
 		"the MENUBAR wallet plate shows the tank's money")
 	# D-0027: the recording keeps `$100` bright green at a purse of 45, so no price is recoloured by
 	# whether the tank can pay it.
+	level.money = 45
+	bar.refresh()
+	_expect(level.tank_store[0].get("price", 0) == 100 and level.money == 45,
+		"the recording's case: wallet 45 against the $100 guppy shelf")
+	_expect(bar._prices[0].text == "$100"
+		and bar._prices[0].get_theme_color("font_color") == BarScript.PRICE_COLOR,
+		"a $100 shelf stays bright green at a wallet of 45")
 	level.money = 0
 	bar.refresh()
 	_expect(bar._prices[0].get_theme_color("font_color") == BarScript.PRICE_COLOR,

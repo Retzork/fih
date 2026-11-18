@@ -1797,3 +1797,19 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - Also noted, not changed: the port's own `Debug` info line (FPS/tick/Content counters, `main.gd`)
   sits in the same bottom-left row and covers the tank name during play. It is a development overlay
   with no base counterpart; hiding it for normal play would be a one-line change.
+
+### D-0029 - No shop line is greyed by a short purse, and the store screen says so itself
+
+- Date: 2026-11-18 (owner: the price stays bright green at wallet 45 against a `$100` guppy)
+- Status: accepted. Supersedes the "no affordability colour" half of D-0027, which removed the greying
+  from the bar and the egg dome only - `StoreScreen` still greyed its own price line with
+  `GREYED_COLOR` whenever `money < price`.
+- **The rule.** Funds never change a price's colour, on any shop surface. `StoreScreen.row_state()`'s
+  `greyed` is now `sold_out or not price_known`; `affordable` is still reported (the click path and the
+  checks read it) but no longer feeds the colour. The recovered `0xCCCCCC` grey stays for what it was
+  measured on: an unavailable shelf (`SOLD`) or a figure the table never recovered (`?`).
+- **One owner of the colour.** `StoreScreen.price_color(state)` is the only place the price line picks
+  between `PRICE_COLOR` and `GREYED_COLOR`, so `refresh()` and the headless check cannot drift apart.
+- Verified: `headless_store_ui_check` 57 -> 62 (the store screen's price colour at a short and at a
+  sufficient purse, the SOLD grey, and the bar's own `$100` at wallet 45). The bar and the egg dome
+  were already green at any balance (D-0027) and needed no change.
