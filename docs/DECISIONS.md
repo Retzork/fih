@@ -1896,3 +1896,24 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   the plate's margins like the base's, and the number is the wallet's size rather than the price's.
   `headless_store_ui_check` 62 -> 65. Remaining difference, not changed: our price fill is the
   recovered `0x6EFA6E` where JPEG softens the recording's toward mint.
+
+### D-0034 - The tank name keeps ContinuumBold12 and is tracked in 1 px per glyph
+
+- Date: 2026-11-18 (owner: our `Tank  1-1` is 9 px wider than the recording's 60 px - compare the
+  shipped fonts at the measured size, or trim the tracking, then re-shoot 1-1)
+- Status: accepted, measured. EV-0203 has the font table and the re-shot ink boxes.
+- **The shipped set has no closer font at the name's size.** `Tank  1-1` at each font's native size:
+  `CONTINUUMBOLD12` 72 (ours), `CONTINUUMBOLD12OUTLINE` 65, `JUNGLEFEVER10OUTLINE` 65,
+  `BLAMBOTPRO8` 64, `TINYBOLD` 60, `TINY` 51, `CONTINUUMBOLD14` 77, `LIDDIE12` 90, `LIDDIE15` 103,
+  `BLAMBOTPRO15` 114. The two 65-px candidates are **outline** fonts and the recording's name on the
+  water is flat pale gold with no dark rim; `BLAMBOTPRO8` (64) and `TINYBOLD` (60) both stand ~8 px
+  tall where the recording's name is 11. Fitting one of those would trade a 9-px width error for a
+  3-px height error and a different typeface.
+- **So the tracking is trimmed instead**, which keeps the face and the 11-px height: a
+  `FontVariation` over the shared `FontFile` with `spacing_glyph = -1.0` (`UiFont.apply_tracked`,
+  `UiFont.BOTTOM_NAME_TRACKING`). Advance 72 -> 64; the label re-shot at 2x inks **61 px** wide,
+  13..73.5, against the recording's 60 (14..73), height 11 in both. `-1.5` and `-1.0` land on the same
+  64 because the advances are integers, and `-2.0` undershoots (56), so -1.0 is the closest step.
+- **Why a variation and not the asset**: `FONT_CONTINUUMBOLD12` is shared by the store, the wallet and
+  the store screen, which all draw at the native advance - the trim belongs to this one label.
+- `BOTTOM_HINT_FONT` is untouched: its 279 already sits inside the recording's 277 +-2.

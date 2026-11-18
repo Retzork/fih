@@ -324,7 +324,8 @@ func _add_bottom_hud() -> void:
 	tank_label.size = TANK_LABEL_RECT.size
 	tank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	tank_label.add_theme_color_override("font_color", TANK_LABEL_COLOR)
-	UiFont.apply(tank_label, UiFont.BOTTOM_NAME_FONT)
+	# The name is the one bottom-row string whose native advance overruns the recording (D-0034).
+	UiFont.apply_tracked(tank_label, UiFont.BOTTOM_NAME_FONT, UiFont.BOTTOM_NAME_TRACKING)
 	tank_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(tank_label)
 	_refresh_tank_label()

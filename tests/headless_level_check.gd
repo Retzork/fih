@@ -88,6 +88,8 @@ func _test_hunger_hint() -> void:
 		"the deep hint is the recording's capitalised wording")
 	_expect(LevelScript.TANK_LABEL_COLOR == Color8(0xA8, 0x94, 0x60),
 		"the tank name is the measured pale gold")
+	_expect(UiFont.BOTTOM_NAME_FONT == "FONT_CONTINUUMBOLD12" and UiFont.BOTTOM_NAME_TRACKING == -1.0,
+		"the name keeps ContinuumBold12 with 1 px of tracking trimmed (D-0034)")
 	_expect(LevelScript.HINT_COLOR == Color8(0xAE, 0xF7, 0x62)
 		and LevelScript.HINT_OUTLINE_COLOR == Color8(0x00, 0x4A, 0x00),
 		"the hint is the measured lime on its dark green outline")

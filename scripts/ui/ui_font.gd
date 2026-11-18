@@ -31,11 +31,15 @@ const SMALL_FONT := "FONT_TINYBOLD"
 const TINY_FONT := "FONT_TINY"
 const HUD_FONT := "FONT_LIDDIE15"
 const LABEL_FONT := "FONT_LIDDIE12"
-## The tank screen's bottom row (D-0028), measured off the 1-1 recording: the hunger hint's 36 glyphs
-## span 277 px there and `CONTINUUMBOLD14` draws them 279, the tank name spans 60 and
-## `CONTINUUMBOLD12` draws it 72. The base draws both 1:1, so these keep their native size.
+## The tank screen's bottom row (D-0028/D-0034), measured off the 1-1 recording: the hunger hint's 36
+## glyphs span 277 px there and `CONTINUUMBOLD14` draws them 279, so it keeps its native size. The tank
+## name inks 60 px there and `CONTINUUMBOLD12` draws "Tank  1-1" 72, so the name alone is tracked in by
+## 1 px per glyph (advance 64, ink ~61) - the base draws it 1:1 and nothing else in the set lands
+## closer: `CONTINUUMBOLD12OUTLINE`/`JUNGLEFEVER10OUTLINE` are 65 wide but outlined, `BLAMBOTPRO8` 64
+## and `TINYBOLD` 60 both stand ~8 px tall where the recording's name is 11.
 const BOTTOM_HINT_FONT := "FONT_CONTINUUMBOLD14"
 const BOTTOM_NAME_FONT := "FONT_CONTINUUMBOLD12"
+const BOTTOM_NAME_TRACKING := -1.0
 
 
 ## Apply `id` and its native size to `target`. Returns false (leaving the theme default) when
@@ -54,6 +58,31 @@ static func apply(target: Control, id: String) -> bool:
 	if size > 0:
 		target.add_theme_font_size_override("font_size", size)
 	return true
+
+
+## Apply `id` and its native size, then tighten its tracking by `spacing` pixels per glyph
+## (`BOTTOM_NAME_TRACKING`). The shared `FontFile` stays untouched: the tightened font is a
+## `FontVariation` over it, which is what `applied_id()` cannot name - use `applied_base_id()`.
+static func apply_tracked(target: Control, id: String, spacing: float) -> bool:
+	if not apply(target, id):
+		return false
+	var variation := FontVariation.new()
+	variation.base_font = target.get_theme_font("font")
+	variation.spacing_glyph = spacing
+	target.add_theme_font_override("font", variation)
+	return true
+
+
+## The font id applied to `target`, seeing through a `FontVariation` (the tracked name label).
+static func applied_base_id(target: Control) -> String:
+	if target == null:
+		return ""
+	var font := target.get_theme_font("font")
+	if font is FontVariation and font.base_font != null:
+		font = font.base_font
+	if font == null or font.resource_path == "":
+		return ""
+	return "FONT_" + font.resource_path.get_file().get_basename()
 
 
 ## The `Content` autoload under the scene root, or null outside a scene (the `--script` suites).

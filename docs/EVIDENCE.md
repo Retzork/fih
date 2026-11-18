@@ -5149,3 +5149,23 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Coverage**: `headless_store_ui_check` 62 -> 65 (the recovered wallet box; no `$` label node;
   the two font ids; the shadow colour), `headless_integration_check` 134 (its two `_uses_font` checks
   move to `BAR_PRICE_FONT`), `headless_level_check` 170, boot clean.
+
+## EV-0203 - The tank name's width: font table at native size, and the re-shot 1-1 label
+- Date: 2026-11-18
+- Type: `Font.get_string_size("Tank  1-1")` per shipped font at its native size; windowed 1-1 capture
+  at 2x (1280x960) with the wallet at 45, ink box of the name label measured on the raw RGB
+- Source: `scripts/ui/ui_font.gd` (`BOTTOM_NAME_FONT`, `BOTTOM_NAME_TRACKING`, `apply_tracked`),
+  `scripts/tank/level.gd` (`_add_bottom_hud`), `tests/headless_level_check.gd`
+- (1) **Advances for `Tank  1-1`** (nine glyphs, two spaces): `FONT_CONTINUUMBOLD12` 72,
+  `FONT_CONTINUUMBOLD12OUTLINE` 65, `FONT_JUNGLEFEVER10OUTLINE` 65, `FONT_BLAMBOTPRO8` 64,
+  `FONT_TINYBOLD` 60, `FONT_TINY` 51, `FONT_CONTINUUMBOLD14` 77, `FONT_LIDDIE12` 90,
+  `FONT_LIDDIE15` 103, `FONT_BLAMBOTPRO15` 114. Heights: 8-px fonts stand ~8 px of caps, the 12-px
+  pair 11; the recording's name inks 11 px tall (y 459..469 game).
+- (2) **Tracking on ContinuumBold12**: `spacing_glyph` -0.5 -> 72, -1.0 -> 64, -1.5 -> 64, -2.0 -> 56
+  (integer advances, so -1.5 buys nothing over -1.0).
+- (3) **Re-shot 1-1** (2x capture, raw RGB, ink = pixels within 26 of `#A89460`): name inks
+  x 26..147 capture = **61 logical px**, y 920..941 = 11 px tall. Before the trim the same label
+  inked 69 px (x 13..81). The recording's is 60 px (x 14..73). Column runs of the re-shot read
+  `Tank` = 26..79, then `1-1` = 120..147, so the two-space gap survives the trim.
+- (4) **Coverage**: `headless_level_check` 170 -> 171 (the font id and the -1.0 tracking);
+  `headless_store_ui_check` 65, `headless_integration_check` 134, boot clean.
