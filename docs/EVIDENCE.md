@@ -5189,3 +5189,31 @@ behavior or specs; follow up with a binary observation entry.
   cache fields are back at their initial values after loading a save stuffed with stale ones);
   `headless_tank_snapshot_check` 54, `headless_store_ui_check` 65, `headless_integration_check` 134,
   boot clean.
+
+## EV-0205 - The tick-gated hint re-shot on 1-1 and 1-3 against the recording
+- Date: 2026-11-18
+- Type: windowed captures of the real main scene (2x, 1280x960) driven a tick at a time, and frames of
+  `Recording 2026-11-16 123332.mp4` at 0/1.5/4/9 s; ink boxes measured on raw RGB
+- Source: `scripts/tank/level.gd` (`_refresh_hint`, `hint_text`, `HINT_RECT`), `scripts/entities/fish.gd`
+  (`HUNGER_HINTS`)
+- (1) **Timing holds on both tanks.** Each level is started from the menu and every live fish is
+  set just above a warning line so the next decay tick crosses it. 1-1: the crossing tick is 4
+  (worst -1) and the label is visible with `Fish are hungry! Click to drop food!` on that same tick;
+  after feeding at tick 25 the label is empty and hidden on tick 26 (worst 494). 1-3: crossing tick 5
+  (worst -1), cleared tick 22 (worst 499). No tick of stale wording and no tick of delay.
+- (2) **The wording tiers are wrong** (found by this comparison; not changed). The base has three
+  lines - its own table (`docs/analysis/notes/p2.3-feeding.md:152-153`) puts `-1` at the shallow line,
+  `-200` at `REALLY hungry` and `-400` at `about to die`. The recording shows both: t=0/1.5 the
+  REALLY line, t=4 `Fish are about to die of hunger! Click on aquarium!`. The port has only the
+  shallow and REALLY strings and keys REALLY to `-400`, so at `-210` it still shows the shallow line
+  (captured) and at `-451` it shows REALLY where the base shows about-to-die (captured side by side).
+- (3) **Sizes.** The recording's REALLY line inks x 173..475 = 303 px, y 457..474; the about-to-die
+  line 397 px. The port's REALLY line inks x 173..473.5 = 301 px, centre 323.25 against the base's
+  324, so the width and horizontal centre match within JPEG blur. The shallow line (no recording
+  frame for it) inks 275.
+- (4) **The hint sits ~6 px lower than the base's**: the port's ink rows are y 463..479.5 where the
+  recording's are 457..474, with the same height. `HINT_RECT` is (0, 454, 640, 22) and the label
+  centres a 26-px line box in it, so the glyph ink lands low; the base's ink bottom is 2 px above the
+  rect's bottom where the port's is 3.5 px below it. Left as found - it is a position fix, not a
+  tick-gating one.
+- (5) After feeding, both tanks draw no hint at all - no outline, no empty band - matching t=9.
