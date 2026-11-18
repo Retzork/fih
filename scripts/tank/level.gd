@@ -192,6 +192,10 @@ var egg_widget = null
 ## The base's bottom row: the tank name and the hunger hint (D-0028), the only level readout (D-0031).
 var tank_label: Label = null
 var hint_label: Label = null
+## The tick `hint_label` was last computed for, and the wording it shows: fullness only moves when the
+## tank advances, so a paused or unchanged tick does no work at all (D-0032).
+var _hint_tick := -1
+var _hint_shown := ""
 ## How many waves have spawned this session (the original's `Tank+0x45C`).
 var waves_spawned := 0
 ## Composite recipes spawn two member kinds at one point; the clock emits the recipe twice.
@@ -316,31 +320,29 @@ func _add_bottom_hud() -> void:
 	var layer := get_node_or_null("Hud")
 	if layer == null:
 		return
-	if tank_label == null:
-		tank_label = Label.new()
-		tank_label.name = "TankLabel"
-		tank_label.position = TANK_LABEL_RECT.position
-		tank_label.size = TANK_LABEL_RECT.size
-		tank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		tank_label.add_theme_color_override("font_color", TANK_LABEL_COLOR)
-		UiFont.apply(tank_label, UiFont.BOTTOM_NAME_FONT)
-		tank_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		layer.add_child(tank_label)
-		_refresh_tank_label()
-	if hint_label == null:
-		hint_label = Label.new()
-		hint_label.name = "HungerHint"
-		hint_label.position = HINT_RECT.position
-		hint_label.size = HINT_RECT.size
-		hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		hint_label.add_theme_color_override("font_color", HINT_COLOR)
-		hint_label.add_theme_color_override("font_outline_color", HINT_OUTLINE_COLOR)
-		hint_label.add_theme_constant_override("outline_size", HINT_OUTLINE_SIZE)
-		UiFont.apply(hint_label, UiFont.BOTTOM_HINT_FONT)
-		hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		hint_label.visible = false
-		layer.add_child(hint_label)
+	tank_label = Label.new()
+	tank_label.name = "TankLabel"
+	tank_label.position = TANK_LABEL_RECT.position
+	tank_label.size = TANK_LABEL_RECT.size
+	tank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tank_label.add_theme_color_override("font_color", TANK_LABEL_COLOR)
+	UiFont.apply(tank_label, UiFont.BOTTOM_NAME_FONT)
+	tank_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(tank_label)
+	_refresh_tank_label()
+	hint_label = Label.new()
+	hint_label.name = "HungerHint"
+	hint_label.position = HINT_RECT.position
+	hint_label.size = HINT_RECT.size
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hint_label.add_theme_color_override("font_color", HINT_COLOR)
+	hint_label.add_theme_color_override("font_outline_color", HINT_OUTLINE_COLOR)
+	hint_label.add_theme_constant_override("outline_size", HINT_OUTLINE_SIZE)
+	UiFont.apply(hint_label, UiFont.BOTTOM_HINT_FONT)
+	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint_label.visible = false
+	layer.add_child(hint_label)
 
 
 ## The base's own naming of the pair, with the wide gap the recording has between the name and the
@@ -373,16 +375,19 @@ func hint_text() -> String:
 	return ""
 
 
+## The one place the hint can change: the tank's tick clock. A paused tank fires no ticks, and a
+## frame without a tick costs one integer compare - the label is only written when its wording
+## actually changes, so a settled hint does not dirty its own layout every frame.
 func _refresh_hint() -> void:
-	if hint_label == null:
+	if hint_label == null or tank == null or int(tank.age_ticks) == _hint_tick:
 		return
+	_hint_tick = int(tank.age_ticks)
 	var text := hint_text()
+	if text == _hint_shown:
+		return
+	_hint_shown = text
 	hint_label.visible = text != ""
-	if text != "":
-		hint_label.text = text
-
-
-
+	hint_label.text = text
 
 ## The tank backdrop (`+0x3E8`, 1..6 -> `TANKBACKDROP1..6`), drawn behind every entity.
 func _add_backdrop() -> void:

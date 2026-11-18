@@ -103,7 +103,14 @@ func _test_hunger_hint() -> void:
 	fish.fullness = Fish.HUNGER_HINTS[2]
 	_expect(level.hint_text() == LevelScript.HINT_TEXT_SEVERE,
 		"the last warning line shows the capitalised hint")
+	# A corpse still in the list is not a hungry fish, and a cleared tank has nothing to warn about.
+	fish.dead = true
+	_expect(level.hint_text() == "", "a dead fish raises no hint")
+	fish.dead = false
 	fish.fullness = 500
+	for entity in level.tank.entities_in(SimScript.Phase.FISH).duplicate():
+		level.tank.despawn(entity)
+	_expect(level.hint_text() == "", "a cleared tank shows no hint")
 
 
 func _test_starting_population() -> void:

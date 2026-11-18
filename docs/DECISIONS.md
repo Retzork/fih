@@ -1840,3 +1840,25 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   builder; `LEVEL_PLATE_RECT`/`LEVEL_LABEL_RECT`/`LEVEL_PLATE_SOURCE`/`LEVEL_LABEL_COLOR`,
   `_add_level_plate()`/`_refresh_level_label()` and the `level_label` field are gone, and
   `start_level`/`load_game` call `_refresh_tank_label()`. Re-shot 1-1 and 1-3 at 2x: EV-0200.
+
+### D-0032 - The bottom HUD reviewed: one builder, tick-gated hint, nothing drawn twice
+
+- Date: 2026-11-18 (owner: fresh-eyes review of this turn's bottom-HUD change)
+- Status: accepted. Measured before/after in EV-0201.
+- **Dropped.** `_add_bottom_hud()`'s two `if label == null` guards: the function has exactly one
+  caller (`_ready`), and the labels are rebuilt with the level, so the branches could never run.
+  `_refresh_hint()`'s `if text != "": hint_label.text = text` split - it hid the label without
+  clearing its text, so a later identical wording would have needed the stale text to survive; the
+  text is now written once, unconditionally, when the wording changes.
+- **Per-frame cost.** The hint is driven by the tank's own tick clock (`tank.age_ticks`), which is
+  what moves `Fish.fullness`: a frame with no tick is one integer compare (0.20 us), and a wording
+  that has not changed does not touch the label (a label write is 0.09 us but also dirties layout).
+  The hunger scan itself is 1.72 us with two fish and grows with the school; it now runs at most once
+  per tick instead of once per frame, and not at all while the tank is paused.
+- **Fish that die, tanks that empty.** `hint_text()` skips `fish.dead` corpses still in the list and
+  reports `""` when no live fish remain (the accumulator starts at 0, above the -1 shallow line), so
+  the hint disappears the tick the last fish goes and a cleared tank never warns. Both cases are
+  pinned in `headless_level_check`.
+- Kept: both font constants. `BOTTOM_HINT_FONT` (ContinuumBold14, 279 px against the measured 277) is
+  used nowhere else; `BOTTOM_NAME_FONT` is the same id as `STORE_FONT` but names a different role,
+  and the recording's 72-vs-60 px width is why it was chosen.

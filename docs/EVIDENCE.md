@@ -5098,3 +5098,21 @@ behavior or specs; follow up with a binary observation entry.
   script's constant map; `tank_name(1, 1)`/`tank_name(1, 3)` are the recording's strings;
   `TANK_LABEL_RECT` is (13, 453)), `headless_store_ui_check` 62, `headless_integration_check` 134,
   boot clean.
+
+## EV-0201 - What the hint refresh costs per frame, before and after the tick gate
+- Date: 2026-11-18
+- Type: timing probe on the live 1-1 level (windowed, `--audio-driver Dummy`), 200,000 calls per figure
+- Source: `scripts/tank/level.gd` (`_refresh_hint`, `hint_text`, `tank.age_ticks`),
+  `tests/headless_level_check.gd`
+- (1) **Off-tick cost.** `_refresh_hint()` called 200,000 times with the tick unchanged - the common
+  case, since the sim ticks at 30 Hz and the game draws at 60 - averages **0.20 us** a call, i.e. the
+  function call plus one integer compare. At 60 fps that is ~12 us a second.
+- (2) **The scan it skips.** `hint_text()` on the same frame costs **1.72 us** with two fish (it walks
+  `entities_in(FISH)`), so the ungated version paid ~103 us a second for this row, and more as the
+  school grows. A label text write is 0.09 us, but it also marks the label's layout dirty, which is
+  why a settled wording no longer re-writes it.
+- (3) **Behaviour, not just cost.** With the tick gate the hint still appears on the tick the fish
+  cross a warning line and disappears on the tick the last live fish dies; `headless_level_check`
+  now pins `hint_text() == ""` for a dead fish and for a cleared tank (168 -> 170 assertions).
+- (4) Also removed in the review: `_add_bottom_hud()`'s unreachable null guards (single caller,
+  labels rebuilt per level). Font constants kept, with the reason in D-0032.
