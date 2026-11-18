@@ -1930,12 +1930,23 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   load left the cache pointing at the old tank: a restored `age_ticks` equal to the cached tick froze
   the hint for that tick, and a restored fullness that produced the cached wording skipped the write -
   the label kept the previous tank's text.
-- `load_game()` now resets `_hint_tick` to `-1` and `_hint_shown` to `""` with the rest of its
-  post-restore fix-ups (`_sync_wave_selection`), and clears `hint_label`'s text and visibility when the
-  HUD exists so nothing lingers in the frame between the load and the restored tank's next tick. The
-  next tick then recomputes and writes normally, which is the state a fresh `start_level()` begins in.
-- Pinned by `headless_level_check._test_hint_cache_on_load`: save the level, stuff both cache fields
-  with stale values, load, and require them back at their initial values.
+- `load_game()` now resets **`_hint_tick` alone** to `-1`, with the rest of its post-restore fix-ups
+  (`_sync_wave_selection`). `_refresh_hint()` runs on every rendered frame and its tick gate is the only
+  thing that can skip a recompute, so a reset tick means the load's own frame ends with the restored
+  tank's wording on screen - input is dispatched before `_process`, so no frame is drawn in between.
+- **Why only the tick** (review, same day): the first cut also cleared `_hint_shown` and blanked the
+  label. Both were unnecessary and in fact contradictory - `_hint_shown` is written only by
+  `_refresh_hint()` and therefore always equals what the label holds, and `load_game()` does not touch
+  the label, so that cache stays true across a load; emptying it claimed the label was blank while the
+  label still showed the old line, and the label clearing existed only to hide that. With the tick
+  reset, the next refresh compares the restored wording against the (still accurate) `_hint_shown` and
+  writes exactly when it differs - which is precisely the "skip a change" case, now handled.
+- Pinned by `headless_level_check._test_hint_cache_on_load`: save the level, stuff `_hint_tick` with a
+  value a restored tank could match, load, and require it back at `-1`.
+- **Nothing else caches the hint across a load.** `hint_text()` is pure; `hint_label`'s text and
+  visibility are the display, rewritten by `_refresh_hint()`; `Fish._warned` is the per-fish warning-SFX
+  ladder, it lives on the fish (a load builds new fish with all three false) and clears itself as soon
+  as fullness is positive again. The save's scalar block carries no tick or hint field.
 
 ### D-0036 - The F12 stats line sits above the bottom row, not over it
 

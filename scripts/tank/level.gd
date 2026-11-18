@@ -1617,14 +1617,11 @@ func load_game(path: String = "") -> bool:
 	# The scalar block restored the type and countdown; point the live clock at the restored type
 	# without resetting the countdown (G10).
 	_sync_wave_selection()
-	# The hint's cache belongs to the tank that drew it: the restored tank has its own fullness and tick
-	# clock, so keeping either would show the pre-load wording for a tick, or treat the restored tick as
-	# already drawn and skip the change. Clearing the label too keeps it from lingering until that tick.
+	# Only the tick cache has to go: it belongs to the tank that drew it, and a restored `age_ticks`
+	# equal to it would hold the pre-load wording until the clock moved on. `_hint_shown` still describes
+	# the label exactly as before the load, so leaving it alone is what keeps that cache honest - the
+	# next `_refresh_hint()` compares against it and writes only if the restored tank reads differently.
 	_hint_tick = -1
-	_hint_shown = ""
-	if hint_label != null:
-		hint_label.text = ""
-		hint_label.visible = false
 	return true
 
 

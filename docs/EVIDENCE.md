@@ -5185,10 +5185,18 @@ behavior or specs; follow up with a binary observation entry.
 - (3) After D-0035 the load leaves `_hint_tick == -1` and `_hint_shown == ""` (and an empty, hidden
   `hint_label` when there is a HUD), which is the fresh-`start_level` state, so the restored tank's
   next tick recomputes and writes.
-- (4) **Coverage**: `headless_level_check` 171 -> 174 (the save writes, the load returns true, and both
-  cache fields are back at their initial values after loading a save stuffed with stale ones);
-  `headless_tank_snapshot_check` 54, `headless_store_ui_check` 65, `headless_integration_check` 134,
+- (4) **Coverage**: `headless_level_check` 171 -> 174 (the save writes, the load returns true, and
+  `_hint_tick` is back at `-1` after loading a save stuffed with a tick a restored tank could match);
+  `headless_tank_snapshot_check` 54, `headless_store_ui_check` 65, `headless_integration_check` 136,
   boot clean.
+- (5) **Review of the fix (same day)**: the wording reset and the label clearing were both cut. The
+  order that makes them unnecessary is `_refresh_hint()`'s: it runs in `_process` on every rendered
+  frame, its only skip is `age_ticks == _hint_tick`, and input is dispatched before `_process` - so the
+  `-1` tick alone puts the restored wording on screen in the load's own frame. `_hint_shown` is only
+  ever written by `_refresh_hint()` and the load does not touch the label, so it still equals the
+  label's text; clearing it was not just redundant but wrong (it described a blank label that was not
+  blank). Nothing else carries hint state: `hint_text()` is pure, `Fish._warned` is per-fish and reset
+  with the fish, and the scalar block has no hint field.
 
 ## EV-0205 - The tick-gated hint re-shot on 1-1 and 1-3 against the recording
 - Date: 2026-11-18
