@@ -78,7 +78,11 @@ func setup(source) -> void:
 	_price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_price.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UiFont.apply(_price, UiFont.SMALL_FONT)
+	# The dome's price is the bar's own label: same font, same 1-px dark shadow.
+	_price.add_theme_color_override("font_shadow_color", StoreBar.PRICE_SHADOW_COLOR)
+	_price.add_theme_constant_override("shadow_offset_x", 1)
+	_price.add_theme_constant_override("shadow_offset_y", 1)
+	UiFont.apply(_price, UiFont.BAR_PRICE_FONT)
 	_button.add_child(_price)
 
 	refresh()

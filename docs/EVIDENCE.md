@@ -5123,3 +5123,29 @@ behavior or specs; follow up with a binary observation entry.
   now pins `hint_text() == ""` for a dead fish and for a cleared tank (168 -> 170 assertions).
 - (4) Also removed in the review: `_add_bottom_hud()`'s unreachable null guards (single caller,
   labels rebuilt per level). Font constants kept, with the reason in D-0032.
+
+## EV-0202 - The bar's `$` and its text sizes, measured off the 1-1 recording
+- Date: 2026-11-18
+- Type: frames of `Recording 2026-11-16 123332.mp4` (636x504, 30 fps; t = 15, wallet 45), 32x badge
+  crops against `assets_raw/images/menubar.png`, same-scale side-by-sides of the port's own capture
+- Source: `scripts/ui/store_bar.gd` (`MONEY_RECT`, `PRICE_SHADOW_COLOR`), `scripts/ui/ui_font.gd`
+  (`BAR_PRICE_FONT`, `BAR_MONEY_FONT`), `scripts/ui/egg_widget.gd`, `tests/headless_store_ui_check.gd`
+- (1) **The `$` is the art's.** `MENUBAR`'s badge (x 528..541, y 42..57) is a `$` in
+  `#006901`/`#138C17`/`#25740F` with `#50872A`/`#32AA33` edges on `#FED172`. The recording's badge at
+  the same position (window y - 24) is that glyph with JPEG ringing; at 32x the two are the same shape
+  in the same cells. So the base draws no `$` label, and the port's second one was covering the art.
+- (2) **The wallet label is recovered.** `FUN_00542CFD` sets `Tank+0x438` to x `0x217` = 535, y `0x28`
+  = 40, width `0x50` = 80, height = the font's, font `DAT_005e8ce4` = `FONT_CONTINUUMBOLD12`
+  (EV-0157); `FUN_0053A360` formats `"%d"` (`DAT_005adec0`, EV-0058) - no sign in the string.
+- (3) **Text sizes off the video.** `$100` inks x 32..57 (**25 px** wide) and y 75..82 (**8 px** tall)
+  inside the 45x12 plate; the wallet's `45` inks x 597..612 (**16 px**) and y 68..79 (**11 px**) - two
+  different sizes, and both larger than the 8-px `TINYBOLD` the port used (its `$100` advance is 37 px,
+  so it filled the plate). Font advances at native size: `FONT_TINY` 27, `FONT_BLAMBOTPRO8` 32,
+  `FONT_CONTINUUMBOLD12` 35, `FONT_CONTINUUMBOLD12OUTLINE` 35, `FONT_LIDDIE12` 38, `FONT_TINYBOLD` 37.
+- (4) **What the port now draws**: prices in `FONT_TINY` (`$100` advance 27, leaving the plate's
+  margins as the base does) with a 1-px `#004A00` shadow, the wallet number in ContinuumBold12 in the
+  (535, 40, 80) box, and the art's `$` uncovered. Re-shot at 2x and stacked against the recording at
+  the same physical scale: same positions, same margins, same relative sizes.
+- (5) **Coverage**: `headless_store_ui_check` 62 -> 65 (the recovered wallet box; no `$` label node;
+  the two font ids; the shadow colour), `headless_integration_check` 134 (its two `_uses_font` checks
+  move to `BAR_PRICE_FONT`), `headless_level_check` 170, boot clean.

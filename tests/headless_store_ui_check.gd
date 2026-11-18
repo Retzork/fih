@@ -80,11 +80,10 @@ func _test_bar() -> void:
 	_expect(BarScript.BAR_IMAGE == "IMAGE_MENUBAR",
 		"the bar is the game's own MENUBAR art, not a blank Control")
 	_expect(BarScript.BAR_SIZE == Vector2(640, 75), "MENUBAR is the 640x75 top strip")
-	# D-0023: the base game's wallet is a dark-green `$` in the plate's badge with the number
-	# right-aligned in the green field, so the plate splits into two labels.
-	_expect(BarScript.MONEY_RECT.position == Vector2(546, 34)
-		and BarScript.MONEY_SIGN_RECT.position == Vector2(531, 34),
-		"the wallet number is right-aligned in the field with a `$` in the plate's badge")
+	# D-0033: the wallet is the tank's label widget `Tank+0x438` - (0x217, 0x28, 0x50) - printing the
+	# bare `"%d"`; the `$` in the badge is the `MENUBAR` art's own glyph, not a second label.
+	_expect(BarScript.MONEY_RECT.position == Vector2(535, 40) and BarScript.MONEY_RECT.size.x == 80,
+		"the wallet number sits in the recovered (535, 40, 80) label box")
 	_expect(BarScript.slot_rect(0) == Rect2(18, 3, 58, 60),
 		"the first in-tank slot is at x 0x12, y 3, 58x60 (FUN_005409B0)")
 	_expect(BarScript.PLATE_RECT == Rect2(7, 45, 45, 12),
@@ -136,6 +135,12 @@ func _test_bar() -> void:
 		"an unstocked dome stays empty - SOLD is the StoreScreen's branch, not an empty tank slot")
 	_expect(bar._money_label.text == str(level.money),
 		"the MENUBAR wallet plate shows the tank's money")
+	_expect(bar.get_node_or_null("MoneySign") == null,
+		"no `$` label is drawn over the art's own badge glyph")
+	_expect(UiFont.BAR_PRICE_FONT == "FONT_TINY" and UiFont.BAR_MONEY_FONT == "FONT_CONTINUUMBOLD12",
+		"the prices use the fitted 8-px font and the wallet the recovered ContinuumBold12")
+	_expect(BarScript.PRICE_SHADOW_COLOR == Color8(0x00, 0x4A, 0x00),
+		"the price label carries the recording's 1-px dark shadow")
 	# D-0027: the recording keeps `$100` bright green at a purse of 45, so no price is recoloured by
 	# whether the tank can pay it.
 	level.money = 45

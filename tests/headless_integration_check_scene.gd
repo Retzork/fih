@@ -98,7 +98,7 @@ func _run() -> void:
 	_expect(_uses_font(shop.get_node_or_null("Price0"), UiFont.STORE_FONT),
 		"the store price line uses the store font")
 	shop.queue_free()
-	_expect(_uses_font(level.store_bar.get_node_or_null("Slot0/Price"), UiFont.SMALL_FONT),
+	_expect(_uses_font(level.store_bar.get_node_or_null("Slot0/Price"), UiFont.BAR_PRICE_FONT),
 		"the in-tank bar price uses the 8 px bold font")
 	var bar_bg = level.store_bar.get_node_or_null("Background")
 	_expect(bar_bg is TextureRect and bar_bg.texture == Content.texture("IMAGE_MENUBAR"),
@@ -108,7 +108,7 @@ func _run() -> void:
 		"the MENUBAR wallet plate shows the tank's money")
 	_expect(level.store_bar.get_node("Slot6/Price").text == "",
 		"an unstocked dome is empty (no SOLD text)")
-	_expect(_uses_font(level.egg_widget.get_node_or_null("Buy/Price"), UiFont.SMALL_FONT),
+	_expect(_uses_font(level.egg_widget.get_node_or_null("Buy/Price"), UiFont.BAR_PRICE_FONT),
 		"the egg price uses the bar's 8 px bold font")
 	# The counts live on the bar itself (the egg dome and the MENUBAR's wallet plate); a second text
 	# line under the buy row is a port artifact the owner had removed.

@@ -24,12 +24,13 @@ const BAR_SIZE := Vector2(640.0, 75.0)
 ## so the port uses the same 26-px height `HatchScreen` gives the baked MENU plate. The label and
 ## frame are part of the `MENUBAR` art, so the control itself is a flat hit target.
 const MENU_RECT := Rect2(525.0, 4.0, 80.0, 26.0)
-## The green wallet plate inside `MENUBAR` (green pixels span x 530..621, y 39..58). The base game
-## puts a dark-green `$` in the plate's left badge and right-aligns the number in the green field.
-## Both boxes share y 34..64, so the glyphs share one centre line by construction.
-const MONEY_RECT := Rect2(546.0, 34.0, 74.0, 30.0)
-const MONEY_SIGN_RECT := Rect2(531.0, 34.0, 14.0, 30.0)
-const MONEY_SIGN_COLOR := Color8(0x36, 0x72, 0x0A)
+## The wallet number: the tank's label widget is `Tank+0x438`, which `FUN_00542CFD` builds at
+## **(0x217, 0x28, 0x50)** - 535, 40, 80 wide - with the font's own height (`DAT_005e8ce4`,
+## ContinuumBold12), and `FUN_0053A360` prints the bare `"%d"` into it (EV-0058). There is no `$`
+## label: the glyph in the plate's badge is the `MENUBAR` art's own (#006901 on #FED172), so drawing a
+## second one covered it (D-0033). The box is 18 tall rather than the font's 12 so the glyphs are not
+## clipped; its centre (y 49) is the plate's.
+const MONEY_RECT := Rect2(535.0, 40.0, 80.0, 18.0)
 ## The purple price plate under each dome, measured from the art: (7, 45, 45, 12) slot-local.
 const PLATE_RECT := Rect2(7.0, 45.0, 45.0, 12.0)
 ## The label's layout box: a `Label` clips its glyphs to its own rect, and the 8-px font's line is
@@ -55,6 +56,9 @@ const SLOT_COUNT := 8
 ## egg are as bright as at money 400 (D-0027). The bar used to grey a price it could not pay; the
 ## base game never does, so there is no second colour here.
 const PRICE_COLOR := Color8(0x6E, 0xFA, 0x6E)
+## The recording's `$100` sits on a 1-px dark shadow (the label widget draws one, `+0x2d`/`+0x2e` are
+## its two images): the sampled edge is `#004A00`, the same dark green the hunger hint outlines with.
+const PRICE_SHADOW_COLOR := Color8(0x00, 0x4A, 0x00)
 ## The wallet number is the same green as every price (sampled #84EF89 in the recording).
 const MONEY_COLOR := PRICE_COLOR
 
@@ -117,7 +121,6 @@ static var _badge_placeholder: Texture2D = null
 var level: Level = null
 var _background: TextureRect = null
 var _money_label: Label = null
-var _money_sign: Label = null
 var _menu_button: Button = null
 var _buttons: Array[Button] = []
 var _icons: Array[TextureRect] = []
@@ -213,7 +216,10 @@ func setup(target: Level) -> void:
 		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		price_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price_label.add_theme_color_override("font_color", PRICE_COLOR)
-		UiFont.apply(price_label, UiFont.SMALL_FONT)
+		price_label.add_theme_color_override("font_shadow_color", PRICE_SHADOW_COLOR)
+		price_label.add_theme_constant_override("shadow_offset_x", 1)
+		price_label.add_theme_constant_override("shadow_offset_y", 1)
+		UiFont.apply(price_label, UiFont.BAR_PRICE_FONT)
 		button.add_child(price_label)
 		_prices.append(price_label)
 	refresh()
@@ -253,16 +259,6 @@ func _add_menu_button() -> void:
 ## The wallet on the art's green plate (`Tank::AddMoney`'s value): the dark-green `$` in the plate's
 ## left badge and the number right-aligned in the green field, as the base game draws it.
 func _add_money_readout() -> void:
-	_money_sign = Label.new()
-	_money_sign.name = "MoneySign"
-	_money_sign.text = "$"
-	_money_sign.position = MONEY_SIGN_RECT.position
-	_money_sign.size = MONEY_SIGN_RECT.size
-	_money_sign.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_money_sign.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_money_sign.add_theme_color_override("font_color", MONEY_SIGN_COLOR)
-	UiFont.apply(_money_sign, UiFont.SMALL_FONT)
-	add_child(_money_sign)
 	_money_label = Label.new()
 	_money_label.name = "Money"
 	_money_label.position = MONEY_RECT.position
@@ -270,7 +266,7 @@ func _add_money_readout() -> void:
 	_money_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_money_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_money_label.add_theme_color_override("font_color", MONEY_COLOR)
-	UiFont.apply(_money_label, UiFont.SMALL_FONT)
+	UiFont.apply(_money_label, UiFont.BAR_MONEY_FONT)
 	add_child(_money_label)
 
 
@@ -351,8 +347,6 @@ func refresh() -> void:
 		var show_money := true if game == null else bool(game.show_money)
 		_money_label.visible = show_money
 		_money_label.text = str(level.money)
-		if _money_sign != null:
-			_money_sign.visible = show_money
 	_swim_shelf = -1
 	for shelf in _buttons.size():
 		var row := row_at(level, shelf)
@@ -581,5 +575,3 @@ func _on_menu_pressed() -> void:
 func _on_show_money_changed(show: bool) -> void:
 	if _money_label != null:
 		_money_label.visible = show
-	if _money_sign != null:
-		_money_sign.visible = show

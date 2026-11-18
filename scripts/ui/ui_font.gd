@@ -20,6 +20,13 @@ const SELECTOR_SMALL_FONT := "FONT_JUNGLEFEVER10OUTLINE"
 ## Shell counter (P2.12 §6).
 const STORE_FONT := "FONT_CONTINUUMBOLD12"
 const STORE_OUTLINE_FONT := "FONT_CONTINUUMBOLD12OUTLINE"
+## The tank bar's own pair (D-0033). The wallet is recovered: `FUN_00542CFD` gives the tank's label
+## widget (`Tank+0x438`, box 0x217/0x28/0x50) `DAT_005e8ce4` = plain ContinuumBold12, and `FUN_0053A360`
+## prints the bare `"%d"` into it (EV-0058). The price label's font is not recovered, so it is fitted to
+## the recording: `$100` inks 25 px wide there against the 45-px plate, which is Tiny's 27-px advance -
+## ContinuumBold12's 35 (what the widget ctor's `+0x2e` global would suggest) overruns the plate.
+const BAR_PRICE_FONT := "FONT_TINY"
+const BAR_MONEY_FONT := "FONT_CONTINUUMBOLD12"
 const SMALL_FONT := "FONT_TINYBOLD"
 const TINY_FONT := "FONT_TINY"
 const HUD_FONT := "FONT_LIDDIE15"

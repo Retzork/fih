@@ -1869,3 +1869,30 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - Kept: both font constants. `BOTTOM_HINT_FONT` (ContinuumBold14, 279 px against the measured 277) is
   used nowhere else; `BOTTOM_NAME_FONT` is the same id as `STORE_FONT` but names a different role,
   and the recording's 72-vs-60 px width is why it was chosen.
+
+### D-0033 - The bar's text: the `$` is the art's glyph, prices are 8-px with a shadow, the wallet is CB12
+
+- Date: 2026-11-18 (owner: the two recorded deviations - dark-green `$`, 8-px glyphs - measured off the
+  1-1 video and fixed)
+- Status: accepted, measured. EV-0202 has the numbers and the side-by-sides.
+- **The wallet `$` was a port invention, and the earlier note had it backwards.** At 32x the recording's
+  badge and the shipped `MENUBAR` badge are the same glyph in the same place: a **dark-green `$`**
+  (`#006901`/`#138C17`/`#25740F`, edge `#32AA33`) on the pale-gold plate (`#FED172`). The "pale gold"
+  in D-0027 was that plate showing through, not the glyph. `FUN_00542CFD` builds the tank's money label
+  (`Tank+0x438`) at **(535, 40, 80)** with `DAT_005e8ce4` = plain ContinuumBold12 and `FUN_0053A360`
+  prints the bare `"%d"` into it (EV-0058) - there is no `$` in the string. So the port's `MONEY_SIGN`
+  label, its rect and its `#36720A` colour are **deleted**: the art's own `$` now shows, which is what
+  the base draws. `MONEY_RECT` moves to the recovered (535, 40, 80), 18 tall so the 12-px glyphs clear.
+- **The wallet number is ContinuumBold12**, the recovered font, not the 8-px `TINYBOLD` it was drawn in:
+  the recording's `45` inks 16 px wide and 11 px tall where TINYBOLD gave ~12 x 6.
+- **The price label's font is not recovered** - `FUN_005373C0` takes it from its caller and the
+  `+0x2e` global earlier read as a font is one of the widget's two images - so it is fitted to the
+  video: `$100` inks **25 px** wide inside the 45-px plate, which is `FONT_TINY`'s 27-px advance;
+  ContinuumBold12's 35 px overruns the plate, and that is what trying it showed. The label also gets
+  the recording's **1-px dark shadow** (`#004A00`), which is why the base's glyphs read mint-edged
+  rather than flat green; the egg dome's price takes the same pair, being the same label.
+- Verified by re-capturing 1-1 at 2x with the wallet at 45 and stacking the crops against the
+  recording's (same physical scale): the `$` and the digits now sit where the base's do, `$100` leaves
+  the plate's margins like the base's, and the number is the wallet's size rather than the price's.
+  `headless_store_ui_check` 62 -> 65. Remaining difference, not changed: our price fill is the
+  recovered `0x6EFA6E` where JPEG softens the recording's toward mint.
