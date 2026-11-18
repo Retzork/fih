@@ -71,7 +71,16 @@ const SWIM_COLUMNS := 10
 ## atlas that carries the badge is unrecovered (Q-0054), so the bar builds it from these samples.
 const BADGE_BASE := Color8(0x52, 0x24, 0x88)
 const BADGE_EDGE := Color8(0x51, 0x32, 0xB3)
-const BADGE_HIGHLIGHT := Color8(0xA4, 0x89, 0xC7)
+## The badge carries **two** glows, both sampled off the recording: a big one at the upper left
+## (#D0BCE1 at slot (16, 8), i.e. badge-relative (10, 6.5)) and a small one at the lower right
+## (#CDB2E9 at slot (44.5, 33.5), badge-relative (38.5, 30.5)). The port had two overlapping glows in
+## the upper-left corner and a darker colour, so the violet read flat (D-0027).
+const BADGE_HIGHLIGHT := Color8(0xD0, 0xBC, 0xE1)
+## Highlight positions as fractions of the badge, measured from the two sampled centres.
+const BADGE_GLOWS := [
+	[Vector2(0.23, 0.17), 0.13, 0.9],
+	[Vector2(0.88, 0.80), 0.07, 0.85],
+]
 
 ## The item art each store item draws in its dome. The creature icons are the shipped 40x40
 ## `SCL_*` sheets (one icon per sellable species); food and the weapon use their own sheets (the
@@ -419,6 +428,12 @@ func _swim_column_at() -> int:
 	return AnimState.column_at(0, _sim_tick(), SWIM_COLUMNS)
 
 
+## What the swim cells leave of the badge. Measured off the 1-1 recording: the base's guppy spans
+## about 34x30 of the 44x38 badge, while the tank cell (80x80) scaled to the default inset filled it
+## edge to edge - the owner's "the fish is bigger than the base's" (D-0027).
+const SWIM_INSET := Vector2i(10, 8)
+
+
 ## The fish icon's swim cells: every column of the stage-0 row, composed through the sheet's mask.
 ## All ten are cropped with **one** box - the union of their opaque pixels - so the fish fills the
 ## dome and does not breathe in scale from cell to cell (the earlier fixed 44x44 crop left the dome's
@@ -450,13 +465,14 @@ func _compose_swim_frames() -> Array[Texture2D]:
 	if box.size.x < 8 or box.size.y < 8:
 		return out
 	for image in cells:
-		out.append(badge_cell(image.get_region(box)))
+		out.append(badge_cell(image.get_region(box), SWIM_INSET))
 	return out
 
 
 ## The icon cell: the item over the violet badge that fills the dome (D-0023). `ICON_RECT` is that
-## badge's own 44x33, so the texture draws 1:1. The item is fitted inside the badge and centred.
-static func badge_cell(body: Image) -> Texture2D:
+## badge's own 44x38, so the texture draws 1:1. The item is fitted inside the badge and centred;
+## `inset` is what each caller leaves of the badge for the item, in pixels of the badge.
+static func badge_cell(body: Image, inset := Vector2i(3, 2)) -> Texture2D:
 	var width := int(ICON_RECT.size.x)
 	var height := int(ICON_RECT.size.y)
 	var canvas := Image.create(width, height, false, Image.FORMAT_RGBA8)
@@ -474,13 +490,15 @@ static func badge_cell(body: Image) -> Texture2D:
 			var shade := clampf(1.15 - float(y) / float(height - 1) * 0.75, 0.42, 1.15)
 			var tint := BADGE_BASE.lerp(BADGE_EDGE, across * across)
 			canvas.set_pixel(x, y, Color(tint.r * shade, tint.g * shade, tint.b * shade, coverage))
-	_badge_highlight(canvas, Vector2(width * 0.29, height * 0.30), height * 0.14, 0.85)
-	_badge_highlight(canvas, Vector2(width * 0.24, height * 0.24), height * 0.05, 0.95)
+	for glow: Array in BADGE_GLOWS:
+		var at: Vector2 = glow[0]
+		_badge_highlight(canvas, Vector2(width * at.x, height * at.y), height * float(glow[1]),
+			float(glow[2]))
 	if body != null:
-		# The base game's fish all but fills the badge (its tail crosses the dome ring), so the fit
-		# leaves only a two-pixel margin on the long side.
-		var scale := minf(float(width - 3) / maxi(body.get_width(), 1),
-			float(height - 2) / maxi(body.get_height(), 1))
+		# The base game's own shelf icon leaves a margin all round; the tank cell's fish is wider art
+		# than a 40x40 icon, so the callers' insets decide how much of the badge it takes.
+		var scale := minf(float(width - inset.x) / maxi(body.get_width(), 1),
+			float(height - inset.y) / maxi(body.get_height(), 1))
 		var fitted := body.duplicate() as Image
 		fitted.resize(maxi(int(body.get_width() * scale), 1), maxi(int(body.get_height() * scale), 1),
 			Image.INTERPOLATE_BILINEAR)

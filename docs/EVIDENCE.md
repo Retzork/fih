@@ -5010,3 +5010,18 @@ behavior or specs; follow up with a binary observation entry.
 - (6) **Coverage**: `headless_store_ui_check` 53 -> 55 (the badge rect; a price that stays green at
   money 0), `headless_level_check` 157, `headless_menu_check` 28, `headless_fish_check` 121,
   `headless_integration_check` 134, the 400-frame boot exits 0.
+
+#### EV-0196 addendum - the badge's two glows and the item fit, measured the same way
+- (7) **Glows.** The brightest violet-ish pixels inside the badge (test: `b > 0.35`, `b > r + 0.05`,
+  `r > g + 0.03`) are slot **(16, 8) `#D0BCE1`** and slot **(44.5, 33.5) `#CDB2E9`** - badge-relative
+  (10, 6.5) and (38.5, 30.5) of 44x38. So the base has one glow at the **upper left** and a smaller
+  one at the **lower right**; the port had two overlapping in the upper-left (#A489C7) whose peak
+  measured **0.41** luminance against the base's **0.78**. After `BADGE_GLOWS` + the sampled
+  `BADGE_HIGHLIGHT`, the same probe on our 1-1 capture gives **(16, 9) 0.72** and **(44, 33) 0.68** -
+  the base's pixels, within JPEG noise.
+- (8) **Item fit.** 8x crops of the two badges side by side showed our guppy filling the badge edge to
+  edge while the base's icon leaves ~5 px margins (the base's fish spans ~34x30 of 44x38). The cause
+  is scale: the shelf icons are 40x40 cells, but the guppy is the tank's 80x80 cell cropped to its
+  union box. `badge_cell()` gained an `inset` parameter; the swim row passes `SWIM_INSET (10, 8)`, the
+  icon cells keep `(3, 2)`. Re-cropped, the two badges now match in size and margin.
+- (9) **Coverage**: `headless_store_ui_check` 55 -> 57 (the glow positions; the swim inset).

@@ -85,6 +85,13 @@ func _test_bar() -> void:
 	# slot-local y 3..40, i.e. the badge fills the dome window and stops 4 px above the plate.
 	_expect(BarScript.ICON_RECT == Rect2(6, 3, 44, 38),
 		"the badge fills the dome window (44x38 at slot-local 6, 3)")
+	# D-0027: the recording's two glows are at badge-relative (10, 6.5) and (38.5, 30.5).
+	_expect(BarScript.BADGE_GLOWS.size() == 2
+		and BarScript.BADGE_GLOWS[0][0] == Vector2(0.23, 0.17)
+		and BarScript.BADGE_GLOWS[1][0] == Vector2(0.88, 0.80),
+		"the badge's glows are the upper-left and lower-right ones the recording has")
+	_expect(BarScript.SWIM_INSET == Vector2i(10, 8),
+		"the guppy leaves the base game's margin inside the badge")
 	_expect(BarScript.PRICE_COLOR == Color8(0x6E, 0xFA, 0x6E),
 		"the tank button's label is the recovered green (FUN_005373C0)")
 	_expect(BarScript.ICON_ART[4] == "IMAGE_SCL_OSCAR",

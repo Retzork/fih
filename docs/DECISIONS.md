@@ -1604,6 +1604,16 @@ Open: the real per-cell hold and the pet reveal point.
   a colour: `buy_item` still declines and the buttons still disable.
 - **Egg art.** The window grew 5 px, so the cell is fitted by `min(window / cell)` on both axes rather
   than by height alone, and cannot overflow sideways.
+- **Glows.** The badge carries two, in opposite corners: the recording's brightest pixels are slot
+  (16, 8) `#D0BCE1` and slot (44.5, 33.5) `#CDB2E9` - badge-relative (10, 6.5) and (38.5, 30.5), i.e.
+  upper left and lower right. The port had two overlapping glows in the upper-left in a darker
+  lavender (#A489C7) that measured 0.41 luminance against the recording's 0.78. `BADGE_GLOWS` now
+  places both and `BADGE_HIGHLIGHT` is the sampled colour; re-measured, our badge peaks at (16, 9)
+  0.72 and (44, 33) 0.68 against the base's (16, 8) 0.78 and (44, 33) 0.75.
+- **Item fit.** At the default inset the tank cell's guppy filled the badge edge to edge, where the
+  recording's shelf icon leaves a margin (the base's fish spans about 34x30 of the 44x38 badge).
+  `badge_cell()` takes an `inset` now: the swim row passes `SWIM_INSET` (10, 8), the shipped 40x40
+  icon cells keep (3, 2). The 8x side-by-side of the two badges matches in size and margin.
 - **Recorded deviations, not changed.** The base's wallet `$` is pale gold on its badge where the
   port draws dark green; the base's price and wallet glyphs are ~10-12 px where the port uses the
   8 px `FONT_TINYBOLD`. The badge's own palette measured within a few units of ours and is left as is.
