@@ -4937,3 +4937,43 @@ behavior or specs; follow up with a binary observation entry.
   the weapon under `10:<level>`; a purse change reuses the same texture; the bare badge is one
   shared instance), `headless_level_check` 157, `headless_integration_check` 134, the 400-frame boot
   exits 0.
+
+### EV-0195 - Review pass on the bar: dead paths dropped, and the egg dome's baked window keyed out
+- Date: 2026-11-16
+- Type: code review + visual re-check of 1-3, 2-1 and 5-1 (windowed captures at 2x and 3x)
+- Source: `scripts/ui/store_bar.gd`, `scripts/ui/egg_widget.gd`, `tests/headless_store_ui_check.gd`
+- (1) **Dead path removed.** `StoreBar._body_crop()` cropped `SMALLSWIM` to a fixed 44x44 centre for
+  the guppy's static icon, but id 0 never reaches `_icon_texture()`: `refresh()` draws the guppy from
+  its own swim row (`_compose_swim_frames`, D-0022), so the crop - and the call site - were left over
+  from the static-icon attempt and are gone. `_icon_texture()` now hands the masked cell straight to
+  `badge_cell()`.
+- (2) **One wallet box.** `MONEY_SIGN_RECT` was (531, 36, 14, 26) against `MONEY_RECT`
+  (546, 34, 74, 30); both centres are y 49, so the sign box now shares 34/30 with the number and the
+  two cannot drift apart. No pixel moves.
+- (3) **Egg geometry.** `ART_SCALE` (0.85) is gone: the cell's height is fitted to `ART_WINDOW` and the
+  width derived from it, so the pair cannot disagree (the old constant gave 33.15 px of art in a
+  33 px window). With the art inside the badge, the `Window` clip control was redundant and is
+  removed, and `PRICE_RECT` is now `StoreBar.PRICE_LABEL_RECT` (same plate, same centre y 51).
+- (4) **The egg's second dome.** `EGGPIECES` bakes its own *pointed* violet dome window behind the cup
+  (sampled #532B8B, shaded #7D43A2 and a lighter lilac). Drawn over the bar's 44x33 badge it read as
+  two domes - the pointed arch poking through the ellipse - which is the owner's "the egg looks off".
+  `EggWidget._without_baked_dome()` keys that violet out, so the cell leaves only the cup (pieces 1-2),
+  the basket (piece 2) and the whole egg (piece 3) on the shared badge. Dumped per cell at 7x and
+  confirmed on 3x captures of 1-3 (`$2000`, cup on the badge) and 5-1 (`FREE`, whole egg on the
+  badge). The art's own thin violet outline survives and separates it from the badge.
+- (5) **Stocked dome without art.** Id 5 (star potion, tank 2-1 shelf 3) has no `ICON_ART` entry, so
+  `icon_for()` returned null and its dome drew as an empty gold dome with a price. It now falls back
+  to `badge_placeholder()`, so a stocked shelf always reads as stocked: the 2-1 capture shows `$250`
+  on a violet dome between the two food domes and the empty shelves.
+- (6) **Flags left open** (no evidence to act on):
+  - items 2 and 3 (Food Quality / Food Quantity) both draw `FOOD` frame 0, so 1-3 shows **two
+    identical brown-pellet domes**. The real icons live in the unrecovered atlas (Q-0054); the sheet's
+    row 1 is the green capsule the tank drops at quality 1, so an id -> frame map would separate them,
+    but which row the original's shelf uses was never recovered (Q-0051).
+  - Tank 5 works: only the egg row exists there (shelf 6), the bar blanks it, `EggWidget` draws the
+    whole egg with `FREE` (a 0 price reached through `free`), and the six other domes are the base
+    art's empty ones.
+  - `SLOT_COUNT` is 8 but only seven x positions were recovered: a row on shelf 7 would draw nowhere.
+    No tank stocks shelf 7 today (Q-0054).
+- (7) **Checks**: `headless_store_ui_check` 53, `headless_level_check` 157, `headless_menu_check` 28,
+  `headless_fish_check` 121, `headless_integration_check` 134, the 400-frame boot exits 0.

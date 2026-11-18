@@ -26,8 +26,9 @@ const BAR_SIZE := Vector2(640.0, 75.0)
 const MENU_RECT := Rect2(525.0, 4.0, 80.0, 26.0)
 ## The green wallet plate inside `MENUBAR` (green pixels span x 530..621, y 39..58). The base game
 ## puts a dark-green `$` in the plate's left badge and right-aligns the number in the green field.
+## Both boxes share y 34..64, so the glyphs share one centre line by construction.
 const MONEY_RECT := Rect2(546.0, 34.0, 74.0, 30.0)
-const MONEY_SIGN_RECT := Rect2(531.0, 36.0, 14.0, 26.0)
+const MONEY_SIGN_RECT := Rect2(531.0, 34.0, 14.0, 30.0)
 const MONEY_SIGN_COLOR := Color8(0x36, 0x72, 0x0A)
 ## The purple price plate under each dome, measured from the art: (7, 45, 45, 12) slot-local.
 const PLATE_RECT := Rect2(7.0, 45.0, 45.0, 12.0)
@@ -93,7 +94,6 @@ signal menu_pressed
 ## Dome art by item id, composed once per run (D-0025). `refresh()` runs whenever the purse changes -
 ## so on every coin - and building a dome is a mask composite plus a 44x33 per-pixel badge; seven
 ## stocked domes cost 17 ms a refresh, a whole frame, which the owner felt as a stutter on pickups.
-## `null` is cached too: an item whose sheet or mask is missing is just as expensive to miss again.
 ## Keyed by the item id, with the weapon's upgrade level appended because that picks its cell.
 static var _icon_cache := {}
 ## The bare badge, composed once and shared by every dome that has no item on it - the egg widget's
@@ -290,10 +290,9 @@ func _icon_texture(id: int) -> Texture2D:
 		cell = HatchScreen.masked_cell(texture, mask)
 	if cell == null:
 		cell = SpriteKey.keyed(texture)
-	var body := _body_crop(cell, art)
-	if body == null or body.get_image() == null:
+	if cell == null or cell.get_image() == null:
 		return null
-	return badge_cell(body.get_image())
+	return badge_cell(cell.get_image())
 
 
 ## The dome art for `id`, composed once and reused (D-0025).
@@ -304,6 +303,10 @@ func icon_for(id: int) -> Texture2D:
 	if _icon_cache.has(key):
 		return _icon_cache[key]
 	var texture := _icon_texture(id)
+	if texture == null:
+		# A stocked shelf the port has no icon for (the star potion, id 5) still has to read as a
+		# shelf: the base game never draws a stocked dome as an empty gold one (Q-0054).
+		texture = badge_placeholder()
 	_icon_cache[key] = texture
 	return texture
 
@@ -313,18 +316,6 @@ static func badge_placeholder() -> Texture2D:
 	if _badge_placeholder == null:
 		_badge_placeholder = badge_cell(null)
 	return _badge_placeholder
-
-
-## The guppy body sheet is 80x80 per cell with the fish inside a ~44-px centre; cropping that centre
-## keeps it the same visual size as the 40x40 `SCL_` icons (port fit: the original's own icon image id
-## is unrecovered, Q-0054). Cropping happens **after** the mask composite, which needs the full cell.
-func _body_crop(texture: Texture2D, art: String) -> Texture2D:
-	if texture == null or art != "IMAGE_SMALLSWIM":
-		return texture
-	var image := texture.get_image()
-	if image == null or image.get_width() < 44 or image.get_height() < 44:
-		return texture
-	return ImageTexture.create_from_image(image.get_region(Rect2i(18, 18, 44, 44)))
 
 
 ## Redraw the eight slots when the purse or the stock changed since the last call.
@@ -462,8 +453,7 @@ func _compose_swim_frames() -> Array[Texture2D]:
 
 
 ## The icon cell: the item over the violet badge that fills the dome (D-0023). `ICON_RECT` is that
-## badge's own 44x33, so the texture draws 1:1 - the base game's domes are the badge, not a pale
-## glass face. The item is fitted three pixels inside the badge and centred.
+## badge's own 44x33, so the texture draws 1:1. The item is fitted inside the badge and centred.
 static func badge_cell(body: Image) -> Texture2D:
 	var width := int(ICON_RECT.size.x)
 	var height := int(ICON_RECT.size.y)

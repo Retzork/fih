@@ -1589,6 +1589,31 @@ Open: the real per-cell hold and the pet reveal point.
   purse. The swim row was measured at ten cells with the column advancing every five ticks (0 -> 1 at
   tick 56, 2 at 61).
 
+### D-0026 - The bar's review pass: one wallet box, egg art keyed to the badge, no dead crops
+
+- Date: 2026-11-16 (owner asked for a fresh-eyes review of the shop-bar turn)
+- Status: accepted. EV-0195 has the captures and the flags that stay open.
+- **Dropped.** `StoreBar._body_crop()` - the guppy never takes the static-icon path, so its fixed
+  44x44 crop of `SMALLSWIM` was unreachable since D-0022 gave the dome a swim row. The egg's
+  `ART_SCALE` constant and its `Window` clip control go with it: the cell is fitted from
+  `ART_WINDOW`/`CELL_SIZE`, which cannot disagree with itself the way a hand-written 0.85 could.
+  `EggWidget.PRICE_RECT` is now the bar's own `PRICE_LABEL_RECT` instead of a second copy of the
+  same numbers.
+- **Unified.** `MONEY_SIGN_RECT` shares `MONEY_RECT`'s y/height (both centres are y 49), so the `$`
+  and the number are centred by construction. No pixel moves.
+- **Egg art.** `EGGPIECES` bakes a pointed violet dome window (#532B8B with its #7D43A2 and lilac
+  shading) behind the cup. Over the bar's elliptical badge that read as a second dome poking through,
+  the owner's "the egg looks off" - so the widget keys that violet out and the cell contributes only
+  the cup, the basket or the whole egg. The art's thin violet outline is kept, which is what
+  separates the egg from the badge.
+- **Stocked but artless.** A row with no recoverable icon (the star potion) now draws
+  `badge_placeholder()` rather than nothing, because a stocked shelf in the base game is always the
+  violet badge - an empty gold dome reads as "nothing for sale".
+- **Still wrong at 1-3.** Items 2 and 3 (Food Quality / Food Quantity) both draw `FOOD` frame 0, so
+  the two food domes are identical brown pellets. Fixing it needs the original's shelf-icon binding,
+  which is unrecovered (Q-0054/Q-0051); a `FOOD` row-1 (green capsule) guess is recorded in EV-0195
+  but not taken.
+
 ### D-0025 - Domes are composed once per item, not per refresh
 
 - Date: 2026-11-16 (owner: a coin pickup should only redraw the plates and the wallet)

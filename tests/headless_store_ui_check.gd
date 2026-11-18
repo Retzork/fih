@@ -75,7 +75,7 @@ func _test_bar() -> void:
 	# D-0023: the base game's wallet is a dark-green `$` in the plate's badge with the number
 	# right-aligned in the green field, so the plate splits into two labels.
 	_expect(BarScript.MONEY_RECT.position == Vector2(546, 34)
-		and BarScript.MONEY_SIGN_RECT.position == Vector2(531, 36),
+		and BarScript.MONEY_SIGN_RECT.position == Vector2(531, 34),
 		"the wallet number is right-aligned in the field with a `$` in the plate's badge")
 	_expect(BarScript.slot_rect(0) == Rect2(18, 3, 58, 60),
 		"the first in-tank slot is at x 0x12, y 3, 58x60 (FUN_005409B0)")

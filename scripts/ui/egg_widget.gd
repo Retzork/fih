@@ -20,19 +20,19 @@ const PIECES_TO_COMPLETE := 4
 ## The eighth dome, at `SLOT_X[6]` in `StoreBar` (the recovered `FUN_005409B0` x table).
 const SLOT := 6
 ## Inside the 58x60 slot: the cell (`EGGPIECES` is 138x39, three cells of 46x39) is drawn over the
-## same violet badge every other item sits on and clipped to it, so the whole-egg cell cannot spill
-## over the gold rim or the price plate (owner review 2026-11-16). The base game's egg dome is a wide
-## violet disc with a big cream cup (1-1 recording, D-0023). Its cup is larger than this cell's: the
-## cell is `EGGPIECES`' progress art, not the store icon the original puts there (that icon atlas is
-## unrecovered, Q-0054), so the cell is fitted to the badge rather than scaled past it - at 1.25 the
-## pointed egg's top gets clipped flat, which looked worse than the smaller cup. The price sits on
-## the same measured purple plate as every other dome (`StoreBar.PLATE_RECT`, 45x12 at (7, 45)).
+## same violet badge every other item sits on (owner review 2026-11-16). The base game's egg dome is a
+## wide violet disc with a big cream cup (1-1 recording, D-0023). Its cup is larger than this cell's:
+## the cell is `EGGPIECES`' progress art, not the store icon the original puts there (that icon atlas
+## is unrecovered, Q-0054), so the cell is fitted to the badge's height rather than scaled past it -
+## at 1.25 the pointed egg's top gets clipped flat, which looked worse than the smaller cup. The fit
+## is derived from the window, so the two can never drift apart. The price sits on the same measured
+## purple plate as every other dome (`StoreBar.PLATE_RECT`, 45x12 at (7, 45)).
 const ART_WINDOW := StoreBar.ICON_RECT
-const ART_SCALE := 0.85
 ## `EGGPIECES` cell size (138x39 / 3).
 const CELL_SIZE := Vector2(46.0, 39.0)
-## The label box is centred on the 12-px plate (centre y 51) so the native glyphs are not clipped.
-const PRICE_RECT := Rect2(7.0, 42.0, 45.0, 18.0)
+## The label box is the bar's own price box: same plate, same centre y 51, so the two domes cannot
+## drift apart.
+const PRICE_RECT := StoreBar.PRICE_LABEL_RECT
 const GREY := Color8(0xCC, 0xCC, 0xCC)
 ## `FUN_005373C0` seeds the tank store buttons with the green label colour 0x6EFA6E.
 const PRICE_COLOR := Color8(0x6E, 0xFA, 0x6E)
@@ -103,25 +103,19 @@ func _ready() -> void:
 	var texture := _masked(0)
 	if texture == null:
 		return
-	# The cell is composed through its alpha companion (`masks/_EggPieces.png`, see `_masked`) and then
-	# clipped to the dome's glass, so the purple window the art draws stays inside the gold rim and
-	# off the price plate instead of landing as a square patch on the bar (owner review 2026-11-16).
-	var window := Control.new()
-	window.name = "Window"
-	window.position = ART_WINDOW.position
-	window.size = ART_WINDOW.size
-	window.clip_contents = true
-	window.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(window)
+	# The cell is composed through its alpha companion (`masks/_EggPieces.png`, see `_masked`), which
+	# is what keeps the purple window the art draws inside the dome instead of landing as a square
+	# patch on the bar (owner review 2026-11-16). The fit below keeps the cell inside the badge, so
+	# no clip control is needed.
 	_art = TextureRect.new()
 	_art.name = "Egg"
 	_art.texture = texture
-	_art.size = CELL_SIZE * ART_SCALE
-	_art.position = (ART_WINDOW.size - _art.size) * 0.5
+	_art.size = Vector2(CELL_SIZE.x * ART_WINDOW.size.y / CELL_SIZE.y, ART_WINDOW.size.y)
+	_art.position = ART_WINDOW.position + (ART_WINDOW.size - _art.size) * 0.5
 	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_art.stretch_mode = TextureRect.STRETCH_SCALE
 	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	window.add_child(_art)
+	add_child(_art)
 	refresh()
 
 
@@ -183,9 +177,30 @@ func _masked(index: int) -> Texture2D:
 	var res: ImageRes = content.image(EGG_ART) if content != null else null
 	var mask := HatchScreen.mask_for(res.path) if res != null else null
 	var composed := HatchScreen.masked_cell(texture, mask) if mask != null else null
-	var cell := composed if composed != null else texture
+	var base := (composed if composed != null else texture).get_image()
+	if base == null:
+		return null
+	var cell := ImageTexture.create_from_image(_without_baked_dome(base))
 	_cells[index] = cell
 	return cell
+
+
+## `EGGPIECES` bakes the dome's own violet window behind the cup (sampled #532B8B, shaded #7D43A2 and
+## a lighter lilac), so drawn over the bar's badge it showed a second, pointed egg shape inside the
+## dome - the owner's "the egg looks off". Keying that violet out leaves the cup, the basket and the
+## whole egg alone on the shared badge, which is what the base game's egg dome shows (D-0026). The
+## cup, the basket and the egg are cream and brown; the test is "purple by a clear margin", which
+## also keeps the art's own violet outline that separates it from the badge.
+static func _without_baked_dome(image: Image) -> Image:
+	var out := image.duplicate() as Image
+	out.convert(Image.FORMAT_RGBA8)
+	for y in out.get_height():
+		for x in out.get_width():
+			var colour := out.get_pixel(x, y)
+			if colour.a > 0.04 and colour.b > 0.35 \
+				and colour.b > colour.r + 0.05 and colour.r > colour.g + 0.03:
+				out.set_pixel(x, y, Color(0.0, 0.0, 0.0, 0.0))
+	return out
 
 
 
