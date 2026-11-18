@@ -35,9 +35,8 @@ const TANK_SIZE := Vector2(640.0, 480.0)
 ## The bottom HUD the recording shows and the port lacked (D-0028, EV-0197). The game area starts
 ## 24 px into the window, so the window-measured glyph rows (y 483..498) are game rows 459..474.
 ## "Tank  1-1" bottom-left: glyphs x 14..73, 11 px tall, in pale gold (#98834F averaged over the
-## bright stroke pixels, #A49364 at the brightest). This is the tank screen's **only** level readout
-## (D-0031): the port's own bottom-right plate and its green `1-1` are gone, because the base has no
-## readout in that corner.
+## bright stroke pixels, #A49364 at the brightest). It is the tank screen's only level readout
+## (D-0031).
 const TANK_LABEL_RECT := Rect2(13.0, 453.0, 220.0, 22.0)
 const TANK_LABEL_COLOR := Color8(0xA8, 0x94, 0x60)
 ## The hunger hint centred in the same row: glyphs x 186..462 (centre 324), 18 px tall with the dark
@@ -315,7 +314,6 @@ func _mount_egg_widget() -> void:
 
 ## The base's own bottom row (D-0028): the tank name at the bottom left and the hunger hint centred
 ## under the sand line. Both draw on the `Hud` layer, ignore the mouse and were absent from the port.
-## `TankLabel` is the whole level readout now - D-0031 removed the port-only bottom-right plate.
 func _add_bottom_hud() -> void:
 	var layer := get_node_or_null("Hud")
 	if layer == null:
@@ -346,7 +344,7 @@ func _add_bottom_hud() -> void:
 
 
 ## The base's own naming of the pair, with the wide gap the recording has between the name and the
-## numbers. `_refresh_tank_label` only feeds it the live pair, so the suite can check the string.
+## numbers. Static so the suite pins the string without building a HUD.
 static func tank_name(tank_no: int, level_no: int) -> String:
 	return "Tank  %d-%d" % [tank_no, level_no]
 

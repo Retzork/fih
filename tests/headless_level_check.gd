@@ -72,7 +72,7 @@ func _init() -> void:
 
 ## The bottom HUD (D-0028): the base's "Tank  1-1" and the two hunger-hint wordings, both measured
 ## off the recording. The label itself needs a rendered HUD, so this drives `hint_text()` and the
-## name format; D-0031 removed the port's own bottom-right readout, leaving the name as the only one.
+## name format. D-0031 deleted the port's own bottom-right readout, so the name is the only one.
 func _test_hunger_hint() -> void:
 	var constants: Dictionary = level.get_script().get_script_constant_map()
 	_expect(not constants.has("LEVEL_PLATE_RECT") and not constants.has("LEVEL_LABEL_COLOR")

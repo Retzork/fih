@@ -5099,6 +5099,13 @@ behavior or specs; follow up with a binary observation entry.
   `TANK_LABEL_RECT` is (13, 453)), `headless_store_ui_check` 62, `headless_integration_check` 134,
   boot clean.
 
+- (6) **Sweep after the deletion** (2026-11-18): no `LEVEL_PLATE*`/`LEVEL_LABEL*`/`level_label`
+  reference is left under `scripts/`, `tests/`, `tools/` or `scenes/`; the suite's constant-map
+  guard and this entry are the only places the old names appear. `level.gd` still has 15 uses of
+  `_content`, and the `IMAGE_MENUBAR` lookup the plate made is gone with it (the store bar keeps
+  its own). Two comments that repeated D-0031 beside the constants and `_add_bottom_hud()` were
+  trimmed; assertions unchanged at 170.
+
 ## EV-0201 - What the hint refresh costs per frame, before and after the tick gate
 - Date: 2026-11-18
 - Type: timing probe on the live 1-1 level (windowed, `--audio-driver Dummy`), 200,000 calls per figure

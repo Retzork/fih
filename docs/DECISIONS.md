@@ -1841,6 +1841,13 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   `_add_level_plate()`/`_refresh_level_label()` and the `level_label` field are gone, and
   `start_level`/`load_game` call `_refresh_tank_label()`. Re-shot 1-1 and 1-3 at 2x: EV-0200.
 
+- **Review (2026-11-18).** Swept `scripts/`, `tests/`, `tools/` and `scenes/` for `LEVEL_PLATE*`,
+  `LEVEL_LABEL*`, `level_label`, `LevelPlate`, `LevelLabel` and `IMAGE_MENUBAR` in `level.gd`: no
+  production reference survives, and `_content`/`ImageRes` still have other users, so nothing was
+  orphaned by the deletion. `tank_name()` keeps one caller plus the suite. The only leftovers were
+  two code comments restating this entry next to the constants and the builder; they are trimmed to
+  the measurements, since this file is where the decision belongs.
+
 ### D-0032 - The bottom HUD reviewed: one builder, tick-gated hint, nothing drawn twice
 
 - Date: 2026-11-18 (owner: fresh-eyes review of this turn's bottom-HUD change)
