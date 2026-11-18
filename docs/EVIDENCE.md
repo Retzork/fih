@@ -5064,3 +5064,18 @@ behavior or specs; follow up with a binary observation entry.
   guppy at wallet 50 (the recording's shortage case), `PRICE_COLOR` at exactly enough, and
   `GREYED_COLOR` only for a sold-out row; plus the bar's own `$100` shelf stays green at wallet 45.
   57 -> 62 assertions, PASS; `headless_level_check` 165, `headless_integration_check` 134, boot clean.
+
+## EV-0199 - The debug overlay's box against the measured bottom row
+- Date: 2026-11-18
+- Type: scene/layout inspection + a headless probe of the boot scene
+- Source: `scenes/main.tscn` (`Debug/Info`), `scripts/main.gd` (`STATS_KEY`, `toggle_stats`),
+  `scripts/tank/level.gd` (`TANK_LABEL_RECT`, `HINT_RECT`)
+- (1) **Overlap.** `Debug/Info` is anchored to the bottom-left with offsets (4, -22, 636, -4), which
+  resolves to an absolute box **(4, 453, 632, 23)** - the full width of the tank screen's bottom row.
+  `Level.TANK_LABEL_RECT` is (13, 453) and `HINT_RECT` is (0, 454, 640, 22), so the overlay's opaque
+  text sits directly on both strings.
+- (2) **Probe.** Instantiating `res://scenes/main.tscn` headless and waiting 30 frames prints
+  `visible=false`, `toggle_stats() -> true` with `now=true`, and the label's own `position (4, 453)`
+  / `size (632, 23)`, confirming the box above is the one that was covering the row.
+- (3) **Coverage.** No suite asserted the overlay before and none does now; the boot run (400 frames)
+  exits 0 with the label hidden, and the store-UI/level/integration suites are unaffected.

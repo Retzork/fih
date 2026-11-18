@@ -1813,3 +1813,20 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - Verified: `headless_store_ui_check` 57 -> 62 (the store screen's price colour at a short and at a
   sufficient purse, the SOLD grey, and the bar's own `$100` at wallet 45). The bar and the egg dome
   were already green at any balance (D-0027) and needed no change.
+
+### D-0030 - The FPS/tick overlay is hidden by default and F12 brings it back
+
+- Date: 2026-11-18 (owner: the debug line covers the measured `Tank 1-1` label during play)
+- Status: accepted. `scenes/main.tscn`'s `Debug/Info` label is `visible = false`; `Main` owns a
+  `STATS_KEY` (`F12`) toggle and `toggle_stats()`.
+- **Why hide rather than move.** The overlay's box is (4, 453, 632, 23), i.e. the whole width of the
+  bottom row - the same row `Level` now draws the `Tank  1-1` name (13, 453) and the centred hunger
+  hint in (D-0028). No placement inside that row clears both, and every other row already carries
+  bar art or tank content, so the honest answer is to keep a development aid off by default instead
+  of inventing a new corner for it.
+- **Why F12.** `Level._unhandled_input` already claims F1 (debug panel), F2..F10 (debug actions,
+  save, load) and S/P; F12 is unclaimed and reaches `Main` as an unhandled key whatever screen is up.
+  The string is only formatted while the label is showing, so a hidden overlay costs a compare a
+  second instead of an FPS/Content text build.
+- Not changed: `Level.toggle_debug_panel()` (F1) is the level's own port-only panel and has no base
+  counterpart either, but it is off until pressed and does not sit on the measured HUD.

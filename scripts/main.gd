@@ -3,12 +3,19 @@ extends Node2D
 ## Screens autoload, drives the debug overlay (P2.1/EV-0035: `FPS: %d` per 1000 ms window) and mounts
 ## the P4.4 level once the content phases have finished.
 ##
+## The overlay starts hidden (D-0030): its label sits in the tank screen's bottom row, exactly where
+## the measured `Tank  1-1` name and the hunger hint are drawn (D-0028), and it covered both during
+## play. F12 brings the counters back for a debugging session without touching the base HUD.
+##
 ## Everything else is a screen (docs/ARCHITECTURE.md §3). Main also drives the P4.2 content load:
 ## Init is already done by the Content autoload, Register is pulled before the first menu, and the
 ## LoadingThread phase is pumped here a slice at a time until P4.5's loading screen takes the bar.
 
 @onready var _screens_layer: CanvasLayer = $Screens
 @onready var _info: Label = $Debug/Info
+
+## The overlay's toggle. `Level` already owns F1..F10/S/P for its own debug aids, so the stats line
+## takes the free F12 rather than sharing one of those.
 
 var _level: Level = null
 var _selector: GameSelector = null
@@ -18,9 +25,25 @@ var _options_dialog: OptionsDialog = null
 var _help_dialog: Control = null
 ## The port-only debug dialog opened from Options' DEBUG row (D-0017), null while it is closed.
 var _debug_dialog: DebugDialog = null
+const STATS_KEY := KEY_F12
+
 var _frames := 0
 var _elapsed := 0.0
 var _flow: Control = null
+
+
+## F12 shows or hides the FPS/tick line. It is hidden by default and costs nothing while hidden:
+## `_process` keeps its one-second window but stops formatting the string.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == STATS_KEY:
+		toggle_stats()
+		get_viewport().set_input_as_handled()
+
+
+## Flip the debug overlay's visibility; returns whether it is now showing.
+func toggle_stats() -> bool:
+	_info.visible = not _info.visible
+	return _info.visible
 
 
 func _ready() -> void:
@@ -294,13 +317,14 @@ func _process(delta: float) -> void:
 	_frames += 1
 	if _elapsed < 1.0:
 		return
-	_info.text = "FPS: %d  tick %d  (%.0f Hz, %d this frame)  content %d/%d" % [
-		roundi(_frames / _elapsed),
-		Sim.tick_count,
-		Sim.TICKS_PER_SECOND,
-		Sim.last_ticks_per_frame,
-		Content.loaded_count(),
-		Content.EXPECTED_TOTAL,
-	]
+	if _info.visible:
+		_info.text = "FPS: %d  tick %d  (%.0f Hz, %d this frame)  content %d/%d" % [
+			roundi(_frames / _elapsed),
+			Sim.tick_count,
+			Sim.TICKS_PER_SECOND,
+			Sim.last_ticks_per_frame,
+			Content.loaded_count(),
+			Content.EXPECTED_TOTAL,
+		]
 	_frames = 0
 	_elapsed = 0.0

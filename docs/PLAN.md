@@ -945,6 +945,8 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 
 
 | R22 | 2026-11-18 owner: the base keeps the shop's prices bright green with a short wallet (45 against a $100 guppy); the port still greyed them with `GREYED_COLOR`. | EV-0196 (3), `StoreScreen.row_state`/`refresh`, `headless_store_ui_check`. | FIXED (D-0029, EV-0198): funds no longer touch a price's colour on any surface - `StoreScreen.greyed` is sold-out/unknown-price only and `price_color(state)` holds the single `PRICE_COLOR`/`GREYED_COLOR` choice; the bar and egg dome were already green at any balance (D-0027). The check pins the store screen's price colour at a short and a sufficient purse and the bar's `$100` at wallet 45; `headless_store_ui_check` 62. |
+
+| R23 | 2026-11-18 owner: the debug FPS/tick line covers the new `Tank 1-1` label during play. | `scenes/main.tscn`'s `Debug/Info` box, `Level.TANK_LABEL_RECT`/`HINT_RECT`, headless boot probe. | FIXED (D-0030, EV-0199): the overlay's box resolves to (4, 453, 632, 23) - the whole bottom row - so it is hidden by default and `Main`'s F12 toggle (`toggle_stats()`) brings the counters back on demand; the string is only formatted while it shows. No suite asserted it before; boot clean, store-UI 62, level 165, integration 134. |
 Fixes land here as they are verified; this table is the source of truth for the review.
 
 
