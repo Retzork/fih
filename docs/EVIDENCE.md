@@ -5250,3 +5250,27 @@ behavior or specs; follow up with a binary observation entry.
   the lime hint ink stays at 463..479 and the gold name at 460..471 - three separate bands. A second
   F12 hides it again (`visible` false), and the hint and name are untouched in that capture too.
 - (6) **Coverage**: `headless_integration_check` 134 -> 136 (the stats box exists and clears both rects).
+
+## EV-0207 - A windowed 1-1 load with the hint up: the label re-writes without help
+- Date: 2026-11-18
+- Type: windowed run of the real main scene (render = true, 2x captures), saves written to `user://`
+  and loaded back through `Level.load_game`, label state read immediately after the call and again one
+  frame later; lime/gold ink counted on the captures
+- Source: `scripts/tank/level.gd` (`load_game`, `_refresh_hint`), `tests/headless_level_check.gd`
+- (1) **A hungry tank saved**: the hint came up at tick 4 (worst -2) with `Fish are hungry! Click to
+  drop food!`, `save_game` returned OK, and the capture shows the lime line (4760 lime pixels, x
+  372..921 capture).
+- (2) **Fed and saved**: feeding the tank cleared the hint on the same frame it was checked (tick 11,
+  worst 495), the second save returned OK, and the capture has no lime at all.
+- (3) **Loading the hungry save over the fed tank**: `load_game` returned true at tick 14. Right after
+  the call the label still held the fed state (`visible=false`, `text=""`) while the restored fish
+  already read -2; **one frame later, same tick**, it read `visible=true`,
+  `text="Fish are hungry! Click to drop food!"`, `_hint_shown` matching, and the capture is pixel-for-
+  pixel the saved hungry one. So the load's own frame writes the restored wording with no label
+  clearing and no `_hint_shown` reset.
+- (4) **The other direction**: with the hint up, loading the fed save left the label showing the hungry
+  line immediately after the call (restored worst 495), and one frame later it was `visible=false`,
+  `text=""`, `_hint_shown=""` - cleared in the load's frame. The capture has no lime.
+- (5) **Still live afterwards**: the restored tank went hungry again and the hint came back at tick 33.
+- (6) **Coverage**: this is the windowed half the headless suite cannot reach (`render = false` keeps
+  `hint_label` null there, so its `_test_hint_cache_on_load` only pins the tick reset).

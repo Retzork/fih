@@ -1943,6 +1943,9 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   writes exactly when it differs - which is precisely the "skip a change" case, now handled.
 - Pinned by `headless_level_check._test_hint_cache_on_load`: save the level, stuff `_hint_tick` with a
   value a restored tank could match, load, and require it back at `-1`.
+- **Windowed check (EV-0207)**: with the hint up, loading a save with the opposite hunger state puts
+  the restored wording on screen in the load's own frame in both directions - hidden->shown and
+  shown->hidden - which is the behaviour the label clearing was only papering over.
 - **Nothing else caches the hint across a load.** `hint_text()` is pure; `hint_label`'s text and
   visibility are the display, rewritten by `_refresh_hint()`; `Fish._warned` is the per-fish warning-SFX
   ladder, it lives on the fish (a load builds new fish with all three false) and clears itself as soon
