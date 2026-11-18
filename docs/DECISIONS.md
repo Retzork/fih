@@ -1763,3 +1763,37 @@ unidentified, and EV-0185 records the guide evidence for the mechanism itself.
 ~(152,405) is real, so the `MERYLTAIL` crescent is the missing fin; at 1:1 it read as a second tail,
 so the port fits it at scale 0.6 with its root notch on the stump and keeps the recovered flop. The
 placement is still the port's (Q-0055), not a recovered coordinate.
+
+### D-0028 - The tank screen's bottom row: "Tank 1-1" and the hunger hint
+
+- Date: 2026-11-18 (owner: the recording's hunger hint and tank name are not drawn - add them with the
+  measured strings, positions and colours, and say whether the level plate should move back)
+- Status: accepted, measured. EV-0197 has the pixel boxes, the word gap, the font fit and the captures.
+- **The two strings.** The recording's bottom strip (game y 450..480) carries `Tank  1-1` at
+  x 14..73 in pale gold and, centred, the hunger hint in lime with a dark outline. The port drew
+  neither. `Level` now puts both on its `Hud` layer: `TANK_LABEL_RECT` (13, 453, 220, 22) and
+  `HINT_RECT` (0, 454, 640, 22), each a mouse-ignoring `Label`.
+- **Colours.** Tank name `#A89460` - `#98834F` averaged over its bright pixels, `#A49364` at the
+  brightest stroke. Hint `#AEF762` (its bright pixels mode `#ADF762`) with a 2-px `#004A00` outline,
+  where the recording's darkest hint pixels cluster.
+- **Fonts.** Continuum Bold, drawn 1:1. `CONTINUUMBOLD14` draws the 36-glyph hint **279 px** wide
+  where the recording measures 277; `CONTINUUMBOLD12` draws `Tank  1-1` **72 px** where it measures
+  60. Both are the nearest of the 15 shipped fonts: `LIDDIE15/18` and the `JUNGLEFEVER` faces map
+  lowercase onto capitals (the recording's hint is mixed case) and run 370-517 px wide, and
+  `TINYBOLD` matches the tank name's 60 px exactly but its 8-px glyphs are well short of the
+  measured 11-px ink.
+- **Two wordings, not one.** The recording holds `Fish are hungry! Click to drop food!` at t=2 and
+  `Fish are REALLY hungry! Click to feed!` at t=0 - a shallow and a capitalised form. The port keys
+  them to the recovered warning lines (`Fish.HUNGER_HINTS` = -1 / -200 / -400): the shallow text
+  from the first line, the capitalised one from the last, nothing while every fish is fed
+  (`Level.hint_text()`, refreshed each frame from the tank's hungriest live fish).
+- **The level plate - the answer.** It should not stay in the bottom-right corner. The recording has
+  no readout there: that corner holds `MENU` and the wallet, and the base's only level readout is the
+  pale-gold `Tank  1-1` at the bottom left - which is now drawn. `LEVEL_PLATE_RECT` /
+  `LEVEL_LABEL_RECT` (D-0020) therefore show the pair a **second** time, in the wrong corner and on
+  a plate the base never draws there. Recommended: delete the plate and its green `1-1` and let the
+  measured tank name be the readout. Not done in this pass - the owner asked for the recommendation,
+  and D-0020's readout was an explicit earlier request.
+- Also noted, not changed: the port's own `Debug` info line (FPS/tick/Content counters, `main.gd`)
+  sits in the same bottom-left row and covers the tank name during play. It is a development overlay
+  with no base counterpart; hiding it for normal play would be a one-line change.

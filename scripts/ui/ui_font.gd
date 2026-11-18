@@ -24,6 +24,11 @@ const SMALL_FONT := "FONT_TINYBOLD"
 const TINY_FONT := "FONT_TINY"
 const HUD_FONT := "FONT_LIDDIE15"
 const LABEL_FONT := "FONT_LIDDIE12"
+## The tank screen's bottom row (D-0028), measured off the 1-1 recording: the hunger hint's 36 glyphs
+## span 277 px there and `CONTINUUMBOLD14` draws them 279, the tank name spans 60 and
+## `CONTINUUMBOLD12` draws it 72. The base draws both 1:1, so these keep their native size.
+const BOTTOM_HINT_FONT := "FONT_CONTINUUMBOLD14"
+const BOTTOM_NAME_FONT := "FONT_CONTINUUMBOLD12"
 
 
 ## Apply `id` and its native size to `target`. Returns false (leaving the theme default) when

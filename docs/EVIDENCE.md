@@ -5025,3 +5025,23 @@ behavior or specs; follow up with a binary observation entry.
   union box. `badge_cell()` gained an `inset` parameter; the swim row passes `SWIM_INSET (10, 8)`, the
   icon cells keep `(3, 2)`. Re-cropped, the two badges now match in size and margin.
 - (9) **Coverage**: `headless_store_ui_check` 55 -> 57 (the glow positions; the swim inset).
+
+## EV-0197 - The bottom row of the tank screen (Tank name, hunger hint)
+
+- Source: `Recording 2026-11-16 123332.mp4` frame at t=2 (636x504 window; the game area starts at
+  window y 24, so game row = window row - 24) plus the t=0 frame for the second wording.
+- (1) **`Tank  1-1`** occupies window x 14..73 (**60 px**), y 483..493 in pale gold. Its ink columns
+  read "Tank" 14..43, a **13-px gap**, then "1-1" 57..73 - a wide gap, i.e. two spaces. Brightest
+  pixel `#A49364`; the average over its bright pixels is `#98834F`.
+- (2) **Hunger hint** occupies window x 186..462 (**277 px**, centred on 324), y 481..498 including
+  its outline. Its bright pixels' mode is `#ADF762` (lime) and the darkest cluster `#004A00` - so the
+  outline is dark green, not black.
+- (3) **Two wordings.** t=2 shows `Fish are hungry! Click to drop food!`; t=0 shows
+  `Fish are REALLY hungry! Click to feed!` - the capitalised form is the deeper warning.
+- (4) **Font fit**, all 15 shipped fonts measured at native size: `CONTINUUMBOLD14` draws the hint
+  **279 px** (2 px over the recording), `CONTINUUMBOLD12` draws the tank name **72 px** (12 over);
+  `LIDDIE12/15/18` and the `JUNGLEFEVER` faces render lowercase as capitals and measure 342-517 px;
+  `TINYBOLD` hits the tank name's 60 px but at 8-px glyphs.
+- (5) **Our capture** (2x, `hud_mild`/`hud_hungry`): the row reproduces the recording's placement,
+  width, mixed case and both wordings. Not matched: the tank name is ~12 px wider than the base's
+  and the purple level plate still shows at the bottom right (D-0028 recommends dropping it).

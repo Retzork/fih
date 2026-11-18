@@ -56,6 +56,7 @@ func _init() -> void:
 	_test_food_cap()
 	_test_pet_session()
 	_test_debug_actions()
+	_test_hunger_hint()
 
 	level.tank.shutdown()
 	level.free()
@@ -67,6 +68,33 @@ func _init() -> void:
 	else:
 		printerr("headless_level_check: %d FAILURE(S) of %d" % [_failures, _checks])
 		quit(1)
+
+
+## The bottom HUD (D-0028): the base's "Tank 1-1" and the two hunger-hint wordings, both measured off
+## the recording. The label itself needs a rendered HUD, so this drives `hint_text()`.
+func _test_hunger_hint() -> void:
+	_expect(LevelScript.HINT_TEXT == "Fish are hungry! Click to drop food!",
+		"the shallow hint is the recording's wording")
+	_expect(LevelScript.HINT_TEXT_SEVERE == "Fish are REALLY hungry! Click to feed!",
+		"the deep hint is the recording's capitalised wording")
+	_expect(LevelScript.TANK_LABEL_COLOR == Color8(0xA8, 0x94, 0x60),
+		"the tank name is the measured pale gold")
+	_expect(LevelScript.HINT_COLOR == Color8(0xAE, 0xF7, 0x62)
+		and LevelScript.HINT_OUTLINE_COLOR == Color8(0x00, 0x4A, 0x00),
+		"the hint is the measured lime on its dark green outline")
+	var fish: Fish = _live_fish()[0]
+	for other in _live_fish():
+		other.fullness = 3000
+	fish.fullness = 500
+	_expect(level.hint_text() == "", "a fed tank shows no hint")
+	fish.fullness = Fish.HUNGER_HINTS[0]
+	_expect(level.hint_text() == LevelScript.HINT_TEXT, "the first warning line shows the shallow hint")
+	fish.fullness = Fish.HUNGER_HINTS[1]
+	_expect(level.hint_text() == LevelScript.HINT_TEXT, "the middle line keeps the shallow hint")
+	fish.fullness = Fish.HUNGER_HINTS[2]
+	_expect(level.hint_text() == LevelScript.HINT_TEXT_SEVERE,
+		"the last warning line shows the capitalised hint")
+	fish.fullness = 500
 
 
 func _test_starting_population() -> void:

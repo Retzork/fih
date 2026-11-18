@@ -44,6 +44,22 @@ const LEVEL_LABEL_RECT := Rect2(583.0, 450.0, 45.0, 24.0)
 const LEVEL_PLATE_SOURCE := Rect2(25.0, 48.0, 45.0, 12.0)
 ## The same green `FUN_005373C0` writes into every store button label.
 const LEVEL_LABEL_COLOR := Color8(0x6E, 0xFA, 0x6E)
+## The bottom HUD the recording shows and the port lacked (D-0028, EV-0197). The game area starts
+## 24 px into the window, so the window-measured glyph rows (y 483..498) are game rows 459..474.
+## "Tank 1-1" bottom-left: glyphs x 14..73, 11 px tall, in pale gold (#98834F averaged over the
+## bright stroke pixels, #A49364 at the brightest).
+const TANK_LABEL_RECT := Rect2(13.0, 453.0, 220.0, 22.0)
+const TANK_LABEL_COLOR := Color8(0xA8, 0x94, 0x60)
+## The hunger hint centred in the same row: glyphs x 186..462 (centre 324), 18 px tall with the dark
+## outline the base draws round the lime fill (#ADF762) - the outline samples #004A00.
+const HINT_RECT := Rect2(0.0, 454.0, 640.0, 22.0)
+const HINT_COLOR := Color8(0xAE, 0xF7, 0x62)
+const HINT_OUTLINE_COLOR := Color8(0x00, 0x4A, 0x00)
+const HINT_OUTLINE_SIZE := 2
+## The base's two wordings, the shallow one while the tank is short and the capitalised one at its
+## deepest warning line (`Fish.HUNGER_HINTS[2]`, -400).
+const HINT_TEXT := "Fish are hungry! Click to drop food!"
+const HINT_TEXT_SEVERE := "Fish are REALLY hungry! Click to feed!"
 ## Guppy swim frames are three separate images (`SIMSWIM1..3`, 40x40).
 const FISH_IMAGES := ["IMAGE_SIMSWIM1", "IMAGE_SIMSWIM2", "IMAGE_SIMSWIM3"]
 ## The guppy body sheet: 10 frames per row, one row per growth stage (`SMALLSWIM`, 50 frames). The
@@ -185,6 +201,9 @@ var wave: WaveClock = null
 var egg_widget = null
 ## The bottom-right tank-level readout (D-0020); null while rendering is off.
 var level_label: Label = null
+## The base's bottom row: the tank name and the hunger hint (D-0028).
+var tank_label: Label = null
+var hint_label: Label = null
 ## How many waves have spawned this session (the original's `Tank+0x45C`).
 var waves_spawned := 0
 ## Composite recipes spawn two member kinds at one point; the clock emits the recipe twice.
@@ -324,6 +343,72 @@ func _add_level_label() -> void:
 	layer.add_child(label)
 	level_label = label
 	_refresh_level_label()
+	_add_bottom_hud(layer)
+
+
+## The base's own bottom row (D-0028): the tank name at the bottom left and the hunger hint centred
+## under the sand line. Both draw on the `Hud` layer, ignore the mouse and were absent from the port.
+func _add_bottom_hud(layer: Node) -> void:
+	if tank_label == null:
+		tank_label = Label.new()
+		tank_label.name = "TankLabel"
+		tank_label.position = TANK_LABEL_RECT.position
+		tank_label.size = TANK_LABEL_RECT.size
+		tank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		tank_label.add_theme_color_override("font_color", TANK_LABEL_COLOR)
+		UiFont.apply(tank_label, UiFont.BOTTOM_NAME_FONT)
+		tank_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(tank_label)
+		_refresh_tank_label()
+	if hint_label == null:
+		hint_label = Label.new()
+		hint_label.name = "HungerHint"
+		hint_label.position = HINT_RECT.position
+		hint_label.size = HINT_RECT.size
+		hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		hint_label.add_theme_color_override("font_color", HINT_COLOR)
+		hint_label.add_theme_color_override("font_outline_color", HINT_OUTLINE_COLOR)
+		hint_label.add_theme_constant_override("outline_size", HINT_OUTLINE_SIZE)
+		UiFont.apply(hint_label, UiFont.BOTTOM_HINT_FONT)
+		hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hint_label.visible = false
+		layer.add_child(hint_label)
+
+
+## `Tank  1-1`, the base's own naming of the pair (the wide gap between the name and the numbers is
+## in the recording).
+func _refresh_tank_label() -> void:
+	if tank_label == null:
+		return
+	tank_label.text = "Tank  %d-%d" % [tank_index, level_index]
+
+
+## The hint follows the tank's hungriest live fish: nothing while they are fed, the shallow wording
+## from the first warning line and the capitalised one from the last. Split out from the label so the
+## headless suite can drive it without a rendered HUD.
+func hint_text() -> String:
+	if tank == null:
+		return ""
+	var worst := 0
+	for entity in tank.entities_in(Sim.Phase.FISH):
+		var fish := entity as Fish
+		if fish != null and not fish.dead:
+			worst = mini(worst, int(fish.fullness))
+	if worst <= Fish.HUNGER_HINTS[2]:
+		return HINT_TEXT_SEVERE
+	if worst <= Fish.HUNGER_HINTS[0]:
+		return HINT_TEXT
+	return ""
+
+
+func _refresh_hint() -> void:
+	if hint_label == null:
+		return
+	var text := hint_text()
+	hint_label.visible = text != ""
+	if text != "":
+		hint_label.text = text
 
 
 ## The plate under the readout: the bar's purple price plate, 9-sliced so the rounded ends keep their
@@ -352,6 +437,7 @@ func _refresh_level_label() -> void:
 	if level_label == null:
 		return
 	level_label.text = "%d-%d" % [tank_index, level_index]
+	_refresh_tank_label()
 
 
 ## The tank backdrop (`+0x3E8`, 1..6 -> `TANKBACKDROP1..6`), drawn behind every entity.
@@ -1818,6 +1904,7 @@ func _process(_delta: float) -> void:
 		aim(get_global_mouse_position())
 	_sync_visuals()
 	_sync_fx()
+	_refresh_hint()
 
 
 ## The FX layer: one small tinted square per particle/laser spark. Squares keep the
