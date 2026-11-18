@@ -5217,3 +5217,28 @@ behavior or specs; follow up with a binary observation entry.
   rect's bottom where the port's is 3.5 px below it. Left as found - it is a position fix, not a
   tick-gating one.
 - (5) After feeding, both tanks draw no hint at all - no outline, no empty band - matching t=9.
+
+## EV-0206 - A watched windowed 1-1 session: bottom row, plate, F12
+- Date: 2026-11-18
+- Type: windowed run of the real main scene (2x captures, 1280x960) driven from the menu into 1-1 and
+  left to run naturally - no fullness forced; keyboard/mouse through `Input.parse_input_event`
+- Source: `scripts/tank/level.gd` (`_add_bottom_hud`, `hint_text`), `scenes/main.tscn` (`Debug/Info`)
+- (1) **The name reads as the recording's**: `Tank  1-1`, font `CONTINUUMBOLD12` at 12 with the
+  recorded tracking, colour `font_color` = (0.6588, 0.5804, 0.3765) = **#A89460** pale gold, at
+  (13, 453). Its ink is on screen in every capture of the session, start to cleared.
+- (2) **The hint follows natural hunger.** Fish start at 420ish and lose 1 a tick at 36 Hz; the label
+  first appears at **tick 428 (t = 11.9 s)** with the worst fullness at exactly **-1** and
+  `Fish are hungry! Click to drop food!`, and it stays hidden at tick 396 (worst 31) - so the write
+  happens on the crossing tick, not one later.
+- (3) **It clears when fed.** Four left-clicks in the tank (through the real input path, after giving
+  the fresh level 500 money - a pellet costs `PELLET_PRICE`) dropped four pellets, all of which were
+  eaten (food in tank 0); the label is empty and hidden at **tick 479**, worst 101. No stale wording,
+  no leftover outline.
+- (4) **No plate.** The level has no child whose name contains "plate" or "level", and the bottom-right
+  of the strip is bare sand in all four captures.
+- (5) **F12 does not steal the row** (after D-0036). With the hint up, F12 shows the line; its box is
+  now (4, 429, 632, 23) against the name's (13, 453, 220, 23) and the hint's (0, 454, 640, 26), and
+  `Rect2.intersects` is false for both. In the capture the white stats ink sits at y 434..446 while
+  the lime hint ink stays at 463..479 and the gold name at 460..471 - three separate bands. A second
+  F12 hides it again (`visible` false), and the hint and name are untouched in that capture too.
+- (6) **Coverage**: `headless_integration_check` 134 -> 136 (the stats box exists and clears both rects).

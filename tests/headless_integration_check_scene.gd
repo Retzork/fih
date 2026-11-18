@@ -117,6 +117,19 @@ func _run() -> void:
 	_expect(level.egg_widget.position == StoreBar.slot_rect(EggWidget.SLOT).position,
 		"the egg widget sits in the bar's empty dome (got %s)" % str(level.egg_widget.position))
 
+	# F12's stats line (D-0036) must clear the bottom row: the name and the hint own it.
+	var debug_layer := find_child("Debug", true, false)
+	var stats: Control = null
+	if debug_layer != null:
+		stats = debug_layer.get_node_or_null("Info") as Control
+	_expect(stats != null, "the main scene still carries the F12 stats line")
+	if stats != null:
+		var stats_rect := Rect2(stats.position, stats.size)
+		_expect(not stats_rect.intersects(Rect2(level.tank_label.position, level.tank_label.size))
+			and not stats_rect.intersects(Rect2(level.get("hint_label").position,
+				level.get("hint_label").size)),
+			"the stats line sits above the bottom row instead of over the name and hint")
+
 	# The port-only debug panel (D-0014): hidden at start, toggled by F1, and its actions run
 	# through the same Level dispatcher the keys use.
 	_expect(level.debug_panel != null and not level.debug_panel.visible,

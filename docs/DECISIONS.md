@@ -1822,8 +1822,9 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - Date: 2026-11-18 (owner: the debug line covers the measured `Tank 1-1` label during play)
 - Status: accepted. `scenes/main.tscn`'s `Debug/Info` label is `visible = false`; `Main` owns a
   `STATS_KEY` (`F12`) toggle and `toggle_stats()`.
-- **Why hide rather than move.** The overlay's box is (4, 453, 632, 23), i.e. the whole width of the
-  bottom row - the same row `Level` now draws the `Tank  1-1` name (13, 453) and the centred hunger
+- **Why hide rather than move.** (The placement below was superseded by D-0036, which moves the box
+  above the row now that the owner asked for F12 not to steal it.) The overlay's box was
+  (4, 453, 632, 23), i.e. the whole width of the bottom row - the same row `Level` now draws the `Tank  1-1` name (13, 453) and the centred hunger
   hint in (D-0028). No placement inside that row clears both, and every other row already carries
   bar art or tank content, so the honest answer is to keep a development aid off by default instead
   of inventing a new corner for it.
@@ -1935,3 +1936,19 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   next tick then recomputes and writes normally, which is the state a fresh `start_level()` begins in.
 - Pinned by `headless_level_check._test_hint_cache_on_load`: save the level, stuff both cache fields
   with stale values, load, and require them back at their initial values.
+
+### D-0036 - The F12 stats line sits above the bottom row, not over it
+
+- Date: 2026-11-18 (owner: F12 should bring the stats line back without stealing the bottom row)
+- Status: accepted. Amends D-0030, which hid the line because its box covered the row.
+- `scenes/main.tscn`'s `Debug/Info` is anchored to the bottom edge with offsets -22/-4, so its box was
+  (4, 453, 632, 23) - the exact band the `Tank  1-1` name (13, 453) and the hunger hint (0, 454, 640,
+  26) occupy. Shown, it painted its white line straight across both.
+- The offsets are now **-46/-28**, which puts the box at (4, 429, 632, 23): clear of the name and the
+  hint by their top edges (453 and 454) and still inside the tank, on the sand band above the row.
+  D-0030's "no placement inside that row clears both" still holds - the line is not inside the row any
+  more, it is one line above it.
+- Nothing else changes: the line is still hidden by default, F12 still toggles it through
+  `Main.toggle_stats()`, and its string is still only formatted while showing.
+- Pinned by `headless_integration_check`: the `Debug/Info` box must not intersect the tank name's or
+  the hint's rect.
