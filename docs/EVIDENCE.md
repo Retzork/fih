@@ -5169,3 +5169,23 @@ behavior or specs; follow up with a binary observation entry.
   `Tank` = 26..79, then `1-1` = 120..147, so the two-space gap survives the trim.
 - (4) **Coverage**: `headless_level_check` 170 -> 171 (the font id and the -1.0 tracking);
   `headless_store_ui_check` 65, `headless_integration_check` 134, boot clean.
+
+## EV-0204 - The hunger hint's cache survives `load_game()` before D-0035
+- Date: 2026-11-18
+- Type: reading `_refresh_hint`'s two guards against `load_game`'s restore path; headless suite
+- Source: `scripts/tank/level.gd` (`_refresh_hint`, `load_game`), `tests/headless_level_check.gd`
+  (`_test_hint_cache_on_load`)
+- (1) `_refresh_hint()` returns early on `int(tank.age_ticks) == _hint_tick` and, after computing,
+  returns before writing when `text == _hint_shown`. `load_game()` replaced the tank's entities
+  (`TankSnapshot.restore`) and restored the scalars but never touched either field, so both still
+  described the pre-load tank.
+- (2) Failure modes, both from that: a restored `age_ticks` that matches the cached tick holds the old
+  wording for that tick; a restored fullness whose wording matches `_hint_shown` skips the label write
+  even though the label still shows the previous tank's text.
+- (3) After D-0035 the load leaves `_hint_tick == -1` and `_hint_shown == ""` (and an empty, hidden
+  `hint_label` when there is a HUD), which is the fresh-`start_level` state, so the restored tank's
+  next tick recomputes and writes.
+- (4) **Coverage**: `headless_level_check` 171 -> 174 (the save writes, the load returns true, and both
+  cache fields are back at their initial values after loading a save stuffed with stale ones);
+  `headless_tank_snapshot_check` 54, `headless_store_ui_check` 65, `headless_integration_check` 134,
+  boot clean.

@@ -1917,3 +1917,21 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - **Why a variation and not the asset**: `FONT_CONTINUUMBOLD12` is shared by the store, the wallet and
   the store screen, which all draw at the native advance - the trim belongs to this one label.
 - `BOTTOM_HINT_FONT` is untouched: its 279 already sits inside the recording's 277 +-2.
+
+### D-0035 - Loading a save drops the hint's per-tick cache
+
+- Date: 2026-11-18 (owner: after `load_game()` the hunger hint's cached tick isn't reset, so a restored
+  save can show the previous level's wording for one tick or skip a change)
+- Status: accepted. D-0032 holds the tick gate itself; this only closes its lifetime.
+- `_refresh_hint()` skips everything while `int(tank.age_ticks) == _hint_tick` and skips the label write
+  while the computed wording equals `_hint_shown`. Both are cached against the tank that produced them,
+  and `load_game()` replaces that tank (`TankSnapshot.restore`) while keeping the same `Level`. So a
+  load left the cache pointing at the old tank: a restored `age_ticks` equal to the cached tick froze
+  the hint for that tick, and a restored fullness that produced the cached wording skipped the write -
+  the label kept the previous tank's text.
+- `load_game()` now resets `_hint_tick` to `-1` and `_hint_shown` to `""` with the rest of its
+  post-restore fix-ups (`_sync_wave_selection`), and clears `hint_label`'s text and visibility when the
+  HUD exists so nothing lingers in the frame between the load and the restored tank's next tick. The
+  next tick then recomputes and writes normally, which is the state a fresh `start_level()` begins in.
+- Pinned by `headless_level_check._test_hint_cache_on_load`: save the level, stuff both cache fields
+  with stale values, load, and require them back at their initial values.

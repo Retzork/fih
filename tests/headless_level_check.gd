@@ -57,6 +57,7 @@ func _init() -> void:
 	_test_pet_session()
 	_test_debug_actions()
 	_test_hunger_hint()
+	_test_hint_cache_on_load()
 
 	level.tank.shutdown()
 	level.free()
@@ -73,6 +74,20 @@ func _init() -> void:
 ## The bottom HUD (D-0028): the base's "Tank  1-1" and the two hunger-hint wordings, both measured
 ## off the recording. The label itself needs a rendered HUD, so this drives `hint_text()` and the
 ## name format. D-0031 deleted the port's own bottom-right readout, so the name is the only one.
+## A restored save brings its own tank, so the hint's per-tick cache must not survive `load_game()`:
+## a stale tick holds the previous tank's wording for a tick, and a stale wording skips the write.
+func _test_hint_cache_on_load() -> void:
+	var path := "user://hint_cache_check.dat"
+	_expect(level.save_game(path) == OK, "the hint-cache scenario writes a save")
+	level.set("_hint_tick", 4096)
+	level.set("_hint_shown", LevelScript.HINT_TEXT_SEVERE)
+	_expect(level.load_game(path), "load_game reads that save back")
+	_expect(int(level.get("_hint_tick")) == -1 and String(level.get("_hint_shown")) == "",
+		"loading a save clears the hint's cached tick and wording (D-0035)")
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+
+
 func _test_hunger_hint() -> void:
 	var constants: Dictionary = level.get_script().get_script_constant_map()
 	_expect(not constants.has("LEVEL_PLATE_RECT") and not constants.has("LEVEL_LABEL_COLOR")
