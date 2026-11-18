@@ -66,6 +66,10 @@ static func capture(level) -> PackedByteArray:
 	block.encode_u32(OFF_ALIEN_TYPE, int(level.alien_selection))
 	block.encode_u32(OFF_ALIEN_COUNTDOWN, countdown_for(wave))
 	block.encode_u32(OFF_STORE_COUNT, _store_row_count(level))
+	# `+0x43C` is the tank's egg progress (P2.13 §6.3 row 19, "starts at 1"); the dome reads it, so it
+	# has to travel with the save or a load would show the pre-load tank's piece count (D-0037).
+	block.encode_u32(OFF_EGG_PIECES, clampi(int(level.egg_pieces), Progression.EGG_PIECES_AT_START,
+		Progression.EGG_PIECES_TO_COMPLETE))
 	# `+0x440` is the star potion's armed flag (P2.3 §2); the note's §6.3 calls it unknown
 	# because the finalizer clears it, but the feeding path binds it.
 	block[OFF_FLAG_440] = 1 if level.star_potion_armed else 0
@@ -88,6 +92,9 @@ static func apply(block: PackedByteArray, level) -> void:
 	level.backdrop = block.decode_u32(OFF_BACKDROP)
 	level.alien_selection = block.decode_u32(OFF_ALIEN_TYPE)
 	level.star_potion_armed = int(block[OFF_FLAG_440]) != 0
+	# Saves written before this mapping carry zeroes here, which clamp to the starting piece.
+	level.egg_pieces = clampi(block.decode_u32(OFF_EGG_PIECES), Progression.EGG_PIECES_AT_START,
+		Progression.EGG_PIECES_TO_COMPLETE)
 	level.backdrop_tint = Color8(int(block[OFF_TINT]), int(block[OFF_TINT + 1]),
 		int(block[OFF_TINT + 2]), int(block[OFF_TINT + 3]))
 	if level.wave != null:

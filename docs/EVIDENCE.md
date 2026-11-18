@@ -5274,3 +5274,27 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Still live afterwards**: the restored tank went hungry again and the hint came back at tick 33.
 - (6) **Coverage**: this is the windowed half the headless suite cannot reach (`render = false` keeps
   `hint_label` null there, so its `_test_hint_cache_on_load` only pins the tick reset).
+
+## EV-0208 - Per-tank state on the Level, and what a load leaves behind
+- Date: 2026-11-18
+- Type: field-by-field audit of `scripts/tank/level.gd` against `load_game`/`start_level` and
+  `TankScalars`; headless scenarios plus a windowed backdrop capture
+- Source: `scripts/tank/level.gd`, `scripts/persistence/tank_scalars.gd`,
+  `tests/headless_level_check.gd` (`_test_load_refresh`), `tests/headless_tank_snapshot_check.gd`
+- (1) **Stale, now fixed**: `Level.tank_index` (the Level's copy; `load_game` only wrote
+  `tank.tank_index`), `egg_price` (only set in `start_level`), `egg_pieces` (field present in the block
+  at `+0x43C` but never written or read), the backdrop sprite (guarded by `has_node("Backdrop")`),
+  `_composite_pending`/`_composite_selection`, and `_presto_notice`.
+- (2) **Windowed backdrop check**: the sprite read `aquarium1.png`; setting `backdrop = 3` and calling
+  the new `_refresh_backdrop()` showed `aquarium3.png`; `load_game` of the backdrop-1 save returned
+  true and the sprite was `aquarium1.png` again in the next frame.
+- (3) **Headless**: `_test_load_refresh` saves tank 1 level 2 with 2 egg pieces, poisons the live level
+  with tank 5 / level 4 / 1 piece / price 12345 / a queued composite member, and requires the load to
+  restore both indices to 1/2, the count to 2, the price to `Progression.egg_price(1, 2, mode)` (2000
+  here), the composite queue empty and the notice hidden.
+- (4) **Round trip through disk**: the snapshot suite writes `egg_pieces = 3`, reads the block's
+  `+0x43C` back as 3, loads over a tank holding 1 and gets 3.
+- (5) **Coverage**: `headless_level_check` 174 -> 181, `headless_tank_snapshot_check` 54 -> 56,
+  `headless_store_ui_check` 65, `headless_integration_check` 136, boot clean.
+- (6) **Left stale on purpose** (no field in the save, or unreachable): `waves_spawned`, `completed`,
+  `particles`, `laser_sparks`, and live pet bodies.

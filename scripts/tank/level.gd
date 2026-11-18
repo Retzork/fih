@@ -392,23 +392,46 @@ func _refresh_hint() -> void:
 func _add_backdrop() -> void:
 	if _content == null or tank == null or has_node("Backdrop"):
 		return
-	# The 640x480 tank art is `AQUARIUM1..6`; the `TANKBACKDROP` thumbnails (190x121) are the menu
-	# previews, so they are only a fallback and are scaled to the tank rect when used.
-	var id := "IMAGE_AQUARIUM%d" % backdrop
-	if not _content.has_image(id):
-		id = "IMAGE_TANKBACKDROP%d" % backdrop
-	if not _content.has_image(id):
-		return
-	var res: ImageRes = _content.image(id)
-	if res == null or res.texture == null:
+	var texture := _backdrop_texture()
+	if texture == null:
 		return
 	var sprite := Sprite2D.new()
 	sprite.name = "Backdrop"
 	sprite.centered = false
-	sprite.texture = res.texture
-	sprite.scale = Vector2(TANK_SIZE.x / res.texture.get_width(), TANK_SIZE.y / res.texture.get_height())
+	_fit_backdrop(sprite, texture)
 	sprite.z_index = -100
 	add_child(sprite)
+
+
+## The 640x480 tank art is `AQUARIUM1..6`; the `TANKBACKDROP` thumbnails (190x121) are the menu
+## previews, so they are only a fallback and are scaled to the tank rect when used.
+func _backdrop_texture() -> Texture2D:
+	if _content == null:
+		return null
+	var id := "IMAGE_AQUARIUM%d" % backdrop
+	if not _content.has_image(id):
+		id = "IMAGE_TANKBACKDROP%d" % backdrop
+	if not _content.has_image(id):
+		return null
+	var res: ImageRes = _content.image(id)
+	return res.texture if res != null else null
+
+
+func _fit_backdrop(sprite: Sprite2D, texture: Texture2D) -> void:
+	sprite.texture = texture
+	sprite.scale = Vector2(TANK_SIZE.x / texture.get_width(), TANK_SIZE.y / texture.get_height())
+
+
+## A loaded save can name another backdrop: swap the art the sprite already holds instead of leaving
+## the tank that started the session on screen (D-0037).
+func _refresh_backdrop() -> void:
+	var sprite := get_node_or_null("Backdrop") as Sprite2D
+	if sprite == null:
+		_add_backdrop()
+		return
+	var texture := _backdrop_texture()
+	if texture != null:
+		_fit_backdrop(sprite, texture)
 
 
 # --- entities ----------------------------------------------------------------
@@ -1608,6 +1631,10 @@ func load_game(path: String = "") -> bool:
 	for row: Dictionary in tank_store:
 		row.erase("hidden")
 	pet_flags = save.pet_flags.duplicate()
+	# Both copies of the index: `tank.tank_index` is the live tank's, and the `Level`'s own
+	# `tank_index`/`level_index` feed the name label, the egg price and the store's restock tables, so a
+	# save from another tank would otherwise keep pricing the one that started the session (D-0037).
+	tank_index = save.tank
 	tank.tank_index = save.tank
 	level_index = save.level
 	_refresh_tank_label()
@@ -1617,11 +1644,24 @@ func load_game(path: String = "") -> bool:
 	# The scalar block restored the type and countdown; point the live clock at the restored type
 	# without resetting the countdown (G10).
 	_sync_wave_selection()
-	# Only the tick cache has to go: it belongs to the tank that drew it, and a restored `age_ticks`
-	# equal to it would hold the pre-load wording until the clock moved on. `_hint_shown` still describes
-	# the label exactly as before the load, so leaving it alone is what keeps that cache honest - the
-	# next `_refresh_hint()` compares against it and writes only if the restored tank reads differently.
+	# Everything below belonged to the tank that was just replaced, and the `Level` outlives the tank, so
+	# each one has to be re-derived or dropped here (D-0037).
+	#
+	# The hint: only the tick cache has to go. It belongs to the tank that drew it, and a restored
+	# `age_ticks` equal to it would hold the pre-load wording until the clock moved on. `_hint_shown`
+	# still describes the label exactly as before the load, so leaving it alone is what keeps that cache
+	# honest - the next `_refresh_hint()` compares against it and writes only if the restored tank reads
+	# differently.
 	_hint_tick = -1
+	# The egg dome prices off the tank and level; the save may name different ones.
+	egg_price = Progression.egg_price(tank_index, level_index, game_mode)
+	# A composite recipe hands out one member per wave request, so a load can catch it half-delivered;
+	# the queued member belongs to the old tank's roll and must not spawn into the restored one.
+	_composite_selection = -1
+	_composite_pending.clear()
+	# The "Recharging..." notice points at a pet body, and pet bodies are not part of a tank save.
+	clear_presto_notice()
+	_refresh_backdrop()
 	return true
 
 

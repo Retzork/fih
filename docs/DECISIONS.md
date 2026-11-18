@@ -1966,3 +1966,39 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   `Main.toggle_stats()`, and its string is still only formatted while showing.
 - Pinned by `headless_integration_check`: the `Debug/Info` box must not intersect the tank name's or
   the hint's rect.
+
+### D-0037 - What a load has to re-derive, because the Level outlives the tank
+
+- Date: 2026-11-18 (owner: the hint cache survived `load_game()` because it was per-tank state on a
+  Level that outlives the tank - check the other per-tank fields and fix the ones that can go stale)
+- Status: accepted, measured. EV-0208 holds the audit and the captures.
+- **The audit.** `Level` keeps per-tank state across `load_game()`, which replaces only the tank's
+  entities and the scalars. Field by field:
+  - **`tank_index`** (the Level's own copy, not `tank.tank_index`) **went stale** and is fixed: it feeds
+    `tank_name()`, `egg_price`, `_tick_time_trial`'s budget and the store's restock tables
+    (`Progression.store_rows(tank_index, level_index, ...)`), so a save from another tank kept pricing
+    the one that started the session. `load_game` now sets both copies from `save.tank`.
+  - **`egg_price`** went stale for the same reason and is now re-derived after the indices are set.
+  - **`egg_pieces`** was never saved at all: the block has the field (`+0x43C`, P2.13 §6.3 row 19,
+    "starts at 1") but `TankScalars` wrote zeroes there and never read it, so a load kept the live
+    tank's count. It is now captured and applied, clamped to `EGG_PIECES_AT_START..EGG_PIECES_TO_COMPLETE`;
+    older saves (zeroes) restore the starting piece.
+  - **The backdrop** went stale: `_add_backdrop()` returns early when the `Backdrop` sprite exists, and
+    a load can name another index. `_add_backdrop` is split into `_backdrop_texture()` + `_fit_backdrop()`
+    and `load_game` calls `_refresh_backdrop()`, which re-points the existing sprite.
+  - **`_hint_tick`** (D-0035) and **`_composite_pending`/`_composite_selection`**: a composite spawn
+    hands out one member per wave request, so a load could catch a recipe half-delivered and drop its
+    queued member into the restored tank. Both are cleared now.
+  - **`_presto_notice`**: the "Recharging..." label points at a pet body, and pet bodies are not part of
+    a tank save, so the notice is cleared on load.
+- **Fields that legitimately survive** (checked, not changed): `money`, `food_quantity`, `food_quality`,
+  `backdrop` index, `star_potion_armed`, `backdrop_tint`, `alien_selection`, `wave.timer` and
+  `pet_capacity` are all restored from the scalar block; `tank_store` and `pet_flags` from the file;
+  the tank label is refreshed and the hint recomputes. `StoreBar.refresh_if_changed()` and
+  `EggWidget.refresh_if_changed()` key off money/stock and tank/money/pieces/price/completed, so the
+  restored values repaint the bar and dome on the next tick - including the new egg fields.
+- **Known, left alone**: `waves_spawned` (a session counter; only the challenge-mode re-roll reads it and
+  the save has no field for it), `completed` (not saved; a completed level unloads, so a load cannot
+  normally see it), `particles`/`laser_sparks` (transient FX that expire on their own), and pets bodies
+  (P4.7: the port records `pet_flags` but does not spawn pets back, so a live pet is not removed by a
+  load that has none).

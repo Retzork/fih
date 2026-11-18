@@ -198,6 +198,7 @@ func _test_level_save_load() -> void:
 	level.tank.tank_index = 3
 	level.level_index = 2
 	level.tank_store.append({"slot": 6, "price": 1500, "base": 1500, "increment": 15, "present": 0})
+	level.egg_pieces = 3
 	_expect(level.save_game(path) == OK, "save_game writes the file")
 	var disk: TankSave = SaveFilesScript.read_tank_save(path)
 	_expect(disk != null, "the written file parses")
@@ -206,13 +207,17 @@ func _test_level_save_load() -> void:
 		_expect(int(disk.store[0]["price"]) == 1500, "the store table is in the file")
 		_expect(disk.scalars.decode_u32(73) == 250, "the money is in the scalar block")
 		_expect(disk.entities.size() == LevelScript.STARTING_FISH, "the fish are in the file")
+		_expect(disk.scalars.decode_u32(TankScalarsScript.OFF_EGG_PIECES) == 3,
+			"the egg progress is in the scalar block")
 
 	level.money = 1
 	level.food_quantity = 1
+	level.egg_pieces = 1
 	for entity in level.tank.entities_in(Sim.Phase.FISH):
 		level.tank.despawn(entity)
 	_expect(level.load_game(path), "load_game reads the file back")
 	_expect(level.money == 250, "the wallet restores")
+	_expect(level.egg_pieces == 3, "the egg progress restores (D-0037)")
 	_expect(level.food_quantity == 4, "the food quantity restores")
 	_expect(level.tank_store.size() > 0 and int(level.tank_store[0]["price"]) == 1500,
 		"the store table restores")

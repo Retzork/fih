@@ -58,6 +58,7 @@ func _init() -> void:
 	_test_debug_actions()
 	_test_hunger_hint()
 	_test_hint_cache_on_load()
+	_test_load_refresh()
 
 	level.tank.shutdown()
 	level.free()
@@ -76,6 +77,35 @@ func _init() -> void:
 ## name format. D-0031 deleted the port's own bottom-right readout, so the name is the only one.
 ## A restored save brings its own tank, so the hint's per-tick cache must not survive `load_game()`:
 ## a restored `age_ticks` equal to the cached tick would hold the previous tank's wording (D-0035).
+## The `Level` outlives the tank it draws, so a load has to re-derive or drop every per-tank value the
+## save may contradict (D-0037). This drives the ones the headless run can see.
+func _test_load_refresh() -> void:
+	var path := "user://load_refresh_check.dat"
+	level.tank_index = 1
+	level.tank.tank_index = 1
+	level.level_index = 2
+	level.egg_pieces = 2
+	_expect(level.save_game(path) == OK, "the load-refresh scenario writes a save")
+	level.tank_index = 5
+	level.tank.tank_index = 5
+	level.level_index = 4
+	level.egg_pieces = 1
+	level.egg_price = 12345
+	level._composite_selection = 9
+	level._composite_pending.append(4)
+	_expect(level.load_game(path), "load_game reads that save back")
+	_expect(level.tank_index == 1 and level.tank.tank_index == 1 and level.level_index == 2,
+		"both tank indices and the level come from the save, not the tank that started the session")
+	_expect(level.egg_pieces == 2, "the egg-piece count comes from the save, not the pre-load tank")
+	_expect(level.egg_price == Progression.egg_price(1, 2, level.game_mode),
+		"the egg price is re-derived for the restored tank and level")
+	_expect(level._composite_selection == -1 and level._composite_pending.is_empty(),
+		"a half-delivered composite spawn does not carry into the restored tank")
+	_expect(not level.presto_notice_visible(), "no pre-load prestige notice survives the load")
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+
+
 func _test_hint_cache_on_load() -> void:
 	var path := "user://hint_cache_check.dat"
 	_expect(level.save_game(path) == OK, "the hint-cache scenario writes a save")
