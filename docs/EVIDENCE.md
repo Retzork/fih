@@ -4977,3 +4977,36 @@ behavior or specs; follow up with a binary observation entry.
     No tank stocks shelf 7 today (Q-0054).
 - (7) **Checks**: `headless_store_ui_check` 53, `headless_level_check` 157, `headless_menu_check` 28,
   `headless_fish_check` 121, `headless_integration_check` 134, the 400-frame boot exits 0.
+
+### EV-0196 - The shelf badge measured: 44x38 at slot-local y 3, and no affordability colour
+- Date: 2026-11-16
+- Type: measurement off the owner's base-game recording (frame at t = 0, bar starts at y 24 of the
+  window) + side-by-side captures of 1-1, 1-3
+- Source: `scripts/ui/store_bar.gd` (`ICON_RECT`, `PRICE_COLOR`), `scripts/ui/egg_widget.gd`,
+  `tests/headless_store_ui_check.gd`
+- (1) **Badge geometry.** A per-row scan of the stocked shelf's violet (test: `b > 0.35`,
+  `b > r + 0.05`, `r > g + 0.03`, so the gold frame and the fish both fail it) gives, in slot-local
+  rows: 14 px wide at y 3, 24 at y 5, 32 at y 7, 36 at y 9, 38 at y 11, 40 at y 13, **44 from y 15 to
+  28**, then 42, 40, 34, 32, 26, 20 and it ends at y 40. That is an **ellipse 44 wide by 38 tall
+  spanning slot-local y 3..40** - the badge fills the dome window and stops 4 px above the plate.
+  The port had 44x33 at (6, 9), i.e. 6 px low and 5 px short, which is the gold moulding the owner
+  saw showing above the violet.
+- (2) **Price plate.** The same scan shows the violet plate at slot-local y 45..56, 46 px wide; the
+  port's `PLATE_RECT` (7, 45, 45, 12) already matched and is unchanged.
+- (3) **No affordability colour.** At t = 15 the wallet reads **45** with the guppy shelf at **`$100`**
+  and the egg dome at **`$150`**; both prices are the same bright green as at money 400, and the dome
+  art is unchanged. The base game never dims a price it cannot pay, so `StoreBar.GREYED_COLOR` and its
+  use in `refresh()` are gone, along with `EggWidget`'s grey price branch. Click refusal is untouched:
+  the purchase still fails, it just is not signalled by colour.
+- (4) **Fitted art.** With the window 5 px taller the egg cell (46x39) is fitted by
+  `min(window / cell)` on both axes, so it still sits inside the badge instead of overflowing by a
+  fraction of a pixel.
+- (5) **Verified visually** by capturing 1-1 and 1-3 at 2x and stacking them against the recording's
+  1-1 bar: the badge now meets the gold ring's top and bottom as the base does. The same comparison
+  shows two deviations that are **not** changed here: the base's wallet `$` is pale gold on its badge
+  where the port draws dark green (#36720A), and the base's price/wallet glyphs are ~10-12 px where
+  the port uses the 8 px `FONT_TINYBOLD`. Sampled badge colours (#4B2C5E left, #5332B6 right,
+  #532C8E top) sit within a few units of `BADGE_BASE`/`BADGE_EDGE`, so the palette is left alone.
+- (6) **Coverage**: `headless_store_ui_check` 53 -> 55 (the badge rect; a price that stays green at
+  money 0), `headless_level_check` 157, `headless_menu_check` 28, `headless_fish_check` 121,
+  `headless_integration_check` 134, the 400-frame boot exits 0.

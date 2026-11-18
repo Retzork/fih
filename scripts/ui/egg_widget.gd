@@ -33,8 +33,8 @@ const CELL_SIZE := Vector2(46.0, 39.0)
 ## The label box is the bar's own price box: same plate, same centre y 51, so the two domes cannot
 ## drift apart.
 const PRICE_RECT := StoreBar.PRICE_LABEL_RECT
-const GREY := Color8(0xCC, 0xCC, 0xCC)
-## `FUN_005373C0` seeds the tank store buttons with the green label colour 0x6EFA6E.
+## `FUN_005373C0` seeds the tank store buttons with the green label colour 0x6EFA6E, and the
+## recording keeps that green at any balance (the `$150` egg is bright at money 45 as well - D-0027).
 const PRICE_COLOR := Color8(0x6E, 0xFA, 0x6E)
 
 var level = null
@@ -110,7 +110,8 @@ func _ready() -> void:
 	_art = TextureRect.new()
 	_art.name = "Egg"
 	_art.texture = texture
-	_art.size = Vector2(CELL_SIZE.x * ART_WINDOW.size.y / CELL_SIZE.y, ART_WINDOW.size.y)
+	var fit := minf(ART_WINDOW.size.x / CELL_SIZE.x, ART_WINDOW.size.y / CELL_SIZE.y)
+	_art.size = CELL_SIZE * fit
 	_art.position = ART_WINDOW.position + (ART_WINDOW.size - _art.size) * 0.5
 	_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_art.stretch_mode = TextureRect.STRETCH_SCALE
@@ -147,8 +148,7 @@ func refresh() -> void:
 	else:
 		# The base game prints the same `$` prefix on the egg dome (`$150` on the 1-1 recording).
 		_price.text = "$%d" % price
-	var colour := PRICE_COLOR if affordable and not level.completed else GREY
-	_price.add_theme_color_override("font_color", colour)
+	_price.add_theme_color_override("font_color", PRICE_COLOR)
 	_show_frame(pieces)
 
 

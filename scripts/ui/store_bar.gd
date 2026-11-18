@@ -36,10 +36,12 @@ const PLATE_RECT := Rect2(7.0, 45.0, 45.0, 12.0)
 ## taller than the 12-px plate, so the box is deliberately tall (centre y 51) and the glyphs are
 ## drawn at their native size - a shorter box cut the bottoms off the price digits.
 const PRICE_LABEL_RECT := Rect2(7.0, 30.0, 45.0, 42.0)
-## The dome's glass, measured off the base-game recording: the badge fills 44x33 at slot-local
-## (6, 9), ending just above the price plate at y 45. A smaller box left the dome's moulding showing
-## around the item, which the owner read as a shut lid (D-0022).
-const ICON_RECT := Rect2(6.0, 9.0, 44.0, 33.0)
+## The dome's glass, measured off the base-game recording (D-0027): a per-row scan of the stocked
+## shelf's violet gives an ellipse 44 wide spanning slot-local y 3..40 - 14 px wide on its top row,
+## 44 wide from y 15..28, 20 px on its bottom row - so the badge fills the whole dome window and
+## stops 4 px above the price plate at y 45. The earlier 44x33 at (6, 9) was too small and sat too
+## low, leaving the dome's gold moulding showing above the violet.
+const ICON_RECT := Rect2(6.0, 3.0, 44.0, 38.0)
 
 ## `FUN_005409B0`'s x table for slots 0-6; slot 7 is unrecovered (Q-0054).
 const SLOT_X := [0x12, 0x57, 0x90, 0xD9, 0x122, 0x16B, 0x1B4]
@@ -48,9 +50,11 @@ const SLOT_Y := 3.0
 const SLOT_SIZE := Vector2(58.0, 60.0)
 const SLOT_COUNT := 8
 
-## `FUN_005373C0` writes `FUN_00433360(0x6E,0xFA,0x6E)` into the button's label colour.
+## `FUN_005373C0` writes `FUN_00433360(0x6E,0xFA,0x6E)` into the button's label colour, and the
+## recording keeps that green whatever the purse holds - at money 45 the `$100` shelf and the `$150`
+## egg are as bright as at money 400 (D-0027). The bar used to grey a price it could not pay; the
+## base game never does, so there is no second colour here.
 const PRICE_COLOR := Color8(0x6E, 0xFA, 0x6E)
-const GREYED_COLOR := Color8(0xCC, 0xCC, 0xCC)
 ## The wallet number is the same green as every price (sampled #84EF89 in the recording).
 const MONEY_COLOR := PRICE_COLOR
 
@@ -373,14 +377,12 @@ func refresh() -> void:
 		else:
 			icon.texture = icon_for(id)
 		var known := Store.price_known(row)
-		var affordable := known and (int(row.get("price", 0)) <= level.money)
 		button.disabled = not known or level.completed
 		button.mouse_default_cursor_shape = (
 			Control.CURSOR_ARROW if button.disabled else Control.CURSOR_POINTING_HAND)
 		# The base game's price label carries the currency sign (`$100` on the 1-1 recording, D-0023).
 		price_label.text = ("$%d" % int(row.get("price", 0))) if known else "$?"
-		var colour := PRICE_COLOR if affordable else GREYED_COLOR
-		price_label.add_theme_color_override("font_color", colour)
+		price_label.add_theme_color_override("font_color", PRICE_COLOR)
 	set_process(_swim_shelf >= 0)
 
 

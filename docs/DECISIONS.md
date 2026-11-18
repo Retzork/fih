@@ -1589,6 +1589,25 @@ Open: the real per-cell hold and the pet reveal point.
   purse. The swim row was measured at ten cells with the column advancing every five ticks (0 -> 1 at
   tick 56, 2 at 61).
 
+### D-0027 - The shelf badge is 44x38 at slot-local y 3, and a price is never greyed
+
+- Date: 2026-11-16 (owner: fix the badge geometry from the recording; drop the price greying)
+- Status: accepted, measured. EV-0196 has the per-row numbers and the captures.
+- **Geometry.** A per-row scan of the stocked shelf's violet in the recording gives an ellipse
+  **44 wide by 38 tall, slot-local y 3..40**: 14 px on its top row, 44 wide from y 15..28, 20 px on
+  its bottom row, ending 4 px above the plate at y 45. `ICON_RECT` moves from (6, 9, 44, 33) to
+  **(6, 3, 44, 38)** - the earlier box was 6 px low and 5 px short, which is why gold showed above
+  the violet. The plate's own rect already matched the measurement and is untouched.
+- **No affordability colour.** The recording holds a `$100` shelf and a `$150` egg at money 45, both
+  as bright green as at money 400, with the dome art unchanged. `GREYED_COLOR` is deleted and every
+  price is `PRICE_COLOR` at any balance, in the bar and on the egg dome. Refusal is a behaviour, not
+  a colour: `buy_item` still declines and the buttons still disable.
+- **Egg art.** The window grew 5 px, so the cell is fitted by `min(window / cell)` on both axes rather
+  than by height alone, and cannot overflow sideways.
+- **Recorded deviations, not changed.** The base's wallet `$` is pale gold on its badge where the
+  port draws dark green; the base's price and wallet glyphs are ~10-12 px where the port uses the
+  8 px `FONT_TINYBOLD`. The badge's own palette measured within a few units of ours and is left as is.
+
 ### D-0026 - The bar's review pass: one wallet box, egg art keyed to the badge, no dead crops
 
 - Date: 2026-11-16 (owner asked for a fresh-eyes review of the shop-bar turn)

@@ -81,6 +81,10 @@ func _test_bar() -> void:
 		"the first in-tank slot is at x 0x12, y 3, 58x60 (FUN_005409B0)")
 	_expect(BarScript.PLATE_RECT == Rect2(7, 45, 45, 12),
 		"the price sits on MENUBAR's measured purple plate")
+	# D-0027: a per-row scan of the base game's stocked shelf gives an ellipse 44 wide spanning
+	# slot-local y 3..40, i.e. the badge fills the dome window and stops 4 px above the plate.
+	_expect(BarScript.ICON_RECT == Rect2(6, 3, 44, 38),
+		"the badge fills the dome window (44x38 at slot-local 6, 3)")
 	_expect(BarScript.PRICE_COLOR == Color8(0x6E, 0xFA, 0x6E),
 		"the tank button's label is the recovered green (FUN_005373C0)")
 	_expect(BarScript.ICON_ART[4] == "IMAGE_SCL_OSCAR",
@@ -117,6 +121,12 @@ func _test_bar() -> void:
 		"an unstocked dome stays empty - SOLD is the StoreScreen's branch, not an empty tank slot")
 	_expect(bar._money_label.text == str(level.money),
 		"the MENUBAR wallet plate shows the tank's money")
+	# D-0027: the recording keeps `$100` bright green at a purse of 45, so no price is recoloured by
+	# whether the tank can pay it.
+	level.money = 0
+	bar.refresh()
+	_expect(bar._prices[0].get_theme_color("font_color") == BarScript.PRICE_COLOR,
+		"a price stays green when the purse cannot pay it")
 	level.money = 100
 	expect_purchase(bar, level, "the bar buys from its own slot")
 	_expect(bar._money_label.text == "0", "the wallet plate follows the purchase")
