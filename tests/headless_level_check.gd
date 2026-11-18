@@ -70,9 +70,18 @@ func _init() -> void:
 		quit(1)
 
 
-## The bottom HUD (D-0028): the base's "Tank 1-1" and the two hunger-hint wordings, both measured off
-## the recording. The label itself needs a rendered HUD, so this drives `hint_text()`.
+## The bottom HUD (D-0028): the base's "Tank  1-1" and the two hunger-hint wordings, both measured
+## off the recording. The label itself needs a rendered HUD, so this drives `hint_text()` and the
+## name format; D-0031 removed the port's own bottom-right readout, leaving the name as the only one.
 func _test_hunger_hint() -> void:
+	var constants: Dictionary = level.get_script().get_script_constant_map()
+	_expect(not constants.has("LEVEL_PLATE_RECT") and not constants.has("LEVEL_LABEL_COLOR")
+		and not constants.has("LEVEL_PLATE_SOURCE"),
+		"the port-only bottom-right plate and its green readout are deleted, not moved (D-0031)")
+	_expect(LevelScript.tank_name(1, 1) == "Tank  1-1" and LevelScript.tank_name(1, 3) == "Tank  1-3",
+		"the bottom-left name is the level readout, with the recording's two-space gap")
+	_expect(LevelScript.TANK_LABEL_RECT.position == Vector2(13, 453),
+		"the name sits where the recording measures it (13, 453)")
 	_expect(LevelScript.HINT_TEXT == "Fish are hungry! Click to drop food!",
 		"the shallow hint is the recording's wording")
 	_expect(LevelScript.HINT_TEXT_SEVERE == "Fish are REALLY hungry! Click to feed!",

@@ -5079,3 +5079,22 @@ behavior or specs; follow up with a binary observation entry.
   / `size (632, 23)`, confirming the box above is the one that was covering the row.
 - (3) **Coverage.** No suite asserted the overlay before and none does now; the boot run (400 frames)
   exits 0 with the label hidden, and the store-UI/level/integration suites are unaffected.
+
+## EV-0200 - Re-shooting 1-1 and 1-3 after deleting the level plate
+- Date: 2026-11-18
+- Type: 2x captures of the real main path (boot -> GameSelector -> 1-1 and 1-3), bottom strip, with a
+  per-pixel ink scan of the same frame
+- Source: `scripts/tank/level.gd` (`_add_bottom_hud`, `tank_name`), `tests/headless_level_check.gd`
+- (1) **The plate is gone.** Both captures report `Hud/LevelPlate` and `Hud/LevelLabel` as null, and a
+  green-ink scan of the old plate's box (575..635, 448..478) finds **no pixels** - the corner is plain
+  water.
+- (2) **The name** reads `Tank  1-1` / `Tank  1-3` at (13, 453) in `#A89460`, ink x 13..81 (69 px) and
+  11 px tall against the recording's x 14..73 (60 px) at 11 px. Position, colour and height match; the
+  width is the known `CONTINUUMBOLD12` metric deviation recorded in EV-0197 (4).
+- (3) **The hint** at the first warning line reads `Fish are hungry! Click to drop food!` in `#AEF762`
+  on `#004A00`; its ink spans x 186..462 - the recording's own 186..462 (277 px) - 13 px tall.
+- (4) Neither capture shows the debug stats line: it starts hidden (D-0030).
+- (5) **Coverage**: `headless_level_check` 165 -> 168 (the plate/value constants are absent from the
+  script's constant map; `tank_name(1, 1)`/`tank_name(1, 3)` are the recording's strings;
+  `TANK_LABEL_RECT` is (13, 453)), `headless_store_ui_check` 62, `headless_integration_check` 134,
+  boot clean.

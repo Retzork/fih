@@ -1524,8 +1524,11 @@ Open: the real per-cell hold and the pet reveal point.
 ### D-0020 - The tank draws its own level number in the bottom-right corner
 
 - Date: 2026-11-16 (owner request)
-- Status: accepted for the port. **Port addition, not recovered behaviour**: `TankScreen` draws no
-  level readout, so this is a HUD extra and nothing in it claims a binary writer.
+- Status: **SUPERSEDED 2026-11-18 by D-0031.** The bottom-right plate and its green `1-1` are deleted;
+  the measured pale-gold `Tank  1-1` (D-0028) is the tank screen's only level readout. Recorded so the
+  withdrawn extra and its two rejected fits are not rebuilt.
+- Original status: accepted for the port. **Port addition, not recovered behaviour**: `TankScreen`
+  draws no level readout, so this is a HUD extra and nothing in it claims a binary writer.
 - **What.** `Level` adds a `LevelLabel` to its `Hud` CanvasLayer, centred in `LEVEL_LABEL_RECT`
   (583, 450, 45, 24), `FONT_TINYBOLD` in the store buttons' green `0x6EFA6E`, mouse-transparent.
   Text is `"%d-%d" % [tank_index, level_index]` - the same pair the save and the selector use, so 1-3
@@ -1830,3 +1833,10 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   second instead of an FPS/Content text build.
 - Not changed: `Level.toggle_debug_panel()` (F1) is the level's own port-only panel and has no base
   counterpart either, but it is off until pressed and does not sit on the measured HUD.
+
+- **Addendum (2026-11-18, D-0031).** The question this entry left open - whether the plate should move
+  back to bottom-left - is answered by deleting it: the recording has no readout in that corner, and
+  `Tank  1-1` now states the level in words the base uses. `_add_bottom_hud()` is the single HUD
+  builder; `LEVEL_PLATE_RECT`/`LEVEL_LABEL_RECT`/`LEVEL_PLATE_SOURCE`/`LEVEL_LABEL_COLOR`,
+  `_add_level_plate()`/`_refresh_level_label()` and the `level_label` field are gone, and
+  `start_level`/`load_game` call `_refresh_tank_label()`. Re-shot 1-1 and 1-3 at 2x: EV-0200.

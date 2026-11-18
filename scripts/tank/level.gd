@@ -32,22 +32,12 @@ const SPAWN_MIN := Vector2(80.0, 160.0)
 const SPAWN_MAX := Vector2(480.0, 300.0)
 ## The drawn tank rect (`AQUARIUM1..6` are 640x480).
 const TANK_SIZE := Vector2(640.0, 480.0)
-## The bottom-right level readout (port addition, D-0020): `TankScreen` draws no level number. It
-## sits on a small plate rather than loose text - the bar's own purple price plate, cut out of
-## `MENUBAR` and 9-sliced (`LEVEL_PLATE_SOURCE` is bar-local `StoreBar.PLATE_RECT` on slot 0).
-## Drawn at the plate's own 45x12 size: 9-slicing it to a wider box smeared the plate's baked
-## highlight across the middle, so the readout uses the art 1:1 instead.
-const LEVEL_PLATE_RECT := Rect2(583.0, 456.0, 45.0, 12.0)
-## The label box is taller than the 12-px plate and centred on it (both centre on y 462): a 12-tall box
-## puts the 8-px glyphs' baseline below the plate's bottom edge.
-const LEVEL_LABEL_RECT := Rect2(583.0, 450.0, 45.0, 24.0)
-const LEVEL_PLATE_SOURCE := Rect2(25.0, 48.0, 45.0, 12.0)
-## The same green `FUN_005373C0` writes into every store button label.
-const LEVEL_LABEL_COLOR := Color8(0x6E, 0xFA, 0x6E)
 ## The bottom HUD the recording shows and the port lacked (D-0028, EV-0197). The game area starts
 ## 24 px into the window, so the window-measured glyph rows (y 483..498) are game rows 459..474.
-## "Tank 1-1" bottom-left: glyphs x 14..73, 11 px tall, in pale gold (#98834F averaged over the
-## bright stroke pixels, #A49364 at the brightest).
+## "Tank  1-1" bottom-left: glyphs x 14..73, 11 px tall, in pale gold (#98834F averaged over the
+## bright stroke pixels, #A49364 at the brightest). This is the tank screen's **only** level readout
+## (D-0031): the port's own bottom-right plate and its green `1-1` are gone, because the base has no
+## readout in that corner.
 const TANK_LABEL_RECT := Rect2(13.0, 453.0, 220.0, 22.0)
 const TANK_LABEL_COLOR := Color8(0xA8, 0x94, 0x60)
 ## The hunger hint centred in the same row: glyphs x 186..462 (centre 324), 18 px tall with the dark
@@ -199,9 +189,7 @@ var alien_selection := 0
 var wave: WaveClock = null
 ## The clickable egg-piece widget (P4.6); tank 5 sells the egg as a store row instead.
 var egg_widget = null
-## The bottom-right tank-level readout (D-0020); null while rendering is off.
-var level_label: Label = null
-## The base's bottom row: the tank name and the hunger hint (D-0028).
+## The base's bottom row: the tank name and the hunger hint (D-0028), the only level readout (D-0031).
 var tank_label: Label = null
 var hint_label: Label = null
 ## How many waves have spawned this session (the original's `Tank+0x45C`).
@@ -304,7 +292,7 @@ func _ready() -> void:
 	debug_panel.action_requested.connect(_on_debug_action)
 	_mount_egg_widget()
 	_add_backdrop()
-	_add_level_label()
+	_add_bottom_hud()
 
 
 ## The egg widget lives in the bar's empty seventh dome, so it has to draw with the bar: a
@@ -321,34 +309,13 @@ func _mount_egg_widget() -> void:
 	egg_widget.refresh()
 
 
-## The tank/level number in the bottom-right corner (port addition, D-0020 - the owner asked to see
-## which level is running; `TankScreen` itself draws no such label). It lives on the same `Hud` layer
-## as the bar so it draws over the water, and it ignores the mouse.
-func _add_level_label() -> void:
-	if level_label != null:
-		return
+## The base's own bottom row (D-0028): the tank name at the bottom left and the hunger hint centred
+## under the sand line. Both draw on the `Hud` layer, ignore the mouse and were absent from the port.
+## `TankLabel` is the whole level readout now - D-0031 removed the port-only bottom-right plate.
+func _add_bottom_hud() -> void:
 	var layer := get_node_or_null("Hud")
 	if layer == null:
 		return
-	_add_level_plate(layer)
-	var label := Label.new()
-	label.name = "LevelLabel"
-	label.position = LEVEL_LABEL_RECT.position
-	label.size = LEVEL_LABEL_RECT.size
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", LEVEL_LABEL_COLOR)
-	UiFont.apply(label, UiFont.SMALL_FONT)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(label)
-	level_label = label
-	_refresh_level_label()
-	_add_bottom_hud(layer)
-
-
-## The base's own bottom row (D-0028): the tank name at the bottom left and the hunger hint centred
-## under the sand line. Both draw on the `Hud` layer, ignore the mouse and were absent from the port.
-func _add_bottom_hud(layer: Node) -> void:
 	if tank_label == null:
 		tank_label = Label.new()
 		tank_label.name = "TankLabel"
@@ -376,12 +343,16 @@ func _add_bottom_hud(layer: Node) -> void:
 		layer.add_child(hint_label)
 
 
-## `Tank  1-1`, the base's own naming of the pair (the wide gap between the name and the numbers is
-## in the recording).
+## The base's own naming of the pair, with the wide gap the recording has between the name and the
+## numbers. `_refresh_tank_label` only feeds it the live pair, so the suite can check the string.
+static func tank_name(tank_no: int, level_no: int) -> String:
+	return "Tank  %d-%d" % [tank_no, level_no]
+
+
 func _refresh_tank_label() -> void:
 	if tank_label == null:
 		return
-	tank_label.text = "Tank  %d-%d" % [tank_index, level_index]
+	tank_label.text = tank_name(tank_index, level_index)
 
 
 ## The hint follows the tank's hungriest live fish: nothing while they are fed, the shallow wording
@@ -411,33 +382,6 @@ func _refresh_hint() -> void:
 		hint_label.text = text
 
 
-## The plate under the readout: the bar's purple price plate, 9-sliced so the rounded ends keep their
-## native width at the readout's size. Skipped without content, which leaves the plain label.
-func _add_level_plate(layer: Node) -> void:
-	if _content == null or not _content.has_image("IMAGE_MENUBAR"):
-		return
-	var res: ImageRes = _content.image("IMAGE_MENUBAR")
-	if res == null or res.texture == null:
-		return
-	var patch := AtlasTexture.new()
-	patch.atlas = res.texture
-	patch.region = LEVEL_PLATE_SOURCE
-	var plate := TextureRect.new()
-	plate.name = "LevelPlate"
-	plate.texture = patch
-	plate.position = LEVEL_PLATE_RECT.position
-	plate.size = LEVEL_PLATE_RECT.size
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(plate)
-
-
-## Draw the current tank-level (`1-3`); `start_level` and `load_game` call this whenever the pair
-## changes, so the readout needs no per-frame work.
-func _refresh_level_label() -> void:
-	if level_label == null:
-		return
-	level_label.text = "%d-%d" % [tank_index, level_index]
-	_refresh_tank_label()
 
 
 ## The tank backdrop (`+0x3E8`, 1..6 -> `TANKBACKDROP1..6`), drawn behind every entity.
@@ -833,7 +777,7 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	egg_pieces = Progression.egg_pieces_at_start(tank_index)
 	egg_price = Progression.egg_price(tank_index, level_index, game_mode)
 	stock_default_store()
-	_refresh_level_label()
+	_refresh_tank_label()
 	# The bar builds a widget for every row with `A >= 0` on its first frame (EV-0144), so the
 	# `Tank+0x2E0 < Tank+0x2DC` latch Blip clears (EV-0094) starts clear; only a check or an old
 	# save can set it.
@@ -1662,7 +1606,7 @@ func load_game(path: String = "") -> bool:
 	pet_flags = save.pet_flags.duplicate()
 	tank.tank_index = save.tank
 	level_index = save.level
-	_refresh_level_label()
+	_refresh_tank_label()
 	for entity in tank.entities_in(Sim.Phase.FISH):
 		tank.despawn(entity)
 	TankSnapshotScript.restore(tank, save)
