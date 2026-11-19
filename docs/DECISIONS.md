@@ -2195,3 +2195,23 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   no doubling.
 - **Kept:** the budget re-derivation in `load_game` from the restored tank (D-0045), and
   `TICKS_PER_SECOND` as the only place seconds and ticks meet.
+
+### D-0048 - The store screen keys rows by shelf, like the bar
+
+- Date: 2026-11-19 (owner: `StoreScreen.row_at(index)` reads `tank_store[index]` by array position
+  while the bar matches by shelf, so a loaded or restocked table could draw rows on the wrong slots;
+  check whether the screen should key off shelf and fix it with a headless pin)
+- Status: accepted, measured. EV-0220 holds the binding evidence and the runs.
+- **It should.** P2.12 §6d's refresh indexes the eight widgets with the per-item unlock byte
+  `profile+0xA8+i`, so widget `i` is store slot `i` - the same field the table gives as its second
+  entry and the bar calls `shelf`. Array position is not part of the binding; `store_rows` only
+  happened to return shelf order.
+- **One lookup per consumer.** `row_at(shelf)` matches the row's `shelf`; `row_index_at(shelf)`
+  translates the slot back into the `tank_store` position that `Level.buy_item` takes, so the click
+  path and the drawing path cannot disagree.
+- **The eighth slot belongs to the stock roller.** It is the only shelf the seven-dome bar never
+  asks for and the only store-screen slot with no item id, so the roller row now carries `shelf 7`
+  (`STORE_SHELF_COUNT - 1`) instead of relying on being appended last. On load the roller is told
+  apart from the file's `slot -1, price 0` padding by its price, and the padding stays undrawn.
+- **Kept:** `buy_item`'s array-position signature (unchanged), D-0040's rule that a row the table no
+  longer sells keeps its bare record and draws nothing.

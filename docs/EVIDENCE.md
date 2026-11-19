@@ -5604,3 +5604,27 @@ behavior or specs; follow up with a binary observation entry.
   and tank-2-over-tank-1 loads were already driven through disk on the level suite.
 - (5) **Runs**: `headless_tank_snapshot_check` 68 -> 71, `headless_level_check` 212 -> 213 (+1 for a
   finished save's double copy), all 24 suites green, script sum 1403 (+136 = 1539).
+
+## EV-0220 - The store screen's eight widgets are indexed by store slot, not by array position
+- Date: 2026-11-19
+- Type: note read; code change; headless suites
+- Source: `docs/analysis/notes/p2.12-menus.md` §6/§6d, `docs/analysis/notes/p2.6-progression.md` §3,
+  `scripts/ui/store_screen.gd`, `scripts/ui/store_bar.gd`, `scripts/tank/level.gd`,
+  `scripts/progression/progression.gd`, the store-UI, level and profile suites
+- (1) **The binding.** The ctor creates eight `StoreItem` widgets and the stock refresh walks
+  `for (i = 0; i < 8; i++) if (profile[0xA8 + i] == 0 && item[i]+0x14C != 0)` (P2.12 §6d): widget `i`
+  is gated by the *i-th* per-item unlock byte and holds the *i-th* item, so the slot index is the
+  store slot - exactly the second field of P2.6 §3's table, which the port calls `shelf`.
+- (2) **The port bound rows by array position.** `Progression.store_rows` sorts by shelf, so the
+  normal stock hid it; a table in another order (a save whose rows sit in file/table order, or
+  `Level.store_rows(ids)`) drew each row on a neighbour's shelf, and a click bought the neighbour.
+- (3) **Fix**: `StoreScreen.row_at(shelf)` matches `shelf` like `StoreBar.row_at`, a new
+  `row_index_at(shelf)` resolves the click back to the `tank_store` position `Level.buy_item` takes,
+  `Level.store_rows(ids)` stamps each row's shelf from the new `Progression.shelf_of`, and the stock
+  roller's row carries `shelf = 7` (the eighth store slot the screen draws and the seven-dome bar
+  never asks for). `_restore_store_rows` gives a saved roller row (`slot -1`, price > 0) shelf 7 and
+  leaves the file's `slot -1, price 0` padding undrawn.
+- (4) **Runs**: `headless_store_ui_check` 65 -> 70 (a deliberately unsorted table, shelves 0/1/2/5,
+  a resolved click and an empty eighth slot), `headless_level_check` 213 -> 214 (the roller's shelf
+  after a load, and that the bar has no eighth dome), `headless_profile_check` 56 -> 57 (the roller's
+  shelf on the fresh roll); all 24 suites green, script sum 1410 (+136 = 1546).

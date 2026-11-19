@@ -1589,6 +1589,9 @@ func roll_stock() -> Dictionary:
 	var row := {
 		"slot": -1, "price": Profile.BACKDROP_PRICE, "base": Profile.BACKDROP_PRICE,
 		"increment": 0, "present": 0, "kind_roll": 3,
+		# The stock roller's shelf is the eighth store slot (`item[7]` of P2.12 §6d). The in-tank bar
+		# has only the seven item domes, so it never asks for it; the store screen draws it.
+		"shelf": STORE_SHELF_COUNT - 1,
 	}
 	if not unowned.is_empty():
 		row["backdrop"] = unowned[tank.randi_below(unowned.size())]
@@ -1611,7 +1614,11 @@ func roll_stock() -> Dictionary:
 func store_rows(ids: Array) -> void:
 	tank_store.clear()
 	for id: int in ids:
-		tank_store.append(Store.row_for(id))
+		var row := Store.row_for(id)
+		var shelf := Progression.shelf_of(id, tank_index)
+		if shelf >= 0:
+			row["shelf"] = shelf
+		tank_store.append(row)
 
 
 # --- persistence -------------------------------------------------------------
@@ -1722,6 +1729,11 @@ func _restore_store_rows() -> void:
 		# `shelves` holds only real item ids, so the roller's -1 simply misses.
 		if shelves.has(slot):
 			row["shelf"] = int(shelves[slot])
+		elif slot < 0 and int(row.get("price", 0)) > 0:
+			# The roller row is the one with no item id, and it owns the eighth store slot
+			# (`FUN_0052FEA0`, P2.12 §6d). A short table is padded in the file with `slot -1, price 0`
+			# records, so the price tells a real roller from the padding, which stays undrawn.
+			row["shelf"] = STORE_SHELF_COUNT - 1
 		row["free"] = slot == Progression.EGG_ITEM and int(row.get("price", 0)) == 0
 
 

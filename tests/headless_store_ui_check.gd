@@ -204,15 +204,26 @@ func _test_rows() -> void:
 	var level: Level = LevelScript.new()
 	level.render = false
 	level.setup(sim, 9090)
-	level.store_rows([0, 2, 3, 10])
+	# Deliberately not in shelf order: 10 sits on shelf 5, 2 on shelf 1, 3 on shelf 2 (P2.6 §3).
+	level.store_rows([10, 0, 3, 2])
 	_expect(level.tank_store.size() == 4, "the level carries four store rows")
 	var screen: Control = ScreenScript.new()
 	screen.setup(level)
-	_expect(int(screen.row_at(0).get("slot", -1)) == 0, "slot 0 sells the guppy")
-	_expect(int(screen.row_at(3).get("slot", -1)) == 10, "slot 3 sells the weapon upgrade")
-	_expect(screen.row_at(7).is_empty(), "a shelf past the stock has no row")
+	_expect(int(screen.row_at(0).get("slot", -1)) == 0, "shelf 0 sells the guppy")
+	_expect(int(screen.row_at(2).get("slot", -1)) == 3, "shelf 2 sells the second food upgrade")
+	_expect(int(screen.row_at(5).get("slot", -1)) == 10,
+		"shelf 5 sells the weapon upgrade wherever it sits in the array (D-0048)")
+	_expect(screen.row_at(3).is_empty() and screen.row_at(7).is_empty(),
+		"an unstocked shelf has no row, including the roller's eighth slot")
+	_expect(screen.row_index_at(5) == 0,
+		"the click path resolves the shelf to the row's array position (got %d)" % screen.row_index_at(5))
+	_expect(int(screen.row_at(1).get("slot", -1)) == 2, "shelf 1 sells the food-quality upgrade")
+	level.money = 200
+	_expect(level.buy_item(screen.row_index_at(1)), "clicking the food shelf buys that row")
+	_expect(level.money == 0 and level.food_quality == 1,
+		"the shelf's own row is the one that was bought, not the array neighbour")
 	level.money = 100
-	_expect(level.buy_item(0), "clicking the guppy shelf buys a fish")
+	_expect(level.buy_item(screen.row_index_at(0)), "clicking the guppy shelf buys a fish")
 	_expect(level.money == 0, "the price comes out of the shells")
 	screen.free()
 	level.tank.shutdown()

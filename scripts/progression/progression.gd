@@ -107,6 +107,15 @@ static func egg_price(tank_no: int, level_no: int, mode: int = 0) -> int:
 	return int(prices[index])
 
 
+## The store slot an item is sold at on a tank (`§3`'s second field - the base's per-item index,
+## `profile+0xA8+i`), or -1 when the tank never stocks it.
+static func shelf_of(item_id: int, tank_no: int) -> int:
+	var per_tank: Dictionary = STORE_TABLE.get(item_id, {})
+	if not per_tank.has(tank_no):
+		return -1
+	return int(per_tank[tank_no][1])
+
+
 ## The store rows this tank/level offers, ordered by the store slot the original places them at.
 ## A row is shaped like `Store.row_for` plus `shelf`, and `free` marks the tank-5 egg, whose 0 is a
 ## recovered price rather than the "not recovered" marker. `include_hidden` is Blip's instant unlock

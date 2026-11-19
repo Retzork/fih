@@ -177,8 +177,11 @@ func _test_loaded_store_rows() -> void:
 	for i in five.tank_store.size():
 		if int(five.tank_store[i].get("slot", -1)) == -1 and int(five.tank_store[i].get("price", 0)) == 15000:
 			roller = i
-	_expect(roller >= 0 and not five.tank_store[roller].has("shelf"),
-		"the roller's bare row takes no dome after a load")
+	_expect(roller >= 0 and int(five.tank_store[roller].get("shelf", -1))
+		== LevelScript.STORE_SHELF_COUNT - 1,
+		"the roller's row comes back on the eighth store slot, not in array order (D-0048)")
+	_expect(StoreBar.slot_rect(LevelScript.STORE_SHELF_COUNT - 1).size == Vector2.ZERO,
+		"the in-tank bar has no eighth dome, so the roller is still undrawn there")
 	_expect(loaded_egg >= 0 and five.buy_item(loaded_egg),
 		"the free egg still buys through its store row")
 	if FileAccess.file_exists(path):

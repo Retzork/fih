@@ -188,6 +188,8 @@ func _test_stock_roller() -> void:
 	var row := level.roll_stock()
 	_expect(int(row.get("kind_roll", -1)) == 3, "the roller offers a backdrop first")
 	_expect(int(row["price"]) == ProfileScript.BACKDROP_PRICE, "a backdrop costs 15000 shells")
+	_expect(int(row.get("shelf", -1)) == LevelScript.STORE_SHELF_COUNT - 1,
+		"the roller owns the eighth store slot, which only the store screen draws (D-0048)")
 	for i in ProfileScript.BACKDROP_SLOTS:
 		level.profile.backdrops_owned[i] = 1
 	var fallback := level.roll_stock()

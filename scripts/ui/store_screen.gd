@@ -16,9 +16,10 @@ const SCREEN_SIZE := Vector2(640.0, 480.0)
 const BACKGROUND_ID := "IMAGE_STORESCREEN"
 const SHELL_ICON_ID := "IMAGE_STORESHELL"
 
-## The eight item rects in creation order (`FUN_0052B2D0`'s stack `CRect` array, EV-0133). The
-## evidence says this is the creation order rather than proof of which shelf a widget ends up on, so
-## the port binds slot `i` to store row `i`.
+## The eight item rects in creation order (`FUN_0052B2D0`'s stack `CRect` array, EV-0133). The slot
+## index is the store slot: the stock refresh walks `item[i]` against the per-slot unlock byte
+## `profile+0xA8+i` (P2.12 §6d), so widget `i` belongs to store slot `i` - the field the rows carry as
+## `shelf` (D-0048).
 const SLOT_RECTS := [
 	Rect2(1.0, 5.0, 109.0, 140.0),
 	Rect2(1.0, 143.0, 109.0, 140.0),
@@ -112,11 +113,26 @@ func close() -> void:
 	queue_free()
 
 
-## The row the slot index sells, or `{}` when the stock is shorter than the shelf count.
-func row_at(index: int) -> Dictionary:
-	if level == null or index < 0 or index >= level.tank_store.size():
+## The row drawn on a store slot, or `{}` when that slot is unstocked. Matched by the row's `shelf`,
+## like the bar: the store slot is the base's per-item index (`profile+0xA8+i`, P2.12 §6d), and a
+## loaded or restocked table need not sit in shelf order (D-0048).
+func row_at(shelf: int) -> Dictionary:
+	if level == null:
 		return {}
-	return level.tank_store[index]
+	for row: Dictionary in level.tank_store:
+		if int(row.get("shelf", -1)) == shelf:
+			return row
+	return {}
+
+
+## The row's position in `tank_store`, which is what `Level.buy_item` takes; -1 when the slot is empty.
+func row_index_at(shelf: int) -> int:
+	if level == null:
+		return -1
+	for i in level.tank_store.size():
+		if int(level.tank_store[i].get("shelf", -1)) == shelf:
+			return i
+	return -1
 
 
 ## The drawing state of one row: what the name and price lines say and whether they are greyed.
@@ -194,13 +210,16 @@ func refresh() -> void:
 			price.add_theme_color_override("font_color", price_color(state))
 
 
-func _on_slot_pressed(index: int) -> void:
+func _on_slot_pressed(shelf: int) -> void:
 	var audio := _autoload("Audio")
 	if audio != null:
 		audio.play_click()
 	if level == null:
 		return
-	if level.buy_item(index):
+	# The button is bound to its store slot, not to an array position, so the purchase has to resolve
+	# the slot's row the same way the drawing does (D-0048).
+	var index := row_index_at(shelf)
+	if index >= 0 and level.buy_item(index):
 		_show_thanks()
 	refresh()
 
