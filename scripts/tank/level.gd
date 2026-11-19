@@ -1692,7 +1692,8 @@ func _restore_store_rows() -> void:
 		shelves[int(row["slot"])] = int(row["shelf"])
 	for row in tank_store:
 		var slot := int(row.get("slot", -1))
-		if slot >= 0 and shelves.has(slot):
+		# `shelves` holds only real item ids, so the roller's -1 simply misses.
+		if shelves.has(slot):
 			row["shelf"] = int(shelves[slot])
 		row["free"] = slot == Progression.EGG_ITEM and int(row.get("price", 0)) == 0
 

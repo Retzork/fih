@@ -2107,3 +2107,18 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   pinned is the property that matters now: the roller row cannot take a dome from a real shelf.
 - **Test:** `headless_level_check._test_loaded_store_rows` (tank 5 egg + a roller-shaped row through
   disk), `headless_level_check` 200, total 1513 assertions over 24 suites.
+
+### D-0043 - The store-row restore stays one pass; the guard states the property, not the count
+
+- Date: 2026-11-19 (owner: fresh-eyes review of the store-row fix - simplify what can be simpler, cut
+  what is not needed)
+- Status: accepted. EV-0214 holds the review and the runs.
+- **`shelves.has(slot)` alone is the test.** The dictionary is built from `Progression.store_rows`,
+  so it never holds `-1`; the extra `slot >= 0` arm was dead and is gone.
+- **The guard is `filter` + `all`.** Counting stocked and shelved rows said the same thing less
+  directly; the assertion now reads as the property itself ("every stocked row has its shelf"), with
+  `is_empty()` guarding against a vacuous pass.
+- **Kept on purpose:** deriving `free` next to `shelf` (both are pure functions of the record the
+  file does hold), `include_hidden = true` in the table lookup (unlocked rows keep their dome), and
+  the single pass in one function - `TankScalars` cannot host it because it runs before `load_game`
+  applies the header's tank/level.

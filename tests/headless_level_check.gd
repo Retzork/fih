@@ -111,14 +111,10 @@ func _test_load_refresh() -> void:
 	_expect(not level.completed, "two restored pieces is not a completed level, whatever the pre-load one was")
 	# The file's 17-byte rows carry the slot but not the port-only `shelf`, so a load has to put it
 	# back or the bar finds no row for any shelf and draws empty domes (D-0040).
-	var placed := 0
-	var shelved := 0
-	for row: Dictionary in level.tank_store:
-		if int(row.get("slot", -1)) >= 0:
-			placed += 1
-			if row.has("shelf"):
-				shelved += 1
-	_expect(placed > 0 and shelved == placed,
+	var stocked := level.tank_store.filter(func(row: Dictionary) -> bool:
+		return int(row.get("slot", -1)) >= 0)
+	_expect(not stocked.is_empty() and stocked.all(func(row: Dictionary) -> bool:
+		return row.has("shelf")),
 		"every restored store row gets its shelf back, so the bar draws it (D-0040)")
 	_expect(level.egg_price == Progression.egg_price(1, 2, level.game_mode),
 		"the egg price is re-derived for the restored tank and level")

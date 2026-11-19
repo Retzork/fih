@@ -5454,3 +5454,24 @@ behavior or specs; follow up with a binary observation entry.
   row rather than the roller, the roller row to come back with no `shelf`, and `buy_item` on the egg
   row to still buy. `headless_level_check` 191 -> 200; the other 22 script suites and the
   integration suite unchanged (script sum 1377, +136 = 1513).
+
+## EV-0214 - Fresh-eyes review of the store-row restore: two cuts, no behaviour change
+- Date: 2026-11-19
+- Type: read-through of `Level._restore_store_rows()` and its call in `load_game()`, the shelf
+  re-derivation against `Progression.store_rows`, and the guard in `_test_load_refresh`; two edits plus
+  headless runs (no capture: nothing visual changed)
+- Source: `scripts/tank/level.gd` (`_restore_store_rows`, `load_game`),
+  `tests/headless_level_check.gd` (`_test_load_refresh`, `_test_loaded_store_rows`)
+- (1) **Redundant test, removed:** `if slot >= 0 and shelves.has(slot)` in `_restore_store_rows`.
+  `shelves` is built only from `Progression.store_rows`, whose slots are real item ids, so `has(-1)`
+  is already false and the `slot >= 0` arm could never decide anything.
+- (2) **The headless guard, collapsed:** `_test_load_refresh` counted stocked rows and shelved rows
+  in a nine-line loop. It is now one `filter()` + `all()` pair (`stocked.all(has shelf)`, plus
+  `not stocked.is_empty()` so it cannot pass on an empty table) - the same property in four lines.
+- (3) **Checked and kept:** the call order (`_restore_store_rows()` after the header's tank/level and
+  before the label refresh), the `free` re-derivation (`slot == EGG_ITEM and price == 0`, exactly
+  `Progression.store_rows`' test), and `include_hidden = true` (a Blip-unlocked row must keep the
+  dome it had when it was saved). Nothing else in the path is duplicated - `TankScalars` cannot own
+  this because it runs before the header's tank index is applied.
+- (4) **Runs:** `headless_level_check` 200, `headless_tank_snapshot_check` 58,
+  `headless_store_ui_check` 65 - all PASS, counts unchanged (neither edit removed coverage).
