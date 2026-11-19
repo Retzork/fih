@@ -18,6 +18,7 @@ func _init() -> void:
 	_test_rects()
 	_test_states()
 	_test_rows()
+	_test_loaded_rows()
 	_test_bar()
 	if _failures == 0:
 		print("headless_store_ui_check: PASS (%d assertions)" % _checks)
@@ -225,6 +226,55 @@ func _test_rows() -> void:
 	level.money = 100
 	_expect(level.buy_item(screen.row_index_at(0)), "clicking the guppy shelf buys a fish")
 	_expect(level.money == 0, "the price comes out of the shells")
+	screen.free()
+	level.tank.shutdown()
+	level.free()
+	sim.free()
+
+
+## A save keeps `tank_store` in whatever order it was written, so a table can come back out of shelf
+## order. The screen matches rows by `shelf` (D-0048), so every shelf must still draw its own item.
+func _test_loaded_rows() -> void:
+	var path := "user://store_screen_rows_check.dat"
+	var sim: Node = SimScript.new()
+	# 1-3 stocks these shelves; nothing else, so 4 and 6 must come back empty.
+	var expected := {0: 0, 1: 2, 2: 3, 3: 4, 5: 10}
+	var source: Level = LevelScript.new()
+	source.render = false
+	source.setup(sim, 9191)
+	source.start_level(1, 3)
+	var fresh := []
+	for row: Dictionary in source.tank_store:
+		fresh.append([int(row.get("shelf", -1)), int(row.get("slot", -1))])
+	_expect(fresh == [[0, 0], [1, 2], [2, 3], [3, 4], [5, 10]],
+		"the fresh 1-3 table opens in shelf order (got %s)" % str(fresh))
+	source.tank_store.append({
+		"slot": -1, "price": 15000, "base": 15000, "increment": 0, "present": 0,
+		"kind_roll": 3, "shelf": 7,
+	})
+	# The file keeps `tank_store` in the order it was written, so this save comes back reversed.
+	source.tank_store.reverse()
+	_expect(source.save_game(path) == OK, "the out-of-order table is written")
+	source.tank.shutdown()
+	source.free()
+	var level: Level = LevelScript.new()
+	level.render = false
+	level.setup(sim, 9192)
+	level.start_level(1, 3)
+	_expect(level.load_game(path), "the out-of-order table loads back")
+	_expect(int(level.tank_store[0].get("shelf", -1)) == 7,
+		"the loaded table really is out of shelf order (shelf %d first)" % int(level.tank_store[0].get("shelf", -1)))
+	var screen: Control = ScreenScript.new()
+	screen.setup(level)
+	for shelf: int in expected:
+		_expect(int(screen.row_at(shelf).get("slot", -1)) == int(expected[shelf]),
+			"shelf %d still draws item %d after an out-of-order load (got %d)"
+			% [shelf, expected[shelf], int(screen.row_at(shelf).get("slot", -1))])
+	_expect(screen.row_at(4).is_empty() and screen.row_at(6).is_empty(),
+		"the shelves 1-3 leaves empty stay empty")
+	_expect(int(screen.row_at(7).get("slot", -1)) == -1, "the roller comes back on the eighth shelf")
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
 	screen.free()
 	level.tank.shutdown()
 	level.free()

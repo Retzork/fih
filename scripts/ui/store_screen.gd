@@ -113,19 +113,9 @@ func close() -> void:
 	queue_free()
 
 
-## The row drawn on a store slot, or `{}` when that slot is unstocked. Matched by the row's `shelf`,
-## like the bar: the store slot is the base's per-item index (`profile+0xA8+i`, P2.12 §6d), and a
-## loaded or restocked table need not sit in shelf order (D-0048).
-func row_at(shelf: int) -> Dictionary:
-	if level == null:
-		return {}
-	for row: Dictionary in level.tank_store:
-		if int(row.get("shelf", -1)) == shelf:
-			return row
-	return {}
-
-
 ## The row's position in `tank_store`, which is what `Level.buy_item` takes; -1 when the slot is empty.
+## Matched by the row's `shelf`, like the bar: the store slot is the base's per-item index
+## (`profile+0xA8+i`, P2.12 §6d), and a loaded or restocked table need not sit in shelf order (D-0048).
 func row_index_at(shelf: int) -> int:
 	if level == null:
 		return -1
@@ -133,6 +123,12 @@ func row_index_at(shelf: int) -> int:
 		if int(level.tank_store[i].get("shelf", -1)) == shelf:
 			return i
 	return -1
+
+
+## The row drawn on a store slot, or `{}` when that slot is unstocked.
+func row_at(shelf: int) -> Dictionary:
+	var index := row_index_at(shelf)
+	return level.tank_store[index] if index >= 0 else {}
 
 
 ## The drawing state of one row: what the name and price lines say and whether they are greyed.

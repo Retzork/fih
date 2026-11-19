@@ -5628,3 +5628,26 @@ behavior or specs; follow up with a binary observation entry.
   a resolved click and an empty eighth slot), `headless_level_check` 213 -> 214 (the roller's shelf
   after a load, and that the bar has no eighth dome), `headless_profile_check` 56 -> 57 (the roller's
   shelf on the fresh roll); all 24 suites green, script sum 1410 (+136 = 1546).
+
+## EV-0221 - Review of the shelf-keyed store screen, plus an out-of-order load pin
+- Date: 2026-11-19
+- Type: review; code simplification; a new headless pin; full suite
+- Source: `scripts/ui/store_screen.gd`, `scripts/tank/level.gd`,
+  `tests/headless_store_ui_check.gd`, `tests/headless_level_check.gd`,
+  `tests/headless_profile_check.gd`
+- (1) **Review finding: two scans of one rule.** `row_at` and `row_index_at` each walked
+  `tank_store` looking for the same `shelf`. `row_at` now asks `row_index_at` and reads the row, so
+  the matching rule exists once on the screen.
+- (2) **Review finding: the magic `- 1`.** The roller's shelf was spelled `STORE_SHELF_COUNT - 1` in
+  the roller, the load restore and two suites. It is now `Level.ROLLER_SHELF`, next to the shelf count
+  and named as the roller's.
+- (3) **New pin** (`headless_store_ui_check._test_loaded_rows`): a real 1-3 Level saves its table with
+  the stock roller row added, `tank_store.reverse()`d so the *file* is out of shelf order (the roller
+  first), and the save is read back into a fresh 1-3 Level. The screen must then draw item 0 on shelf
+  0, 2 on 1, 3 on 2, 4 on 3 and 10 on 5, leave shelves 4 and 6 empty, and put the roller on shelf 7.
+  Reverting `row_at` to array position fails the first five (index 0 is the roller).
+  The fresh-table assertion compares `[shelf, slot]` pairs directly - the first draft indexed
+  `tank_store[shelf]`, which is the very confusion the pin exists to catch (shelf 5's row sits at
+  array index 4).
+- (4) **Runs**: `headless_store_ui_check` 70 -> 81, the other 23 suites unchanged, script sum 1421
+  (+136 = 1557); `headless_integration_check` 136.

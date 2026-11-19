@@ -1535,6 +1535,9 @@ func inflate_prices(ticks: int) -> void:
 
 ## The eight shelves the store screen draws (EV-0133).
 const STORE_SHELF_COUNT := 8
+## The stock roller's shelf (the eighth store slot). Only the store screen draws it; the in-tank bar
+## has the seven item domes (D-0048).
+const ROLLER_SHELF := STORE_SHELF_COUNT - 1
 
 
 ## Stock the shop from P2.6 §3's per-tank table: which items a tank sells, at which store slot and
@@ -1591,7 +1594,7 @@ func roll_stock() -> Dictionary:
 		"increment": 0, "present": 0, "kind_roll": 3,
 		# The stock roller's shelf is the eighth store slot (`item[7]` of P2.12 §6d). The in-tank bar
 		# has only the seven item domes, so it never asks for it; the store screen draws it.
-		"shelf": STORE_SHELF_COUNT - 1,
+		"shelf": ROLLER_SHELF,
 	}
 	if not unowned.is_empty():
 		row["backdrop"] = unowned[tank.randi_below(unowned.size())]
@@ -1733,7 +1736,7 @@ func _restore_store_rows() -> void:
 			# The roller row is the one with no item id, and it owns the eighth store slot
 			# (`FUN_0052FEA0`, P2.12 §6d). A short table is padded in the file with `slot -1, price 0`
 			# records, so the price tells a real roller from the padding, which stays undrawn.
-			row["shelf"] = STORE_SHELF_COUNT - 1
+			row["shelf"] = ROLLER_SHELF
 		row["free"] = slot == Progression.EGG_ITEM and int(row.get("price", 0)) == 0
 
 

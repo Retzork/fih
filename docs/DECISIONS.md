@@ -2215,3 +2215,19 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   apart from the file's `slot -1, price 0` padding by its price, and the padding stays undrawn.
 - **Kept:** `buy_item`'s array-position signature (unchanged), D-0040's rule that a row the table no
   longer sells keeps its bare record and draws nothing.
+
+### D-0049 - One shelf lookup on the screen, one name for the roller's shelf
+
+- Date: 2026-11-19 (owner: review this turn's store-screen shelf change with fresh eyes and simplify
+  anything that can be simpler, then pin an out-of-shelf-order save through the screen)
+- Status: accepted. EV-0221 holds the review findings, the pin and the runs.
+- **`row_at` is `row_index_at` plus a read.** The screen had two copies of "find the row whose
+  `shelf` is this store slot"; the drawing path now reuses the click path's lookup, so the two cannot
+  drift.
+- **`Level.ROLLER_SHELF`** replaces four separate `STORE_SHELF_COUNT - 1` spellings (roller, load
+  restore, two suites). The value stays derived from the shelf count, so the eighth-slot rule has one
+  home.
+- **The pin loads, it does not reorder in memory.** A save keeps `tank_store` in write order, so the
+  test reverses the table before writing and reads it into a fresh Level; the screen is then asserted
+  shelf by shelf. That is the failure the owner described - a loaded table in another order - rather
+  than a synthetic row list.
