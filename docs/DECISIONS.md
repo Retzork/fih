@@ -2002,3 +2002,23 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   normally see it), `particles`/`laser_sparks` (transient FX that expire on their own), and pets bodies
   (P4.7: the port records `pet_flags` but does not spawn pets back, so a live pet is not removed by a
   load that has none).
+
+### D-0038 - One tank index: `Tank+0x3C8`, reached through the Level
+
+- Date: 2026-11-19 (owner: review the load-refresh change with fresh eyes, then collapse
+  `Level.tank_index` and `tank.tank_index` into one source of truth)
+- Status: accepted. EV-0209 holds the review and the runs.
+- **The problem.** The port kept two fields for the recovered `+0x3C8`: `Level.tank_index` and
+  `tank.tank_index`. D-0037 wrote both in `load_game()`, but nothing kept them equal elsewhere. They
+  had already drifted without any load: the level's default was 1 and the tank's 0, so a level between
+  `setup()` and `start_level()` read 1 while its tank read 0; `headless_tank_snapshot_check` writes
+  only `level.tank.tank_index = 3`, so that level's own copy read 1 while the save header said 3; and
+  `save_game()` read the tank's copy while the store, name and egg price read the level's.
+- **The decision.** The field is the tank's. `Level.tank_index` is a property: the getter returns
+  `tank.tank_index` (0 before a tank exists, the field's recovered pre-init value) and the setter
+  writes `tank.tank_index`. `load_game()` and `start_level()` assign once, `save_game()` reads the same
+  accessor, and `start_level`'s mirror write is deleted. `setup()` seeds `tank.tank_index = 1` because
+  it builds the port's default 1-1 level (the `level_index` default) before `start_level` names one.
+- **Consequences.** A read or write before `setup()` sees or is dropped by the missing tank; no caller
+  does that, and it is documented on the property. Every other reader (`pet.gd`, the alien health
+  gate, the egg widget signature) already read `tank.tank_index`, so it keeps working unchanged.

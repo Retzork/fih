@@ -119,8 +119,16 @@ var star_potion_armed := false
 var save_path := "userdata/adv1.dat"
 ## The level within the tank (1..5); the save header stores it.
 var level_index := 1
-## The tank within the adventure (1..5), `Tank+0x3C8`.
-var tank_index := 1
+## The tank within the adventure (1..5), `Tank+0x3C8`: one field, read and written through the live
+## tank, so the name label, the egg price and the store's restock tables can never disagree with the
+## tank the simulation runs (D-0038). Writes before `setup()` build the tank are dropped, and the
+## value is 0 until `load_game()`/`start_level()` sets it, like the recovered field.
+var tank_index: int:
+	get:
+		return tank.tank_index if tank != null else 0
+	set(value):
+		if tank != null:
+			tank.tank_index = value
 ## `Tank+0x43C`: egg pieces bought. The level completes at 4 (tank 5 starts at 3), P2.6 §5.
 var egg_pieces := Progression.EGG_PIECES_AT_START
 ## The egg-piece price of this tank/level, or `Progression.PRICE_UNKNOWN` (P2.6 §3).
@@ -247,6 +255,9 @@ func setup(sim_node: Node, seed_value: int = 4242) -> void:
 	tank = TankScript.new()
 	tank.name = "Tank"
 	add_child(tank)
+	# `setup()` builds the port's default 1-1 level (the `level_index` default); the one tank index lives
+	# on the tank, so it is seeded there until `start_level`/`load_game` names another (D-0038).
+	tank.tank_index = 1
 	_sim = sim_node
 	tank.setup(sim_node, seed_value)
 	# `Tank.is_paused()` reads this shared gate (`Game.gameplay_paused`, the original's Tank+0x94).
@@ -812,7 +823,6 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	tank.wadsworth_count = 0
 	tank.wadsworth_mouth = Vector2.ZERO
 	reset_prices()
-	tank.tank_index = tank_index
 	_apply_mode_flags()
 	refresh_save_path()
 	if game_mode != MODE_TIME_TRIAL:
@@ -1606,7 +1616,7 @@ func refresh_save_path() -> void:
 func save_game(path: String = "") -> Error:
 	if path == "":
 		path = save_path
-	var save: TankSave = TankSnapshotScript.capture(tank, int(tank.tank_index), level_index)
+	var save: TankSave = TankSnapshotScript.capture(tank, tank_index, level_index)
 	while save.store.size() < TankSaveScript.STORE_ROWS:
 		save.store.append({"slot": -1, "price": 0, "base": 0, "increment": 0, "present": 0})
 	for i in mini(tank_store.size(), TankSaveScript.STORE_ROWS):
@@ -1631,11 +1641,10 @@ func load_game(path: String = "") -> bool:
 	for row: Dictionary in tank_store:
 		row.erase("hidden")
 	pet_flags = save.pet_flags.duplicate()
-	# Both copies of the index: `tank.tank_index` is the live tank's, and the `Level`'s own
-	# `tank_index`/`level_index` feed the name label, the egg price and the store's restock tables, so a
-	# save from another tank would otherwise keep pricing the one that started the session (D-0037).
+	# The tank index feeds the name label, the egg price and the store's restock tables, so a save from
+	# another tank would otherwise keep pricing the one that started the session (D-0037). There is one
+	# copy, the live tank's `+0x3C8`, so this write covers every reader (D-0038).
 	tank_index = save.tank
-	tank.tank_index = save.tank
 	level_index = save.level
 	_refresh_tank_label()
 	for entity in tank.entities_in(Sim.Phase.FISH):

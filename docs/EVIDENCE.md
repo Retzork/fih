@@ -5298,3 +5298,32 @@ behavior or specs; follow up with a binary observation entry.
   `headless_store_ui_check` 65, `headless_integration_check` 136, boot clean.
 - (6) **Left stale on purpose** (no field in the save, or unreachable): `waves_spawned`, `completed`,
   `particles`, `laser_sparks`, and live pet bodies.
+
+## EV-0209 - Fresh-eyes review of the load refresh, and the two tank indices collapsed into one
+- Date: 2026-11-19
+- Type: read-through of `load_game()` against its callers and the suites; code change plus headless
+  runs (no new capture: nothing visual changed)
+- Source: `scripts/tank/level.gd` (`tank_index`, `setup`, `start_level`, `save_game`, `load_game`),
+  `tests/headless_level_check.gd` (`_test_load_refresh`), `scripts/persistence/tank_scalars.gd`
+- (1) **Restore order is sound**: scalars (money/quality/quantity/capacity/backdrop/alien selection/
+  potion/tint/wave timer) -> store rows and pet flags -> indices and name label -> despawn + snapshot
+  restore -> wave selection sync -> per-tank clears -> `egg_price` re-derived from the restored index
+  -> backdrop. `egg_price` reads the index only after it is set, and `_refresh_tank_label()` likewise.
+- (2) **Finding, fixed**: `Level.tank_index` and `tank.tank_index` were two fields. D-0037 wrote both
+  at load but nothing kept them equal anywhere else: `headless_tank_snapshot_check` sets only
+  `level.tank.tank_index = 3` (its save header reads 3 while the level's copy reads 1), and the two
+  defaults differ (1 vs 0), so a level between `setup()` and `start_level()` already disagreed with
+  its tank. `Level.tank_index` is now a property over `Tank+0x3C8` (D-0038); the duplicate load write
+  and `start_level`'s mirror are deleted, and `setup()` seeds 1 so the fresh level still stocks 1-1.
+- (3) **Finding, left open**: the Time Trial clock. `time_trial_budget_ticks` is derived from
+  `tank_index` in `start_level()` only (300 s on tank 1, 600 s on 2-4) and `time_trial_elapsed` is
+  never saved, so F9 loading a save that names another tank keeps the previous run's budget and
+  elapsed. Fixing it needs the `+0x3FC` elapsed field mapped in `TankScalars` (the block has it, the
+  port writes zeroes there), which is a mapping decision this turn did not measure; restoring only
+  the budget would leave the elapsed counter contradicting it, so nothing was half-fixed.
+  Recorded as open in PLAN R33.
+- (4) **Headless**: `headless_level_check` 181 -> 183 (the accessor reads through the tank, a direct
+  tank write reads back through the level, and the load restores the one field from the header),
+  `headless_tank_snapshot_check` 56, `headless_progression_check` 86, `headless_pet_check` 113,
+  `headless_store_ui_check` 65, `headless_integration_check` 136, 400-frame boot clean (the known
+  `2 resources still in use at exit` only).

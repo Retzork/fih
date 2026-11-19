@@ -82,12 +82,14 @@ func _init() -> void:
 func _test_load_refresh() -> void:
 	var path := "user://load_refresh_check.dat"
 	level.tank_index = 1
-	level.tank.tank_index = 1
+	_expect(level.tank.tank_index == 1,
+		"the level's tank index is the live tank's own `+0x3C8`, one field (D-0038)")
 	level.level_index = 2
 	level.egg_pieces = 2
 	_expect(level.save_game(path) == OK, "the load-refresh scenario writes a save")
-	level.tank_index = 5
+	# Poison through the tank's field: the level's accessor has to read the same one back.
 	level.tank.tank_index = 5
+	_expect(level.tank_index == 5, "a write to the tank's field is what the level reads")
 	level.level_index = 4
 	level.egg_pieces = 1
 	level.egg_price = 12345
@@ -95,7 +97,7 @@ func _test_load_refresh() -> void:
 	level._composite_pending.append(4)
 	_expect(level.load_game(path), "load_game reads that save back")
 	_expect(level.tank_index == 1 and level.tank.tank_index == 1 and level.level_index == 2,
-		"both tank indices and the level come from the save, not the tank that started the session")
+		"the one tank index and the level come from the save, not the tank that started the session")
 	_expect(level.egg_pieces == 2, "the egg-piece count comes from the save, not the pre-load tank")
 	_expect(level.egg_price == Progression.egg_price(1, 2, level.game_mode),
 		"the egg price is re-derived for the restored tank and level")
