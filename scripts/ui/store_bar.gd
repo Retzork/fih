@@ -273,18 +273,25 @@ func _add_money_readout() -> void:
 ## The item art a store id draws in its dome, as the first cell of its shipped sheet (the weapon's
 ## cell is its upgrade level). Null when the item ships no matching icon.
 func _icon_texture(id: int) -> Texture2D:
-	var art := String(ICON_ART.get(id, ""))
-	if art == "":
+	var cell := item_cell(id, int(level.weapon_level) if level != null else 0, _autoload("Content"))
+	if cell == null or cell.get_image() == null:
 		return null
-	var content := _autoload("Content")
-	if content == null or not content.has_image(art):
+	return badge_cell(cell.get_image())
+
+
+## The item's own cell, masked and keyed, with no badge: the bar puts it on its violet dome and the
+## store screen puts it on the shelf, so both read one binding (D-0054). Null when the item ships no
+## matching icon.
+static func item_cell(id: int, weapon_level: int, content: Node) -> Texture2D:
+	var art := String(ICON_ART.get(id, ""))
+	if art == "" or content == null or not content.has_image(art):
 		return null
 	var frames: SpriteFrames = content.sprite_frames(art)
 	if frames == null or frames.get_frame_count("default") == 0:
 		return null
 	var frame := 0
-	if id == 10 and level != null:
-		frame = clampi(int(level.weapon_level), 0, frames.get_frame_count("default") - 1)
+	if id == 10:
+		frame = clampi(weapon_level, 0, frames.get_frame_count("default") - 1)
 	var texture := frames.get_frame_texture("default", frame)
 	if texture == null:
 		return null
@@ -299,9 +306,7 @@ func _icon_texture(id: int) -> Texture2D:
 		cell = HatchScreen.masked_cell(texture, mask)
 	if cell == null:
 		cell = SpriteKey.keyed(texture)
-	if cell == null or cell.get_image() == null:
-		return null
-	return badge_cell(cell.get_image())
+	return cell
 
 
 ## The dome art for `id`, composed once and reused (D-0025).

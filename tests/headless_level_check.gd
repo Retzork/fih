@@ -63,6 +63,7 @@ func _init() -> void:
 	_test_loaded_store_rows()
 	_test_time_trial_load()
 	_test_records()
+	_test_spawn_drop()
 
 	level.tank.shutdown()
 	level.free()
@@ -869,6 +870,33 @@ func _corpses() -> Array:
 		if entity is DeadFish and not entity.dead:
 			found.append(entity)
 	return found
+
+
+## The buy spawners' own placement (P2.2 §9.1): the fish starts at y 30 with a downward `vy` and a
+## dart, so it drops into the water instead of appearing where it was bought.
+func _test_spawn_drop() -> void:
+	level.game_mode = 0
+	level.start_level(1, 1)
+	level.money = 500
+	var row := _row_of(level, 0)
+	var before := _live_fish().size()
+	_expect(level.buy_item(row), "the guppy is bought")
+	_expect(_live_fish().size() == before + 1, "the purchase adds one fish")
+	var fish: Fish = null
+	for candidate in _live_fish():
+		if fish == null or candidate.position.y <= fish.position.y:
+			fish = candidate
+	_expect(fish != null and fish.position.y == LevelScript.SPAWN_DROP_Y,
+		"the bought fish starts at the tank top (y=%.0f)" % (fish.position.y if fish != null else -1.0))
+	_expect(fish != null and fish.position.x >= 20.0 and fish.position.x <= 539.0,
+		"at the recovered x roll (%.0f)" % (fish.position.x if fish != null else -1.0))
+	_expect(fish != null and fish.vy >= 18.0 and fish.vy <= 22.0,
+		"with the recovered downward vy (%.0f)" % (fish.vy if fish != null else -1.0))
+	_expect(fish != null and fish.dart_timer >= 45 and fish.dart_timer <= 54,
+		"and the dart that lets it fall past the floor clamp")
+	var start := fish.position.y
+	_step(3)
+	_expect(fish.position.y > start, "it falls into the water")
 
 
 ## The Hall of Fame writes the base does at level end (D-0053): `FUN_00514510` puts the `+0x3FC`

@@ -45,6 +45,10 @@ const GREYED_COLOR := Color(0.8, 0.8, 0.8)
 ## Name line: the port's own addition (the original's name text lives on the tooltip), placed above
 ## the recovered price line inside the widget.
 const NAME_OFFSET := Vector2(0.0, 84.0)
+## The item icon above the name line. The store's own per-item art is not recovered (Q-0052), so the
+## shelf draws the item's shipped icon (the bar's binding) in a square that fits every slot.
+const ICON_SIZE := 46.0
+const ICON_TOP := 24.0
 ## The Shell plate in the art's bottom centre. The counter widget's ctor rect (250,155,150,255) is a
 ## label layout box, not the plate, so the number is drawn on the plate the art actually shows.
 const SHELL_RECT := Rect2(250.0, 424.0, 145.0, 32.0)
@@ -58,6 +62,7 @@ const THANKS_SECONDS := 2.0
 ## The level this shop sells from; `setup()` is called before the screen enters the tree.
 var level: Level = null
 
+var _icons: Array[TextureRect] = []
 var _names: Array[Label] = []
 var _prices: Array[Label] = []
 var _shell: Label = null
@@ -204,6 +209,14 @@ func refresh() -> void:
 		# A shelf this tank never stocks draws nothing at all: `FUN_005409B0` builds no widget for an
 		# item with `A = -1`, so SOLD belongs only to a stocked row `Store.is_available()` refuses.
 		var unstocked := row.is_empty()
+		if index < _icons.size() and _icons[index] != null:
+			var icon := _icons[index]
+			var cell: Texture2D = null
+			if not unstocked and not bool(state["sold_out"]):
+				cell = StoreBar.item_cell(int(state["id"]),
+					int(level.weapon_level), _autoload("Content"))
+			icon.texture = cell
+			icon.visible = cell != null
 		if index < _names.size() and _names[index] != null:
 			_names[index].text = "" if unstocked or bool(state["sold_out"]) else String(state["name"])
 			_names[index].add_theme_color_override(
@@ -264,6 +277,19 @@ func _add_slot(index: int) -> void:
 		button.add_theme_stylebox_override(style, StyleBoxEmpty.new())
 	button.pressed.connect(_on_slot_pressed.bind(index))
 	add_child(button)
+	# The item art the shelf sells, from the same binding the tank's shop bar draws (D-0054): the
+	# shipped store art has the ledges but no item pictures, so a stocked shelf would read as an empty
+	# room with a floating label.
+	var icon := TextureRect.new()
+	icon.name = "Icon%d" % index
+	icon.size = Vector2(ICON_SIZE, ICON_SIZE)
+	icon.position = rect.position + Vector2((rect.size.x - ICON_SIZE) * 0.5, ICON_TOP)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.visible = false
+	add_child(icon)
+	_icons.append(icon)
 	var name_label := Label.new()
 	name_label.name = "Name%d" % index
 	name_label.position = rect.position + NAME_OFFSET

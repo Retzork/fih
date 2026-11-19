@@ -1190,6 +1190,28 @@ func add_money(amount: int) -> void:
 	money_earned += amount
 
 
+## `FUN_00546D70`'s own placement, shared by the buy spawners: the x roll is `rand%0x208 + 0x14`,
+## but the fish is put at **y = 30** with a downward `vy` of `rand%5 + 0x12` and a `+0x208` dart of
+## `rand%10 + 0x2d`. It drops into the water instead of appearing where it was bought - the visible
+## part of the spawn (P2.2 §9.1). The dart keeps the floor clamp off it while it falls.
+const SPAWN_DROP_Y := 30.0
+const SPAWN_DROP_X_MIN := 0x14
+const SPAWN_DROP_X_SPAN := 0x208
+const SPAWN_DROP_VY_MIN := 0x12
+const SPAWN_DROP_VY_SPAN := 5
+const SPAWN_DROP_DART_MIN := 0x2d
+const SPAWN_DROP_DART_SPAN := 10
+
+
+func _spawn_bought_fish(species: int) -> Fish:
+	var x := float(tank.randi_below(SPAWN_DROP_X_SPAN) + SPAWN_DROP_X_MIN)
+	var fish: Fish = tank.spawn_fish(species, Vector2(x, SPAWN_DROP_Y))
+	fish.vy = float(tank.randi_below(SPAWN_DROP_VY_SPAN) + SPAWN_DROP_VY_MIN)
+	fish.dart_timer = tank.randi_below(SPAWN_DROP_DART_SPAN) + SPAWN_DROP_DART_MIN
+	_wire(fish)
+	return fish
+
+
 func _random_spawn_point() -> Vector2:
 	return Vector2(
 		tank.rng.randf_range(SPAWN_MIN.x, SPAWN_MAX.x),
@@ -1636,7 +1658,7 @@ func buy_item(index: int) -> bool:
 		Store.KIND_FISH:
 			# Shop-bought fish enter through the same wiring as starter and bred fish (G4):
 			# without it a bought guppy never emits died/coin_due/breed_requested.
-			_wire(tank.spawn_fish(int(Store.item(id)["species"]), _random_spawn_point()))
+			_spawn_bought_fish(int(Store.item(id)["species"]))
 		Store.KIND_FOOD_QUALITY:
 			food_quality += 1
 		Store.KIND_FOOD_QUANTITY:

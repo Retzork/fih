@@ -2374,3 +2374,24 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   lengths at `Tank+0xB0/+0xB4`, then the empty indices copied to `DAT_005e8fe0` for the credits) -
   the port has no `Tank+0x144` slot array, so tank 5 writes its elapsed seconds like the others
   instead of inventing the pet-slot count.
+
+### D-0054 - The coin keys off its cell's own background, bought fish drop in, and the shop draws the bar's item art
+
+- Date: 2026-11-19 (owner: the fish spawning animation is missing, the dropped currency sprite is
+  wrong, the shop background looks weird)
+- Status: accepted, measured. `headless_coin_check` 154 -> 161, `headless_level_check` 241 -> 248.
+- **Keying is per cell, not black-only.** `MONEY` row 3 (the 200-value diamond, kinds 0x04/0x05/0x0B/
+  0x0C) uses a navy background rather than the black every other row uses, so the black-only key left
+  a solid blue square. `SpriteKey` now also keys the corner colour when at least three corners agree
+  on it; the flood still only clears the border-connected region, so a blue diamond on a blue
+  background keeps its interior.
+- **Bought fish drop from the tank top.** `FUN_00546D70` overrides the ctor's position to y = 30 and
+  gives `vy = rand%5 + 18` and a `+0x208` dart of `rand%10 + 45`; the dart is what lets the fish fall
+  through the floor clamp. The port's `Level._spawn_bought_fish` applies that to every fish purchase,
+  and the x roll is the recovered `rand%0x208 + 20`. The other buy spawners were not decompiled; they
+  share the same runtime recipe, so this is recorded as an inference (Q-0053-adjacent, EV-0225).
+- **The shop's shelves show the item.** With no recovered store item art (Q-0052), a stocked shelf
+  read as a label over bare rock. The screen now draws the same masked/keyed icon the shop bar puts in
+  its domes (`StoreBar.item_cell`: `SCL_*` portraits, `FOOD`, `LASERUPGRADES` cell by weapon level).
+  This is a port binding, not the original's store art; the store widget's kind byte `+0x14C` stays
+  the open question.

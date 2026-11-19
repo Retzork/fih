@@ -658,6 +658,8 @@ set.
   (target-timer operand). The later entity additions are tracked on P4.5 (coins), P4.7 (pets),
   P4.8/P4.9 (aliens/bosses) and P4.10 (projectiles); this core entity set is complete.)
 - [~] **P4.4** Tank simulation + feeding loop (from P2.2/P2.3)
+  - (2026-11-19, D-0054) A fish bought from the shop now drops in from the tank top: y = 30, `vy`
+    `rand%5 + 18`, dart `rand%10 + 45`, x `rand%0x208 + 20` (`FUN_00546D70`, P2.2 §9.1).
   - Rendering: the tank backdrop is drawn at `z_index -100` from `AQUARIUM1..6` (the 640x480 tank
     art, chosen by `+0x3E8`); the `TANKBACKDROP1..6` set turned out to be 190x121 menu previews, so
     it is only a scaled fallback. Every sprite frame is colour-keyed by
@@ -691,6 +693,9 @@ set.
     paddle in place. No binary evidence covers the mapping, and it changes nothing in the simulation.
 
 - [~] **P4.5** Economy & store UI (P2.5)
+  - (2026-11-19, D-0054) The shop screen draws each stocked shelf's item icon through the shop bar's
+    binding (`StoreBar.item_cell`), and `SpriteKey` keys a cell's own background colour, so the
+    200-value diamond coin no longer draws its navy sheet box (EV-0225).
   - The shop screen is in (`scripts/ui/store_screen.gd`): the `STORESCREEN` art with EV-0133's
     eight shelf rects, the recovered price line (`+0x150`/`+0x154`, shell icon at
     `x + 0x19, y + 3`), greyed prices when the purse is short, "Sold out" for rows whose effect

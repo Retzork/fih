@@ -33,6 +33,7 @@ func _init() -> void:
 	_test_virtual_flight()
 	_test_animation_timer()
 	_test_sprite_binding()
+	_test_sheet_keying()
 
 	tank.shutdown()
 	sim.free()
@@ -334,6 +335,28 @@ func _landed_coin(kind: int, y: float = 368.0) -> Coin:
 	_step(2)
 	_expect(coin.landed, "coin 0x%X landed for the expiry test" % kind)
 	return coin
+
+
+## The MONEY sheet's 200-value row (the diamond) sits on a navy background, not black, so a
+## black-only key drew it as a solid blue box (D-0054). Every cell's border must key out whatever
+## colour its own corners carry, while the art inside stays opaque.
+func _test_sheet_keying() -> void:
+	var sheet: Texture2D = load("res://assets_raw/images/money.png")
+	_expect(sheet != null, "the MONEY sheet loads")
+	if sheet == null:
+		return
+	var image := sheet.get_image()
+	var cell := image.get_region(Rect2i(0, 3 * 72, 72, 72))
+	var corner := cell.get_pixel(0, 0)
+	_expect(corner.b > 0.3 and corner.r < 0.1, "the diamond cell's background is the navy row colour")
+	var keyed := SpriteKey.keyed(ImageTexture.create_from_image(cell)).get_image()
+	_expect(keyed.get_pixel(0, 0).a == 0.0, "the navy background is keyed out")
+	_expect(keyed.get_pixel(71, 71).a == 0.0, "on every corner")
+	_expect(keyed.get_pixel(36, 36).a > 0.9, "and the diamond itself stays opaque")
+	var silver := SpriteKey.keyed(
+		ImageTexture.create_from_image(image.get_region(Rect2i(0, 0, 72, 72)))).get_image()
+	_expect(silver.get_pixel(0, 0).a == 0.0, "the black background is still keyed")
+	_expect(silver.get_pixel(36, 36).a > 0.9, "and the silver coin stays opaque")
 
 
 ## Exactly `count` logic ticks with no carried backlog.

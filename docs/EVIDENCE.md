@@ -5708,3 +5708,29 @@ behavior or specs; follow up with a binary observation entry.
   moved into a public, idempotent `build()` that `_ready` calls; the check calls it directly.
 - (3) **Runs**: `headless_store_ui_check` 81 -> 97 assertions. The other 23 suites do not mount the
   screen (`StoreScreen.build` is additive) and were re-run at commit time.
+
+## EV-0225 - Three rendering defects: the diamond coin's navy key, the buy spawn's drop, the shop's shelves
+- Date: 2026-11-19
+- Type: rendering fixes; three scripts, two suites
+- Source: `scripts/tank/sprite_key.gd`, `scripts/tank/level.gd` (`_spawn_bought_fish`),
+  `scripts/ui/store_bar.gd` (`item_cell`), `scripts/ui/store_screen.gd`, `docs/evidence/p2.13-decompile-546D70.json`
+- (1) **The 200-value coin drew a navy box.** `MONEY` row 3's cells carry a `#00007B`-ish background
+  (corners measured (0,0,0.482..0.518)), not black, so `SpriteKey`'s black-only border flood left the
+  box drawn. The key is now the cell's own corner colour when at least three corners agree on one
+  non-black value (0.08 per-channel tolerance for the flood, black still always keyed), and the
+  region must touch the border, so the diamond's blue interior survives.
+- (2) **A bought fish popped in instead of dropping in.** `FUN_00546D70` builds the guppy at
+  `(rand%0x208 + 0x14, rand%0x109 + 0x69)`, then overwrites the position to **y = 30.0** and sets
+  `vy = rand%5 + 0x12` and `+0x208 = rand%10 + 0x2d`. The dart keeps the floor clamp off it
+  (`dart_timer >= 1 && vy > 0`), so it falls from the tank top into the water. `Level._spawn_bought_fish`
+  does the same for every `KIND_FISH` purchase. Only the guppy spawner's body was read; the other
+  buy spawners keep the identical recipe through `FUN_00544800`/`FUN_0053AA40` (P2.2 §9.3), which is
+  recorded as an inference, not a second decompile.
+- (3) **The shop's shelves were bare.** The shipped `Store.png` is the room with its eight ledges but
+  no item pictures, so `StoreScreen` showed labels floating over rock. It now draws each stocked
+  shelf's icon through `StoreBar.item_cell`, the same binding the tank's shop bar uses (masked/keyed
+  cell, weapon cell chosen by the upgrade level). The store's own per-item art is still unrecovered
+  (Q-0052); this reuses a port binding rather than claiming the original's store art.
+- (4) **Runs**: `headless_coin_check` 154 -> 161 (the keying pin), `headless_level_check` 241 -> 248
+  (the drop), `headless_store_ui_check` 97 unchanged; screenshots `shot_store.png`/`shot_probe_store.png`
+  showed the diamond clean and the 1-3 shop's five shelves with their icons and prices.
