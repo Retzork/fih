@@ -5690,3 +5690,21 @@ behavior or specs; follow up with a binary observation entry.
   "No entries yet." (or the unlock count for Challenge).
 - (5) **Runs**: `headless_level_check` 222 -> 241 assertions (19 new); the other 23 suites untouched
   by this entry, re-run with the whole set at commit time.
+
+## EV-0224 - The out-of-order store pin reads the labels the screen draws
+- Date: 2026-11-19
+- Type: test hardening; one suite + one screen method
+- Source: `tests/headless_store_ui_check.gd` (`_test_loaded_rows`), `scripts/ui/store_screen.gd`
+- (1) **What the pin missed.** It asserted `row_at(shelf)` resolved the right row, so a label that
+  took its text from another row (or from the array position) would still pass. It now builds the
+  screen's own widgets and reads `Name%d`/`Price%d`: shelf 0/1/2/3/5 must draw "Guppy"/"Food
+  Quality"/"Food Quantity"/"Carnivore"/"Weapon" with their loaded 100/200/300/1000/1000 price
+  strings (the names are spelled out in the test, not read from `Store.item_name`, so the check fails
+  on text), the two shelves 1-3 leaves empty must draw no name and no visible price, and the roller's
+  eighth shelf must draw the `SOLD` line and no name. Two extra assertions compare the neighbouring
+  labels against each other, so one shelf re-reading the other's row cannot pass.
+- (2) **Why the screen needed `build()`.** `_ready` does not run during a `SceneTree` script's
+  `_init` (the root has no frame yet), so the labels did not exist when the pin read them. The body
+  moved into a public, idempotent `build()` that `_ready` calls; the check calls it directly.
+- (3) **Runs**: `headless_store_ui_check` 81 -> 97 assertions. The other 23 suites do not mount the
+  screen (`StoreScreen.build` is additive) and were re-run at commit time.

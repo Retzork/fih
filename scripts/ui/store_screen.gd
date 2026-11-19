@@ -78,6 +78,15 @@ func setup(source: Level) -> void:
 
 
 func _ready() -> void:
+	build()
+
+
+## Build the slot labels and start drawing from the level. Split out of `_ready` so a check can
+## stand a screen up without a tree (a `SceneTree`'s root has no frame yet during `_init`). Idempotent.
+func build() -> void:
+	if not _names.is_empty():
+		refresh()
+		return
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_add_background()
 	for index in SLOT_RECTS.size():

@@ -268,6 +268,9 @@ func _test_loaded_rows() -> void:
 		"the loaded table really is out of shelf order (shelf %d first)" % int(level.tank_store[0].get("shelf", -1)))
 	var screen: Control = ScreenScript.new()
 	screen.setup(level)
+	# Build the labels by hand: `_ready` would not run until the tree's first frame, and the point is
+	# what the screen put on each shelf, not just which row `row_at` resolved.
+	screen.build()
 	for shelf: int in expected:
 		_expect(int(screen.row_at(shelf).get("slot", -1)) == int(expected[shelf]),
 			"shelf %d still draws item %d after an out-of-order load (got %d)"
@@ -277,6 +280,36 @@ func _test_loaded_rows() -> void:
 	_expect(int(screen.row_at(7).get("slot", -1)) == -1
 		and int(screen.row_at(7).get("shelf", -1)) == LevelScript.ROLLER_SHELF,
 		"the roller lands on the eighth shelf even though the file never stored one")
+	# What the screen drew, shelf by shelf. The names are spelled out here rather than read from
+	# `Store.item_name`, so a label that took its text from the array neighbour fails on the text.
+	var shelf_names := {0: "Guppy", 1: "Food Quality", 2: "Food Quantity", 3: "Carnivore", 5: "Weapon"}
+	for shelf: int in shelf_names:
+		var name_label := screen.get_node("Name%d" % shelf) as Label
+		var price_label := screen.get_node("Price%d" % shelf) as Label
+		_expect(name_label.text == String(shelf_names[shelf]),
+			"shelf %d draws item %d's own name \"%s\" (got \"%s\")"
+			% [shelf, expected[shelf], shelf_names[shelf], name_label.text])
+		var row: Dictionary = screen.row_at(shelf)
+		var price := str(int(row.get("price", 0))) if StoreScript.price_known(row) else "?"
+		_expect(price_label.text == price and price_label.visible,
+			"shelf %d draws its own price %s (got \"%s\")"
+			% [shelf, price, price_label.text])
+	# Two shelves naming the same item would mean one label re-read the other's row.
+	_expect((screen.get_node("Name1") as Label).text != (screen.get_node("Name2") as Label).text,
+		"neighbouring shelves keep their own names")
+	_expect((screen.get_node("Price0") as Label).text != (screen.get_node("Price2") as Label).text,
+		"and their own prices")
+	for shelf: int in [4, 6]:
+		_expect((screen.get_node("Name%d" % shelf) as Label).text == ""
+			and not (screen.get_node("Price%d" % shelf) as Label).visible,
+			"the unstocked shelf %d draws no labels" % shelf)
+	# The roller row is the bare `slot -1` record, so its shelf carries the SOLD line and no name.
+	_expect((screen.get_node("Price7") as Label).text == ScreenScript.SOLD_TEXT
+		and (screen.get_node("Price7") as Label).visible,
+		"the roller's eighth shelf shows its own SOLD line (got \"%s\")"
+		% (screen.get_node("Price7") as Label).text)
+	_expect((screen.get_node("Name7") as Label).text == "",
+		"and the roller has no item name to draw")
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
 	screen.free()
