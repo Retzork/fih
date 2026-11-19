@@ -208,8 +208,11 @@ Status legend: `[ ]` pending - `[~]` in progress - `[x]` done (with evidence) - 
 | P1 | Reconnaissance & target identity | 10 | 10 | `[x]` |
 | P2 | Reverse engineer game systems | 14 | 18 | `[~]` |
 | P3 | Asset extraction & pipeline | 8 | 8 | `[x]` |
-| P4 | Godot implementation | 3 | 14 | `[~]` |
+| P4 | Godot implementation | 5 | 14 | `[~]` |
 | P5 | Validation & polish | 0 | 5 | `[~]` |
+
+The 2026-11-19 audit (D-0050) re-counted P4 against the tree: P4.8 and P4.9 have no outstanding
+item left in their own lines, so they are `[x]`. The counts are the `[x]` task lines below.
 
 ---
 
@@ -732,11 +735,12 @@ set.
     original widget rect was not recovered (Q-0053).
   - Between-level screens: Hatch, Pets and Bonus mount and `Main` runs Hatch -> Pets -> Bonus -> next
     level. Hatch draws the recovered card art (EV-0175); Pets and Bonus stay text-only. Not ported yet
-    (Q-0053): the bonus rounds themselves and the 160-frame wait, the pre-bonus store, the
-    elapsed-time and Challenge score records, and the credits/trophy screens (Q-0013/Q-0016).
+    (Q-0053): the bonus rounds themselves and the 160-frame wait, the pre-bonus store, the score
+    records (their elapsed-seconds field is mapped, D-0047), and the credits/trophy screens
+    (Q-0013/Q-0016).
 - [~] **P4.7** Pets implementation (per-pet tasks after P2.7 enumeration)
   (2026-11-03 - **foundation landed.** `scripts/entities/pet.gd` holds the roster as data (`DEFS`, 24 entries; 999 stays out) with family/speed/fixed-y/period cells that are 0 when unrecovered, the slot-81 gate order (pause -> tank 5 -> hostile aliens except Stanley), Stinky's bottom-lane chase with his 0..9 hide counter and per-pet coin predicate (bombs, snot, Niko's pearl, claimed coins, the star pair under a Penta), and Niko's 1224/1233/1440/1450 pearl cycle resetting to `rand % 50`. `Tank` gained `spawn_pet` and the tank-index/alien/Penta/source flags the gates read; `Coin` gained `claimed` (+0x198). `tests/headless_pet_check.gd` passes **45 assertions**. Angie (0x12) followed: her recovered target (`+0x1A0 > 0x5F`), the 30/60 px contact ranges and the `FUN_004D5630` phase write from 100 to 10, plus the corpse's ten-tick revive countdown and `Level._on_successor`'s live spawn - so a revived corpse now really returns as a live fish, and `tests/headless_pet_check.gd` passes **53 assertions**. Vert (0x06, 216 ticks, coin kind 2), Shrapnel (0x0B, the ctor-rolled 633..652, bomb coin 0x11 worth 150) and Nostradamus (0x15, 300..599, the 0x12 snot) then made the plain timer droppers real: **66 assertions**, and Angie's food re-lay (EV-0161) then took this suite to **73**. The other 18 pets idle (**Q-0044**). Pets now also **enter the tank**: `Level.spawn_owned_pets()` reads the profile's owned flags (`FUN_00501410`) at `start_level` and spawns each pet through `FUN_00544A90`'s randomized x 105..369 / y 20..539, and `_make_visual`/`_draw_entity_frame` draw every pet from its own 80x80 `Content` sheet (`IMAGE_STINKY`..`IMAGE_WALTER`) using the resource's `loop`/`pingpong`/`framedelay` metadata; `tests/headless_level_check.gd` passes **121 assertions**.)
-- [~] **P4.8** Aliens + waves (P2.8)
+- [x] **P4.8** Aliens + waves (P2.8)
   (2026-11-03 - **core landed.** `Alien` is one entity with a `kind -> DEFS` table (1/2 Sylvester 50/60,
   3 Balrog 130, 4 Gus 100, 5 Destructor 150, 6 Ulysses 220, 7 Psychosquid 260, 8 Bilaterus, 0x14 mini 1,
   0x15 Cyrax 5000), the full/mini/bottom bands, 0.1-step wander with the 20-tick/10 % re-roll and ±3
@@ -750,9 +754,12 @@ set.
   composes 9..0xC into their recovered member pairs (1+3, 7+3, 5+6, 3+8), and re-rolls the type after
   each wave per P2.8 §5.1; the level wires attacks to the tank's projectile spawner and death to the
   pet gate, and routes clicks in P2.10 §6.1 order (projectile, alien, coin, feed); `try_shoot` does
-  `3 * weapon_level`. Remaining: the projectiles' homing (Q-0041).)
-- [~] **P4.9** Bosses (P2.9)
-  - Cyrax is in (`scripts/entities/boss.gd`): the hp formula and clamp, the 300-tick arrival that cannot be hit, the 15-tick intro, minions every 75 ticks at `+40,+40`, the 300-tick pulse only while no other alien is on the field, the 10-tick per-attacker damage cooldown, and death clearing `boss_alive` then unfreezing and permanently disabling the wave clock. `Tank.spawn_boss` freezes the clock and forces pet capacity 10 (so a shot does 30); `Level.start_boss` wires the minion and pulse signals, `Level.start_level` starts him from the schedule table (`Level.boss_kind_for`: tank 5 level 1 is Cyrax, nothing else has a boss), and shots now go through `Tank.shot_damage()` (`3 * pet_capacity`: 6 normally, 30 against the boss). Cyrax now draws `IMAGE_BOSS` through the same entity visual path and always draws the recovered HP bar (P2.9 §5, `IMAGE_HEALTHBAR` under `IMAGE_HEALTHBARTUBE`). The minion is a 1-hp Minisylvester (kind 0x14) and the pulse spawns a random type 4..9 at a random point through the wave spawner (EV-0117); death wipes surviving aliens and enemy projectiles (`FUN_004F9950`, EV-0118) and a >1000-damage kill with no minions left bumps `profile+0x54` (`Profile.cyrax_attempts`, EV-0119). `tests/headless_boss_check.gd` passes **46 assertions** (Q-0047 resolved).
+  `3 * weapon_level`. **2026-11-19 audit (D-0050):** the one item this line listed as remaining,
+  the projectiles' homing, is in (EV-0158, Q-0041 closed), so the task is `[x]`.)
+- [x] **P4.9** Bosses (P2.9)
+  - Cyrax is in (`scripts/entities/boss.gd`): the hp formula and clamp, the 300-tick arrival that cannot be hit, the 15-tick intro, minions every 75 ticks at `+40,+40`, the 300-tick pulse only while no other alien is on the field, the 10-tick per-attacker damage cooldown, and death clearing `boss_alive` then unfreezing and permanently disabling the wave clock. `Tank.spawn_boss` freezes the clock and forces pet capacity 10 (so a shot does 30); `Level.start_boss` wires the minion and pulse signals, `Level.start_level` starts him from the schedule table (`Level.boss_kind_for`: tank 5 level 1 is Cyrax, nothing else has a boss), and shots now go through `Tank.shot_damage()` (`3 * pet_capacity`: 6 normally, 30 against the boss). Cyrax now draws `IMAGE_BOSS` through the same entity visual path and always draws the recovered HP bar (P2.9 §5, `IMAGE_HEALTHBAR` under `IMAGE_HEALTHBARTUBE`). The minion is a 1-hp Minisylvester (kind 0x14) and the pulse spawns a random type 4..9 at a random point through the wave spawner (EV-0117); death wipes surviving aliens and enemy projectiles (`FUN_004F9950`, EV-0118) and a >1000-damage kill with no minions left bumps `profile+0x54` (`Profile.cyrax_attempts`, EV-0119). `tests/headless_boss_check.gd` passes **46 assertions** (Q-0047 resolved). **2026-11-19 audit
+  (D-0050):** nothing in this line is outstanding - Cyrax is P2.9's whole boss roster - so the task
+  is `[x]`.
 - [~] **P4.10** Weapons/projectiles (P2.10)
   - The projectile entities and the weapon damage/hold-fire path are in (see P4.3/P4.5): three
     projectile kinds, click hit-tests, `Tank.shot_damage()` and level-12 hold-to-fire. The kinds
@@ -762,12 +769,19 @@ set.
     expiry, the locked-victim kill and the deflected-ball 30-damage alien hit,
     the farthest-fish picker (`FUN_004E8DF0`, no shot when none is eligible) and the `+0x98`
     lock on `Fish`/`Alien` (`tests/headless_projectile_check.gd` **64 assertions**,
-    `tests/headless_alien_check.gd` **65**). Not done: the `Larva` object, the laser
-    draw/frame binding and the weapon HUD (Q-0023).
+    `tests/headless_alien_check.gd` **65**). **2026-11-19 audit (D-0050):** the `Larva` is no longer
+    missing - `scripts/entities/larva.gd` holds `FUN_004F2930`, `Tank.spawn_larva` builds one and
+    `Level` tests it first in the click chain (`try_hit_larva`) and connects its payout/burst; what
+    is absent is a spawner, since no system creates larvae yet. Still missing: that spawner, the
+    laser draw/frame binding and the weapon HUD (Q-0023).
 - [~] **P4.11** Modes: Adventure, Challenge, Time Trial, Virtual Tank (P2.11)
   - The mode value, selector dispatch, Challenge's price inflation, Virtual Tank's music silence
-    and the per-mode save stems are in (P4.14/P4.5/P4.12). Not done: the Time Trial clock and
-    collect-all finish, Challenge scoring/records, and the Virtual Tank spawner and rules.
+    and the per-mode save stems are in (P4.14/P4.5/P4.12), as are the Time Trial clock with its
+    budget/elapsed/expiry (`Level.time_trial_*`, `TICKS_PER_SECOND`), the Challenge payout and unlock
+    bytes (`BonusScreen.payout_for`, `Profile.challenge_unlocks`) and the Virtual Tank weighted
+    spawner (`FUN_0051B260`). **2026-11-19 audit (D-0050):** the Time Trial end condition is in too -
+    expiry collects every coin (`collect_all_coins`) and completes the level - so the only item left
+    is the Challenge score records (Q-0053).
 - [~] **P4.12** Save system (P2.13) - own format unless compatibility is decided
   - The tank-save framing is in (`scripts/persistence/tank_save.gd`): version `0x36` with the loader's `<= 0x34` refusal, tank/level, the two latches, the entity stream with class `0x1F` skipped and `0x140`-byte object slots, the optional `0x208` `+0x110` object, the overlay (string, two colors, two dwords, byte, dword), 24 pet flags, the 316 scalar bytes, 12 x 17-byte store rows (slot `-1` = empty, signed) and the timestamp. The entity bodies, the `+0x110` object and the scalars travel as opaque blocks until their owners port them; the overlay's `+0xD4/+0xD8` remain Q-0029. `tests/headless_save_check.gd` passes **38 assertions**. The file layer is in too (`scripts/persistence/save_files.gd`): the per-mode `userdata\<stem><slot>.dat` path, write/read with the directory created on demand, and the mode-0 tank/level check; `tests/headless_save_files_check.gd` passes **21 assertions**. Entity persistence has started with the fish: `Fish.to_state()`/`Fish.from_state()` carry species, stage, position, facing, fullness and growth points, and deliberately drop coins, food, projectiles and particles, which a load rebuilds (P2.13 implementation note #11); the fish check covers the round trip. `scripts/persistence/tank_snapshot.gd` is the glue: it captures only the tank's live fish into the entity stream as a magic-tagged record (species, stage, position, facing, hunger, growth points), leaves the save's store rows and pet flags alone, and restores through `Tank.spawn_fish`; food, coins, projectiles and particles are never captured. The 316-byte scalar block is mapped too, in its note order: `scripts/persistence/tank_scalars.gd` writes money (`+0x3F0`), food quality/quantity, pet capacity, the backdrop, the wave selection and its countdown (`3000 - timer`), and restores the clock tick from it; unmapped fields keep their slots as zeroes. The star potion's armed flag (`+0x440`) and the backdrop tint (`5e89e8`, the block's last four bytes) are mapped too, so a reloaded tank keeps an armed potion and its tint. The pair is wired into the level as well: `Level.save_game(path)` captures the fish, the store table, the pet flags (from the PETS phase) and the scalars, and `Level.load_game(path)` applies the scalars, replaces the live fish and reloads the store table; F5/F9 trigger both, and a missing or refused file returns false. `tests/headless_tank_snapshot_check.gd` passes **54 assertions**.
 - [~] **P4.13** Audio integration (P2.14 + P3.6/3.7)

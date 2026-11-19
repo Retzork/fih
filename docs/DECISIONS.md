@@ -871,24 +871,35 @@ gates `Tank::Update` - and the ported rate is a single constant to change once i
   Angie handoff and the ten-tick revive are all reproduced; only the art mapping and Angie's movement
   stay approximate/absent.
 
-### Q-0044 - 18 of the 24 pet bodies, and their speeds, are not written yet
-- OPEN (2026-11-03, raised by `scripts/entities/pet.gd` for P4.7; source EV-0077..EV-0100, P2.7).
-- The roster, the family split and the gate order are recovered, and six slot-81 bodies are ported
-  (Stinky, Niko, Vert, Shrapnel, Nostradamus, Angie). Everything else idles: `DEFS` carries `speed = 0` and
-  `period = 0` for pets whose tuning or period the note does not pin, rather than plausible-looking
-  values.
-- Recovered periods still without a body (Prego 930, Zorf 65, Meryl 1400, Amp 3000, Gash 1570,
-  Stanley 100) are recorded in `DEFS` but nothing acts on them. Nostradamus' "Sneeze of Power" and
-  clone behaviour stay unimplemented (EV-0106 recovered only the snot timer).
+### Q-0044 - four pet bodies, Rhubarb's, and most ctor cells are not written yet
+- OPEN (2026-11-03, raised by `scripts/entities/pet.gd` for P4.7; source EV-0077..EV-0100, P2.7);
+  re-counted against the tree 2026-11-19 (D-0050).
+- The roster (24 entries in `DEFS`), the family split and the gate order are recovered, and **16
+  slot-81 bodies act**: Stinky, Niko, Prego, Zorf, Vert, Meryl, Wadsworth, Shrapnel, Nostradamus,
+  Angie, Blip, Stanley, Nimbus, Amp (charge only), Gash (the bite timer) and Brinkley; Presto's swap
+  runs from the CHANGE-O picker rather than slot 81. The contact-driven half is in too: Itchy, Rufus,
+  Gash and Walter's stand-in punch hit aliens inside 60 px, Brinkley's food contacts count
+  3/15/45/135, Stinky and Clyde collect coins, Gumbo steers to the opposite corner, Wadsworth's
+  shelter and Blip's unlock are live, and every pet wanders.
+- **Four guards remain**, each waiting on the half the binary has not yielded: Seymour's aura (only
+  the `Tank+0x16C` consumer is proven, the writer is not, EV-0091), Amp's click -> electrocute
+  (EV-0097), Nostradamus' "Sneeze of Power" (EV-0102; only the snot timer is recovered) and Walter's
+  glove launch (the entity and hit table are proven, the click binding is not, EV-0104). Rhubarb
+  (0x0E) has no body at all beyond her 355-px bottom lane.
+- Ctor cells: `DEFS` carries a speed for every pet, but only P2.7 §2.2's literal ctor values are
+  recovered (Stinky 1.2, Niko 2.0, Zorf 3.0, Wadsworth 4.0, Clyde 1.5, Rufus/Rhubarb 1.8,
+  Nimbus/Amp 0.5); the rest sit at the `FishTypePet` default 1.0 until their branches are bound, and
+  `period` is 0 for the 13 pets whose period the note does not pin rather than a plausible value.
 - Rendering: every pet draws from its own `IMAGE_<NAME>` sheet (80x80 cells) and the sheet's own
   `loop`/`pingpong`/`framedelay` metadata via `AnimState`; the pet entity does not pick a column, so a
   per-pet animation state (Stinky's shell frames, Niko's open/closed) is not modelled yet.
 - Left out of Vert/Shrapnel on purpose: Vert's `FUN_004D70B0` Virtual Tank branch (it reads the
   avatar-screen state the port does not model) and Shrapnel's `+0x258` pre-drop flash (no recovered
   tick length) and `0x143` sound (no `SOUND_*` name, Q-0030).
-- What is missing: each pet's slot-81/slot-84/86 body and its ctor tuning (speed, fixed-y, box),
-  Presto's transform, Walter's glove entity, and the cleanup hooks (hidden Wadsworth, Meryl song flag).
-- Non-blocking: the base, the gates and two pets are faithful; the remaining bodies are additive.
+- What is missing: the four guards above, Rhubarb's body, the unrecovered ctor tuning (speed,
+  fixed-y, box), and the per-pet animation state.
+- Non-blocking: the base, the gates and the acting bodies are faithful; the guards and Rhubarb's body
+  are additive.
 
 ### Q-0045 - Alien wander target, bottom lane and two hp cells are not pinned
 - OPEN (2026-11-03, raised by `scripts/entities/alien.gd` for P4.8; source P2.8 §3/§11, EV-0124).
@@ -974,19 +985,28 @@ filled retroactively.
 
 ### Q-0049 - the store items without an effect
 
-`scripts/economy/store.gd` carries all twelve recovered item ids, but five cannot be honoured yet, so `Level.buy_item` refuses them instead of charging for nothing: the **breeder**, the **three pet purchases** (only Stinky and Niko have bodies), and the **egg piece / random pet / end-level row** (needs P4.6 progression and the `manager+0x87C` latch). Prices come from the wiki figures of EV-0060 because the binary's own price arrays were never located (P2.5 §3), and mode-4 inflation (`+0x374`) is not applied. The **star potion** was implemented after this entry was written: the purchase arms `Level.star_potion_armed` (`Tank+0x440`), the next manual drop is a quality-3 pellet, and `Fish` already applies the quality-3 rules.
+`scripts/economy/store.gd` carries all twelve recovered item ids, but five cannot be honoured yet, so `Level.buy_item` refuses them instead of charging for nothing: the **breeder**, the **three pet purchases** (`KIND_UNAVAILABLE`, like the breeder), and the **egg piece / random pet / end-level row** (needs P4.6 progression and the `manager+0x87C` latch). Prices come from the wiki figures of EV-0060 because the binary's own price arrays were never located (P2.5 §3), and mode-4 inflation (`+0x374`) is not applied. The **star potion** was implemented after this entry was written: the purchase arms `Level.star_potion_armed` (`Tank+0x440`), the next manual drop is a quality-3 pellet, and `Fish` already applies the quality-3 rules.
 
-### Q-0050 - the menu screens that are not built yet
+### Q-0050 - the menu screens all mount; their contents are port text
+
+CLOSED IN THE PORT (raised 2026-11-03 by `scripts/ui/game_selector.gd`; source EV-0131, P2.12;
+audited against the tree 2026-11-19, D-0050).
 
 `scripts/ui/game_selector.gd` carries EV-0131's dispatch: ids 1/2/8/9 pick a mode (with the tank-2
-and adventure-finished gates returning "Not Yet!" and changing nothing), 4 quits, and 3/6/7 are
-recognised but only report "not ported yet". The **options dialog (id 3), the hall of fame (id 6)
-and help (id 7)** have no screen: P2.12 names the buttons and the gates, but the contents of those
-three screens (option rows, defaults, hall layout, help pages) were never recovered, so nothing is
-drawn for them rather than invented. `Main` mounts the selector before the level, so
-the menu is the entry point and its choice reaches `Level.game_mode`.
+and adventure-finished gates returning "Not Yet!" and changing nothing), 4 quits, and 3/6/7 each
+mount their screen - 3 `OptionsDialog`, 6 `HallScreen`, 7 `HelpScreen`. `Main` mounts the same
+Options dialog over a live tank (with the MAIN MENU / DEBUG row) and the Help screen from it, and
+`HallScreen` reads all four tabs off the profile, naming the missing record rather than inventing a
+score. `Main` mounts the selector before the level, so the menu is the entry point and its choice
+reaches `Level.game_mode`.
 
-`tests/headless_menu_check.gd` covers the dispatch and both gates (21 assertions).
+What is NOT recovered is the contents, so those stay port copy: P2.12 names the option rows and the
+base widget ids (sliders 5/6, checks 7/8/9, buttons 0-4, D-0016) but not their shipped order or
+defaults; the hall layout and the eight help sentences were never recovered either. The dialog uses
+the measured `Dialogue-panel` rects, seeds Music/Sound FX from the buses and writes them instantly,
+and wires Fullscreen, Custom Cursors and Hardware Acceleration to `DisplayServer`/`Game`.
+
+`tests/headless_menu_check.gd` covers the dispatch and both gates (28 assertions).
 
 ### Q-0051 - the pellet animation: which sheet row a pellet draws, and what the frame unit really is
 
@@ -1055,7 +1075,8 @@ for two seconds.
 
 `tests/headless_store_ui_check.gd` pins the shelf rects, the price offsets, the row states and the
 three price-line states (40 assertions).
-### Q-0053 - progression: the tables and the completion path are in, the screens around them are not
+### Q-0053 - progression: the tables, the completion path and the between-level screens are in; the
+bonus round and the records are not
 
 P2.6 is the one phase note that reads like an implementation spec, so its tables went in whole:
 `scripts/progression/progression.gd` carries §3's per-tank store table (item, store slot, price, the
@@ -1073,15 +1094,18 @@ level. A start on the sentinel resolves to the next tank's level 1. The tank's e
 (`scripts/ui/egg_widget.gd`): the recovered `EggPieces` art and a click call `buy_egg()` on tanks 1-4
 (tank 5 keeps its free store row); its rect is port-placed because the original's was not recovered.
 
-Still missing, in dependency order:
+Re-counted against the tree 2026-11-19 (D-0050): Hatch, Pets and Bonus all mount and `Main` runs
+Hatch -> Pets -> Bonus -> next level. `HatchScreen` draws the recovered `HATCHSCREEN` incubator, the
+`HATCHANIMATION` strip and the pet cell (EV-0175); `PetsScreen` writes the 24-byte selection back to
+`profile+0x5A`; `BonusScreen.payout_for` is the recovered payout switch. Pets and Bonus are port copy
+on top of a port-drawn panel. Still missing, in dependency order:
 
-- the bonus rounds: the 160-frame wait, `FUN_00537F40`'s start, the timer, the payout switch and the
-  BonusScreen. `Progression.resolve_start` therefore walks the sentinel immediately, which is a port
-  shortcut, not the original sequence;
-- the Hatch and Pets screens (`FUN_0054BE80`, `FUN_005289F0`): the award is recorded and the pet is
-  owned, but nothing shows the card, and pet selection is not written back;
-- the score records (`FUN_00514510`, `FUN_005144C0`), `Tank+0x3FC` elapsed seconds, the coin sweep at
-  completion, and the challenge record's storage in the profile;
+- the bonus rounds themselves: the 160-tick wait, `FUN_00537F40`'s start, the round's timer and the
+  pre-bonus store. `Progression.resolve_start` therefore walks the sentinel immediately, which is a
+  port shortcut, not the original sequence. `BonusScreen` is the card after a level, not the round;
+- the score records (`FUN_00514510`, `FUN_005144C0`), the coin sweep at completion, and the challenge
+  record's storage in the profile. `Tank+0x3FC` elapsed seconds are mapped (D-0047), so only the
+  recording side is absent;
 - the credits, story and trophy screens (Q-0013/Q-0016 still open, so no trigger is invented).
 
 Port decisions recorded here: the per-tank store table replaces the id-order stock the shop used
@@ -2231,3 +2255,31 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   test reverses the table before writing and reads it into a fresh Level; the screen is then asserted
   shelf by shelf. That is the failure the owner described - a loaded table in another order - rather
   than a synthetic row list.
+
+### D-0050 - The progress docs are audited against the tree, not the other way round
+
+- Date: 2026-11-19 (owner: the assessment showed PLAN and Q-0044/Q-0050/Q-0053 describing states the
+  code had left behind; bring them in line from plain reads of the tree and record the audit)
+- Status: accepted, documentation only. No script, scene or test changed, so no suite re-run was
+  needed; the reads below are the evidence.
+- **Q-0044 was the worst.** It still said 18 of 24 pet bodies were unwritten and six slot-81 bodies
+  were ported. `pet.gd`'s `_slot81()` dispatches 16 bodies, `_contact()` adds Itchy/Rufus/Gash/Walter
+  plus Brinkley's feed, Stinky and Clyde collect, and all 24 steer; the guards are the four named
+  ones plus Rhubarb's missing body. The entry now counts that and says which ctor cells are still
+  defaulted.
+- **Q-0050 was already closed in code.** `game_selector.gd` mounts `OptionsDialog` (3), `HallScreen`
+  (6) and `HelpScreen` (7), and `Main` mounts Options over a live tank and Help from it. The entry now
+  reads CLOSED IN THE PORT and keeps the real residue: the screens' contents are port copy because
+  P2.12 never recovered them.
+- **Q-0053 listed the Hatch and Pets screens as missing.** Both mount (`Main` runs Hatch -> Pets ->
+  Bonus -> next level), Hatch on the recovered art, and `PetsScreen` writes `profile+0x5A`. The
+  remaining list is now the bonus rounds, the score records and the credits/story/trophy screens.
+- **PLAN.** P4.8's line named projectiles' homing as its last item; it is in (EV-0158), so P4.8 is
+  `[x]`. P4.9's line has nothing outstanding (Cyrax is P2.9's whole boss roster, Q-0047 resolved), so
+  it is `[x]`; the P4 row goes 3/14 -> 5/14. P4.10's and P4.11's "Not done" lists were rewritten to
+  what the tree actually lacks: no larva spawner, the laser binding and the weapon HUD (Q-0023), and
+  the Challenge score records - the Time Trial end condition (expiry -> `collect_all_coins` -> goal)
+  is in `_tick_time_trial`, so that part of P4.11's old list was stale too.
+- **Rule kept.** A status flips only where the line's own named remainder is answered in the tree and
+  its evidence already exists; anything that is only argued stays `[~]`. The 2026-11-08 review's
+  withdrawn `[x]` policy still governs the rest of the phase - P4.6, P4.7, P4.10 and P4.11 stay open.
