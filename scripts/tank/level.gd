@@ -1630,6 +1630,14 @@ func load_game(path: String = "") -> bool:
 	var save: TankSave = SaveFilesScript.read_tank_save(path)
 	if save == null:
 		return false
+	# The header's tank and level come before the scalars: the scalar restore floors the egg pieces at
+	# the *restored tank's* start (1, or 3 on tank 5), so it has to read the saved index, not the one
+	# the session started with (D-0044). The tank index also feeds the name label, the egg price and
+	# the store's restock tables, so a save from another tank would otherwise keep pricing the one
+	# that started the session (D-0037). There is one copy, the live tank's `+0x3C8`, so this write
+	# covers every reader (D-0038).
+	tank_index = save.tank
+	level_index = save.level
 	TankScalarsScript.apply(save.scalars, self)
 	tank_store = save.store.duplicate(true)
 	# Saves written before D-0019 carry per-row `hidden` flags from the withdrawn reveal table; the bar
@@ -1637,11 +1645,6 @@ func load_game(path: String = "") -> bool:
 	for row: Dictionary in tank_store:
 		row.erase("hidden")
 	pet_flags = save.pet_flags.duplicate()
-	# The tank index feeds the name label, the egg price and the store's restock tables, so a save from
-	# another tank would otherwise keep pricing the one that started the session (D-0037). There is one
-	# copy, the live tank's `+0x3C8`, so this write covers every reader (D-0038).
-	tank_index = save.tank
-	level_index = save.level
 	# The saved rows are the fixed 17-byte records (slot, price, base, increment, present); the port's
 	# own row keys are not in the file, so they are re-derived here (D-0040/D-0042). Without `shelf`
 	# the bar finds no row for any shelf and draws seven empty domes.

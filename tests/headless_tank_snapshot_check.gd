@@ -30,6 +30,7 @@ func _init() -> void:
 	_test_skips()
 	_test_scalars()
 	_test_level_save_load()
+	_test_egg_floor_on_load()
 	sim.free()
 
 	if _checks == 0:
@@ -231,6 +232,47 @@ func _test_level_save_load() -> void:
 		DirAccess.remove_absolute(path)
 	level.tank.shutdown()
 	level.free()
+
+
+## A save written before D-0037 carries zeroes in `+0x43C`. The restore floors it at the tank's own
+## starting pieces - 1 on tanks 1-4, 3 on tank 5 - which is why `load_game` applies the header's tank
+## before the scalars (D-0044). The loading level is poisoned to tank 1 in both cases, so the floor
+## cannot be coming from the session that started it.
+func _test_egg_floor_on_load() -> void:
+	for floor_case: Array in [[1, 1], [5, 3]]:
+		var tank_no := int(floor_case[0])
+		var want := int(floor_case[1])
+		var path := "user://egg_floor_%d.dat" % tank_no
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)
+		var source: Level = LevelScript.new()
+		source.render = false
+		source.setup(sim, 5200 + tank_no)
+		source.tank_index = tank_no
+		source.level_index = 1
+		var wrote := source.save_game(path) == OK
+		var save: TankSave = SaveFilesScript.read_tank_save(path) if wrote else null
+		_expect(save != null, "the tank-%d save parses" % tank_no)
+		if save != null:
+			# `scalars` is a value type: mutate a copy and put it back, or the zero never reaches the file.
+			var block: PackedByteArray = save.scalars
+			block.encode_u32(TankScalarsScript.OFF_EGG_PIECES, 0)
+			save.scalars = block
+			wrote = SaveFilesScript.write_tank_save(path, save) == OK
+		_expect(wrote, "the tank-%d save is written with a zeroed `+0x43C`" % tank_no)
+		source.tank.shutdown()
+		source.free()
+		var target: Level = LevelScript.new()
+		target.render = false
+		target.setup(sim, 5300 + tank_no)
+		target.tank_index = 1
+		_expect(target.load_game(path), "load_game reads the tank-%d save back" % tank_no)
+		_expect(target.egg_pieces == want,
+			"a zeroed `+0x43C` restores tank %d's %d starting pieces (got %d)" % [tank_no, want, target.egg_pieces])
+		target.tank.shutdown()
+		target.free()
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)
 
 
 func _tank(seed_value: int) -> Tank:

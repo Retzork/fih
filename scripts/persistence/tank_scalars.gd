@@ -89,7 +89,9 @@ static func capture(level) -> PackedByteArray:
 	return block
 
 
-## Restore the mapped fields into a `Level` whose tank and wave clock already exist.
+## Restore the mapped fields into a `Level` whose tank and wave clock already exist and whose tank
+## index is the save's (the egg floor is the tank's own start, so `load_game` applies the header
+## first).
 static func apply(block: PackedByteArray, level) -> void:
 	if block.size() < BLOCK_BYTES:
 		return
@@ -100,9 +102,10 @@ static func apply(block: PackedByteArray, level) -> void:
 	level.backdrop = block.decode_u32(OFF_BACKDROP)
 	level.alien_selection = block.decode_u32(OFF_ALIEN_TYPE)
 	level.star_potion_armed = int(block[OFF_FLAG_440]) != 0
-	# Saves written before this mapping carry zeroes here, which clamp to the starting piece.
-	level.egg_pieces = clampi(block.decode_u32(OFF_EGG_PIECES), Progression.EGG_PIECES_AT_START,
-		Progression.EGG_PIECES_TO_COMPLETE)
+	# Saves written before this mapping carry zeroes here, which clamp to the tank's starting pieces -
+	# 1 on tanks 1-4, 3 on tank 5 - not to the global 1 (D-0044).
+	level.egg_pieces = clampi(block.decode_u32(OFF_EGG_PIECES),
+		Progression.egg_pieces_at_start(int(level.tank_index)), Progression.EGG_PIECES_TO_COMPLETE)
 	level.waves_spawned = block.decode_u32(OFF_WAVE_NUMBER)
 	level.backdrop_tint = Color8(int(block[OFF_TINT]), int(block[OFF_TINT + 1]),
 		int(block[OFF_TINT + 2]), int(block[OFF_TINT + 3]))

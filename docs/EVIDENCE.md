@@ -5475,3 +5475,23 @@ behavior or specs; follow up with a binary observation entry.
   this because it runs before the header's tank index is applied.
 - (4) **Runs:** `headless_level_check` 200, `headless_tank_snapshot_check` 58,
   `headless_store_ui_check` 65 - all PASS, counts unchanged (neither edit removed coverage).
+
+## EV-0215 - The restore floor is the restored tank's own starting pieces
+- Date: 2026-11-19
+- Type: code change plus headless runs (no capture: no visual change)
+- Source: `scripts/tank/level.gd` (`load_game`), `scripts/persistence/tank_scalars.gd` (`apply`),
+  `tests/headless_tank_snapshot_check.gd` (`_test_egg_floor_on_load`)
+- (1) **The ordering.** `TankScalars.apply` clamped `+0x43C` to `EGG_PIECES_AT_START` (1) because
+  `load_game` ran it before writing the header's tank, so a zeroed egg field on a tank-5 save came
+  back as one piece - a state the tank-5 store never produces (it opens at three). `load_game` now
+  applies the header's `tank`/`level` *first*, and `apply` floors the count at
+  `Progression.egg_pieces_at_start(level.tank_index)`: 1 on tanks 1-4, 3 on tank 5.
+- (2) **Nothing else moved with it.** The scalar writes (money, food, capacity, backdrop, wave,
+  potion, wave number, tint) do not read the index, `_restore_store_rows()` was already after the
+  header, and the label refresh still runs after both.
+- (3) **Pinned through real disk, both tanks** (`_test_egg_floor_on_load`): a scratch level saves as
+  tank 1 and as tank 5; each save's scalar block is rewritten with `+0x43C = 0` and written again;
+  a target level poisoned to tank 1 loads each and must come back with 1 and 3 pieces. The poison
+  proves the floor comes from the file's tank, not the session's.
+- (4) **Runs**: `headless_tank_snapshot_check` 58 -> 66, `headless_level_check` 200, the other 21
+  script suites unchanged, integration 136 - all PASS (script sum 1385, +136 = 1521).

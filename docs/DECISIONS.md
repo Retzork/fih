@@ -2122,3 +2122,20 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   file does hold), `include_hidden = true` in the table lookup (unlocked rows keep their dome), and
   the single pass in one function - `TankScalars` cannot host it because it runs before `load_game`
   applies the header's tank/level.
+
+### D-0044 - A load applies the header's tank before the scalars, so the egg floor is per tank
+
+- Date: 2026-11-19 (owner: fix the egg-piece restore floor - a zeroed `+0x43C` on a tank-5 save
+  restores 1 instead of tank 5's 3; order the index ahead of the scalars or re-clamp after it)
+- Status: accepted, measured. EV-0215 holds the runs.
+- **Why the order and not a second clamp:** the floor is a property of the tank the save names, so
+  the value it reads has to be that tank's. Applying `save.tank`/`save.level` before
+  `TankScalars.apply` gives `apply` the right index with no second pass, and `apply` becomes correct
+  on its own terms for any caller that already holds a tank - a re-clamp in `load_game` would leave
+  `apply` silently wrong and duplicate the rule.
+- **The rule:** `egg_pieces = clamp(+0x43C, Progression.egg_pieces_at_start(tank), 4)`. Tank 1-4
+  floor at 1, tank 5 at 3; the upper bound stays the completion count.
+- **Untouched:** the scalar writes do not read the index, so moving the header write changes no other
+  restored field; `_restore_store_rows()` and the label refresh already came after it.
+- **Pinned:** `headless_tank_snapshot_check._test_egg_floor_on_load` writes a tank-1 and a tank-5 save
+  with a zeroed egg field, loads each into a tank-1 level and requires 1 and 3 pieces.
