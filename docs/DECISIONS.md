@@ -2159,3 +2159,22 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   run's budget and every port-written save has `+0x3BC` zeroed.
 - **Pinned:** `_test_time_trial_load` (both directions through disk, mid-run, with the clock reading
   290 s left) and the scalar suite's offset/units pair.
+
+### D-0046 - Three hint tiers, and the hint is measured by its ink
+
+- Date: 2026-11-19 (owner: add the base's third hint wording keyed to `Fish.HUNGER_HINTS`
+  (-1/-200/-400) so the port stops collapsing two tiers into one, and lift `HINT_RECT` to the
+  measured 457..474 row; update the level suite's tier assertions and PLAN R29)
+- Status: accepted, measured. EV-0218 holds the strings, the probe and the runs.
+- **The wording is recovered, not invented.** `0x598D14` in the shipped string table is
+  "Fish are about to die of hunger! Click on aquarium!", the -400 line of P2.3 §5's threshold table.
+  The port's `HINT_TEXT_DYING` uses it verbatim; the -200 line keeps the capitalised wording.
+- **Tiers are keyed to the constants**, not to the extremes: `HUNGER_HINTS[2]` -> dying,
+  `HUNGER_HINTS[1]` -> capitalised, `HUNGER_HINTS[0]` -> shallow. A future threshold change moves the
+  wording with it.
+- **The label box and the painted row are different rectangles.** Moving the box to y 448 puts the
+  ink on 457..473.5 (measured), but the box itself is 26 px tall after the theme's minimum and now
+  grazes the F12 stats band. `HINT_INK_RECT` records the painted band, and the integration clearance
+  check uses it - the rule is about what can be seen, not about a transparent layout margin.
+- **Kept:** the two measured colours, the outline, the centred 640-wide box and the tick-gated label
+  cache (D-0032/D-0035).

@@ -270,7 +270,13 @@ func _test_hunger_hint() -> void:
 	_expect(LevelScript.HINT_TEXT == "Fish are hungry! Click to drop food!",
 		"the shallow hint is the recording's wording")
 	_expect(LevelScript.HINT_TEXT_SEVERE == "Fish are REALLY hungry! Click to feed!",
-		"the deep hint is the recording's capitalised wording")
+		"the -200 hint is the recording's capitalised wording")
+	_expect(LevelScript.HINT_TEXT_DYING == "Fish are about to die of hunger! Click on aquarium!",
+		"the -400 hint is the base's dying wording (P2.3 §5)")
+	_expect(LevelScript.HINT_RECT.position == Vector2(0, 448)
+		and LevelScript.HINT_INK_RECT.position == Vector2(0, 457)
+		and LevelScript.HINT_INK_RECT.size.y == 17,
+		"the hint is lifted so its ink lands on the recording's 457..474 row (PLAN R29)")
 	_expect(LevelScript.TANK_LABEL_COLOR == Color8(0xA8, 0x94, 0x60),
 		"the tank name is the measured pale gold")
 	_expect(UiFont.BOTTOM_NAME_FONT == "FONT_CONTINUUMBOLD12" and UiFont.BOTTOM_NAME_TRACKING == -1.0,
@@ -286,10 +292,14 @@ func _test_hunger_hint() -> void:
 	fish.fullness = Fish.HUNGER_HINTS[0]
 	_expect(level.hint_text() == LevelScript.HINT_TEXT, "the first warning line shows the shallow hint")
 	fish.fullness = Fish.HUNGER_HINTS[1]
-	_expect(level.hint_text() == LevelScript.HINT_TEXT, "the middle line keeps the shallow hint")
-	fish.fullness = Fish.HUNGER_HINTS[2]
 	_expect(level.hint_text() == LevelScript.HINT_TEXT_SEVERE,
-		"the last warning line shows the capitalised hint")
+		"the middle line (-200) shows the capitalised hint")
+	fish.fullness = Fish.HUNGER_HINTS[2] + 1
+	_expect(level.hint_text() == LevelScript.HINT_TEXT_SEVERE,
+		"one point above -400 keeps the capitalised hint")
+	fish.fullness = Fish.HUNGER_HINTS[2]
+	_expect(level.hint_text() == LevelScript.HINT_TEXT_DYING,
+		"the last warning line (-400) shows the dying hint")
 	# A corpse still in the list is not a hungry fish, and a cleared tank has nothing to warn about.
 	fish.dead = true
 	_expect(level.hint_text() == "", "a dead fish raises no hint")

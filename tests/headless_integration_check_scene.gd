@@ -125,10 +125,12 @@ func _run() -> void:
 	_expect(stats != null, "the main scene still carries the F12 stats line")
 	if stats != null:
 		var stats_rect := Rect2(stats.position, stats.size)
+		# The hint's clearance is measured against its painted row, not its layout box: the box is taller
+		# than the glyphs and, since the ink was lifted to the recording's 457..474 (PLAN R29), it reaches
+		# up into the stats band where the glyphs do not.
 		_expect(not stats_rect.intersects(Rect2(level.tank_label.position, level.tank_label.size))
-			and not stats_rect.intersects(Rect2(level.get("hint_label").position,
-				level.get("hint_label").size)),
-			"the stats line sits above the bottom row instead of over the name and hint")
+			and not stats_rect.intersects(Level.HINT_INK_RECT),
+			"the stats line sits above the bottom row instead of over the name and the hint's ink")
 
 	# The port-only debug panel (D-0014): hidden at start, toggled by F1, and its actions run
 	# through the same Level dispatcher the keys use.

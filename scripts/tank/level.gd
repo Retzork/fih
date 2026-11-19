@@ -40,15 +40,22 @@ const TANK_SIZE := Vector2(640.0, 480.0)
 const TANK_LABEL_RECT := Rect2(13.0, 453.0, 220.0, 22.0)
 const TANK_LABEL_COLOR := Color8(0xA8, 0x94, 0x60)
 ## The hunger hint centred in the same row: glyphs x 186..462 (centre 324), 18 px tall with the dark
-## outline the base draws round the lime fill (#ADF762) - the outline samples #004A00.
-const HINT_RECT := Rect2(0.0, 454.0, 640.0, 22.0)
+## outline the base draws round the lime fill (#ADF762) - the outline samples #004A00. The label box
+## is a layout box; the painted row sits inside it at `HINT_INK_RECT`.
+const HINT_RECT := Rect2(0.0, 448.0, 640.0, 22.0)
+## The painted rows of that box, measured off the windowed captures: 457..474, the recording's row
+## (the 454 box put the ink 6 px low at 463..479.5, PLAN R29). It is kept separate because the layout
+## box is taller than the glyphs and overlaps the F12 stats line's band (D-0036) where the ink does not.
+const HINT_INK_RECT := Rect2(0.0, 457.0, 640.0, 17.0)
 const HINT_COLOR := Color8(0xAE, 0xF7, 0x62)
 const HINT_OUTLINE_COLOR := Color8(0x00, 0x4A, 0x00)
 const HINT_OUTLINE_SIZE := 2
-## The base's two wordings, the shallow one while the tank is short and the capitalised one at its
-## deepest warning line (`Fish.HUNGER_HINTS[2]`, -400).
+## The base's three wordings, one per warning line of `Fish.HUNGER_HINTS` (-1/-200/-400; P2.3 §5):
+## the shallow one while the tank is short, the capitalised one at -200 and the dying one at -400
+## (`0x598D14`, `0x598D48`, `0x598D70` in the shipped string table).
 const HINT_TEXT := "Fish are hungry! Click to drop food!"
 const HINT_TEXT_SEVERE := "Fish are REALLY hungry! Click to feed!"
+const HINT_TEXT_DYING := "Fish are about to die of hunger! Click on aquarium!"
 ## Guppy swim frames are three separate images (`SIMSWIM1..3`, 40x40).
 const FISH_IMAGES := ["IMAGE_SIMSWIM1", "IMAGE_SIMSWIM2", "IMAGE_SIMSWIM3"]
 ## The guppy body sheet: 10 frames per row, one row per growth stage (`SMALLSWIM`, 50 frames). The
@@ -386,6 +393,8 @@ func hint_text() -> String:
 		if fish != null and not fish.dead:
 			worst = mini(worst, int(fish.fullness))
 	if worst <= Fish.HUNGER_HINTS[2]:
+		return HINT_TEXT_DYING
+	if worst <= Fish.HUNGER_HINTS[1]:
 		return HINT_TEXT_SEVERE
 	if worst <= Fish.HUNGER_HINTS[0]:
 		return HINT_TEXT

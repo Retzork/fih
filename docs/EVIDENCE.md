@@ -5555,3 +5555,28 @@ behavior or specs; follow up with a binary observation entry.
   taken while the game is paused (a modal, the pause menu) leaves the bar and dome on the pre-load
   values until the sim resumes. The stale frame above is exactly that state. Not fixed here; recorded
   in PLAN R41.
+
+## EV-0218 - The third hint wording and its measured row
+- Date: 2026-11-19
+- Type: string-table and note read; code change; headless suites plus a windowed ink probe
+- Source: `docs/evidence/p2.2-game-module-strings.txt` (0x598D14/0x598D48/0x598D70),
+  `docs/analysis/notes/p2.3-feeding.md` §4-§5, `scripts/tank/level.gd` (`hint_text`, `HINT_RECT`,
+  `HINT_INK_RECT`), `tests/headless_level_check.gd`, `tests/headless_integration_check_scene.gd`,
+  `tools/godot/measure_hint.gd`
+- (1) **Three strings, not two.** The shipped string table carries three adjacent hint lines:
+  `0x598D14 Fish are about to die of hunger! Click on aquarium!`, `0x598D48 Fish are REALLY hungry!
+  Click to feed!` and `0x598D70 Fish are hungry! Click to drop food!`. P2.3 §5's threshold table binds
+  them to `[0x9C]` = -1 / -200 / -400, i.e. `Fish.HUNGER_HINTS`: the port's two-tier collapse used
+  the -200 string at -400 and never showed the dying one.
+- (2) **Now three tiers**: `hint_text()` returns the shallow string at -1, the capitalised one at
+  -200 and `HINT_TEXT_DYING` at -400, each keyed to its `HUNGER_HINTS` entry rather than to the
+  extremes.
+- (3) **The row.** `HINT_RECT` moved from y 454 to y 448; the windowed probe
+  (`tools/godot/measure_hint.gd`, guppies held at -400 so the dying line is up) reads the lime ink at
+  rows **457.0..473.5** and x 125..521.5 - the recording's 457..474, was 463..479.5.
+- (4) **`HINT_INK_RECT` added** (0, 457, 640, 17) because the label's layout box is 26 px tall after
+  the theme's minimum and now overlaps the F12 stats band (D-0036) where the painted glyphs do not;
+  the integration clearance check compares the stats rect against the ink band instead of the box.
+- (5) **Runs**: `headless_level_check` 209 -> 212, `headless_integration_check` 136, the other 22
+  suites unchanged, script sum 1399 (+136 = 1535). Windowed probe printed
+  `INK: rows 457.0..473.5`, `shot_hint_ink.png`.
