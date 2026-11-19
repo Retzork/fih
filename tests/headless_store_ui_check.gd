@@ -248,9 +248,11 @@ func _test_loaded_rows() -> void:
 		fresh.append([int(row.get("shelf", -1)), int(row.get("slot", -1))])
 	_expect(fresh == [[0, 0], [1, 2], [2, 3], [3, 4], [5, 10]],
 		"the fresh 1-3 table opens in shelf order (got %s)" % str(fresh))
+	# No `shelf` on the roller row: the file does not carry it, so the load has to derive it from the
+	# bare record (`slot -1` with a real price).
 	source.tank_store.append({
 		"slot": -1, "price": 15000, "base": 15000, "increment": 0, "present": 0,
-		"kind_roll": 3, "shelf": 7,
+		"kind_roll": 3,
 	})
 	# The file keeps `tank_store` in the order it was written, so this save comes back reversed.
 	source.tank_store.reverse()
@@ -272,7 +274,9 @@ func _test_loaded_rows() -> void:
 			% [shelf, expected[shelf], int(screen.row_at(shelf).get("slot", -1))])
 	_expect(screen.row_at(4).is_empty() and screen.row_at(6).is_empty(),
 		"the shelves 1-3 leaves empty stay empty")
-	_expect(int(screen.row_at(7).get("slot", -1)) == -1, "the roller comes back on the eighth shelf")
+	_expect(int(screen.row_at(7).get("slot", -1)) == -1
+		and int(screen.row_at(7).get("shelf", -1)) == LevelScript.ROLLER_SHELF,
+		"the roller lands on the eighth shelf even though the file never stored one")
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
 	screen.free()

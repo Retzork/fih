@@ -985,6 +985,9 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 | R45 | 2026-11-19 owner: review this turn's store-screen shelf change with fresh eyes and simplify anything that can be simpler, then add a headless pin that loads a save whose store rows are out of shelf order and asserts the store screen still draws each item on its own shelf. | Read-through of `row_at`/`row_index_at`, the roller shelf and the restore path; new disk round-trip in the store-UI suite; full suite plus integration. | REVIEWED + SIMPLIFIED (D-0049, EV-0221): `row_at` now reuses `row_index_at` instead of repeating the shelf scan, and `Level.ROLLER_SHELF` replaces four `STORE_SHELF_COUNT - 1` spellings. The pin reverses a real 1-3 table (roller included) before saving and reads it into a fresh Level, then asserts shelves 0/1/2/3/5 draw items 0/2/3/4/10, 4 and 6 stay empty and the roller lands on shelf 7 - the array-position version fails it. `headless_store_ui_check` 70 -> 81; totals **24 suites, 1557 assertions**. |
 
 
+| R46 | 2026-11-19 owner: add a headless pin that saves a tank whose store rows are not in shelf order, loads it, and asserts `StoreScreen.row_at` draws each item on its own shelf and that the roller lands on the eighth slot, so the load path is covered through the screen and not only through the bar. | `headless_store_ui_check._test_loaded_rows`; the roller row saved as the bare record the file carries. | DONE (EV-0221/EV-0222): the pin already landed with R45 - a real 1-3 table plus roller, reversed before saving and read into a fresh Level, then asserted per shelf (0/1/2/3/5 -> 0/2/3/4/10, 4 and 6 empty, roller on 7). This row closed the last gap: the roller row is now saved without a `shelf`, so the eighth-slot placement is the load's derivation, not a copied field. `headless_store_ui_check` 81; totals **24 suites, 1557 assertions**. |
+
+
 Fixes land here as they are verified; this table is the source of truth for the review.
 
 

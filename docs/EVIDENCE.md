@@ -5651,3 +5651,14 @@ behavior or specs; follow up with a binary observation entry.
   array index 4).
 - (4) **Runs**: `headless_store_ui_check` 70 -> 81, the other 23 suites unchanged, script sum 1421
   (+136 = 1557); `headless_integration_check` 136.
+
+## EV-0222 - The out-of-order load pin also proves the roller's shelf is derived
+- Date: 2026-11-19
+- Type: test hardening; one suite
+- Source: `tests/headless_store_ui_check.gd` (`_test_loaded_rows`)
+- The pin's source table appended the roller row with `shelf: 7` filled in, so the load was never
+  asked to work it out. The row now goes in as the bare record the file really stores (`slot -1`,
+  price 15000, no `shelf`), and the assertion checks both `screen.row_at(7)["slot"] == -1` and
+  `["shelf"] == Level.ROLLER_SHELF`, i.e. `_restore_store_rows` put the roller on the eighth slot and
+  the screen found it there. `headless_store_ui_check` stays at 81 assertions (the two-part check
+  replaced the one-part one) and the other 23 suites are untouched.
