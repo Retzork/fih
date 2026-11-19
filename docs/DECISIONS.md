@@ -2085,3 +2085,25 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - **Still unsaved, still harmless:** `particles`/`laser_sparks` (transient FX that expire) and live
   pet bodies (P4.7 does not respawn them). Those are visual/entity state, not per-tank counters, and
   a load rebuilds or retires them.
+
+### D-0042 - Restore `free` on load; the roller row's keys are inert
+
+- Date: 2026-11-19 (owner: the save drops every port-only row key, not just `shelf` - check the
+  tank-5 free egg's `free` and the roller row's kind/backdrop/pet, fix what matters, pin it)
+- Status: accepted. EV-0213 holds the reader hunt and the run.
+- **`free` is re-derived, like `shelf`.** `_restore_store_rows()` sets
+  `free = slot == EGG_ITEM and price == 0`, the test `Progression.store_rows` makes, so the restored
+  tank-5 egg row is identical to the stocked one. It is derived rather than stored because the file
+  has no room for it and the relation is already exact (price 0 + egg slot).
+- **Today it changes no visible state,** and that is worth writing down: the bar skips the egg row
+  (the egg dome draws it), `buy_item` sends it to `buy_egg()` before any price test, and the store
+  screen prints `SOLD` for it because item 11's kind is still `KIND_UNAVAILABLE`. The fix is still
+  right: leaving the row half-restored would surface as a `?` price the moment the kind byte lands,
+  and the row should round-trip as the table built it.
+- **The roller's `kind_roll`/`backdrop`/`pet` stay unsaved.** No code reads them; the row is
+  `slot -1`, which neither UI draws (the bar needs a `shelf`, the store screen turns `id < 0` into
+  "Sold out"). Mapping them would need room in the fixed record for data nothing consumes, so they
+  are recorded as lost-by-design until the roller's purchase path (Q-0026) is ported. What *is*
+  pinned is the property that matters now: the roller row cannot take a dome from a real shelf.
+- **Test:** `headless_level_check._test_loaded_store_rows` (tank 5 egg + a roller-shaped row through
+  disk), `headless_level_check` 200, total 1513 assertions over 24 suites.

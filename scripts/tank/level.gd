@@ -1643,9 +1643,9 @@ func load_game(path: String = "") -> bool:
 	tank_index = save.tank
 	level_index = save.level
 	# The saved rows are the fixed 17-byte records (slot, price, base, increment, present); the port's
-	# `shelf` - which dome draws the row - is not in the file, so it is re-derived from this tank and
-	# level's own table. Without it the bar finds no row for any shelf and draws seven empty domes.
-	_restore_store_shelves()
+	# own row keys are not in the file, so they are re-derived here (D-0040/D-0042). Without `shelf`
+	# the bar finds no row for any shelf and draws seven empty domes.
+	_restore_store_rows()
 	_refresh_tank_label()
 	for entity in tank.entities_in(Sim.Phase.FISH):
 		tank.despawn(entity)
@@ -1679,11 +1679,14 @@ func load_game(path: String = "") -> bool:
 	return true
 
 
-## Put the port-only `shelf` back on rows that came from a save: match the row's slot id against the
-## stock table for the tank and level the header names. The hidden shelves are included, so a row
-## Blip unlocked keeps its dome. A row the table no longer sells (the store roller's `slot -1`) keeps
-## the bare record and draws no dome, exactly as before it was saved.
-func _restore_store_shelves() -> void:
+## Put the port-only row keys back on rows that came from a save. The 17-byte record carries only
+## slot, price, base, increment and present, so:
+## - `shelf` (which dome draws the row) is matched by slot id against the stock table for the tank and
+##   level the header names; the hidden shelves are included, so a row Blip unlocked keeps its dome;
+## - `free` is the tank-5 egg's recovered 0 price, the same test `Progression.store_rows` makes.
+## A row the table no longer sells (the store roller's `slot -1`) keeps the bare record and draws no
+## dome, exactly as before it was saved.
+func _restore_store_rows() -> void:
 	var shelves := {}
 	for row in Progression.store_rows(tank_index, level_index, game_mode, true):
 		shelves[int(row["slot"])] = int(row["shelf"])
@@ -1691,6 +1694,7 @@ func _restore_store_shelves() -> void:
 		var slot := int(row.get("slot", -1))
 		if slot >= 0 and shelves.has(slot):
 			row["shelf"] = int(shelves[slot])
+		row["free"] = slot == Progression.EGG_ITEM and int(row.get("price", 0)) == 0
 
 
 func _capture_pet_flags() -> Array[int]:

@@ -60,6 +60,7 @@ func _init() -> void:
 	_test_hint_cache_on_load()
 	_test_load_refresh()
 	_test_wave_counter_reset()
+	_test_loaded_store_rows()
 
 	level.tank.shutdown()
 	level.free()
@@ -141,6 +142,59 @@ func _test_wave_counter_reset() -> void:
 	level.start_level(1, 1)
 	_expect(level.waves_spawned == 0,
 		"a level start clears the wave counter a previous level left behind (got %d)" % level.waves_spawned)
+
+
+## The save keeps only the 17-byte row (slot, price, base, increment, present), so the port's own
+## row keys have to be re-derived: `shelf` places the dome (D-0040) and `free` is the tank-5 egg's
+## recovered 0 price (D-0042). The roller's `slot -1` row carries keys no reader uses, so losing them
+## changes nothing - what matters is that it takes no dome away from a real shelf.
+func _test_loaded_store_rows() -> void:
+	var path := "user://store_rows_check.dat"
+	var five: Level = LevelScript.new()
+	five.render = false
+	five.setup(sim, 7373)
+	five.start_level(5, 1)
+	var egg := _row_of(five, Progression.EGG_ITEM)
+	_expect(egg >= 0, "tank 5 stocks its free egg as a store row")
+	if egg < 0:
+		five.tank.shutdown()
+		five.free()
+		return
+	_expect(bool(five.tank_store[egg].get("free", false)) and Store.price_known(five.tank_store[egg]),
+		"the tank-5 egg row is priced as free (price 0 + the `free` key)")
+	# A roller row as `roll_stock()` appends it: `slot -1` and the port-only kind keys.
+	five.tank_store.append({
+		"slot": -1, "price": 15000, "base": 15000, "increment": 0, "present": 0,
+		"kind_roll": 3, "backdrop": 1,
+	})
+	_expect(five.save_game(path) == OK, "the tank-5 save is written")
+	_expect(five.load_game(path), "and read back")
+	var loaded_egg := _row_of(five, Progression.EGG_ITEM)
+	_expect(loaded_egg >= 0 and bool(five.tank_store[loaded_egg].get("free", false)),
+		"the free egg's flag is re-derived on load (D-0042)")
+	_expect(loaded_egg >= 0 and Store.price_known(five.tank_store[loaded_egg]),
+		"so the restored egg row still has a known price")
+	_expect(loaded_egg >= 0 and int(StoreBar.row_at(five, 6).get("slot", -1)) == Progression.EGG_ITEM,
+		"the egg's shelf still resolves to the egg row, not the roller")
+	var roller := -1
+	for i in five.tank_store.size():
+		if int(five.tank_store[i].get("slot", -1)) == -1 and int(five.tank_store[i].get("price", 0)) == 15000:
+			roller = i
+	_expect(roller >= 0 and not five.tank_store[roller].has("shelf"),
+		"the roller's bare row takes no dome after a load")
+	_expect(loaded_egg >= 0 and five.buy_item(loaded_egg),
+		"the free egg still buys through its store row")
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+	five.tank.shutdown()
+	five.free()
+
+
+func _row_of(level_ref: Level, slot: int) -> int:
+	for i in level_ref.tank_store.size():
+		if int(level_ref.tank_store[i].get("slot", -1)) == slot:
+			return i
+	return -1
 
 
 func _test_hint_cache_on_load() -> void:

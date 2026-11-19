@@ -5421,3 +5421,36 @@ behavior or specs; follow up with a binary observation entry.
   `headless_progression_check` 86, `headless_integration_check` 136.
 - (5) **Left alone**: the rest of the 27-dword run (mode timers, totals, high-water marks) is still
   written as zeroes; only `+0x45C` was in scope here.
+
+## EV-0213 - Every port-only store-row key across a save: `free` matters, the roller's keys do not (yet)
+- Date: 2026-11-19
+- Type: reader hunt for the row keys the 17-byte record cannot carry, plus a headless scenario
+- Source: `scripts/economy/store.gd` (`price_known`, `is_available`, `item`),
+  `scripts/tank/level.gd` (`buy_item`, `roll_stock`, `_restore_store_rows`),
+  `scripts/ui/store_bar.gd` (egg branch), `scripts/ui/store_screen.gd` (`row_state`, `price_text`),
+  `scripts/progression/progression.gd` (`store_rows`), `tests/headless_level_check.gd`
+- (1) **The row record** (P2.13 §6.5) is `slot, price, base, increment, present` only. The port adds
+  `shelf` (which dome), `free`, and - on the roller row - `kind_roll`, `backdrop`, `pet`.
+- (2) **`free` is lost and is the one that matters.** Its only reader is
+  `Store.price_known(row) = price > 0 or free`. Every current reader reaches an egg row *around* it:
+  `StoreBar.refresh` `continue`s on `Progression.EGG_ITEM` before pricing a dome;
+  `Level.buy_item` routes `EGG_ITEM` to `buy_egg()` before the price test; and
+  `StoreScreen.row_state` marks the egg row `sold_out` because `Store.item(11)["kind"]` is still
+  `KIND_UNAVAILABLE`, so `price_text` returns `SOLD` before `price_known` and `greyed` is true
+  either way. So today the lost flag changes no pixel and no purchase - but the row no longer
+  round-trips as the table made it, and binding item 11's recovered kind (still open, Q-0052) would
+  flip the tank-5 egg from its 0 price to `?` the moment it is loaded.
+- (3) **The roller's `kind_roll`/`backdrop`/`pet` are lost and are inert.** They have no reader
+  anywhere in `scripts/` - `Level.roll_stock()` writes them and `headless_profile_check` asserts
+  them. The row is `slot -1`, which both UIs ignore: the bar matches on `shelf` (the row has none)
+  and `StoreScreen.row_state` turns any `id < 0` into "Sold out". The roller's purchase path is not
+  ported (Q-0026), so nothing can change on screen from their loss. Left unmapped and recorded.
+- (4) **Fix:** `_restore_store_shelves()` became `_restore_store_rows()` and now also re-derives
+  `free` as `slot == EGG_ITEM and price == 0`, the same test `Progression.store_rows` makes, so a
+  restored row is indistinguishable from a freshly stocked one.
+- (5) **Headless** (`_test_loaded_store_rows`): tank 5 level 1 stocks the free egg; the scenario also
+  appends a roller-shaped row (`slot -1`, price 15000, `kind_roll` 3, `backdrop` 1), saves, loads
+  and requires the egg row's `free` and `price_known` back, the egg's shelf 6 to resolve to the egg
+  row rather than the roller, the roller row to come back with no `shelf`, and `buy_item` on the egg
+  row to still buy. `headless_level_check` 191 -> 200; the other 22 script suites and the
+  integration suite unchanged (script sum 1377, +136 = 1513).
