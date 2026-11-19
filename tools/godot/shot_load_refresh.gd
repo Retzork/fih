@@ -1,16 +1,29 @@
 extends SceneTree
-## Temporary capture aid for R35 (not a game entry point): boots the real 1-1 tank, writes a scratch
-## tank 2-3 save, loads it under the running 1-1, and reads the tank name, the wallet, the store bar's
-## rows and the egg dome (a) before the load, (b) right after the call and (c) one tick later, saving
-## both frames.
+## Windowed observation for the load repaint (not a game entry point): boots the real 1-1 tank, loads a
+## tank 3 level 4 save while the tick is held by the pause gate, and captures three moments - before
+## the load, right after the call with no tick, and after the first tick - as state reads *and* as
+## pixel crops of the price band, the wallet and the egg dome. The frames are saved for eyeballing.
 ##   Godot --path . --audio-driver Dummy --script res://tools/godot/shot_load_refresh.gd
 
 const LevelScript := preload("res://scripts/tank/level.gd")
 const ProgressionScript := preload("res://scripts/progression/progression.gd")
 
-const BEFORE_OUT := "shot_load_refresh_before.png"
-const AFTER_OUT := "shot_load_refresh_after.png"
 const SAVE := "user://load_refresh_shot.dat"
+const OUT_BEFORE := "shot_load_refresh_before.png"
+const OUT_STALE := "shot_load_refresh_stale.png"
+const OUT_AFTER := "shot_load_refresh_after.png"
+
+## The captures are the window at 2x the 640x480 logical frame.
+const SCALE := 2
+## The seven price plates' band, slot-local y 45..60: below every dome, so the guppy's swim animation
+## cannot move these pixels - only a price string can.
+const BAND_RECT := Rect2i(0, 88, 1000, 36)
+## The wallet number's plate (logical 534..617 x 39..59).
+const WALLET_RECT := Rect2i(1068, 78, 166, 40)
+## The egg's own dome slot: logical slot 6 at x 436, the 58x60 widget over the seventh dome.
+const EGG_RECT := Rect2i(868, 0, 124, 150)
+## The bottom-left tank name, kept left of the centred hunger hint.
+const NAME_RECT := Rect2i(26, 906, 360, 44)
 
 var _fails := 0
 
@@ -46,7 +59,7 @@ func _run() -> void:
 		await process_frame
 	print("LOAD: content %d/%d" % [content.loaded_count(), content.EXPECTED_TOTAL])
 
-	# 1. The live tank: adventure 1-1.
+	# 1. The live tank: adventure 1-1, ticking.
 	game.profile.tank = 1
 	game.profile.level = 1
 	selector.press(1, {})
@@ -59,73 +72,131 @@ func _run() -> void:
 		return
 	level.store_bar.refresh()
 	level.egg_widget.refresh()
-	var before := _state(level)
-	print("BEFORE: ", before)
-	_check(level.tank_label.text == "Tank  1-1", "the live tank starts on 1-1")
-	_check(level.money == 200, "the live tank starts on the 200 wallet (got %d)" % level.money)
-	var shot := root.get_texture().get_image()
-	shot.save_png("res://" + BEFORE_OUT)
-	print(BEFORE_OUT, " ", shot.get_size())
 
-	# 2. A save from another tank: 2-3, wallet 4321, two egg pieces, its own stock table.
+	# 2. Hold the tick so the "before repaint" frame is deterministic. The pause gate is the same flag
+	#    a modal raises; `_on_sim_tick` returns early while it is set.
+	game.gameplay_paused = true
+	for i in 4:
+		await process_frame
+	var ticks_before := int(level.tank.age_ticks)
+	var before := _state(level)
+	var frames := _capture()
+	_save_now(OUT_BEFORE)
+	print("BEFORE: ", before)
+	_check(String(before["name"]) == "Tank  1-1", "the live tank is 1-1")
+	_check(int(before["money"]) == 200, "the live tank holds the 200 wallet (got %d)" % before["money"])
+
+	# 3. A save from another tank and level: 3-4, its own wallet, pieces and stock.
 	var scratch: Level = LevelScript.new()
 	scratch.render = false
 	scratch.setup(sim, 9001)
-	scratch.tank_index = 2
-	scratch.level_index = 3
+	scratch.tank_index = 3
+	scratch.level_index = 4
 	scratch.money = 4321
 	scratch.egg_pieces = 2
 	scratch.stock_default_store()
-	scratch.egg_price = ProgressionScript.egg_price(2, 3, scratch.game_mode)
+	scratch.egg_price = ProgressionScript.egg_price(3, 4, scratch.game_mode)
 	var wanted := _expected_rows(scratch)
-	print("SAVE: tank=", scratch.tank_index, " level=", scratch.level_index,
-		" money=", scratch.money, " pieces=", scratch.egg_pieces, " price=", scratch.egg_price,
-		" rows=", wanted)
+	var want_price := "$%d" % int(scratch.egg_price)
+	print("SAVE: tank=3 level=4 money=4321 pieces=2 egg_price=", scratch.egg_price, " rows=", wanted)
 	print("SAVE TABLE: ", _table(scratch))
 	var err: int = scratch.save_game(SAVE)
 	scratch.tank.shutdown()
 	scratch.free()
-	_check(err == OK, "the 2-3 save is written (%s)" % error_string(err))
+	_check(err == OK, "the 3-4 save is written (%s)" % error_string(err))
 
-	# 3. Load it under the running 1-1. The name is refreshed inside the call; the bar and the dome
-	#    only repaint from the tank's tick (D-0037), so the three reads below say which is which.
+	# 4. Load it with the tick still held: the name is refreshed inside the call, the bar and dome are
+	#    not - their repaint lives in `_on_sim_tick`, which cannot run while paused.
 	var loaded: bool = level.load_game(SAVE)
-	print("AFTER CALL: ", _state(level))
-	_check(loaded, "load_game reads the 2-3 save")
-	_check(level.tank_label.text == "Tank  2-3",
-		"the tank name is the restored 2-3 right after the call")
+	# One rendered frame with the tick still held: the name's text was set inside the call, the bar's
+	# repaint lives in `_on_sim_tick` and cannot have run.
+	for i in 3:
+		await process_frame
+	var right := _state(level)
+	print("AFTER CALL (paused): ", right)
+	_check(loaded, "load_game reads the 3-4 save")
+	_check(String(right["name"]) == "Tank  3-4", "the name is the restored 3-4 right after the call")
+	_check(String(right["money_text"]) == "200",
+		"the bar still shows the old wallet with the tick held (got %s)" % right["money_text"])
 
-	for i in 14:
+	var stale := _capture()
+	_save_now(OUT_STALE)
+	print("STALE PIXELS: band=%d wallet=%d egg=%d name=%d" % [
+		stale["band"], stale["wallet"], stale["egg"], stale["name"]])
+	_check(stale["wallet"] == frames["wallet"],
+		"the wallet's pixels are still the pre-load 200 (no tick ran)")
+	_check(stale["band"] == frames["band"],
+		"the price band has not repainted yet")
+	_check(stale["egg"] == frames["egg"],
+		"the egg dome has not repainted yet")
+	_check(stale["name"] != frames["name"],
+		"the name label did repaint during the call (its pixels already say 3-4)")
+
+	# 5. Release the pause: the next tick repaints the bar and the dome from the restored values.
+	game.gameplay_paused = false
+	var waited := 0
+	for i in 120:
+		await process_frame
+		waited += 1
+		if int(level.tank.age_ticks) != ticks_before:
+			break
+	for i in 2:
 		await process_frame
 	var after := _state(level)
+	var fresh := _capture()
+	_save_now(OUT_AFTER)
 	print("AFTER TICK: ", after)
-	shot = root.get_texture().get_image()
-	shot.save_png("res://" + AFTER_OUT)
-	print(AFTER_OUT, " ", shot.get_size())
-
-	# 4. Everything reads the restored save, not the pre-load tank.
-	_check(level.tank_label.text == "Tank  2-3", "the name stays 2-3 after the tick")
-	_check(level.money == 4321, "the wallet is the restored 4321 (got %d)" % level.money)
+	print("AFTER PIXELS: band=%d wallet=%d egg=%d name=%d" % [
+		fresh["band"], fresh["wallet"], fresh["egg"], fresh["name"]])
+	_check(int(level.tank.age_ticks) != ticks_before,
+		"a tick ran after unpausing (%d frames)" % waited)
+	_check(fresh["wallet"] != frames["wallet"], "the wallet's pixels repainted")
+	_check(fresh["band"] != frames["band"], "the price band's pixels repainted")
+	_check(fresh["egg"] != frames["egg"], "the egg dome's pixels repainted")
 	_check(String(after["money_text"]) == "4321",
-		"the bar's wallet number repainted to 4321 (got %s)" % after["money_text"])
-	_check(int(after["pieces"]) == 2, "the egg dome counts the restored 2 pieces (got %d)" % after["pieces"])
-	_check(String(after["dome_price"]) == "$%d" % int(level.egg_price),
-		"the egg dome prices the restored tank (got %s)" % after["dome_price"])
+		"the bar draws the restored wallet (got %s)" % after["money_text"])
+	_check(String(after["dome_price"]) == want_price,
+		"the dome draws the restored price %s (got %s)" % [want_price, after["dome_price"]])
+	_check(int(after["pieces"]) == 2, "the dome draws the restored 2 pieces (got %d)" % after["pieces"])
 	_check(after["rows"] == wanted,
-		"the bar's rows are the restored 2-3 stock\n  want %s\n  got  %s" % [wanted, after["rows"]])
-	_check(after["rows"] != before["rows"], "the bar's rows actually changed from the 1-1 stock")
+		"the bar's shelves are the restored 3-4 stock\n  want %s\n  got  %s" % [wanted, after["rows"]])
 
 	if FileAccess.file_exists(SAVE):
 		DirAccess.remove_absolute(SAVE)
+	game.gameplay_paused = false
 	if _fails == 0:
-		print("LOAD REFRESH: PASS")
+		print("LOAD REPAINT: PASS")
 		quit(0)
 	else:
-		printerr("LOAD REFRESH: %d FAILURE(S)" % _fails)
+		printerr("LOAD REPAINT: %d FAILURE(S)" % _fails)
 		quit(1)
 
 
-## The live level's four surfaces, as a dictionary the checks compare.
+func _capture() -> Dictionary:
+	var image := root.get_texture().get_image()
+	return {
+		"band": _fingerprint(image, BAND_RECT),
+		"wallet": _fingerprint(image, WALLET_RECT),
+		"egg": _fingerprint(image, EGG_RECT),
+		"name": _fingerprint(image, NAME_RECT),
+	}
+
+
+## The crop's bytes, folded into one number: two equal values mean those pixels did not change.
+func _fingerprint(image: Image, rect: Rect2i) -> int:
+	var data := image.get_region(rect).get_data()
+	var sum := 0
+	for byte in data:
+		sum = (sum * 31 + int(byte)) & 0x7FFFFFFF
+	return sum
+
+
+func _save_now(path: String) -> void:
+	root.get_texture().get_image().save_png("res://" + path)
+	print(path, " saved")
+
+
+## The four surfaces the repaint question is about, read off the live widgets.
 func _state(level: Level) -> Dictionary:
 	var pieces := 0
 	var tooltip := String(level.egg_widget.tooltip_text)
@@ -139,7 +210,6 @@ func _state(level: Level) -> Dictionary:
 		"dome_price": String(level.egg_widget._price.text),
 		"pieces": pieces,
 		"rows": _rows(level),
-		"table": _table(level),
 	}
 
 

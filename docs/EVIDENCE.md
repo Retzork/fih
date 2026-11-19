@@ -5523,3 +5523,35 @@ behavior or specs; follow up with a binary observation entry.
   seconds-to-ticks conversion (90 ticks -> 2 s -> 72 ticks).
 - (5) **Runs**: `headless_level_check` 200 -> 209, `headless_tank_snapshot_check` 66 -> 68, the other
   21 script suites unchanged, integration 136 - all PASS (script sum 1396, +136 = 1532).
+
+## EV-0217 - The bar and egg dome repaint is observed, in pixels, on the tick after a load
+- Date: 2026-11-19
+- Type: windowed run of `tools/godot/shot_load_refresh.gd` (`--audio-driver Dummy`), three 1280x960
+  captures (local, gitignored) plus pixel fingerprints of the price band, wallet, egg dome and name
+- Source: `tools/godot/shot_load_refresh.gd`, `scripts/ui/store_bar.gd` (`refresh_if_changed`),
+  `scripts/ui/egg_widget.gd` (`refresh_if_changed`), `scripts/tank/level.gd` (`_on_sim_tick`)
+- (1) **How the "before repaint" frame was made deterministic.** The run starts adventure 1-1, then
+  sets `Game.gameplay_paused` - the same gate a modal raises - before loading. `_on_sim_tick` returns
+  early while paused (level.gd:1232), so three rendered frames elapse with **no tick**, which is the
+  state where the repaint provably has not happened. It is released afterwards.
+- (2) **The save is another tank and level**: a scratch level saved as tank 3 level 4, wallet 4321,
+  two egg pieces, stock `0:0@100, 1:2@200, 2:3@300, 3:7@750, 4:8@2000, 5:10@2000`, egg price 10000.
+- (3) **Before** (`shot_load_refresh_before.png`): `Tank  1-1`, wallet 200, dome `$150` at 1/4, rows
+  `[$100, -, -, -, -, -, -]`.
+- (4) **After the call, tick still held** (`shot_load_refresh_stale.png`): the name already reads
+  `Tank  3-4` and `level.money` is 4321, but the bar prints `200`, the dome still `$150` at 1/4, and
+  the rows are still the 1-1 set. The pixels agree: wallet fingerprint unchanged (1400569856), price
+  band unchanged (747309248), egg dome unchanged (1106355456), while the name label's pixels **did**
+  change (819193792 vs the pre-load frame) - the name is refreshed inside `load_game`, the bar and
+  dome only from the tick.
+- (5) **After one tick** (`shot_load_refresh_after.png`): the wallet reads 4321, the dome `$10000` at
+  2/4, and the shelves are `[$100, $200, $300, $750, $2000, $2000, -]` - the restored 3-4 stock. All
+  three fingerprints moved (wallet 975426752, band 1948995840, egg 1018250944); the name's did not
+  (819193792), since nothing changed it.
+- (6) **So the repaint is observed, not inferred from `refresh_if_changed`'s signature**: the same
+  surfaces on screen are byte-identical while the tick is held and different one tick after it is
+  released, with the label strings matching the restored save in both readings.
+- (7) **Open finding, observed on the way.** Because the repaint lives in `_on_sim_tick`, a load
+  taken while the game is paused (a modal, the pause menu) leaves the bar and dome on the pre-load
+  values until the sim resumes. The stale frame above is exactly that state. Not fixed here; recorded
+  in PLAN R41.
