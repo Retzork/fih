@@ -5357,3 +5357,35 @@ behavior or specs; follow up with a binary observation entry.
   handling on load (windowed only, EV-0207); and the restore floor for tank 5's three starting pieces
   (open, see R34).
 - (5) **Runs**: `headless_level_check` 184, `headless_tank_snapshot_check` 56.
+
+## EV-0211 - Windowed 1-1 load of a tank 2-3 save: four surfaces, and the store rows that went blank
+- Date: 2026-11-19
+- Type: windowed run of `tools/godot/shot_load_refresh.gd` (windowed, `--audio-driver Dummy`); two
+  1280x960 captures (local, gitignored) plus a headless guard
+- Source: `tools/godot/shot_load_refresh.gd`, `scripts/tank/level.gd` (`load_game`,
+  `_restore_store_shelves`), `scripts/ui/store_bar.gd` (`row_at`), `tests/headless_level_check.gd`
+- (1) **The run.** Boots the real main path, starts adventure 1-1, writes a scratch level's save
+  (`tank 2 level 3`, wallet 4321, two egg pieces, its own stock table) and loads it under the running
+  1-1, reading the name label, the bar's wallet number, the bar's seven price labels and the egg
+  dome's price/pieces **before** the load, **right after the call** and **one tick later**.
+- (2) **Before**: `Tank  1-1`, wallet 200, dome `$150` at 1/4, rows `[$100, -, -, -, -, -, -]`.
+  `shot_load_refresh_before.png` shows exactly that (one guppy dome, the egg dome, the green 200).
+- (3) **Right after the call**: the name is already `Tank  2-3` (`load_game` refreshes it), and the
+  wallet reads 4321, but the bar still prints `200` and the dome still prints `$150` at 1/4 - the bar
+  and the dome repaint from the tank's tick, not from the load, which is the documented split.
+- (4) **One tick later (14 frames)**: `Tank  2-3`, bar wallet `4321`, dome `$5000` at 2/4, and the
+  rows read `[$100, $200, $300, $250, $750, $1000, -]`, which is the saved 2-3 table
+  (`0:0@100, 1:2@200, 2:3@300, 3:5@250, 4:6@750, 5:10@1000`). `shot_load_refresh_after.png`.
+- (5) **Finding, fixed (D-0040)**: the first run of the capture had the rows come back **blank** -
+  seven empty domes - while the wallet and dome repainted correctly. The save's store rows are the
+  fixed 17-byte records (slot, price, base, increment, present, P2.13 §6.3); the port's `shelf` is
+  not in them, `load_game` restored the bare records, and `StoreBar.row_at` matches on `shelf`, so
+  no shelf found a row. `Level._restore_store_shelves()` now re-derives `shelf` from the stock table
+  for the restored tank and level (hidden shelves included). With it, the rows draw.
+- (6) **Headless guard**: `_test_load_refresh` now requires every restored row with a real slot to
+  carry a `shelf` (and at least one such row to exist, so it cannot pass on an empty table).
+  `headless_level_check` 184 -> 185; `headless_tank_snapshot_check` 56, `headless_store_ui_check` 65,
+  `headless_integration_check` 136, all PASS.
+- (7) **Coverage note**: the repaint itself stays windowed-only evidence - the suite runs
+  `render = false`, so it can pin the shelf mapping but not that the bar draws; the captures are the
+  visual record.

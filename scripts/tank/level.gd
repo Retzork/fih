@@ -1638,6 +1638,10 @@ func load_game(path: String = "") -> bool:
 	# copy, the live tank's `+0x3C8`, so this write covers every reader (D-0038).
 	tank_index = save.tank
 	level_index = save.level
+	# The saved rows are the fixed 17-byte records (slot, price, base, increment, present); the port's
+	# `shelf` - which dome draws the row - is not in the file, so it is re-derived from this tank and
+	# level's own table. Without it the bar finds no row for any shelf and draws seven empty domes.
+	_restore_store_shelves()
 	_refresh_tank_label()
 	for entity in tank.entities_in(Sim.Phase.FISH):
 		tank.despawn(entity)
@@ -1665,6 +1669,20 @@ func load_game(path: String = "") -> bool:
 	# The save may name another backdrop, and the level keeps the sprite it was built with.
 	_add_backdrop()
 	return true
+
+
+## Put the port-only `shelf` back on rows that came from a save: match the row's slot id against the
+## stock table for the tank and level the header names. The hidden shelves are included, so a row
+## Blip unlocked keeps its dome. A row the table no longer sells (the store roller's `slot -1`) keeps
+## the bare record and draws no dome, exactly as before it was saved.
+func _restore_store_shelves() -> void:
+	var shelves := {}
+	for row in Progression.store_rows(tank_index, level_index, game_mode, true):
+		shelves[int(row["slot"])] = int(row["shelf"])
+	for row in tank_store:
+		var slot := int(row.get("slot", -1))
+		if slot >= 0 and shelves.has(slot):
+			row["shelf"] = int(shelves[slot])
 
 
 func _capture_pet_flags() -> Array[int]:

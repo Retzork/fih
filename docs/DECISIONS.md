@@ -2042,3 +2042,24 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   restored tank's start, so a tank-5 save with a zeroed `+0x43C` restores one piece instead of three.
   `TankScalars.apply` runs before `load_game` writes the header's tank, so the per-tank floor needs
   the index ordered ahead of the scalars or a second clamp after it.
+
+### D-0040 - The store row's `shelf` is re-derived on load
+
+- Date: 2026-11-19 (owner: capture a windowed 1-1 load of a save naming another tank and confirm the
+  bar's rows, the wallet, the egg dome and the name repaint from the restored values)
+- Status: accepted, measured. EV-0211 holds the run and the two captures.
+- **The problem.** A `tank_store` row is a 17-byte record in the file (slot, price, base, increment,
+  present, P2.13 §6.3). `Progression.store_rows` adds the port's own `shelf` - which of the seven
+  domes draws the row - and `StoreBar.row_at` matches rows on that key alone. `load_game` restored the
+  bare records, so after any load `row_at` found nothing for every shelf and the bar drew seven empty
+  domes; the windowed capture in EV-0211 shows it.
+- **The fix.** `Level._restore_store_shelves()` runs right after the header's tank/level are set and
+  before the bar can repaint: every restored row whose `slot` appears in
+  `Progression.store_rows(tank, level, mode, true)` gets that row's `shelf`. Hidden shelves are
+  included so a Blip-unlocked row keeps its dome, and a row with no matching slot (the store roller's
+  `slot -1`) stays unplaced, exactly as it was before the save.
+- **Rejected:** giving `StoreBar.row_at`/`row_index` an index fallback like `shelf_of`'s. `store_rows`
+  emits rows in shelf order, so it would work for a stocked table, but `roll_stock()` appends a
+  `slot -1` row after it, which would then claim the next free dome.
+- **Known, unchanged:** the roller row's extra keys (`backdrop`, `pet`, `kind_roll`) are not in the
+  17-byte record and are not restored; the roller is the StoreScreen's job (Q-0026/Q-0052).

@@ -101,6 +101,17 @@ func _test_load_refresh() -> void:
 	_expect(level.tank_index == 1 and level.tank.tank_index == 1 and level.level_index == 2,
 		"the one tank index and the level come from the save, not the tank that started the session")
 	_expect(level.egg_pieces == 2, "the egg-piece count comes from the save, not the pre-load tank")
+	# The file's 17-byte rows carry the slot but not the port-only `shelf`, so a load has to put it
+	# back or the bar finds no row for any shelf and draws empty domes (D-0040).
+	var placed := 0
+	var shelved := 0
+	for row: Dictionary in level.tank_store:
+		if int(row.get("slot", -1)) >= 0:
+			placed += 1
+			if row.has("shelf"):
+				shelved += 1
+	_expect(placed > 0 and shelved == placed,
+		"every restored store row gets its shelf back, so the bar draws it (D-0040)")
 	_expect(level.egg_price == Progression.egg_price(1, 2, level.game_mode),
 		"the egg price is re-derived for the restored tank and level")
 	_expect(level._composite_selection == -1 and level._composite_pending.is_empty(),
