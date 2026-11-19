@@ -3,9 +3,10 @@ extends RefCounted
 ## P2.6 progression: 5 tanks x 5 levels, the per-tank store table, egg-piece purchases, the pet
 ## award and the advance rule (EV-0061-EV-0076; `docs/analysis/notes/p2.6-progression.md`).
 ##
-## Every table here is a direct read of that note. What is **not** here: the bonus rounds, the
-## HatchScreen/PetsScreen, the credits/trophy screens and the tank-4 L5 card art - none of them is
-## ported yet, so Q-0053 records the gap. The award index is still computed, because the profile
+## Every table here is a direct read of that note. What is **not** here: the pre-bonus store, the
+## score records and the credits/trophy screens - none of them is ported yet, so Q-0053 records the
+## gap. The bonus round itself lives in `scripts/tank/bonus_round.gd` (D-0051), driven by
+## `has_bonus_round` below. The award index is still computed, because the profile
 ## records the pet and the Hatch screen only displays it.
 ##
 ## Level 6 is the recovered "tank complete" sentinel (`profile+0x20 = 6`): a level-5 completion
@@ -163,6 +164,14 @@ static func pet_name(index: int) -> String:
 	if index < 0 or index >= PET_NAMES.size():
 		return ""
 	return String(PET_NAMES[index])
+
+
+## Whether a completion opens a bonus round (P2.6 §6.1). A normal Adventure tank 1/2/3 level-5
+## completion runs one after the Hatch/Pets cards; tank 4 level 5 goes straight to tank 5, and
+## tank 5's own completion uses the per-level fast path that opens the BonusScreen without a round.
+## Bonus Adventure (`profile+0x59`) runs one after every level - not ported, so not reported (Q-0053).
+static func has_bonus_round(tank_no: int, level_no: int, mode: int = 0) -> bool:
+	return mode == 0 and level_no == LEVELS and tank_no >= 1 and tank_no <= TANKS - 2
 
 
 ## `FUN_00501370` + the bonus-end advance (`§10.4`). Tank 4 level 5 jumps straight to tank 5 level 1;

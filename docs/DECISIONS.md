@@ -1094,18 +1094,18 @@ level. A start on the sentinel resolves to the next tank's level 1. The tank's e
 (`scripts/ui/egg_widget.gd`): the recovered `EggPieces` art and a click call `buy_egg()` on tanks 1-4
 (tank 5 keeps its free store row); its rect is port-placed because the original's was not recovered.
 
-Re-counted against the tree 2026-11-19 (D-0050): Hatch, Pets and Bonus all mount and `Main` runs
-Hatch -> Pets -> Bonus -> next level. `HatchScreen` draws the recovered `HATCHSCREEN` incubator, the
+Re-counted against the tree 2026-11-19 (D-0050/D-0051): Hatch, Pets and Bonus all mount and `Main`
+runs Hatch -> Pets -> bonus round -> Bonus -> next level for a normal Adventure tank 1-3 final
+(`scripts/tank/bonus_round.gd`: the 160-tick wait, the timer, the end gate and the `Tank+0x3F4`
+reward). Bonus Adventure's per-level rounds and the pre-bonus store remain out. `HatchScreen` draws the recovered `HATCHSCREEN` incubator, the
 `HATCHANIMATION` strip and the pet cell (EV-0175); `PetsScreen` writes the 24-byte selection back to
 `profile+0x5A`; `BonusScreen.payout_for` is the recovered payout switch. Pets and Bonus are port copy
 on top of a port-drawn panel. Still missing, in dependency order:
 
-- the bonus rounds themselves: the 160-tick wait, `FUN_00537F40`'s start, the round's timer and the
-  pre-bonus store. `Progression.resolve_start` therefore walks the sentinel immediately, which is a
-  port shortcut, not the original sequence. `BonusScreen` is the card after a level, not the round;
-- the score records (`FUN_00514510`, `FUN_005144C0`), the coin sweep at completion, and the challenge
-  record's storage in the profile. `Tank+0x3FC` elapsed seconds are mapped (D-0047), so only the
-  recording side is absent;
+- the pre-bonus store (`FUN_0054BCA0`, `Sexy::StoreScreen`) between the round and the card, and the
+  `scr%d.dat` escrow `Tank+0x400` used to bank its shells (`§6.5`);
+- the score records (`FUN_00514510`, `FUN_005144C0`) and the challenge record's storage in the
+  profile. `Tank+0x3FC` elapsed seconds are mapped (D-0047), so only the recording side is absent;
 - the credits, story and trophy screens (Q-0013/Q-0016 still open, so no trigger is invented).
 
 Port decisions recorded here: the per-tank store table replaces the id-order stock the shop used
@@ -2283,3 +2283,37 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - **Rule kept.** A status flips only where the line's own named remainder is answered in the tree and
   its evidence already exists; anything that is only argued stays `[~]`. The 2026-11-08 review's
   withdrawn `[x]` policy still governs the rest of the phase - P4.6, P4.7, P4.10 and P4.11 stay open.
+
+### D-0051 - The bonus round is the shell round, and only that one is in the evidence
+
+- Date: 2026-11-19 (owner: the tank completion jumps straight to the next tank; port the bonus
+  rounds - the 160-tick wait, the timer, the payout switch and the minigames - and wire BonusScreen
+  into the real flow)
+- Status: accepted, measured. EV-0068/EV-0069/EV-0072 are the evidence for every constant below;
+  `tests/headless_bonus_check.gd` passes 59 assertions and the windowed run
+  (`tools/godot/shot_bonus.gd`) walks 1-5 -> Hatch -> Pets -> round -> card.
+- **There are not three recovered minigames.** P2.6 is the only note that describes the round, and
+  it recovers one: `FUN_00537F40` starts it, `FUN_0053EAF0` draws "BONUS ROUND" / "Collect as many
+  shells as you can!" / the `Tank+0x3F4` total / "Time Remaining: %d:%02d", and `FUN_0051C8E0`
+  pays that total. Nothing in the evidence names a slot machine, a second or a third game, so
+  nothing here invents them; the owner's recollection of three is recorded as unproven.
+- **The round is the tank, not a new scene.** `Tank+0x2A5` is the tank-complete latch that routes
+  collected shells to `Tank+0x3F4` (`FUN_0053C1E0`), and the end gate needs the coin list
+  `Tank+0xA8` empty - so the recovered round keeps the finalized tank running, with its fish still
+  dropping coins and the player clicking them. `Level.begin_bonus_round` is `FUN_00537E20`'s field
+  half (clear hostiles and shots, disarm the wave clock, hide the shop and egg dome, zero the round
+  counters) plus `BonusRound`.
+- **Timing is the note's.** The wait is `age - anchor > 0x9F`, which puts the start on the 160th
+  tick; the duration is `base + clamp(level,1,6) - 1` (tanks 1/2/3 at the sentinel: 15/20/25 s); the
+  end gate is `+0x3BC - +0x3B0 < 0`, empty coin list, and the pre-increment `+0x3F8 > 100`.
+  `Main` passes the sentinel rather than the played level 5, because `FUN_00537E20` reads
+  `Tank+0x3CC`, which the sentinel restart has already set to 6.
+- **Sequence.** Hatch -> Pets -> round -> BonusScreen -> next level, matching P2.6 §1.4: the round
+  runs after the cards, so `Main` holds the finalized tank paused while they are up. Tank 4 level 5
+  and tank 5 keep their no-round paths (`Progression.has_bonus_round`), and Bonus Adventure's
+  per-level rounds are not ported.
+- **Port choices, flagged not recovered:** the HUD's rects and font (the bottom hint's
+  `FONT_CONTINUUMBOLD14`, chosen because the shipped HUD font draws the sentence-case subtitle in
+  caps), hiding the shop/egg dome for the round, and collecting through the existing click path.
+- **Still out (Q-0053):** the pre-bonus store, the score record `FUN_00514510`, and the
+  `scr%d.dat` escrow for `Tank+0x400`.

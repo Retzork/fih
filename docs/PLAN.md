@@ -734,9 +734,20 @@ set.
     free store row keeps the same dome and click. The dome placement is port-only because the
     original widget rect was not recovered (Q-0053).
   - Between-level screens: Hatch, Pets and Bonus mount and `Main` runs Hatch -> Pets -> Bonus -> next
-    level. Hatch draws the recovered card art (EV-0175); Pets and Bonus stay text-only. Not ported yet
-    (Q-0053): the bonus rounds themselves and the 160-frame wait, the pre-bonus store, the score
-    records (their elapsed-seconds field is mapped, D-0047), and the credits/trophy screens
+    level. Hatch draws the recovered card art (EV-0175); Pets and Bonus stay text-only.
+  - **The bonus round is in (2026-11-19, D-0051):** a normal Adventure tank 1-3 level-5 completion
+    now runs it between the Pets card and the BonusScreen. `Main` keeps the finalized tank paused
+    while Hatch/Pets are up, then `Level.begin_bonus_round` clears the combat field, disarms the wave
+    clock, hides the shop and the egg dome, and starts `scripts/tank/bonus_round.gd`: the recovered
+    `+0x444 - +0x2A8 > 0x9F` 160-tick wait, then `FUN_00537F40`'s timer (`base + clamp(level,1,6) - 1`
+    = 15/20/25 s at level 6), and the end gate (timer passed, coin list `Tank+0xA8` empty, pre-increment
+    `+0x3F8 > 100`). While the tank-complete latch is up every collected shell goes to `Tank+0x3F4`
+    instead of the wallet (`FUN_0053C1E0`), and that total is what the card pays (`FUN_0051C8E0`,
+    `BonusScreen.payout_for`). The HUD draws the recovered `FUN_0053EAF0` strings; tank 4's level 5
+    and tank 5 keep their no-round paths, and Bonus Adventure's per-level rounds are not ported
+    (Q-0053). `tests/headless_bonus_check.gd` pins 59 assertions.
+  - Still not ported (Q-0053): the pre-bonus store, the score records (their elapsed-seconds field is
+    mapped, D-0047), the `scr%d.dat` bonus-shell escrow, and the credits/trophy screens
     (Q-0013/Q-0016).
 - [~] **P4.7** Pets implementation (per-pet tasks after P2.7 enumeration)
   (2026-11-03 - **foundation landed.** `scripts/entities/pet.gd` holds the roster as data (`DEFS`, 24 entries; 999 stays out) with family/speed/fixed-y/period cells that are 0 when unrecovered, the slot-81 gate order (pause -> tank 5 -> hostile aliens except Stanley), Stinky's bottom-lane chase with his 0..9 hide counter and per-pet coin predicate (bombs, snot, Niko's pearl, claimed coins, the star pair under a Penta), and Niko's 1224/1233/1440/1450 pearl cycle resetting to `rand % 50`. `Tank` gained `spawn_pet` and the tank-index/alien/Penta/source flags the gates read; `Coin` gained `claimed` (+0x198). `tests/headless_pet_check.gd` passes **45 assertions**. Angie (0x12) followed: her recovered target (`+0x1A0 > 0x5F`), the 30/60 px contact ranges and the `FUN_004D5630` phase write from 100 to 10, plus the corpse's ten-tick revive countdown and `Level._on_successor`'s live spawn - so a revived corpse now really returns as a live fish, and `tests/headless_pet_check.gd` passes **53 assertions**. Vert (0x06, 216 ticks, coin kind 2), Shrapnel (0x0B, the ctor-rolled 633..652, bomb coin 0x11 worth 150) and Nostradamus (0x15, 300..599, the 0x12 snot) then made the plain timer droppers real: **66 assertions**, and Angie's food re-lay (EV-0161) then took this suite to **73**. The other 18 pets idle (**Q-0044**). Pets now also **enter the tank**: `Level.spawn_owned_pets()` reads the profile's owned flags (`FUN_00501410`) at `start_level` and spawns each pet through `FUN_00544A90`'s randomized x 105..369 / y 20..539, and `_make_visual`/`_draw_entity_frame` draw every pet from its own 80x80 `Content` sheet (`IMAGE_STINKY`..`IMAGE_WALTER`) using the resource's `loop`/`pingpong`/`framedelay` metadata; `tests/headless_level_check.gd` passes **121 assertions**.)

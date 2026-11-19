@@ -23,6 +23,8 @@ const EggWidgetScript := preload("res://scripts/ui/egg_widget.gd")
 const DebugPanelScript := preload("res://scripts/ui/debug_panel.gd")
 const WaveClockScript := preload("res://scripts/tank/wave_clock.gd")
 const LarvaScript := preload("res://scripts/entities/larva.gd")
+const BonusRoundScript := preload("res://scripts/tank/bonus_round.gd")
+const BonusHudScript := preload("res://scripts/ui/bonus_hud.gd")
 
 ## `Tank::AddMoney` clamps the wallet at 9,999,999 (P2.5 §5).
 const MONEY_MAX := 9999999
@@ -142,6 +144,14 @@ var egg_pieces := Progression.EGG_PIECES_AT_START
 var egg_price := Progression.PRICE_UNKNOWN
 ## Set once the level has completed, so a second egg purchase cannot complete it again.
 var completed := false
+## The tank-complete bonus round (P2.6 §6, `FUN_00547610`'s two-stage transition), null outside
+## one. It is begun by `Main` after the Hatch/Pets cards, keeps the tank running, and ends by
+## emitting `bonus_finished` with the `Tank+0x3F4` total.
+var bonus: BonusRound = null
+## `Tank+0x3F4`: the round's collected shells, mirrored for the HUD and the card.
+var bonus_shells := 0
+## The round's HUD (`FUN_0053EAF0`), null when rendering is off or the round is over.
+var bonus_hud = null
 ## The Adventure profile the completion writes to; `Main` hands over `Game.profile`. A level run
 ## without one keeps a private profile, so the headless checks stay standalone.
 var profile: Profile = null
@@ -150,6 +160,9 @@ var profile: Profile = null
 ## Challenge mode records the run instead). The Hatch/Pets screens are not ported (Q-0053), so
 ## `Main` uses this to start the next level.
 signal level_completed(tank_no: int, level_no: int, pet_index: int)
+## The bonus round's end gate opened (P2.6 §6.2): the tank has advanced and the BonusScreen is next.
+## The argument is the round's `Tank+0x3F4` shells, which a normal Adventure tank's card pays.
+signal bonus_finished(shells: int)
 ## The tank MENU button (TankScreen id 99 -> `FUN_0054AED0` + `FUN_00552100`): `Main` saves the
 ## tank, frees this level and rebuilds the main menu.
 signal menu_requested
@@ -1052,9 +1065,10 @@ func buy_egg() -> bool:
 	return true
 
 
-## `FUN_00545960` (P2.6 §1.2/§10.4). The elapsed-time record, the coin sweep, the challenge record
-## and the Hatch/Bonus screens are not ported (Q-0053); what is: the award, the grant, the
-## 5000-shell final-boss bonus and the advance of the profile.
+## `FUN_00545960` (P2.6 §1.2/§10.4). The elapsed-time record and the challenge record are not
+## ported (Q-0053); what is: the award, the grant, the 5000-shell final-boss bonus, the advance of
+## the profile and the hand-off to Main's Hatch/Pets cards - and, for a tank 1-3 final, the bonus
+## round `Main` starts afterwards (`begin_bonus_round`, D-0051).
 func complete_level() -> void:
 	if completed:
 		return
@@ -1203,6 +1217,13 @@ func _on_coin_due(fish: Fish) -> void:
 
 
 func _on_coin_collected(_coin, amount: int) -> void:
+	# While the tank-complete latch `Tank+0x2A5` is set, every collected shell goes to the bonus
+	# round's own counter `Tank+0x3F4` instead of the wallet (`FUN_0053C1E0`, EV-0072).
+	if bonus != null:
+		bonus.add_shells(amount)
+		bonus_shells = bonus.shells
+		_refresh_bonus_hud()
+		return
 	# Virtual Tank converts coins to shells instead of money (P2.11 §7 / EV-0128).
 	if tank != null and bool(tank.virtual_tank):
 		_profile().add_shells(amount)
@@ -1250,6 +1271,8 @@ func _on_sim_tick(_tick: int) -> void:
 	if tank == null or tank.is_paused():
 		return
 	tank.age_ticks += 1
+	if bonus != null:
+		_tick_bonus()
 	_tick_presto_notice()
 	if game_mode == MODE_CHALLENGE:
 		inflate_prices(1)
@@ -1278,6 +1301,89 @@ func _tick_time_trial() -> void:
 	if time_trial_elapsed > time_trial_budget_ticks:
 		collect_all_coins()
 		complete_level()
+
+
+## Start the tank-complete bonus round (`FUN_00537E20` + the two-stage transition, P2.6 §6). The
+## finalizer half clears the combat field, disarms the wave clock and zeroes `Tank+0x3F4/+0x3F8`;
+## the round itself then waits 160 ticks in `BonusRound` before its timer runs. The tank keeps its
+## fish, pets and coins: the latch also routes every collected shell into the round's counter.
+func begin_bonus_round(tank_no: int, level_no: int) -> void:
+	if tank == null:
+		return
+	_clear_battle_field()
+	bonus = BonusRoundScript.new()
+	bonus.begin(tank_no, level_no, TICKS_PER_SECOND)
+	bonus_shells = 0
+	_mount_bonus_hud()
+	_refresh_bonus_hud()
+
+
+## `FUN_00537E20`'s field half: no hostiles, no shots and no wave clock while the tank is being
+## finalized. The boss's own freeze is not reused because the wave selection has to stop too.
+func _clear_battle_field() -> void:
+	for entity in tank.entities_in(Sim.Phase.PROJECTILES):
+		tank.despawn(entity)
+	for entity in tank.entities_in(Sim.Phase.ALIENS):
+		tank.despawn(entity)
+	tank.waves_disabled = true
+	# `FUN_00537E20` clears the overlay and the BonusScreen spawner tears the tank's widgets down
+	# (`FUN_0054AE30`/`FUN_0054AFD0`), so the shop and the egg dome are not on screen during the
+	# round - nothing can be bought while the tank is finalized.
+	if store_bar != null:
+		store_bar.visible = false
+	if egg_widget != null:
+		egg_widget.visible = false
+	alien_selection = 0
+	if wave != null and is_instance_valid(wave):
+		wave.selection = 0
+		wave.timer = 0
+	clear_presto_notice()
+
+
+## One bonus tick: `FUN_00547610`'s wait, the round's timer and its end gate (coin list empty and the
+## pre-increment blink counter past 100). The finish hands the shells to `Main`, which pays the
+## BonusScreen and starts the next tank.
+func _tick_bonus() -> void:
+	var event := bonus.tick(tank.coin_count() == 0)
+	bonus_shells = bonus.shells
+	if event == &"finish":
+		var total := bonus.shells
+		bonus = null
+		bonus_shells = 0
+		tank.waves_disabled = false
+		_hide_bonus_hud()
+		bonus_finished.emit(total)
+		return
+	_refresh_bonus_hud()
+
+
+## Whether a bonus round is running (waiting or playing).
+func is_bonus_active() -> bool:
+	return bonus != null
+
+
+func _mount_bonus_hud() -> void:
+	if not render or bonus_hud != null:
+		return
+	var layer := get_node_or_null("Hud")
+	if layer == null:
+		return
+	bonus_hud = BonusHudScript.new()
+	bonus_hud.name = "BonusHud"
+	layer.add_child(bonus_hud)
+
+
+func _refresh_bonus_hud() -> void:
+	if bonus_hud == null or bonus == null:
+		return
+	bonus_hud.show_state(bonus.shells, bonus.seconds_left(), bonus.is_playing())
+
+
+func _hide_bonus_hud() -> void:
+	if bonus_hud == null:
+		return
+	bonus_hud.queue_free()
+	bonus_hud = null
 
 
 ## Seconds left on the Time Trial clock (integer, like `Tank+0x3BC - +0x3B0`), or 0 outside Time

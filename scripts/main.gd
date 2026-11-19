@@ -30,6 +30,9 @@ const STATS_KEY := KEY_F12
 var _frames := 0
 var _elapsed := 0.0
 var _flow: Control = null
+## A tank-final completion that still owes its bonus round (P2.6 §1.4): `{"tank", "level"}` while
+## the Hatch/Pets cards are up and the live tank waits, empty otherwise.
+var _pending_bonus: Dictionary = {}
 
 
 ## F12 shows or hides the FPS/tick line. It is hidden by default and costs nothing while hidden:
@@ -196,6 +199,7 @@ func _close_options() -> void:
 ## not auto-resume yet), free the level's entities and mount a fresh `GameSelector` immediately.
 func _leave_tank() -> void:
 	_close_options()
+	_pending_bonus = {}
 	if _level == null:
 		return
 	var err: Error = _level.save_game()
@@ -215,6 +219,7 @@ func _leave_tank() -> void:
 func _on_level_skip() -> void:
 	if _level == null:
 		return
+	_pending_bonus = {}
 	if _debug_dialog != null:
 		_close_debug_only()
 	if _options_dialog != null:
@@ -229,7 +234,9 @@ func _on_level_skip() -> void:
 
 
 ## A completed level: the profile has already advanced (P2.6 §1.2/§10.4). The between-level
-## flow is Hatch (award card) -> Pets (selection) -> Bonus (payout) -> next level (P4.6).
+## flow is Hatch (award card) -> Pets (selection) -> Bonus (payout) -> next level (P4.6). A tank's
+## level-5 completion on tanks 1-3 inserts the bonus round between Pets and the card: the tank stays
+## live, finalized and frozen, and `begin_bonus_round` runs the 160-tick wait (P2.6 §1.4/§6.2).
 func _on_level_completed(tank_no: int, level_no: int, pet_index: int) -> void:
 	# A debug action (the egg button) can complete the level while Options is open. Close the
 	# modals first so the Hatch/Pets/Bonus flow is not left under a dead dialog.
@@ -248,6 +255,13 @@ func _on_level_completed(tank_no: int, level_no: int, pet_index: int) -> void:
 		# own payout (the tank-5 win bonus) is credited here, once, with the card that shows it.
 		if Game.mode == Game.Mode.ADVENTURE:
 			Game.profile.add_shells(payload)
+		if Progression.has_bonus_round(tank_no, level_no, Game.mode):
+			# The finalizer and the round run after the Hatch/Pets cards, so the tank is held
+			# here (paused) instead of being freed.
+			_pending_bonus = {"tank": tank_no, "level": level_no}
+			Game.gameplay_paused = true
+			_show_hatch(pet_index, tank_no, level_no, payload)
+			return
 		_level.queue_free()
 		_level = null
 	_show_hatch(pet_index, tank_no, level_no, payload)
@@ -276,6 +290,15 @@ func _show_pets(tank_no: int, level_no: int, payload: int) -> void:
 
 func _show_bonus(tank_no: int, level_no: int, payload: int) -> void:
 	_clear_flow()
+	if not _pending_bonus.is_empty() and _level != null:
+		# P2.6 §6: the round runs on the finalized tank, then `_on_bonus_finished` pays its
+		# `Tank+0x3F4` total through this same card.
+		# `FUN_00537E20` reads `Tank+0x3CC`, which the sentinel restart has already set to 6, so a
+		# tank final runs at level 6 (15/20/25 s) even though the played level was 5 (P2.6 §6.1).
+		_level.begin_bonus_round(int(_pending_bonus["tank"]), Progression.LEVEL_SENTINEL)
+		_level.bonus_finished.connect(_on_bonus_finished)
+		Game.gameplay_paused = false
+		return
 	var screen := BonusScreen.new()
 	screen.name = "BonusScreen"
 	screen.setup(tank_no, Game.mode, payload)
@@ -284,6 +307,24 @@ func _show_bonus(tank_no: int, level_no: int, payload: int) -> void:
 		_on_start_requested(Game.mode))
 	_screens_layer.add_child(screen)
 	_flow = screen
+
+
+## The round's end gate (P2.6 §6.2): `FUN_00501370` has already advanced the profile at completion,
+## the score record is still unported (Q-0053), and `FUN_0054BF60` opens the BonusScreen. In normal
+## Adventure the card pays the round's `Tank+0x3F4` shells (EV-0069), so they are banked here once.
+func _on_bonus_finished(shells: int) -> void:
+	if _level == null or _pending_bonus.is_empty():
+		return
+	var tank_no := int(_pending_bonus["tank"])
+	var level_no := int(_pending_bonus["level"])
+	_pending_bonus = {}
+	Game.gameplay_paused = true
+	if Game.mode == Game.Mode.ADVENTURE and shells > 0:
+		Game.profile.add_shells(shells)
+	_level.tank.shutdown()
+	_level.queue_free()
+	_level = null
+	_show_bonus(tank_no, level_no, shells)
 
 
 func _clear_flow() -> void:
