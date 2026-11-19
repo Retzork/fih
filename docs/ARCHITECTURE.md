@@ -443,7 +443,7 @@ documented unknown (DECISIONS `Q-*`), never a gate on the remake:
 | --- | --- |
 | gore/splat article art; the stage -> coin-kind binding (the port tiers by stage, Q-0036) | P4.4/P4.5 |
 | per-item store art, tooltips/paging, the binary's own price arrays (Q-0047/Q-0052) | P4.5 |
-| the pre-bonus store, elapsed-time/Challenge score records, the `scr%d.dat` bonus-shell escrow, credits/trophy screens (Q-0053, Q-0013/Q-0016). The bonus round itself landed 2026-11-19 (D-0051): 160-tick wait, timer, shells into `Tank+0x3F4`, BonusScreen | P4.6 |
+| the pre-bonus store, the `scr%d.dat` bonus-shell escrow, credits/trophy screens (Q-0053, Q-0013/Q-0016). The bonus round itself landed 2026-11-19 (D-0051): 160-tick wait, timer, shells into `Tank+0x3F4`, BonusScreen. The level-end elapsed-time and Challenge records landed the same day (D-0053): `Level.complete_level` writes them and the Hall tabs read them | P4.6 |
 | pets whose slot-81 bodies are still guards: Seymour's `Tank+0x16C` writer + aura, Amp's click/electrocute path, Nostradamus' sneeze, Walter's glove launch (Q-0044). Wadsworth's shelter, Gumbo's corner steering + glow, Blip's instant unlock and Presto's transform landed on 2026-11-10 (EV-0177..EV-0180); Gumbo's fish lure and Blip's overlays stay closed as bounded negatives | P4.7 |
 | per-kind alien click box (Q-0046); alien wander target + bottom lane (Q-0045) | P4.8 |
 | laser draw/frame binding (Q-0023); the `Tank+0xBC` list stays empty | P4.10 |

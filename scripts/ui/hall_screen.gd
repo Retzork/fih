@@ -2,9 +2,9 @@ class_name HallScreen
 extends Control
 ## HallScreen - the 4-tab hall of fame (P2.12 §10, SPECS §6).
 ##
-## Tabs over the profile's records (high scores, challenge records, story mask).
-## The profile fields exist; the recording side is P4.6 remainder, so a tab with no
-## record reads "No entries yet" rather than inventing scores.
+## Tabs over the profile's records (level elapsed times, challenge records, story mask). The level
+## completion writes them (D-0053); a tab with no record still reads "No entries yet" rather than
+## inventing scores.
 
 signal closed
 
@@ -48,21 +48,55 @@ func _ready() -> void:
 
 
 func _refresh() -> void:
-	if _label == null or profile == null:
+	if _label == null:
 		return
-	match tab:
+	_label.text = summary_text(profile, tab)
+
+
+## The label text per tab, split out so the headless suites can pin it.
+static func summary_text(source: Profile, which: int) -> String:
+	if source == null:
+		return ""
+	match which:
 		0:
-			_label.text = "Time Trial: best money is not recorded yet."
+			var fastest := source.fastest_level_time(Level.MODE_TIME_TRIAL)
+			if fastest.is_empty():
+				return "Time Trial: No entries yet."
+			return "Time Trial: best %s on tank %d level %d." % [
+				_clock(int(fastest["seconds"])), int(fastest["tank"]), int(fastest["level"])]
 		1:
-			var beaten := 0
-			for flag in profile.challenge_unlocks:
-				if flag != 0:
-					beaten += 1
-			_label.text = "Challenge: %d tanks beaten." % beaten
+			var lines: Array[String] = []
+			for tank_no in range(1, Profile.CHALLENGE_SLOTS):
+				var record := source.challenge_record(tank_no)
+				if record.is_empty():
+					continue
+				lines.append("Tank %d - %s (best %s, %d runs)" % [tank_no,
+					_clock(int(record["seconds"])), _clock(int(record["best"])), int(record["runs"])])
+			if lines.is_empty():
+				var beaten := 0
+				for flag in source.challenge_unlocks:
+					if flag != 0:
+						beaten += 1
+				if beaten == 0:
+					return "Challenge: No entries yet."
+				return "Challenge: %d tanks beaten, no times recorded yet." % beaten
+			return "Challenge:\n" + "\n".join(lines)
 		2:
-			_label.text = "Adventure: tank %d level %d, %d shells." % [
-				profile.tank, profile.level, profile.shells]
+			# Mode 0 is Adventure; the record table is shared, the tab filters by mode (D-0053).
+			var timed := 0
+			for key in source.level_times:
+				if String(key).begins_with("0:"):
+					timed += 1
+			var fastest := source.fastest_level_time(0)
+			if fastest.is_empty():
+				return "Adventure: No entries yet."
+			return "Adventure: %d levels timed. Fastest %s on tank %d level %d." % [timed,
+				_clock(int(fastest["seconds"])), int(fastest["tank"]), int(fastest["level"])]
 		3:
-			_label.text = "Virtual Tank: a custom tank, not a score."
+			return "Virtual Tank: a custom tank, not a score."
 		_:
-			_label.text = ""
+			return ""
+
+
+static func _clock(seconds: int) -> String:
+	return "%d:%02d" % [seconds / 60, seconds % 60]

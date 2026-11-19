@@ -1076,7 +1076,7 @@ for two seconds.
 `tests/headless_store_ui_check.gd` pins the shelf rects, the price offsets, the row states and the
 three price-line states (40 assertions).
 ### Q-0053 - progression: the tables, the completion path and the between-level screens are in; the
-bonus round and the records are not
+bonus round and the level-end records are in, the pre-bonus store and the credits screens are not
 
 P2.6 is the one phase note that reads like an implementation spec, so its tables went in whole:
 `scripts/progression/progression.gd` carries §3's per-tank store table (item, store slot, price, the
@@ -1097,15 +1097,18 @@ level. A start on the sentinel resolves to the next tank's level 1. The tank's e
 Re-counted against the tree 2026-11-19 (D-0050/D-0051): Hatch, Pets and Bonus all mount and `Main`
 runs Hatch -> Pets -> bonus round -> Bonus -> next level for a normal Adventure tank 1-3 final
 (`scripts/tank/bonus_round.gd`: the 160-tick wait, the timer, the end gate and the `Tank+0x3F4`
-reward). Bonus Adventure's per-level rounds and the pre-bonus store remain out. `HatchScreen` draws the recovered `HATCHSCREEN` incubator, the
+reward). Bonus Adventure's per-level rounds and the pre-bonus store remain out. The level-end records landed
+2026-11-19 (D-0053): `complete_level()` takes the `Tank+0x3FC` seconds through `elapsed_seconds()` and
+writes them per level (`FUN_00514510`, skipped when the advance lands on level 6) and per Challenge
+tank (`FUN_005144C0`, tanks 1-4), and the Hall's tabs read them. `HatchScreen` draws the recovered `HATCHSCREEN` incubator, the
 `HATCHANIMATION` strip and the pet cell (EV-0175); `PetsScreen` writes the 24-byte selection back to
 `profile+0x5A`; `BonusScreen.payout_for` is the recovered payout switch. Pets and Bonus are port copy
 on top of a port-drawn panel. Still missing, in dependency order:
 
 - the pre-bonus store (`FUN_0054BCA0`, `Sexy::StoreScreen`) between the round and the card, and the
   `scr%d.dat` escrow `Tank+0x400` used to bank its shells (`§6.5`);
-- the score records (`FUN_00514510`, `FUN_005144C0`) and the challenge record's storage in the
-  profile. `Tank+0x3FC` elapsed seconds are mapped (D-0047), so only the recording side is absent;
+- the record slot's exact 12-byte layout: the shared writer `FUN_005142f0` was never decompiled, so
+  the port stores the seconds, the best and the run count instead of the three dwords (D-0053);
 - the credits, story and trophy screens (Q-0013/Q-0016 still open, so no trigger is invented).
 
 Port decisions recorded here: the per-tank store table replaces the id-order stock the shop used
@@ -2341,3 +2344,33 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - **Pinned:** 3-2 stocks item 8 at 2000; a buy spends exactly 2000 and puts one `GEKKO` body in the
   tank; a second buy is allowed; the Guppycruncher beside it still refuses without charging.
 - **Left on the list (Q-0049):** Breeder, Starcatcher, Guppycruncher, the egg row.
+
+### D-0053 - The Hall of Fame keeps the seconds the level end measured, per level and per Challenge tank
+
+- Date: 2026-11-19 (owner: every Hall tab reads "No entries yet"; implement the elapsed-time and
+  Challenge record writes the base does at level end, using the mapped `+0x3FC` snapshot, headless)
+- Status: accepted, measured. `headless_level_check` 222 -> 241 assertions; EV-0223 has the
+  decompiles.
+- **What is recovered.** `FUN_00514510(tank, level, profile, Tank+0x3FC)` writes
+  `this+100+FUN_00500DD0(tank,level)*12` through `FUN_005142f0` with one value (three on tank 5);
+  `FUN_005144C0(tank, profile, time)` writes `this+0x34+(tank-1)*12` for tanks 1-4 only. The caller
+  records only while the post-advance level is below 6, so a tank's own final level is not timed.
+- **What is not.** `FUN_005142f0`'s body (the shared slot writer) and `FUN_00500DD0`'s index formula
+  were never read, so the 12-byte slot's three dwords and the level ordering stay unrecovered. The
+  port therefore stores what the call sites prove - the run's seconds, the fastest run and the run
+  count - and keys the level entries by `"mode:tank:level"` instead of an index arithmetic it would
+  have had to invent. The Challenge record keeps its tank key, which the `+0x34+(tank-1)*12` formula
+  does give.
+- **The mode in the key is a port choice.** The binaries' slot table is mode-independent, but the
+  Hall has separate Time Trial and Adventure tabs and no recovered field says which is which, so the
+  key carries the mode and each tab filters on it. If a later read of `FUN_005142f0` shows the slot
+  itself stores the mode, the key folds back into one table.
+- **Where it is written.** `Level.complete_level()`, from `elapsed_seconds()` (the `+0x3FC`
+  quantity: Adventure's tick clock or Time Trial's own counter, both in seconds). The binary writes
+  at the end of the bonus round instead, after the advance; the value is the same snapshot and the
+  port has no observable difference, so the record lands with the completion rather than with the
+  post-bonus flow.
+- **Not ported here.** Tank 5's substituted score (empty pet slots `Tank+0x144+i` plus the list
+  lengths at `Tank+0xB0/+0xB4`, then the empty indices copied to `DAT_005e8fe0` for the credits) -
+  the port has no `Tank+0x144` slot array, so tank 5 writes its elapsed seconds like the others
+  instead of inventing the pet-slot count.

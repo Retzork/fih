@@ -1065,14 +1065,27 @@ func buy_egg() -> bool:
 	return true
 
 
-## `FUN_00545960` (P2.6 §1.2/§10.4). The elapsed-time record and the challenge record are not
-## ported (Q-0053); what is: the award, the grant, the 5000-shell final-boss bonus, the advance of
-## the profile and the hand-off to Main's Hatch/Pets cards - and, for a tank 1-3 final, the bonus
-## round `Main` starts afterwards (`begin_bonus_round`, D-0051).
+## `FUN_00538040()`'s level-end snapshot (`Tank+0x3FC`, D-0047): the seconds since the level started.
+## The port ticks the tank at `TICKS_PER_SECOND`, and Time Trial's own elapsed counter is the same
+## quantity the block stores at `+0x3B0`, so both modes read one number.
+func elapsed_seconds() -> int:
+	if game_mode == MODE_TIME_TRIAL:
+		return maxi(int(time_trial_elapsed), 0) / TICKS_PER_SECOND
+	if tank == null:
+		return 0
+	return maxi(int(tank.age_ticks), 0) / TICKS_PER_SECOND
+
+
+## `FUN_00545960` (P2.6 §1.2/§10.4): the elapsed-time and Challenge records (D-0053), the award, the
+## grant, the 5000-shell final-boss bonus, the advance of the profile and the hand-off to Main's
+## Hatch/Pets cards - and, for a tank 1-3 final, the bonus round `Main` starts afterwards
+## (`begin_bonus_round`, D-0051).
 func complete_level() -> void:
 	if completed:
 		return
 	completed = true
+	# `FUN_00545960` records the level's own elapsed seconds before it branches.
+	var elapsed := elapsed_seconds()
 	var audio := _autoload("Audio")
 	if audio != null:
 		audio.set_level_complete_music()
@@ -1083,12 +1096,16 @@ func complete_level() -> void:
 		if tank_no >= 1 and tank_no <= Profile.CHALLENGE_SLOTS:
 			owner.challenge_unlocks[tank_no - 1] = 1
 		owner.add_shells(int(CHALLENGE_REWARDS.get(tank_no, 0)))
+		# `FUN_005144C0(tank, profile, Tank+0x3FC)`: the Challenge record, tanks 1-4.
+		owner.record_challenge_time(tank_no, elapsed)
 		level_completed.emit(tank_no, level_no, -1)
 		return
 	if game_mode == MODE_TIME_TRIAL:
 		# Time Trial ends by the clock, not the egg (P2.11 §4): the reward is money*5/100
 		# as shells. The expiry path collects first (see `_tick_time_trial`).
 		owner.add_shells(int(money * 5 / 100))
+		# `FUN_00514510` runs for every non-Challenge completion.
+		owner.record_level_time(tank_no, level_no, elapsed, game_mode)
 		level_completed.emit(tank_no, level_no, -1)
 		return
 	var award := Progression.offered_pet(tank_no, level_no)
@@ -1101,6 +1118,10 @@ func complete_level() -> void:
 	owner.level = int(step["level"])
 	owner.bonus_adventure = bool(step["bonus_adventure"])
 	owner.tank5_wins += int(step["tank5_wins"])
+	# `FUN_00547610` calls `FUN_00514510` only when the post-advance level is below the sentinel, so
+	# a tank final (1-5..3-5) is not timed; 4-5 advances to 5-1 and is.
+	if int(step["level"]) < Progression.LEVEL_SENTINEL:
+		owner.record_level_time(tank_no, level_no, elapsed, game_mode)
 	level_completed.emit(tank_no, level_no, award)
 
 

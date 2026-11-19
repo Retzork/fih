@@ -5,8 +5,13 @@ extends RefCounted
 ## offsets are recorded per field so the save work (P4.12) can map them back.
 ##
 ## Deliberately partial: shells, tank/level progress, the owned/selected pet bytes, the Challenge
-## unlock bytes and the two flags the menus gate on. The score tables, the challenge records
-## (`profile+0x34`) and the `scr%d.dat` block are P4.6/P4.12 remainder (Q-0053).
+## unlock bytes, the two flags the menus gate on, and the level/Challenge time records the level
+## completion writes (D-0053). The `scr%d.dat` block and the credits/story fields stay open (Q-0053).
+##
+## Record shape: the base keeps one 12-byte slot per level (`FUN_00514510` -> `FUN_005142f0`) and per
+## Challenge tank (`FUN_005144C0` -> the same helper at `profile+0x34+(tank-1)*12`), but that helper's
+## body was never recovered, so the port stores what the call sites prove - the run's seconds, the
+## fastest run and how many runs landed in the slot - instead of guessing the three dwords.
 
 ## `profile+0x48`: Shells, clamped 0..9,999,999 by `FUN_00501200` (P2.6 §5).
 const SHELLS_MAX := 9999999
@@ -45,6 +50,13 @@ var save_slot := 1
 const BACKDROP_SLOTS := 6
 const BACKDROP_PRICE := 15000
 var backdrops_owned: Array[int] = []
+## `FUN_00514510`: elapsed seconds per completed level, keyed `"mode:tank:level"` (the mode is part
+## of the key because the Hall's Time Trial and Adventure tabs read separate lists, a port choice
+## recorded in D-0053). Each value is `{"seconds": int, "best": int, "runs": int}`.
+var level_times: Dictionary = {}
+## `FUN_005144C0`: the Challenge record per tank (`profile+0x34+(tank-1)*12`, tanks 1-4 only),
+## keyed by tank number with the same `{"seconds", "best", "runs"}` shape.
+var challenge_times: Dictionary = {}
 
 
 func _init() -> void:
@@ -76,6 +88,8 @@ func to_dict() -> Dictionary:
 		"sessions_started": sessions_started,
 		"save_slot": save_slot,
 		"backdrops_owned": backdrops_owned.duplicate(),
+		"level_times": level_times.duplicate(true),
+		"challenge_times": challenge_times.duplicate(true),
 	}
 
 
@@ -100,7 +114,78 @@ static func from_dict(data: Dictionary) -> Profile:
 	for i in BACKDROP_SLOTS:
 		if i < (data.get("backdrops_owned", []) as Array).size():
 			p.backdrops_owned[i] = int((data["backdrops_owned"] as Array)[i])
+	p.level_times = _read_records(data.get("level_times", {}))
+	p.challenge_times = _read_records(data.get("challenge_times", {}))
 	return p
+
+
+## JSON gives every number back as a float, so a record is rebuilt field by field.
+static func _read_records(raw) -> Dictionary:
+	var out := {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return out
+	for key in (raw as Dictionary):
+		var value = raw[key]
+		if typeof(value) != TYPE_DICTIONARY:
+			continue
+		out[String(key)] = {
+			"seconds": int(value.get("seconds", 0)),
+			"best": int(value.get("best", 0)),
+			"runs": int(value.get("runs", 0)),
+		}
+	return out
+
+
+## `FUN_00514510(tank, level, profile, Tank+0x3FC)`: one slot per completed level. The first run's
+## seconds are its best; a later, faster run lowers the best. Returns the stored record.
+func record_level_time(tank_no: int, level_no: int, seconds: int, mode: int = 0) -> Dictionary:
+	return _write_record(level_times, _level_key(mode, tank_no, level_no), seconds)
+
+
+## `FUN_005144C0(tank, profile, time)`: the Challenge record, tanks 1-4 only (`param_1 - 1 < 4`).
+func record_challenge_time(tank_no: int, seconds: int) -> Dictionary:
+	if tank_no < 1 or tank_no > CHALLENGE_SLOTS - 1:
+		return {}
+	return _write_record(challenge_times, str(tank_no), seconds)
+
+
+static func _level_key(mode: int, tank_no: int, level_no: int) -> String:
+	return "%d:%d:%d" % [mode, tank_no, level_no]
+
+
+static func _write_record(into: Dictionary, key: String, seconds: int) -> Dictionary:
+	var value := maxi(seconds, 0)
+	var record: Dictionary = into.get(key, {})
+	if record.is_empty():
+		into[key] = {"seconds": value, "best": value, "runs": 1}
+		return into[key]
+	record["seconds"] = value
+	record["best"] = mini(int(record.get("best", value)), value)
+	record["runs"] = int(record.get("runs", 0)) + 1
+	into[key] = record
+	return record
+
+
+func level_record(tank_no: int, level_no: int, mode: int = 0) -> Dictionary:
+	return level_times.get(_level_key(mode, tank_no, level_no), {})
+
+
+func challenge_record(tank_no: int) -> Dictionary:
+	return challenge_times.get(str(tank_no), {})
+
+
+## The fastest recorded run in `mode` as `{"seconds", "tank", "level"}`, or `{}`.
+func fastest_level_time(mode: int = 0) -> Dictionary:
+	var best := {}
+	for key in level_times:
+		var parts := String(key).split(":")
+		if parts.size() != 3 or int(parts[0]) != mode:
+			continue
+		var record: Dictionary = level_times[key]
+		var seconds := int(record.get("best", 0))
+		if best.is_empty() or seconds < int(best["seconds"]):
+			best = {"seconds": seconds, "tank": int(parts[1]), "level": int(parts[2])}
+	return best
 
 
 const PROFILE_PATH := "user://profile.json"

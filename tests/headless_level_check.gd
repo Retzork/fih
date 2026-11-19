@@ -62,6 +62,7 @@ func _init() -> void:
 	_test_wave_counter_reset()
 	_test_loaded_store_rows()
 	_test_time_trial_load()
+	_test_records()
 
 	level.tank.shutdown()
 	level.free()
@@ -868,6 +869,81 @@ func _corpses() -> Array:
 		if entity is DeadFish and not entity.dead:
 			found.append(entity)
 	return found
+
+
+## The Hall of Fame writes the base does at level end (D-0053): `FUN_00514510` puts the `+0x3FC`
+## snapshot in the level's 12-byte slot, `FUN_005144C0` the Challenge record at
+## `profile+0x34+(tank-1)*12` for tanks 1-4, and the tabs read both back out of the save.
+func _test_records() -> void:
+	level.game_mode = 0
+	var owner := level._profile()
+	owner.level_times.clear()
+	owner.challenge_times.clear()
+	level.start_level(1, 1)
+	level.completed = false
+	level.tank.age_ticks = 36 * 42
+	_expect(level.elapsed_seconds() == 42, "the level-end snapshot counts the tick clock in seconds")
+	level.complete_level()
+	var rec := owner.level_record(1, 1)
+	_expect(int(rec.get("seconds", -1)) == 42, "1-1 records the elapsed seconds (FUN_00514510)")
+	_expect(int(rec.get("best", -1)) == 42 and int(rec.get("runs", 0)) == 1,
+		"the slot's first run is also its best")
+	_expect(owner.level_record(1, 2).is_empty(), "another level keeps its own slot")
+	_expect(HallScreen.summary_text(owner, 2).begins_with("Adventure: 1 levels timed"),
+		"the Adventure tab reads the record")
+	_expect(HallScreen.summary_text(owner, 2).contains("0:42"), "it prints the time as m:ss")
+	level.start_level(1, 1)
+	level.completed = false
+	level.tank.age_ticks = 36 * 55
+	level.complete_level()
+	rec = owner.level_record(1, 1)
+	_expect(int(rec.get("seconds", -1)) == 55, "a second run replaces the slot's last time")
+	_expect(int(rec.get("best", -1)) == 42 and int(rec.get("runs", 0)) == 2,
+		"a slower run keeps the best and counts the run")
+	# `FUN_00547610` skips `FUN_00514510` when the advance lands on level 6.
+	owner.level_times.clear()
+	level.start_level(1, 5)
+	level.completed = false
+	level.tank.age_ticks = 36 * 100
+	level.complete_level()
+	_expect(owner.level_times.is_empty(), "a tank final is not timed")
+	level.start_level(4, 5)
+	level.completed = false
+	level.tank.age_ticks = 36 * 90
+	level.complete_level()
+	_expect(int(owner.level_record(4, 5).get("seconds", -1)) == 90,
+		"4-5 advances to 5-1, so it is timed")
+	# `FUN_005144C0` writes at `profile+0x34+(tank-1)*12` for tanks 1-4 only.
+	owner.challenge_times.clear()
+	level.game_mode = level.MODE_CHALLENGE
+	level.start_level(2, 5)
+	level.completed = false
+	level.tank.age_ticks = 36 * 30
+	level.complete_level()
+	var challenge := owner.challenge_record(2)
+	_expect(int(challenge.get("seconds", -1)) == 30, "2-5 Challenge records its time")
+	_expect(HallScreen.summary_text(owner, 1).contains("Tank 2 - 0:30"),
+		"the Challenge tab lists the tank's time")
+	_expect(owner.record_challenge_time(5, 10).is_empty() and owner.challenge_record(5).is_empty(),
+		"tank 5 is refused (the binary's `param_1 - 1 < 4` guard)")
+	level.game_mode = level.MODE_TIME_TRIAL
+	level.start_level(2, 2)
+	level.completed = false
+	level.time_trial_elapsed = 36 * 75
+	_expect(level.elapsed_seconds() == 75, "Time Trial reads its own elapsed counter")
+	level.complete_level()
+	_expect(int(owner.level_record(2, 2, level.MODE_TIME_TRIAL).get("seconds", -1)) == 75,
+		"Time Trial writes the same slot from its clock")
+	_expect(HallScreen.summary_text(owner, 0).contains("1:15"),
+		"the Time Trial tab shows its fastest run")
+	var restored := Profile.from_dict(owner.to_dict())
+	_expect(int(restored.level_record(4, 5).get("best", -1)) == 90,
+		"the level records survive a save round trip")
+	_expect(int(restored.level_record(2, 2, level.MODE_TIME_TRIAL).get("seconds", -1)) == 75,
+		"including the mode the slot was written under")
+	_expect(int(restored.challenge_record(2).get("runs", 0)) == 1,
+		"and so does the Challenge record")
+	level.game_mode = 0
 
 
 func _step(count: int) -> void:

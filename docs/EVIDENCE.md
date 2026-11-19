@@ -5662,3 +5662,31 @@ behavior or specs; follow up with a binary observation entry.
   `["shelf"] == Level.ROLLER_SHELF`, i.e. `_restore_store_rows` put the roller on the eighth slot and
   the screen found it there. `headless_store_ui_check` stays at 81 assertions (the two-part check
   replaced the one-part one) and the other 23 suites are untouched.
+
+## EV-0223 - The level end writes the level's slot and the Challenge tank's record
+- Date: 2026-11-19
+- Type: implementation + test; three scripts, one suite
+- Source: `docs/evidence/p2.6b-transition-verify.json` (procedures `0x514510`, `0x5144c0`),
+  `scripts/tank/level.gd` (`elapsed_seconds`, `complete_level`), `scripts/persistence/profile.gd`,
+  `scripts/ui/hall_screen.gd`, `tests/headless_level_check.gd`
+- (1) **The two writers.** `FUN_00514510(tank, level, profile, score)` indexes a 12-byte slot with
+  `FUN_00500dd0(tank, level)`, calls `FUN_00501230(tank, level, score)`, then
+  `FUN_005142f0(this+100+index*12, profile+0x24, score, count, tank==5, 1)` with `count = 3` for tank
+  5 and 1 otherwise. `FUN_005144c0(tank, profile, time)` guards `param_1 - 1 < 4`, calls
+  `FUN_005012d0(tank, time)` and then the same helper at `this+0x34+(tank-1)*12` with `count = 5`.
+  Both take the seconds the block stores at `+0x3FC` (D-0047).
+- (2) **The guard the caller adds.** `FUN_00547610` records only when the post-advance level is below
+  the level-6 sentinel, so a tank final (1-5..3-5) is never timed while 4-5 is, because its advance
+  lands on 5-1.
+- (3) **Port.** `Level.elapsed_seconds()` is that snapshot (the tick clock in Adventure, the Time
+  Trial counter in mode 1, both `/ TICKS_PER_SECOND`). `complete_level()` writes it through
+  `Profile.record_level_time` in the Time Trial branch and after the advance in Adventure, and
+  through `record_challenge_time` in the Challenge branch. `Profile` keys the level records
+  `"mode:tank:level"` and the Challenge records by tank, each `{seconds, best, runs}`; the JSON save
+  carries both and rebuilds the numbers from floats on load.
+- (4) **Hall of Fame.** `HallScreen.summary_text(profile, tab)` is the label text: the Time Trial tab
+  shows the fastest mode-1 record, Challenge lists the recorded tanks with their last and best time,
+  Adventure reports how many levels are timed and the fastest, and a tab with no record still says
+  "No entries yet." (or the unlock count for Challenge).
+- (5) **Runs**: `headless_level_check` 222 -> 241 assertions (19 new); the other 23 suites untouched
+  by this entry, re-run with the whole set at commit time.
