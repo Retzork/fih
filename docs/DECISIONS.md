@@ -2063,3 +2063,25 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   `slot -1` row after it, which would then claim the next free dome.
 - **Known, unchanged:** the roller row's extra keys (`backdrop`, `pet`, `kind_roll`) are not in the
   17-byte record and are not restored; the roller is the StoreScreen's job (Q-0026/Q-0052).
+
+### D-0041 - `waves_spawned` is mapped; `completed` is derived from the egg pieces
+
+- Date: 2026-11-19 (owner: decide what to do about the per-tank state a load still leaves behind -
+  `completed` and `waves_spawned` - and either map them or record why they cannot go stale)
+- Status: accepted, measured. EV-0212 holds the reading and the runs.
+- **The file has the wave number.** `+0x45C` sits in the 27-dword run of the 316-byte scalar block
+  (P2.13 §6.4), so it is `TankScalars.OFF_WAVE_NUMBER` = 126 (`OFF_RUN_27 + 0x18`). It is captured
+  and applied like the other scalars: `adv1` holds 0 and `sim1` 61, so it is a real, non-zero field
+  rather than an always-zero filler. `start_level()` clears it, matching the base's session init.
+- **The file has no per-level completion flag.** The base decides completion from the egg progress
+  itself (`+0x43C >= 4`, P2.5 §6 step 7). The header byte `0x0C` is `+0x2A5`, the whole-tank latch
+  that starts the bonus round - not this. `completed` therefore cannot be "mapped"; it is derived in
+  `load_game()` from the restored `egg_pieces`, which is the base's own test. That closes both
+  directions: a four-piece save cannot be bought twice, and a live save cannot inherit a finished
+  level's block.
+- **Why the old "known, left alone" note was wrong for these two.** D-0037 recorded both as having
+  no field in the save. That was true of `completed` only in the sense that there is no flag to read,
+  and false for `waves_spawned`: the field was there, inside the run the port was writing as zeroes.
+- **Still unsaved, still harmless:** `particles`/`laser_sparks` (transient FX that expire) and live
+  pet bodies (P4.7 does not respawn them). Those are visual/entity state, not per-tank counters, and
+  a load rebuilds or retires them.

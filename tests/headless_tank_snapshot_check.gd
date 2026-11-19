@@ -148,6 +148,7 @@ func _test_scalars() -> void:
 	level.wave.timer = 100
 	level.tank.pet_capacity = 8
 	level.star_potion_armed = true
+	level.waves_spawned = 61
 	level.backdrop_tint = Color8(1, 2, 3, 4)
 
 	var block := TankScalarsScript.capture(level)
@@ -159,6 +160,7 @@ func _test_scalars() -> void:
 	_expect(block.decode_u32(5) == 4, "the wave selection sits at +0x2BC (offset 5)")
 	_expect(block.decode_u32(9) == 2900, "the countdown is 3000 - the clock timer")
 	_expect(int(block[101]) == 1, "the star potion flag sits at +0x440 (offset 101)")
+	_expect(block.decode_u32(126) == 61, "the wave number sits at +0x45C (offset 126, P2.13 §6.4)")
 	_expect(int(block[312]) == 1 and int(block[313]) == 2 and int(block[314]) == 3
 		and int(block[315]) == 4, "the backdrop tint is the last four bytes")
 
@@ -172,6 +174,7 @@ func _test_scalars() -> void:
 	_expect(other.backdrop == 1 and other.alien_selection == 4, "backdrop and wave selection restore")
 	_expect(other.wave.timer == 100, "the clock returns to its saved tick")
 	_expect(other.star_potion_armed, "the armed star potion survives")
+	_expect(other.waves_spawned == 61, "the wave counter restores (got %d)" % other.waves_spawned)
 	_expect(other.backdrop_tint == Color8(1, 2, 3, 4), "the backdrop tint survives")
 
 	level.money = 12000000

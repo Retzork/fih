@@ -203,7 +203,9 @@ var hint_label: Label = null
 ## tank advances, so a paused or unchanged tick does no work at all (D-0032).
 var _hint_tick := -1
 var _hint_shown := ""
-## How many waves have spawned this session (the original's `Tank+0x45C`).
+## How many waves have spawned this level (the original's `Tank+0x45C`, `+0x45C++` on every spawned
+## wave, P2.8 §5). It is a scalar-block field, so a load restores it and a level start clears it
+## (`start_level`), exactly as the base does at session init (P2.6 §1.5, P2.11 §7).
 var waves_spawned := 0
 ## Composite recipes spawn two member kinds at one point; the clock emits the recipe twice.
 const COMPOSITE_MEMBERS := {
@@ -812,6 +814,8 @@ func start_level(tank_no: int, level_no: int = 1, profile_counter: int = 1) -> B
 	# `Tank+0x2E0 < Tank+0x2DC` latch Blip clears (EV-0094) starts clear; only a check or an old
 	# save can set it.
 	tank.age_ticks = 0
+	# `Tank+0x45C = 0` at session init (P2.6 §1.5's clear list, P2.11 §7's VT init).
+	waves_spawned = 0
 	tank.wadsworth_count = 0
 	tank.wadsworth_mouth = Vector2.ZERO
 	reset_prices()
@@ -1660,6 +1664,10 @@ func load_game(path: String = "") -> bool:
 	_hint_tick = -1
 	# The egg dome prices off the tank and level; the save may name different ones.
 	egg_price = Progression.egg_price(tank_index, level_index, game_mode)
+	# The base keeps no per-level "completed" flag: `+0x43C >= 4` **is** completion (P2.5 §6 step 7,
+	# P2.9 §10), and the header's `+0x2A5` is the whole-tank latch that starts the bonus round. So this
+	# is derived, not saved - otherwise a finished save stays buyable and a live one stays blocked.
+	completed = egg_pieces >= Progression.EGG_PIECES_TO_COMPLETE
 	# A composite recipe hands out one member per wave request, so a load can catch it half-delivered;
 	# the queued member belongs to the old tank's roll and must not spawn into the restored one.
 	_composite_selection = -1

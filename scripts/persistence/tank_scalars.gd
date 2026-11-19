@@ -8,7 +8,8 @@ extends RefCounted
 ##
 ## Mapped so far: money (`+0x3F0`), food quality/quantity (`5e89dc`/`5df58c`), pet capacity
 ## (`+0x3E4`), backdrop index (`+0x3E8`), the wave selection and its countdown (`+0x2BC`/`+0x2C0`),
-## the star potion flag (`+0x440`) and the backdrop tint. The 27-dword run, the tutorial block and the spawn points are left as zeroes.
+## the star potion flag (`+0x440`), the wave number (`+0x45C`, inside the 27-dword run) and the
+## backdrop tint. The rest of the run, the tutorial block and the spawn points are left as zeroes.
 
 const BLOCK_BYTES := 316
 
@@ -34,6 +35,10 @@ const OFF_UNKNOWN_B := 93            # +0x2B0 u32
 const OFF_EGG_PIECES := 97           # +0x43C u32
 const OFF_FLAG_440 := 101            # +0x440 u8
 const OFF_RUN_27 := 102              # +0x444..+0x4AC, 27 x u32
+## `+0x45C` is the wave number (P2.13 §6.4), the sixth dword of the run: `Tank+0x45C++` on every
+## spawned wave (P2.8 §5) and cleared at session init (P2.6 §1.5, P2.11 §7). The two shipped samples
+## hold 0 (`adv1`) and 61 (`sim1`, a long Virtual Tank).
+const OFF_WAVE_NUMBER := OFF_RUN_27 + 0x18
 const OFF_CHECKBOXES := 210          # +0x4FC..+0x500, 5 x u8
 const OFF_TUTORIAL := 215            # +0x4B0..+0x4E5, 54 x u8
 const OFF_EGG_HINT := 269            # +0x4E6 u8
@@ -73,6 +78,9 @@ static func capture(level) -> PackedByteArray:
 	# `+0x440` is the star potion's armed flag (P2.3 §2); the note's §6.3 calls it unknown
 	# because the finalizer clears it, but the feeding path binds it.
 	block[OFF_FLAG_440] = 1 if level.star_potion_armed else 0
+	# The per-level wave counter. Challenge mode's re-roll reads it (`> 4` turns a Bilaterus into a
+	# 0xC composite), so a load that dropped it would re-roll the wrong schedule (P2.11 §5).
+	block.encode_u32(OFF_WAVE_NUMBER, maxi(int(level.waves_spawned), 0))
 	var tint: Color = level.backdrop_tint
 	block[OFF_TINT] = tint.r8
 	block[OFF_TINT + 1] = tint.g8
@@ -95,6 +103,7 @@ static func apply(block: PackedByteArray, level) -> void:
 	# Saves written before this mapping carry zeroes here, which clamp to the starting piece.
 	level.egg_pieces = clampi(block.decode_u32(OFF_EGG_PIECES), Progression.EGG_PIECES_AT_START,
 		Progression.EGG_PIECES_TO_COMPLETE)
+	level.waves_spawned = block.decode_u32(OFF_WAVE_NUMBER)
 	level.backdrop_tint = Color8(int(block[OFF_TINT]), int(block[OFF_TINT + 1]),
 		int(block[OFF_TINT + 2]), int(block[OFF_TINT + 3]))
 	if level.wave != null:

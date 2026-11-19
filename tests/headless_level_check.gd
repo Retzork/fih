@@ -59,6 +59,7 @@ func _init() -> void:
 	_test_hunger_hint()
 	_test_hint_cache_on_load()
 	_test_load_refresh()
+	_test_wave_counter_reset()
 
 	level.tank.shutdown()
 	level.free()
@@ -86,6 +87,9 @@ func _test_load_refresh() -> void:
 		"the level's tank index is the live tank's own `+0x3C8`, one field (D-0038)")
 	level.level_index = 2
 	level.egg_pieces = 2
+	level.waves_spawned = 7
+	# A finished level carried over from before: two restored pieces have to clear this (D-0041).
+	level.completed = true
 	_expect(level.save_game(path) == OK, "the load-refresh scenario writes a save")
 	# Poison through the tank's field: the level's accessor has to read the same one back.
 	level.tank.tank_index = 5
@@ -93,6 +97,7 @@ func _test_load_refresh() -> void:
 	level.level_index = 4
 	level.egg_pieces = 1
 	level.egg_price = 12345
+	level.waves_spawned = 99
 	level._composite_selection = 9
 	level._composite_pending.append(4)
 	level.show_presto_recharging(level.tank.spawn_pet(PetScript.PRESTO, Vector2(300.0, 200.0)))
@@ -101,6 +106,8 @@ func _test_load_refresh() -> void:
 	_expect(level.tank_index == 1 and level.tank.tank_index == 1 and level.level_index == 2,
 		"the one tank index and the level come from the save, not the tank that started the session")
 	_expect(level.egg_pieces == 2, "the egg-piece count comes from the save, not the pre-load tank")
+	_expect(level.waves_spawned == 7, "the wave counter comes from the save's `+0x45C` (got %d)" % level.waves_spawned)
+	_expect(not level.completed, "two restored pieces is not a completed level, whatever the pre-load one was")
 	# The file's 17-byte rows carry the slot but not the port-only `shelf`, so a load has to put it
 	# back or the bar finds no row for any shelf and draws empty domes (D-0040).
 	var placed := 0
@@ -117,8 +124,23 @@ func _test_load_refresh() -> void:
 	_expect(level._composite_selection == -1 and level._composite_pending.is_empty(),
 		"a half-delivered composite spawn does not carry into the restored tank")
 	_expect(not level.presto_notice_visible(), "no pre-load prestige notice survives the load")
+	# The other direction: four pieces in the save is a completed level, so it cannot be bought again.
+	level.egg_pieces = 4
+	_expect(level.save_game(path) == OK, "a four-piece save is written")
+	level.egg_pieces = 1
+	_expect(level.load_game(path), "and read back")
+	_expect(level.completed, "the restored four pieces mark the level completed (D-0041)")
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)
+
+
+## `Tank+0x45C` is cleared at session init (P2.6 §1.5's clear list), so a level start drops the
+## counter a previous level left on the Level (D-0041).
+func _test_wave_counter_reset() -> void:
+	level.waves_spawned = 9
+	level.start_level(1, 1)
+	_expect(level.waves_spawned == 0,
+		"a level start clears the wave counter a previous level left behind (got %d)" % level.waves_spawned)
 
 
 func _test_hint_cache_on_load() -> void:

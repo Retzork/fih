@@ -5389,3 +5389,35 @@ behavior or specs; follow up with a binary observation entry.
 - (7) **Coverage note**: the repaint itself stays windowed-only evidence - the suite runs
   `render = false`, so it can pin the shelf mapping but not that the bar draws; the captures are the
   visual record.
+
+## EV-0212 - What the base save does with `completed` and `waves_spawned`
+- Date: 2026-11-19
+- Type: read of the save format notes (`p2.13-saves.md` §6.1/§6.3/§6.4), the progression/mode notes
+  and the forward parse evidence; code change plus headless runs (no capture: no visual change)
+- Source: `docs/analysis/notes/p2.13-saves.md`, `docs/evidence/p2.13-forward-tank-parse.txt`,
+  `docs/analysis/notes/p2.5-economy.md`, `p2.6-progression.md`, `p2.8-aliens.md`, `p2.11-modes.md`,
+  `scripts/persistence/tank_scalars.gd`, `scripts/tank/level.gd`, `tests/headless_level_check.gd`,
+  `tests/headless_tank_snapshot_check.gd`
+- (1) **`waves_spawned` is saved.** `+0x45C` is the wave number, the sixth dword of the 27-dword run
+  `+0x444..+0x4AC` inside the 316-byte scalar block (§6.4), i.e. block offset `102 + 0x18 = 126`.
+  The forward parse reads it in both shipped samples: `adv1` = 0, `sim1` = 61 (§6.6's "Wave"
+  column). Its writers are the wave block's `Tank+0x45C++` on every spawned wave (P2.8 §5) and the
+  clear at session init (P2.6 §1.5, P2.11 §7's VT init); its readers are the challenge re-roll's
+  `> 4` test (P2.11 §5) and the challenge extra-spawn count `+0x45C / d` (P2.8 §5.1, not ported yet).
+- (2) **`completed` is not saved, because the base does not have it.** Completion *is*
+  `Tank+0x43C >= 4` (P2.5 §6 step 7: at `+0x43C >= 4` the level-end runs and records `+0x3FC`;
+  P2.9 §10 for tank 5). The header's `+0x2A5` (save `0x0C`) is the **whole-tank** latch that starts
+  the bonus round, not a per-level flag - a different thing the port already carries as the save's
+  "tank-complete" byte.
+- (3) **Decision, mapped:** `OFF_WAVE_NUMBER` (126) is captured and applied with the rest of the
+  block, so `waves_spawned` travels with the save; `start_level()` now clears it, which is what the
+  base's session init does (without it, a fresh level inherited the previous level's count).
+  `completed` is derived on load as `egg_pieces >= EGG_PIECES_TO_COMPLETE` (D-0041).
+- (4) **Headless**: `_test_load_refresh` saves the counter at 7, poisons 99, and requires 7 after
+  the load; it also poisons `completed = true` before a two-piece save and requires it false, then
+  writes a four-piece save and requires the load to come back completed. A new
+  `_test_wave_counter_reset` pins the level start clearing it. The scalar suite pins the offset
+  (126) and the restore. `headless_level_check` 185 -> 191, `headless_tank_snapshot_check` 56 -> 58,
+  `headless_progression_check` 86, `headless_integration_check` 136.
+- (5) **Left alone**: the rest of the 27-dword run (mode timers, totals, high-water marks) is still
+  written as zeroes; only `+0x45C` was in scope here.
