@@ -399,19 +399,23 @@ func _refresh_hint() -> void:
 	hint_label.visible = text != ""
 	hint_label.text = text
 
-## The tank backdrop (`+0x3E8`, 1..6 -> `TANKBACKDROP1..6`), drawn behind every entity.
+## The tank backdrop (`+0x3E8`, 1..6 -> `TANKBACKDROP1..6`), drawn behind every entity. Idempotent:
+## `setup()` and `_ready()` both call it, and a load names another index, so it re-points the sprite
+## the session started with instead of leaving the old art up (D-0037).
 func _add_backdrop() -> void:
-	if _content == null or tank == null or has_node("Backdrop"):
+	if _content == null or tank == null:
 		return
 	var texture := _backdrop_texture()
 	if texture == null:
 		return
-	var sprite := Sprite2D.new()
-	sprite.name = "Backdrop"
-	sprite.centered = false
+	var sprite := get_node_or_null("Backdrop") as Sprite2D
+	if sprite == null:
+		sprite = Sprite2D.new()
+		sprite.name = "Backdrop"
+		sprite.centered = false
+		sprite.z_index = -100
+		add_child(sprite)
 	_fit_backdrop(sprite, texture)
-	sprite.z_index = -100
-	add_child(sprite)
 
 
 ## The 640x480 tank art is `AQUARIUM1..6`; the `TANKBACKDROP` thumbnails (190x121) are the menu
@@ -431,18 +435,6 @@ func _backdrop_texture() -> Texture2D:
 func _fit_backdrop(sprite: Sprite2D, texture: Texture2D) -> void:
 	sprite.texture = texture
 	sprite.scale = Vector2(TANK_SIZE.x / texture.get_width(), TANK_SIZE.y / texture.get_height())
-
-
-## A loaded save can name another backdrop: swap the art the sprite already holds instead of leaving
-## the tank that started the session on screen (D-0037).
-func _refresh_backdrop() -> void:
-	var sprite := get_node_or_null("Backdrop") as Sprite2D
-	if sprite == null:
-		_add_backdrop()
-		return
-	var texture := _backdrop_texture()
-	if texture != null:
-		_fit_backdrop(sprite, texture)
 
 
 # --- entities ----------------------------------------------------------------
@@ -1670,7 +1662,8 @@ func load_game(path: String = "") -> bool:
 	_composite_pending.clear()
 	# The "Recharging..." notice points at a pet body, and pet bodies are not part of a tank save.
 	clear_presto_notice()
-	_refresh_backdrop()
+	# The save may name another backdrop, and the level keeps the sprite it was built with.
+	_add_backdrop()
 	return true
 
 

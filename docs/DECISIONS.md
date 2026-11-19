@@ -2022,3 +2022,23 @@ placement is still the port's (Q-0055), not a recovered coordinate.
 - **Consequences.** A read or write before `setup()` sees or is dropped by the missing tank; no caller
   does that, and it is documented on the property. Every other reader (`pet.gd`, the alien health
   gate, the egg widget signature) already read `tank.tank_index`, so it keeps working unchanged.
+
+### D-0039 - One backdrop path, and tests must be able to fail
+
+- Date: 2026-11-19 (owner: fresh-eyes review of the D-0037/D-0038 change - simplify what can be
+  simpler, cut what is not needed, flag what the tests do not cover)
+- Status: accepted. EV-0210 holds the review and the runs.
+- **The backdrop is one idempotent function.** D-0037 added `_refresh_backdrop()` beside
+  `_add_backdrop()`, duplicating the sprite lookup, the null branch and the texture fetch. The
+  creation and the re-fit differ only in whether the sprite exists, so `_add_backdrop()` now does
+  both: get-or-create the `Backdrop` sprite, then `_fit_backdrop()` it. `setup()`, `_ready()` and
+  `load_game()` all call it; `_refresh_backdrop` is gone.
+- **An assertion that cannot fail is not coverage.** `_test_load_refresh` checked the prestige
+  notice was cleared without raising one. It now raises a real notice on a spawned Presto and pins
+  it visible before the load, so `clear_presto_notice()` on the load path is actually exercised.
+- **Kept:** the egg clamp in both directions (consistent with money/quantity, and it is what turns a
+  pre-D-0037 zeroed block into the starting piece), and `_fit_backdrop` as the single scale law.
+- **Open, recorded in PLAN R34:** the restore floor is the global `EGG_PIECES_AT_START` (1), not the
+  restored tank's start, so a tank-5 save with a zeroed `+0x43C` restores one piece instead of three.
+  `TankScalars.apply` runs before `load_game` writes the header's tank, so the per-tank floor needs
+  the index ordered ahead of the scalars or a second clamp after it.

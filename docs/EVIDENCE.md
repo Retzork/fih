@@ -5327,3 +5327,33 @@ behavior or specs; follow up with a binary observation entry.
   `headless_tank_snapshot_check` 56, `headless_progression_check` 86, `headless_pet_check` 113,
   `headless_store_ui_check` 65, `headless_integration_check` 136, 400-frame boot clean (the known
   `2 resources still in use at exit` only).
+
+## EV-0210 - Fresh-eyes review of D-0037 and D-0038: one backdrop path, and a vacuous notice assertion
+- Date: 2026-11-19
+- Type: read-through of `load_game()`, the backdrop trio, `TankScalars`' egg field and both new
+  scenarios; code simplification plus headless runs (no capture: the rendered result is unchanged)
+- Source: `scripts/tank/level.gd` (`_add_backdrop`, `_backdrop_texture`, `_fit_backdrop`,
+  `load_game`), `scripts/persistence/tank_scalars.gd` (`OFF_EGG_PIECES`),
+  `tests/headless_level_check.gd` (`_test_load_refresh`), `tests/headless_tank_snapshot_check.gd`
+- (1) **Simplified, the backdrop**: D-0037 split `_add_backdrop` into `_backdrop_texture()` +
+  `_fit_backdrop()` and added a third `_refresh_backdrop()` that re-derived the sprite, null-checked
+  it, and fell back to `_add_backdrop()`. `_add_backdrop` is now the one idempotent path: it looks up
+  the `Backdrop` sprite, creates it when missing, and always fits the current texture - so `setup()`,
+  `_ready()` and `load_game()` all call the same function and `_refresh_backdrop` is deleted (9 lines
+  and one function fewer, and no call site can forget the re-fit).
+- (2) **Finding, fixed - a test that could not fail**: `_test_load_refresh` asserted
+  `not level.presto_notice_visible()` without ever raising a notice, so `load_game`'s
+  `clear_presto_notice()` was unverified (the assertion passed on an already-empty dictionary). The
+  scenario now spawns a Presto, raises the real notice (`show_presto_recharging`), pins it visible,
+  then loads. `headless_level_check` 183 -> 184.
+- (3) **Kept as they were**: `TankScalars`' egg clamp (capture clamps to
+  `EGG_PIECES_AT_START..EGG_PIECES_TO_COMPLETE`, apply clamps the same way, so older zeroed blocks
+  restore the starting piece) matches the money/quantity clamps and stays; `_fit_backdrop` stays a
+  helper because both the create and re-fit paths need the same scale law; the composite-queue
+  assertion is not vacuous (the scenario poisons both fields before the load).
+- (4) **Not covered by any suite** (recorded, not changed): the backdrop swap itself - every suite
+  runs `render = false`, where `_content` is null and `_add_backdrop` returns at its first guard, so
+  the only evidence for the art changing is the windowed capture in EV-0208; `_hint_shown`/label
+  handling on load (windowed only, EV-0207); and the restore floor for tank 5's three starting pieces
+  (open, see R34).
+- (5) **Runs**: `headless_level_check` 184, `headless_tank_snapshot_check` 56.

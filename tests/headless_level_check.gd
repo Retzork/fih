@@ -95,6 +95,8 @@ func _test_load_refresh() -> void:
 	level.egg_price = 12345
 	level._composite_selection = 9
 	level._composite_pending.append(4)
+	level.show_presto_recharging(level.tank.spawn_pet(PetScript.PRESTO, Vector2(300.0, 200.0)))
+	_expect(level.presto_notice_visible(), "the scenario raises a prestige notice before the load")
 	_expect(level.load_game(path), "load_game reads that save back")
 	_expect(level.tank_index == 1 and level.tank.tank_index == 1 and level.level_index == 2,
 		"the one tank index and the level come from the save, not the tank that started the session")
