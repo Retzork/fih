@@ -5495,3 +5495,31 @@ behavior or specs; follow up with a binary observation entry.
   proves the floor comes from the file's tank, not the session's.
 - (4) **Runs**: `headless_tank_snapshot_check` 58 -> 66, `headless_level_check` 200, the other 21
   script suites unchanged, integration 136 - all PASS (script sum 1385, +136 = 1521).
+
+## EV-0216 - The Time Trial clock is the block's `+0x3B0` seconds, not `+0x3FC`
+- Date: 2026-11-19
+- Type: read of the mode/progression notes and the forward parse, code change, headless runs
+- Source: `docs/analysis/notes/p2.11-modes.md` §4, `p2.5-economy.md` §6 step 7,
+  `p2.6-progression.md` §5, `docs/evidence/p2.13-forward-tank-parse.txt`,
+  `scripts/persistence/tank_scalars.gd`, `scripts/tank/level.gd`,
+  `tests/headless_level_check.gd`, `tests/headless_tank_snapshot_check.gd`
+- (1) **Which field is the live clock.** `Tank+0x3B0` is rewritten **every tick** as
+  `(FUN_00537B60() - Tank+0x3B8) / 1000`, integer seconds, by Time Trial and by Challenge (P2.11 §4);
+  the expiry test is `Tank+0x3BC - Tank+0x3B0 < 0`. `Tank+0x3FC` is `FUN_00538040()` - the same
+  formula - but written **only at level end** (P2.5 §6 step 7, P2.6 §5), i.e. the completion record
+  the challenge/pet records read. The forward parse agrees: both shipped samples hold 0 at `+0x3FC`
+  *and* at `+0x3B0..+0x3BC`, since neither was captured mid-run. Restoring the clock from `+0x3FC`
+  would therefore restore 0; the live field is `+0x3B0`.
+- (2) **Mapped:** `TankScalars` offset 41 (`OFF_ELAPSED_RUN`, the first of `+0x3B0..+0x3BC`), stored
+  in whole seconds and converted with `Level.TICKS_PER_SECOND` (36, the port rate) in both directions.
+  `OFF_ELAPSED` (`+0x3FC`, offset 85) stays unmapped and is documented as the completion snapshot.
+- (3) **Budget re-derived, not restored:** `Level.time_trial_budget_seconds(tank)` (300 on tank 1,
+  600 on 2-4) now feeds `_apply_mode_flags()` and `load_game()`, so a load that names another tank
+  replaces the previous run's budget. The block's `+0x3BC` budget is not read because every
+  port-written save has zeroed it.
+- (4) **Headless** (`_test_time_trial_load`): a tank-1 save ten seconds in loads over a tank-2 run
+  500 s in - tank 1, 300 s budget (10800 ticks), elapsed 360 ticks, clock 290 s left - and a tank-2
+  save at 600 s loads back over it (21600/21600 ticks). The scalar suite pins the offset (41) and the
+  seconds-to-ticks conversion (90 ticks -> 2 s -> 72 ticks).
+- (5) **Runs**: `headless_level_check` 200 -> 209, `headless_tank_snapshot_check` 66 -> 68, the other
+  21 script suites unchanged, integration 136 - all PASS (script sum 1396, +136 = 1532).

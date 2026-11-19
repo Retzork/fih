@@ -2139,3 +2139,23 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   restored field; `_restore_store_rows()` and the label refresh already came after it.
 - **Pinned:** `headless_tank_snapshot_check._test_egg_floor_on_load` writes a tank-1 and a tank-5 save
   with a zeroed egg field, loads each into a tank-1 level and requires 1 and 3 pieces.
+
+### D-0045 - The Time Trial clock restores from `+0x3B0`, and the budget is per tank
+
+- Date: 2026-11-19 (owner: close the open Time Trial finding - map the block's elapsed field from
+  measured evidence, re-derive the budget from the restored tank and restore the elapsed clock, with a
+  headless mid-run load from another tank)
+- Status: accepted, measured. EV-0216 holds the reading and the runs.
+- **The owner's `+0x3FC` is the completion record, not the clock.** The measured writers say
+  `+0x3B0` is elapsed seconds rewritten every tick (P2.11 §4) and `+0x3FC` is `FUN_00538040()`'s
+  snapshot written at level end (P2.5 §6, P2.6 §5). Mapping the clock from `+0x3FC` would restore 0
+  for every mid-run save, which is the case this finding is about, so the port maps `+0x3B0`
+  (block offset 41) and records the other field as the completion snapshot it is.
+- **Units live in one place.** The block holds seconds; the port counts ticks. `Level.TICKS_PER_SECOND`
+  (36) is now the only literal, used by `_apply_mode_flags`, `time_trial_seconds_left` and both
+  directions of the scalar mapping, instead of the two hard-coded `36`s that were there.
+- **Budget is derived, not read.** `time_trial_budget_seconds(tank)` is the recovered rule (300/600),
+  used at level start and again on load, because a save from another tank must not keep the previous
+  run's budget and every port-written save has `+0x3BC` zeroed.
+- **Pinned:** `_test_time_trial_load` (both directions through disk, mid-run, with the clock reading
+  290 s left) and the scalar suite's offset/units pair.

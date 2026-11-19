@@ -61,6 +61,7 @@ func _init() -> void:
 	_test_load_refresh()
 	_test_wave_counter_reset()
 	_test_loaded_store_rows()
+	_test_time_trial_load()
 
 	level.tank.shutdown()
 	level.free()
@@ -184,6 +185,59 @@ func _test_loaded_store_rows() -> void:
 		DirAccess.remove_absolute(path)
 	five.tank.shutdown()
 	five.free()
+
+
+## Time Trial counts ticks locally but saves the base's `+0x3B0` seconds, and its budget belongs to the
+## tank the save names (300 s on tank 1, 600 s on the rest), so a load from another tank must replace
+## both (D-0045). This loads a tank-1 save over a tank-2 run and a tank-2 save over the tank-1 run.
+func _test_time_trial_load() -> void:
+	var path := "user://time_trial_check.dat"
+	var other := "user://time_trial_check2.dat"
+	var ticks := LevelScript.TICKS_PER_SECOND
+	# The save: tank 1, ten seconds in.
+	var one: Level = LevelScript.new()
+	one.render = false
+	one.setup(sim, 6100)
+	one.game_mode = LevelScript.MODE_TIME_TRIAL
+	one.start_level(1, 1)
+	one.time_trial_elapsed = 10 * ticks
+	_expect(one.save_game(path) == OK, "the tank-1 Time Trial save is written")
+	one.tank.shutdown()
+	one.free()
+	# The running session: tank 2, 500 s into its 600.
+	var two: Level = LevelScript.new()
+	two.render = false
+	two.setup(sim, 6101)
+	two.game_mode = LevelScript.MODE_TIME_TRIAL
+	two.start_level(2, 1)
+	_expect(two.time_trial_budget_ticks == 600 * ticks,
+		"tank 2 opens on its 600 s budget (got %d ticks)" % two.time_trial_budget_ticks)
+	two.time_trial_elapsed = 500 * ticks
+	_expect(two.load_game(path), "the tank-1 save loads over the tank-2 run")
+	_expect(two.tank_index == 1 and two.time_trial_budget_ticks == 300 * ticks,
+		"the budget is re-derived for the restored tank 1 (got %d ticks)" % two.time_trial_budget_ticks)
+	_expect(two.time_trial_elapsed == 10 * ticks,
+		"the elapsed clock comes back from `+0x3B0` seconds (got %d ticks)" % two.time_trial_elapsed)
+	_expect(two.time_trial_seconds_left() == 290,
+		"the clock reads 290 s left on 1-1 (got %d)" % two.time_trial_seconds_left())
+	# And back: a tank-2 save over the tank-1 run.
+	var two_save: Level = LevelScript.new()
+	two_save.render = false
+	two_save.setup(sim, 6102)
+	two_save.game_mode = LevelScript.MODE_TIME_TRIAL
+	two_save.start_level(2, 1)
+	two_save.time_trial_elapsed = 600 * ticks
+	_expect(two_save.save_game(other) == OK, "the tank-2 Time Trial save is written")
+	two_save.tank.shutdown()
+	two_save.free()
+	_expect(two.load_game(other), "the tank-2 save loads over the tank-1 run")
+	_expect(two.time_trial_budget_ticks == 600 * ticks and two.time_trial_elapsed == 600 * ticks,
+		"the tank-2 budget and elapsed come back (got %d/%d ticks)" % [two.time_trial_budget_ticks, two.time_trial_elapsed])
+	for file in [path, other]:
+		if FileAccess.file_exists(file):
+			DirAccess.remove_absolute(file)
+	two.tank.shutdown()
+	two.free()
 
 
 func _row_of(level_ref: Level, slot: int) -> int:

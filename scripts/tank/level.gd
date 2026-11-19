@@ -162,6 +162,11 @@ var game_mode := 0
 ## Time Trial clock (P2.11 §4 / EV-0127): budget in ticks at the 36 Hz port rate. 300 s on
 ## tank 1, 600 s on tanks 2-4. `elapsed` counts `_on_sim_tick` calls (one per Sim tick).
 ## Expiry collects all coins and completes the level through the normal path.
+##
+## The base counts seconds: `Tank+0x3B0` is the live elapsed time, rewritten every tick as
+## `(now - +0x3B8) / 1000` (P2.11 §4), and `+0x3BC` is the budget in seconds (300 on tank 1, 600 on
+## tanks 2-4). The port counts ticks, so this is the one place the two meet.
+const TICKS_PER_SECOND := 36
 var time_trial_budget_ticks := 0
 var time_trial_elapsed := 0
 ## Challenge reward per tank, flat (P2.11 §5): tanks 1-4. Completion grants shells.
@@ -856,12 +861,16 @@ func _apply_mode_flags() -> void:
 	# wallet afterwards, so this only seeds a fresh level.
 	money = SANDBOX_MONEY if game_mode == MODE_SANDBOX else STARTING_MONEY
 	if game_mode == MODE_TIME_TRIAL:
-		var seconds := 300 if tank_index == 1 else 600
-		# Ticks at the port's 36 Hz rate (Q-0034); keep this next to `Sim.TICK_MS`.
-		time_trial_budget_ticks = seconds * 36
+		time_trial_budget_ticks = time_trial_budget_seconds(tank_index) * TICKS_PER_SECOND
 	else:
 		time_trial_budget_ticks = 0
 	time_trial_elapsed = 0
+
+
+## The Time Trial budget in seconds for a tank (P2.11 §4 / P2.6 §8): 300 s on tank 1, 600 s on the
+## rest. Static so a load can re-derive it before the mode flags run.
+static func time_trial_budget_seconds(tank_no: int) -> int:
+	return 300 if tank_no == 1 else 600
 
 
 ## `FUN_0053C3F0` (EV-0128): a Virtual Tank starts without the starter fish `setup()` placed
@@ -1262,11 +1271,12 @@ func _tick_time_trial() -> void:
 		complete_level()
 
 
-## Seconds left on the Time Trial clock (integer, like `Tank+0x3B0`), or 0 outside Time Trial.
+## Seconds left on the Time Trial clock (integer, like `Tank+0x3BC - +0x3B0`), or 0 outside Time
+## Trial.
 func time_trial_seconds_left() -> int:
 	if game_mode != MODE_TIME_TRIAL or time_trial_budget_ticks <= 0:
 		return 0
-	return maxi(0, int((time_trial_budget_ticks - time_trial_elapsed) / 36))
+	return maxi(0, int((time_trial_budget_ticks - time_trial_elapsed) / TICKS_PER_SECOND))
 
 
 # --- audio -------------------------------------------------------------------
@@ -1667,6 +1677,11 @@ func load_game(path: String = "") -> bool:
 	_hint_tick = -1
 	# The egg dome prices off the tank and level; the save may name different ones.
 	egg_price = Progression.egg_price(tank_index, level_index, game_mode)
+	# Time Trial's budget belongs to the tank the save names (300 s on tank 1, 600 s on the rest), so a
+	# save from another tank cannot keep the previous run's; the elapsed clock itself came back from
+	# the block's `+0x3B0` seconds in `TankScalars.apply` (D-0045).
+	if game_mode == MODE_TIME_TRIAL:
+		time_trial_budget_ticks = time_trial_budget_seconds(tank_index) * TICKS_PER_SECOND
 	# The base keeps no per-level "completed" flag: `+0x43C >= 4` **is** completion (P2.5 §6 step 7,
 	# P2.9 §10), and the header's `+0x2A5` is the whole-tank latch that starts the bonus round. So this
 	# is derived, not saved - otherwise a finished save stays buyable and a live one stays blocked.
