@@ -17,12 +17,19 @@ signal start_requested(mode: int)
 ## `MERYLTAIL` (`tailflop.png`, 8 cells of 238x165, `masks/tailflop_.png` as its alpha layer) is the
 ## fin the baked `SELECTORSCREEN` mermaid is missing: her painted tail stops in a rounded stump at
 ## about (152, 405). The strip's own draw position is **not recovered** (Q-0055), so this is a port
-## fit: the fin is scaled to `TAIL_SCALE` and its notch sits on the stump, an arrangement chosen
-## against the measured art (EV-0188).
+## fit (Q-0055, EV-0226): the fin's own root notch is placed on the stump, and the strip is turned
+## about -40 degrees so its long axis continues the baked tail's downward-left line instead of
+## hanging below it as a separate crescent. Both numbers are measured, not recovered: the notch is
+## `measure_mermaid.gd`'s cell-0 point and the stump is the baked art's end.
 ## The strip's geometry from `resources.xml`: 8 cells of 238x165.
 const TAIL_CELL := Vector2(238.0, 165.0)
-const TAIL_OFFSET := Vector2(110.0, 360.0)
-const TAIL_SCALE := 0.6
+const TAIL_NOTCH := Vector2(107.0, 84.0)
+const TAIL_STUMP := Vector2(152.0, 405.0)
+const TAIL_SCALE := 0.55
+const TAIL_ROTATION_DEGREES := -40.0
+## Tucks the fin's neck over the stump's rim so the baked end's rounded lip does not show through the
+## join; measured off the composited candidates, not recovered.
+const TAIL_FIT := Vector2(4.0, -7.0)
 const TAIL_FLIP := false
 ## Read as raw files: the composite needs the whole strip to line up with the whole mask.
 const TAIL_SHEET_PATH := "res://assets_raw/images/tailflop.png"
@@ -159,7 +166,13 @@ func _add_mermaid_tail() -> void:
 	_tail.name = "MermaidTail"
 	_tail.centered = false
 	_tail.flip_h = TAIL_FLIP
-	_tail.position = TAIL_OFFSET
+	# `centered = false` puts the sprite's origin at its top-left, so rotating the node turns the
+	# cell about that origin; offsetting by the rotated notch lands the notch itself on the stump.
+	_tail.rotation = deg_to_rad(TAIL_ROTATION_DEGREES)
+	var notch := TAIL_NOTCH * TAIL_SCALE
+	if TAIL_FLIP:
+		notch.x = (TAIL_CELL.x - TAIL_NOTCH.x) * TAIL_SCALE
+	_tail.position = TAIL_STUMP + TAIL_FIT - notch.rotated(deg_to_rad(TAIL_ROTATION_DEGREES))
 	add_child(_tail)
 	var sim := _autoload("Sim")
 	_tail_started = sim.tick_count if sim != null else 0

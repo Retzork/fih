@@ -5734,3 +5734,23 @@ behavior or specs; follow up with a binary observation entry.
 - (4) **Runs**: `headless_coin_check` 154 -> 161 (the keying pin), `headless_level_check` 241 -> 248
   (the drop), `headless_store_ui_check` 97 unchanged; screenshots `shot_store.png`/`shot_probe_store.png`
   showed the diamond clean and the 1-3 shop's five shelves with their icons and prices.
+
+## EV-0226 - The menu mermaid's fin is rotated onto the tail's measured stump
+- Date: 2026-11-19 (owner: the mermaid tail is improper again)
+- Type: measurement + windowed visual; a port fit replaced
+- Source: `assets_raw/images/selectorback.png`, `tailflop.png`, `masks/tailflop_.png`;
+  `tools/godot/measure_mermaid.gd`, `tools/godot/preview_tail.gd`; `scripts/ui/game_selector.gd`;
+  capture `shot_menu.png`
+- (1) **The defect.** The fin was drawn at (110, 360) with no rotation, so its root notch landed
+  ~22 px right of the baked tail's stump: a green crescent hanging under her hip, visibly detached.
+  It read as a second, small tail.
+- (2) **The measurement.** `measure_mermaid.gd` puts the baked tail's stump at about (152, 405) and
+  cell 0's root notch at (107, 84). The fin's long axis is horizontal, while the baked tail runs down
+  and to the left, so the cell needs a turn as well as an offset: at -40 degrees, scale 0.55, the
+  notch mapped onto the stump, the crescent continues the tail's line into a fluke.
+- (3) **Fit.** `TAIL_STUMP` and `TAIL_NOTCH` are the measured points; the position is derived from
+  them (`stump + TAIL_FIT - notch * scale rotated`), and `TAIL_FIT` (4, -7) is the small tuck that
+  keeps the baked end's rounded lip from showing above the fin's neck. All of it is a port fit -
+  Q-0055's exact screen rect is still unrecovered.
+- (4) **Runs**: `headless_menu_check` 28 assertions unchanged (the recovered `framemap`/delays are
+  still pinned); `shot_menu.png` re-captured and viewed.

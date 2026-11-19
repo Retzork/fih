@@ -1189,6 +1189,12 @@ as one tail (`shot_menu.png`). The recovered playback is unchanged and now cover
 `begindelay="3"` on the 36 Hz clock, then the rest cell. Q-0055 stays open as a missing **exact**
 screen rect - the offset and the mirror are a port fit, not recovered bytes.
 
+**2026-11-19 update (owner: the tail is improper again):** the fin was hanging under the hip as a
+separate crescent - its notch sat 22 px right of the stump and the cell was never turned. It is now
+placed by the measured notch/stump pair and rotated -40 degrees at 0.55 scale, so the fluke
+continues the baked tail's line (D-0055, EV-0226, `shot_menu.png`). Still a fit: Q-0055's exact
+screen rect is unrecovered.
+
 Still not drawn for the same missing-placement reason: `MERYLLIPS`/`MERYLBLINK` overlays - the
 baked art already has her mouth and eyes, and the blink is a `once` animation with its own trigger.
 
@@ -2395,3 +2401,13 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   its domes (`StoreBar.item_cell`: `SCL_*` portraits, `FOOD`, `LASERUPGRADES` cell by weapon level).
   This is a port binding, not the original's store art; the store widget's kind byte `+0x14C` stays
   the open question.
+
+### D-0055 - The menu mermaid's fin is placed by the measured notch and turned onto the tail's line
+
+- Date: 2026-11-19 (owner: the mermaid tail is improper again)
+- Status: accepted, viewed in `shot_menu.png`; Q-0055 stays open for the exact screen rect.
+- The old fit put the fin's notch 22 px right of the baked stump with no rotation, so the crescent
+  hung below the hip as a separate shape. The notch (`107, 84` in cell 0) now lands on the stump
+  (`152, 405` in the menu art) and the cell turns -40 degrees at 0.55 scale, which continues the
+  baked tail's downward-left line; `TAIL_FIT` (4, -7) tucks its neck over the stump's rim. These are
+  measured points plus a viewed fit, not recovered bytes - Q-0055's exact rect is still open.
