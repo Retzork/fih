@@ -5580,3 +5580,27 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Runs**: `headless_level_check` 209 -> 212, `headless_integration_check` 136, the other 22
   suites unchanged, script sum 1399 (+136 = 1535). Windowed probe printed
   `INK: rows 457.0..473.5`, `shot_hint_ink.png`.
+
+## EV-0219 - The `+0x3FC` end-of-level elapsed snapshot is mapped both ways
+- Date: 2026-11-19
+- Type: note read; code change; headless suites
+- Source: `docs/analysis/notes/p2.6-progression.md` §5 (`Tank+0x3FC = FUN_00538040()` =
+  `(FUN_00537B60() - Tank+0x3B8) / 1000`), `docs/analysis/notes/p2.5-economy.md` §6 step 7 (written
+  when `+0x43C >= 4`), `docs/analysis/notes/p2.13-saves.md` §6.3 row 16, the two shipped samples
+  (`adv1`, `sim1`, 0 in both), `scripts/persistence/tank_scalars.gd`,
+  `tests/headless_tank_snapshot_check.gd`, `tests/headless_level_check.gd`
+- (1) **Same quantity, not a second clock.** `+0x3FC` is `(now - +0x3B8)/1000`, i.e. the elapsed
+  seconds recomputed from the level's start stamp; the base writes it when the egg completes
+  (exactly the moment `+0x43C` reaches 4). Both samples hold 0 because neither was written at level
+  end, which is why the port keeps a mid-run save's field at 0.
+- (2) **Capture** now writes the same whole-seconds value into `+0x3FC` when `level.completed` (the
+  derived stand-in for "the level ended", D-0041) and leaves it 0 otherwise.
+- (3) **Apply** restores `time_trial_elapsed` from `max(+0x3B0, +0x3FC)` seconds: a save holding both
+  copies can only have the snapshot at least as current as the frozen live clock, and a mid-run save
+  (snapshot 0) restores exactly as before (D-0045). The restore still happens in
+  `TankScalars.apply`, which `load_game` calls before it re-derives the budget from the restored tank.
+- (4) **Already in place from D-0045**: the budget is re-derived in `load_game` for the restored tank
+  (300 s on tank 1, 600 s elsewhere) and the elapsed clock is restored there; the tank-1-over-tank-2
+  and tank-2-over-tank-1 loads were already driven through disk on the level suite.
+- (5) **Runs**: `headless_tank_snapshot_check` 68 -> 71, `headless_level_check` 212 -> 213 (+1 for a
+  finished save's double copy), all 24 suites green, script sum 1403 (+136 = 1539).

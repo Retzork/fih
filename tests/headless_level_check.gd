@@ -227,12 +227,17 @@ func _test_time_trial_load() -> void:
 	two_save.game_mode = LevelScript.MODE_TIME_TRIAL
 	two_save.start_level(2, 1)
 	two_save.time_trial_elapsed = 600 * ticks
+	# A finished run writes the clock twice (`+0x3B0` and the `+0x3FC` end snapshot); they are the
+	# same seconds, so a load must land on 600 s, not 1200.
+	two_save.completed = true
 	_expect(two_save.save_game(other) == OK, "the tank-2 Time Trial save is written")
 	two_save.tank.shutdown()
 	two_save.free()
 	_expect(two.load_game(other), "the tank-2 save loads over the tank-1 run")
-	_expect(two.time_trial_budget_ticks == 600 * ticks and two.time_trial_elapsed == 600 * ticks,
-		"the tank-2 budget and elapsed come back (got %d/%d ticks)" % [two.time_trial_budget_ticks, two.time_trial_elapsed])
+	_expect(two.time_trial_budget_ticks == 600 * ticks,
+		"the tank-2 budget comes back (got %d ticks)" % two.time_trial_budget_ticks)
+	_expect(two.time_trial_elapsed == 600 * ticks,
+		"the end snapshot and the live clock are one quantity, not two (got %d ticks)" % two.time_trial_elapsed)
 	for file in [path, other]:
 		if FileAccess.file_exists(file):
 			DirAccess.remove_absolute(file)

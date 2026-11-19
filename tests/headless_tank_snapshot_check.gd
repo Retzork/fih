@@ -164,6 +164,8 @@ func _test_scalars() -> void:
 	_expect(int(block[101]) == 1, "the star potion flag sits at +0x440 (offset 101)")
 	_expect(block.decode_u32(126) == 61, "the wave number sits at +0x45C (offset 126, P2.13 §6.4)")
 	_expect(block.decode_u32(41) == 2, "the elapsed clock sits at +0x3B0 (offset 41) in whole seconds")
+	_expect(block.decode_u32(85) == 0,
+		"a run in progress leaves +0x3FC at 0, as both shipped samples do (P2.5 §6 step 7)")
 	_expect(int(block[312]) == 1 and int(block[313]) == 2 and int(block[314]) == 3
 		and int(block[315]) == 4, "the backdrop tint is the last four bytes")
 
@@ -179,6 +181,18 @@ func _test_scalars() -> void:
 	_expect(other.star_potion_armed, "the armed star potion survives")
 	_expect(other.waves_spawned == 61, "the wave counter restores (got %d)" % other.waves_spawned)
 	_expect(other.time_trial_elapsed == 72, "the elapsed seconds come back as ticks (got %d)" % other.time_trial_elapsed)
+	# `+0x3FC`: the same seconds written again when the level ends, and the only copy a finished save can
+	# trust. A stale live clock must not win over the end snapshot.
+	level.completed = true
+	var ended := TankScalarsScript.capture(level)
+	_expect(ended.decode_u32(85) == 2 and ended.decode_u32(41) == 2,
+		"an ended run writes the end snapshot at +0x3FC alongside the live clock (got %d/%d)"
+		% [ended.decode_u32(85), ended.decode_u32(41)])
+	ended.encode_u32(41, 1)
+	TankScalarsScript.apply(ended, other)
+	_expect(other.time_trial_elapsed == 72,
+		"the end snapshot restores when the live clock is stale (got %d ticks)" % other.time_trial_elapsed)
+	level.completed = false
 	_expect(other.backdrop_tint == Color8(1, 2, 3, 4), "the backdrop tint survives")
 
 	level.money = 12000000

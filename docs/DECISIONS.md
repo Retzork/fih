@@ -2178,3 +2178,20 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   check uses it - the rule is about what can be seen, not about a transparent layout margin.
 - **Kept:** the two measured colours, the outline, the centred 640-wide box and the tick-gated label
   cache (D-0032/D-0035).
+
+### D-0047 - The level-end elapsed snapshot is a copy of the clock, and restore takes the later one
+
+- Date: 2026-11-19 (owner: map the block's `+0x3FC` elapsed field from the measured evidence, then
+  re-derive the budget and restore elapsed in `load_game()`, with headless coverage)
+- Status: accepted, measured. EV-0219 holds the formula, the samples and the runs.
+- **What the field is.** P2.6 §5 gives `Tank+0x3FC = (now - Tank+0x3B8)/1000`, written when the egg
+  completes (P2.5 §6 step 7). It is the same quantity as the live clock at `+0x3B0`, captured once at
+  level end - not an independent timer, which is why it cannot be used to say a save "has" extra time.
+- **Written only for an ended run.** A run in progress leaves it 0, matching both shipped samples.
+  The port's `completed` is derived from the egg pieces (D-0041), so it is the right condition.
+- **Restore takes `max(live, snapshot)`.** Both are the same seconds; a save carrying both can only
+  hold a snapshot at least as current as the live clock it froze. A stale live clock therefore cannot
+  shorten the run, and a mid-run save (0 at `+0x3FC`) behaves exactly as in D-0045. No second clock,
+  no doubling.
+- **Kept:** the budget re-derivation in `load_game` from the restored tank (D-0045), and
+  `TICKS_PER_SECOND` as the only place seconds and ticks meet.

@@ -9,8 +9,8 @@ extends RefCounted
 ## Mapped so far: money (`+0x3F0`), food quality/quantity (`5e89dc`/`5df58c`), pet capacity
 ## (`+0x3E4`), backdrop index (`+0x3E8`), the wave selection and its countdown (`+0x2BC`/`+0x2C0`),
 ## the star potion flag (`+0x440`), the wave number (`+0x45C`, inside the 27-dword run), the Time
-## Trial elapsed clock (`+0x3B0`) and the backdrop tint. The rest of the run, the tutorial block and
-## the spawn points are left as zeroes.
+## Trial elapsed clock (`+0x3B0`) with its level-end snapshot (`+0x3FC`) and the backdrop tint. The
+## rest of the run, the tutorial block and the spawn points are left as zeroes.
 
 const BLOCK_BYTES := 316
 
@@ -33,8 +33,9 @@ const OFF_BACKDROP := 69             # +0x3E8 u32
 const OFF_MONEY := 73                # +0x3F0 u32
 const OFF_BONUS_SHELLS := 77         # +0x3F4 u32
 const OFF_BONUS_END_DELAY := 81      # +0x3F8 u32
-## `+0x3FC` is `FUN_00538040()`'s snapshot of the same seconds, written **only at level end**
-## (P2.5 §6 step 7, P2.6 §5); both shipped samples hold 0 mid-run. The live clock is `+0x3B0`.
+## `+0x3FC` is `FUN_00538040()`'s snapshot of the **same** seconds - `(now - Tank+0x3B8) / 1000`,
+## P2.6 §5 - written only when the level ends (P2.5 §6 step 7); both shipped samples hold 0 mid-run,
+## which is why a mid-run save leaves it 0 here too. The live clock is `+0x3B0`.
 const OFF_ELAPSED := 85              # +0x3FC u32
 const OFF_UNKNOWN_A := 89            # +0x2AC i32
 const OFF_UNKNOWN_B := 93            # +0x2B0 u32
@@ -88,7 +89,13 @@ static func capture(level) -> PackedByteArray:
 	# 0xC composite), so a load that dropped it would re-roll the wrong schedule (P2.11 §5).
 	block.encode_u32(OFF_WAVE_NUMBER, maxi(int(level.waves_spawned), 0))
 	# The block holds seconds and the port counts ticks; `Level.TICKS_PER_SECOND` is where they meet.
-	block.encode_u32(OFF_ELAPSED_RUN, maxi(int(level.time_trial_elapsed), 0) / int(level.TICKS_PER_SECOND))
+	var seconds := maxi(int(level.time_trial_elapsed), 0) / int(level.TICKS_PER_SECOND)
+	block.encode_u32(OFF_ELAPSED_RUN, seconds)
+	# `+0x3FC` is the same seconds taken again at level end, so only an ended run writes it; a run in
+	# progress keeps 0 there, which is what both shipped samples show (P2.5 §6 step 7). `completed` is
+	# derived from the egg pieces rather than saved (D-0041), so it stands in for "the level ended".
+	if level.completed:
+		block.encode_u32(OFF_ELAPSED, seconds)
 	var tint: Color = level.backdrop_tint
 	block[OFF_TINT] = tint.r8
 	block[OFF_TINT + 1] = tint.g8
@@ -115,7 +122,12 @@ static func apply(block: PackedByteArray, level) -> void:
 	level.egg_pieces = clampi(block.decode_u32(OFF_EGG_PIECES),
 		Progression.egg_pieces_at_start(int(level.tank_index)), Progression.EGG_PIECES_TO_COMPLETE)
 	level.waves_spawned = block.decode_u32(OFF_WAVE_NUMBER)
-	level.time_trial_elapsed = block.decode_u32(OFF_ELAPSED_RUN) * int(level.TICKS_PER_SECOND)
+	# Two copies of the same seconds travel in the block (the live clock at `+0x3B0` and its level-end
+	# snapshot at `+0x3FC`). A save that holds both can only have the snapshot at least as current as
+	# the frozen live clock, so the larger wins; a mid-run save leaves `+0x3FC` at 0, like both shipped
+	# samples, and the live clock restores exactly as before (D-0045).
+	var elapsed := maxi(block.decode_u32(OFF_ELAPSED_RUN), block.decode_u32(OFF_ELAPSED))
+	level.time_trial_elapsed = elapsed * int(level.TICKS_PER_SECOND)
 	level.backdrop_tint = Color8(int(block[OFF_TINT]), int(block[OFF_TINT + 1]),
 		int(block[OFF_TINT + 2]), int(block[OFF_TINT + 3]))
 	if level.wave != null:
