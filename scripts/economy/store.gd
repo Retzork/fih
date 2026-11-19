@@ -11,9 +11,11 @@ extends RefCounted
 ##   weapon        -> `+0x3E4++`, capped at 0xC (P2.5 §2)
 ##   unavailable   -> the effect needs a body/aspect that is not ported yet (Q-0049)
 ##
-## Q-0049 records everything this table cannot yet promise: the breeder, the three pet
-## purchases and the egg piece/random-pet/end-level row have no implementation, and the binary's own
-## initial price arrays were never located (`§3` of the note), so the prices here are the wiki's.
+## Q-0049 records everything this table cannot yet promise: the breeder, the Starcatcher and
+## Guppycruncher purchases, and the egg piece/random-pet/end-level row. The Beetlemuncher sells as a
+## `fish` of species `GEKKO` (EV-0056: store item 8 -> `FUN_00545080` -> `Sexy::Gekko`, EV-0060's
+## display-name binding), and the binary's own initial price arrays were never located (`§3` of the
+## note), so the prices here are the wiki's.
 
 const KIND_FISH := "fish"
 const KIND_FOOD_QUALITY := "food_quality"
@@ -37,7 +39,7 @@ const ITEMS := {
 	5: {"name": "Star Potion", "price": 0, "kind": KIND_STAR_POTION},
 	6: {"name": "Starcatcher", "price": 750, "kind": KIND_UNAVAILABLE},
 	7: {"name": "Guppycruncher", "price": 750, "kind": KIND_UNAVAILABLE},
-	8: {"name": "Beetlemuncher", "price": 2000, "kind": KIND_UNAVAILABLE},
+	8: {"name": "Beetlemuncher", "price": 2000, "kind": KIND_FISH, "species": 3},
 	9: {"name": "Ultravore", "price": 0, "kind": KIND_FISH, "species": 2},
 	10: {"name": "Weapon", "price": 0, "kind": KIND_WEAPON},
 	11: {"name": "Egg", "price": 99999, "kind": KIND_UNAVAILABLE},

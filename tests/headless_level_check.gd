@@ -457,6 +457,32 @@ func _test_store() -> void:
 		all_sellable = all_sellable and Store.is_available(int(row.get("slot", -1)))
 	_expect(all_sellable, "every stocked row can be bought (Q-0052)")
 
+	# The Beetlemuncher (item 8) is the one pet purchase the evidence binds end to end: store item 8
+	# -> `FUN_00545080` -> `Sexy::Gekko` (EV-0056), and Gekko = Beetlemuncher (EV-0060). Tank 3
+	# sells it from level 2 on, and the purchase spawns a real Gekko body through the fish path.
+	level.start_level(3, 2)
+	var beeties := _row_of(level, 8)
+	_expect(beeties >= 0 and int(level.tank_store[beeties]["price"]) == 2000,
+		"3-2 stocks the Beetlemuncher at 2000")
+	var fish_before := _live_fish().size()
+	level.money = 2500
+	_expect(level.buy_item(beeties), "the Beetlemuncher is bought")
+	_expect(level.money == 500, "its 2000-shell price is spent")
+	var gekkos := 0
+	for fish in _live_fish():
+		if fish.species == FishScript.Species.GEKKO:
+			gekkos += 1
+	_expect(gekkos == 1, "the purchase spawns a Gekko body")
+	_expect(_live_fish().size() == fish_before + 1, "exactly one fish enters the tank")
+	level.money = 2000
+	_expect(level.buy_item(beeties), "a second Beetlemuncher can be bought (no cap)")
+	# The Guppycruncher beside it is still unbound, so it must keep refusing without charging.
+	var crunchers := _row_of(level, 7)
+	level.money = 5000
+	_expect(crunchers >= 0 and not level.buy_item(crunchers),
+		"the Guppycruncher still refuses (Q-0049)")
+	_expect(level.money == 5000, "its refusal spends nothing")
+
 
 
 ## Pets enter with the session (P2.7 Â§2.2): owned flags spawn, unowned ones do not, and every pet has

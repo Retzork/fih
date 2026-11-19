@@ -985,7 +985,7 @@ filled retroactively.
 
 ### Q-0049 - the store items without an effect
 
-`scripts/economy/store.gd` carries all twelve recovered item ids, but five cannot be honoured yet, so `Level.buy_item` refuses them instead of charging for nothing: the **breeder**, the **three pet purchases** (`KIND_UNAVAILABLE`, like the breeder), and the **egg piece / random pet / end-level row** (needs P4.6 progression and the `manager+0x87C` latch). Prices come from the wiki figures of EV-0060 because the binary's own price arrays were never located (P2.5 §3), and mode-4 inflation (`+0x374`) is not applied. The **star potion** was implemented after this entry was written: the purchase arms `Level.star_potion_armed` (`Tank+0x440`), the next manual drop is a quality-3 pellet, and `Fish` already applies the quality-3 rules.
+`scripts/economy/store.gd` carries all twelve recovered item ids, but four cannot be honoured yet, so `Level.buy_item` refuses them instead of charging for nothing: the **breeder** (its own class, not a Fish), the **Starcatcher** and **Guppycruncher** (no Penta/Grubber body), and the **egg piece / random pet / end-level row** (needs P4.6 progression and the `manager+0x87C` latch). The **Beetlemuncher** left that list on 2026-11-19 (D-0052): EV-0056's item-8 spawn is `FUN_00545080` -> `Sexy::Gekko`, which the port already models as `Fish.Species.GEKKO`. Prices come from the wiki figures of EV-0060 because the binary's own price arrays were never located (P2.5 §3), and mode-4 inflation (`+0x374`) is not applied. The **star potion** was implemented after this entry was written: the purchase arms `Level.star_potion_armed` (`Tank+0x440`), the next manual drop is a quality-3 pellet, and `Fish` already applies the quality-3 rules.
 
 ### Q-0050 - the menu screens all mount; their contents are port text
 
@@ -2317,3 +2317,27 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   caps), hiding the shop/egg dome for the round, and collecting through the existing click path.
 - **Still out (Q-0053):** the pre-bonus store, the score record `FUN_00514510`, and the
   `scr%d.dat` escrow for `Tank+0x400`.
+
+### D-0052 - The Beetlemuncher sells as a Gekko, because that is the purchase the evidence binds
+
+- Date: 2026-11-19 (owner: four purchasable items still refuse; pick whichever the evidence supports
+  best, implement its effect in Level/Tank and pin it headless)
+- Status: accepted, measured. EV-0056 and EV-0060 hold the binding; `headless_level_check` 214 ->
+  222 assertions.
+- **Why this one of the four.** The purchase sides are equally documented (`FUN_00545080` for item
+  8), but only the Beetlemuncher's object is already modelled: EV-0056 gives store item 8 ->
+  `Sexy::Gekko`, EV-0060 binds Gekko = Beetlemuncher, and `Fish.SPECIES[GEKKO]` already carries the
+  recovered init data (type 7, stage 7, hunger 400-599, eat 700/cap 1000, box 80, coin 200+250).
+  Starcatcher (Penta) and Guppycruncher (Grubber) have equally good spawn evidence but no body in
+  the port, so they would need a new species - and the Breeder is not a Fish at all.
+- **The change is the table, not a new path.** Item 8 becomes `KIND_FISH` with `species: 3`
+  (`Fish.Species.GEKKO`), so `Level.buy_item` spends the row price, plays `SOUND_BUY` and spawns
+  through the same `_wire(tank.spawn_fish(...))` path every other bought fish uses. No cap, so it can
+  be bought repeatedly, exactly like the guppy/carnivore rows.
+- **Placement.** The store spawn's own x/y arguments are only partly recovered (`§4` gives the
+  grubber's `rand%0x208 + 20` and the starcatcher's explicit y 65; the beetlemuncher's line says its
+  args follow the successor shape). The port keeps the existing bought-fish placement
+  (`_random_spawn_point()`), flagged as a port choice rather than claiming the binary's point.
+- **Pinned:** 3-2 stocks item 8 at 2000; a buy spends exactly 2000 and puts one `GEKKO` body in the
+  tank; a second buy is allowed; the Guppycruncher beside it still refuses without charging.
+- **Left on the list (Q-0049):** Breeder, Starcatcher, Guppycruncher, the egg row.
