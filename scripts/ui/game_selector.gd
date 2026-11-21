@@ -17,19 +17,20 @@ signal start_requested(mode: int)
 ## `MERYLTAIL` (`tailflop.png`, 8 cells of 238x165, `masks/tailflop_.png` as its alpha layer) is the
 ## fin the baked `SELECTORSCREEN` mermaid is missing: her painted tail stops in a rounded stump at
 ## about (152, 405). The strip's own draw position is **not recovered** (Q-0055), so this is a port
-## fit (Q-0055, EV-0226): the fin's own root notch is placed on the stump, and the strip is turned
-## about -40 degrees so its long axis continues the baked tail's downward-left line instead of
-## hanging below it as a separate crescent. Both numbers are measured, not recovered: the notch is
-## `measure_mermaid.gd`'s cell-0 point and the stump is the baked art's end.
+## fit (Q-0055, EV-0226/EV-0227): the fin's root notch is placed on the stump and the strip is
+## turned about 145 degrees, which lays its broad fluke along the baked tail's line - the fluke
+## covers the painted end and the thin stem tucks back into the body. Turning it the other way
+## (-40) put the fluke across her hip and left the baked end's pale rounded lip showing through the
+## notch. Both points are measured, not recovered: the notch is `measure_mermaid.gd`'s cell-0 point
+## and the stump is the baked art's end.
 ## The strip's geometry from `resources.xml`: 8 cells of 238x165.
 const TAIL_CELL := Vector2(238.0, 165.0)
 const TAIL_NOTCH := Vector2(107.0, 84.0)
 const TAIL_STUMP := Vector2(152.0, 405.0)
-const TAIL_SCALE := 0.55
-const TAIL_ROTATION_DEGREES := -40.0
-## Tucks the fin's neck over the stump's rim so the baked end's rounded lip does not show through the
-## join; measured off the composited candidates, not recovered.
-const TAIL_FIT := Vector2(4.0, -7.0)
+const TAIL_SCALE := 0.65
+const TAIL_ROTATION_DEGREES := 145.0
+## Seats the fluke's crease on the hip; measured off the composited candidates, not recovered.
+const TAIL_FIT := Vector2(-4.0, 0.0)
 const TAIL_FLIP := false
 ## Read as raw files: the composite needs the whole strip to line up with the whole mask.
 const TAIL_SHEET_PATH := "res://assets_raw/images/tailflop.png"

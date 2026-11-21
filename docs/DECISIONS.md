@@ -2411,3 +2411,14 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   (`152, 405` in the menu art) and the cell turns -40 degrees at 0.55 scale, which continues the
   baked tail's downward-left line; `TAIL_FIT` (4, -7) tucks its neck over the stump's rim. These are
   measured points plus a viewed fit, not recovered bytes - Q-0055's exact rect is still open.
+
+### D-0056 - The menu tail fin is turned fluke-out so it covers the painted end
+
+- Date: 2026-11-22
+- Status: accepted (viewed on `shot_menu.png`); supersedes D-0055's turn, keeps its notch/stump anchor.
+- D-0055 turned the fin -40 degrees, which put its broad fluke across the hip and left the baked
+  tail's rounded end (and its pale rim) showing below and through the fin's notch. No offset/scale
+  fixed that - the fin's neck is narrower than the tail's painted end (EV-0227). Turning the strip
+  +145 degrees lays the fluke along the tail with its mass over the painted end and hides the stem
+  inside the body, so the tail reads as one shape. Scale 0.65, fit (-4, 0) on the measured
+  notch-on-stump anchor; Q-0055's exact screen rect is still open.

@@ -5754,3 +5754,23 @@ behavior or specs; follow up with a binary observation entry.
   Q-0055's exact screen rect is still unrecovered.
 - (4) **Runs**: `headless_menu_check` 28 assertions unchanged (the recovered `framemap`/delays are
   still pinned); `shot_menu.png` re-captured and viewed.
+
+## EV-0227 - The menu fin covers the painted tail's end only when its fluke faces out
+- Date: 2026-11-22 (owner: the baked tail's rounded lip still pokes through the fin)
+- Type: measurement + windowed visual (fit matrix over the real `selectorback.png`); a port fit
+- Source: `assets_raw/images/selectorback.png`, `tailflop.png`, `masks/tailflop_.png`;
+  `scripts/ui/game_selector.gd`; captures `shot_menu.png`, temporary
+  `tools/godot/tune_tail_fit.gd`/`solve_tail_fit.gd`
+- (1) **Why the -40 fit could not work.** Composited over the bare art, the fin's neck is narrower
+  than the baked tail's end: at every notch-on-stump offset tried (scale 0.55-0.75, rotation
+  -20..-48, per-axis stretch to 1.05) the painted end's lower-left silhouette stayed visible below
+  the fin, and the pale rim showed through the notch's V. A coverage search over rotation, scale
+  and offset (`solve_tail_fit.gd`, fin alpha against the tail's green pixels near the stump) peaked
+  at 58% coverage - the shape, not the numbers, was wrong.
+- (2) **The turn that works.** With the strip rotated ~+145 degrees, the broad fluke lies along the
+  tail's line and its overlapping mass covers the painted end completely, while the strip's thin
+  stem runs back inside the body where its outlines read as the fin's crease. The owner-visible
+  symptom (pale lip / rounded end through the join) disappears.
+- (3) **Chosen fit**: `TAIL_ROTATION_DEGREES 145`, `TAIL_SCALE 0.65`, `TAIL_FIT (-4, 0)` on the
+  measured notch/stump anchor - viewed on the full 1280x960 capture (`shot_menu.png`) and in
+  2x crops. `headless_menu_check` still 28 assertions (playback timing untouched).
