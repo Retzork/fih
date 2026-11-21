@@ -137,8 +137,9 @@ Export checklist:
   in a future pass); `tools/godot/gen_content.gd` fails if the 14/16/296 partition drifts.
 - `assets_raw/` is gitignored/regenerable. An export needs it present at build time:
   regenerate per the README Quick start, then `--import`, then export.
-- The tailflop overlay is removed (R10, Q-0055): the menu leaves the baked `SELECTORSCREEN`
-  art alone, so no raw PNG is loaded at runtime and the old export warning (F1) cannot recur.
+- The tailflop overlay is drawn again (D-0056, EV-0227): `assets_raw/images/tailflop.png` and
+  `assets_raw/masks/tailflop_.png` are read at runtime, so an export must include both. The mask is
+  applied in memory with `MaskAlpha`, which is why the old export warning (F1) does not return.
 - The `Profile` file is `user://profile.json` (the port's own format, SPECS §7.4); tank
   saves stay `userdata/<stem><slot>.dat` in the port's framing (same paths, own bytes).
   Neither writes into the read-only original install.

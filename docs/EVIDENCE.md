@@ -5026,7 +5026,7 @@ behavior or specs; follow up with a binary observation entry.
   icon cells keep `(3, 2)`. Re-cropped, the two badges now match in size and margin.
 - (9) **Coverage**: `headless_store_ui_check` 55 -> 57 (the glow positions; the swim inset).
 
-## EV-0197 - The bottom row of the tank screen (Tank name, hunger hint)
+### EV-0197 - The bottom row of the tank screen (Tank name, hunger hint)
 
 - Source: `Recording 2026-11-16 123332.mp4` frame at t=2 (636x504 window; the game area starts at
   window y 24, so game row = window row - 24) plus the t=0 frame for the second wording.
@@ -5046,7 +5046,7 @@ behavior or specs; follow up with a binary observation entry.
   width, mixed case and both wordings. Not matched: the tank name is ~12 px wider than the base's
   and the purple level plate still shows at the bottom right (D-0028 recommends dropping it).
 
-## EV-0198 - The store screen still greyed a price the purse could not pay
+### EV-0198 - The store screen still greyed a price the purse could not pay
 - Date: 2026-11-18
 - Type: code reading against the recording measurement already on file (EV-0196 (3): wallet 45,
   `$100` guppy shelf, price bright green) + headless assertions
@@ -5065,7 +5065,7 @@ behavior or specs; follow up with a binary observation entry.
   `GREYED_COLOR` only for a sold-out row; plus the bar's own `$100` shelf stays green at wallet 45.
   57 -> 62 assertions, PASS; `headless_level_check` 165, `headless_integration_check` 134, boot clean.
 
-## EV-0199 - The debug overlay's box against the measured bottom row
+### EV-0199 - The debug overlay's box against the measured bottom row
 - Date: 2026-11-18
 - Type: scene/layout inspection + a headless probe of the boot scene
 - Source: `scenes/main.tscn` (`Debug/Info`), `scripts/main.gd` (`STATS_KEY`, `toggle_stats`),
@@ -5080,7 +5080,7 @@ behavior or specs; follow up with a binary observation entry.
 - (3) **Coverage.** No suite asserted the overlay before and none does now; the boot run (400 frames)
   exits 0 with the label hidden, and the store-UI/level/integration suites are unaffected.
 
-## EV-0200 - Re-shooting 1-1 and 1-3 after deleting the level plate
+### EV-0200 - Re-shooting 1-1 and 1-3 after deleting the level plate
 - Date: 2026-11-18
 - Type: 2x captures of the real main path (boot -> GameSelector -> 1-1 and 1-3), bottom strip, with a
   per-pixel ink scan of the same frame
@@ -5106,7 +5106,7 @@ behavior or specs; follow up with a binary observation entry.
   its own). Two comments that repeated D-0031 beside the constants and `_add_bottom_hud()` were
   trimmed; assertions unchanged at 170.
 
-## EV-0201 - What the hint refresh costs per frame, before and after the tick gate
+### EV-0201 - What the hint refresh costs per frame, before and after the tick gate
 - Date: 2026-11-18
 - Type: timing probe on the live 1-1 level (windowed, `--audio-driver Dummy`), 200,000 calls per figure
 - Source: `scripts/tank/level.gd` (`_refresh_hint`, `hint_text`, `tank.age_ticks`),
@@ -5124,7 +5124,7 @@ behavior or specs; follow up with a binary observation entry.
 - (4) Also removed in the review: `_add_bottom_hud()`'s unreachable null guards (single caller,
   labels rebuilt per level). Font constants kept, with the reason in D-0032.
 
-## EV-0202 - The bar's `$` and its text sizes, measured off the 1-1 recording
+### EV-0202 - The bar's `$` and its text sizes, measured off the 1-1 recording
 - Date: 2026-11-18
 - Type: frames of `Recording 2026-11-16 123332.mp4` (636x504, 30 fps; t = 15, wallet 45), 32x badge
   crops against `assets_raw/images/menubar.png`, same-scale side-by-sides of the port's own capture
@@ -5150,7 +5150,7 @@ behavior or specs; follow up with a binary observation entry.
   the two font ids; the shadow colour), `headless_integration_check` 134 (its two `_uses_font` checks
   move to `BAR_PRICE_FONT`), `headless_level_check` 170, boot clean.
 
-## EV-0203 - The tank name's width: font table at native size, and the re-shot 1-1 label
+### EV-0203 - The tank name's width: font table at native size, and the re-shot 1-1 label
 - Date: 2026-11-18
 - Type: `Font.get_string_size("Tank  1-1")` per shipped font at its native size; windowed 1-1 capture
   at 2x (1280x960) with the wallet at 45, ink box of the name label measured on the raw RGB
@@ -5170,7 +5170,7 @@ behavior or specs; follow up with a binary observation entry.
 - (4) **Coverage**: `headless_level_check` 170 -> 171 (the font id and the -1.0 tracking);
   `headless_store_ui_check` 65, `headless_integration_check` 134, boot clean.
 
-## EV-0204 - The hunger hint's cache survives `load_game()` before D-0035
+### EV-0204 - The hunger hint's cache survives `load_game()` before D-0035
 - Date: 2026-11-18
 - Type: reading `_refresh_hint`'s two guards against `load_game`'s restore path; headless suite
 - Source: `scripts/tank/level.gd` (`_refresh_hint`, `load_game`), `tests/headless_level_check.gd`
@@ -5198,7 +5198,7 @@ behavior or specs; follow up with a binary observation entry.
   blank). Nothing else carries hint state: `hint_text()` is pure, `Fish._warned` is per-fish and reset
   with the fish, and the scalar block has no hint field.
 
-## EV-0205 - The tick-gated hint re-shot on 1-1 and 1-3 against the recording
+### EV-0205 - The tick-gated hint re-shot on 1-1 and 1-3 against the recording
 - Date: 2026-11-18
 - Type: windowed captures of the real main scene (2x, 1280x960) driven a tick at a time, and frames of
   `Recording 2026-11-16 123332.mp4` at 0/1.5/4/9 s; ink boxes measured on raw RGB
@@ -5226,7 +5226,7 @@ behavior or specs; follow up with a binary observation entry.
   tick-gating one.
 - (5) After feeding, both tanks draw no hint at all - no outline, no empty band - matching t=9.
 
-## EV-0206 - A watched windowed 1-1 session: bottom row, plate, F12
+### EV-0206 - A watched windowed 1-1 session: bottom row, plate, F12
 - Date: 2026-11-18
 - Type: windowed run of the real main scene (2x captures, 1280x960) driven from the menu into 1-1 and
   left to run naturally - no fullness forced; keyboard/mouse through `Input.parse_input_event`
@@ -5251,7 +5251,7 @@ behavior or specs; follow up with a binary observation entry.
   F12 hides it again (`visible` false), and the hint and name are untouched in that capture too.
 - (6) **Coverage**: `headless_integration_check` 134 -> 136 (the stats box exists and clears both rects).
 
-## EV-0207 - A windowed 1-1 load with the hint up: the label re-writes without help
+### EV-0207 - A windowed 1-1 load with the hint up: the label re-writes without help
 - Date: 2026-11-18
 - Type: windowed run of the real main scene (render = true, 2x captures), saves written to `user://`
   and loaded back through `Level.load_game`, label state read immediately after the call and again one
@@ -5275,7 +5275,7 @@ behavior or specs; follow up with a binary observation entry.
 - (6) **Coverage**: this is the windowed half the headless suite cannot reach (`render = false` keeps
   `hint_label` null there, so its `_test_hint_cache_on_load` only pins the tick reset).
 
-## EV-0208 - Per-tank state on the Level, and what a load leaves behind
+### EV-0208 - Per-tank state on the Level, and what a load leaves behind
 - Date: 2026-11-18
 - Type: field-by-field audit of `scripts/tank/level.gd` against `load_game`/`start_level` and
   `TankScalars`; headless scenarios plus a windowed backdrop capture
@@ -5299,7 +5299,7 @@ behavior or specs; follow up with a binary observation entry.
 - (6) **Left stale on purpose** (no field in the save, or unreachable): `waves_spawned`, `completed`,
   `particles`, `laser_sparks`, and live pet bodies.
 
-## EV-0209 - Fresh-eyes review of the load refresh, and the two tank indices collapsed into one
+### EV-0209 - Fresh-eyes review of the load refresh, and the two tank indices collapsed into one
 - Date: 2026-11-19
 - Type: read-through of `load_game()` against its callers and the suites; code change plus headless
   runs (no new capture: nothing visual changed)
@@ -5328,7 +5328,7 @@ behavior or specs; follow up with a binary observation entry.
   `headless_store_ui_check` 65, `headless_integration_check` 136, 400-frame boot clean (the known
   `2 resources still in use at exit` only).
 
-## EV-0210 - Fresh-eyes review of D-0037 and D-0038: one backdrop path, and a vacuous notice assertion
+### EV-0210 - Fresh-eyes review of D-0037 and D-0038: one backdrop path, and a vacuous notice assertion
 - Date: 2026-11-19
 - Type: read-through of `load_game()`, the backdrop trio, `TankScalars`' egg field and both new
   scenarios; code simplification plus headless runs (no capture: the rendered result is unchanged)
@@ -5358,7 +5358,7 @@ behavior or specs; follow up with a binary observation entry.
   (open, see R34).
 - (5) **Runs**: `headless_level_check` 184, `headless_tank_snapshot_check` 56.
 
-## EV-0211 - Windowed 1-1 load of a tank 2-3 save: four surfaces, and the store rows that went blank
+### EV-0211 - Windowed 1-1 load of a tank 2-3 save: four surfaces, and the store rows that went blank
 - Date: 2026-11-19
 - Type: windowed run of `tools/godot/shot_load_refresh.gd` (windowed, `--audio-driver Dummy`); two
   1280x960 captures (local, gitignored) plus a headless guard
@@ -5390,7 +5390,7 @@ behavior or specs; follow up with a binary observation entry.
   `render = false`, so it can pin the shelf mapping but not that the bar draws; the captures are the
   visual record.
 
-## EV-0212 - What the base save does with `completed` and `waves_spawned`
+### EV-0212 - What the base save does with `completed` and `waves_spawned`
 - Date: 2026-11-19
 - Type: read of the save format notes (`p2.13-saves.md` §6.1/§6.3/§6.4), the progression/mode notes
   and the forward parse evidence; code change plus headless runs (no capture: no visual change)
@@ -5422,7 +5422,7 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Left alone**: the rest of the 27-dword run (mode timers, totals, high-water marks) is still
   written as zeroes; only `+0x45C` was in scope here.
 
-## EV-0213 - Every port-only store-row key across a save: `free` matters, the roller's keys do not (yet)
+### EV-0213 - Every port-only store-row key across a save: `free` matters, the roller's keys do not (yet)
 - Date: 2026-11-19
 - Type: reader hunt for the row keys the 17-byte record cannot carry, plus a headless scenario
 - Source: `scripts/economy/store.gd` (`price_known`, `is_available`, `item`),
@@ -5455,7 +5455,7 @@ behavior or specs; follow up with a binary observation entry.
   row to still buy. `headless_level_check` 191 -> 200; the other 22 script suites and the
   integration suite unchanged (script sum 1377, +136 = 1513).
 
-## EV-0214 - Fresh-eyes review of the store-row restore: two cuts, no behaviour change
+### EV-0214 - Fresh-eyes review of the store-row restore: two cuts, no behaviour change
 - Date: 2026-11-19
 - Type: read-through of `Level._restore_store_rows()` and its call in `load_game()`, the shelf
   re-derivation against `Progression.store_rows`, and the guard in `_test_load_refresh`; two edits plus
@@ -5476,7 +5476,7 @@ behavior or specs; follow up with a binary observation entry.
 - (4) **Runs:** `headless_level_check` 200, `headless_tank_snapshot_check` 58,
   `headless_store_ui_check` 65 - all PASS, counts unchanged (neither edit removed coverage).
 
-## EV-0215 - The restore floor is the restored tank's own starting pieces
+### EV-0215 - The restore floor is the restored tank's own starting pieces
 - Date: 2026-11-19
 - Type: code change plus headless runs (no capture: no visual change)
 - Source: `scripts/tank/level.gd` (`load_game`), `scripts/persistence/tank_scalars.gd` (`apply`),
@@ -5496,7 +5496,7 @@ behavior or specs; follow up with a binary observation entry.
 - (4) **Runs**: `headless_tank_snapshot_check` 58 -> 66, `headless_level_check` 200, the other 21
   script suites unchanged, integration 136 - all PASS (script sum 1385, +136 = 1521).
 
-## EV-0216 - The Time Trial clock is the block's `+0x3B0` seconds, not `+0x3FC`
+### EV-0216 - The Time Trial clock is the block's `+0x3B0` seconds, not `+0x3FC`
 - Date: 2026-11-19
 - Type: read of the mode/progression notes and the forward parse, code change, headless runs
 - Source: `docs/analysis/notes/p2.11-modes.md` §4, `p2.5-economy.md` §6 step 7,
@@ -5524,7 +5524,7 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Runs**: `headless_level_check` 200 -> 209, `headless_tank_snapshot_check` 66 -> 68, the other
   21 script suites unchanged, integration 136 - all PASS (script sum 1396, +136 = 1532).
 
-## EV-0217 - The bar and egg dome repaint is observed, in pixels, on the tick after a load
+### EV-0217 - The bar and egg dome repaint is observed, in pixels, on the tick after a load
 - Date: 2026-11-19
 - Type: windowed run of `tools/godot/shot_load_refresh.gd` (`--audio-driver Dummy`), three 1280x960
   captures (local, gitignored) plus pixel fingerprints of the price band, wallet, egg dome and name
@@ -5556,7 +5556,7 @@ behavior or specs; follow up with a binary observation entry.
   values until the sim resumes. The stale frame above is exactly that state. Not fixed here; recorded
   in PLAN R41.
 
-## EV-0218 - The third hint wording and its measured row
+### EV-0218 - The third hint wording and its measured row
 - Date: 2026-11-19
 - Type: string-table and note read; code change; headless suites plus a windowed ink probe
 - Source: `docs/evidence/p2.2-game-module-strings.txt` (0x598D14/0x598D48/0x598D70),
@@ -5581,7 +5581,7 @@ behavior or specs; follow up with a binary observation entry.
   suites unchanged, script sum 1399 (+136 = 1535). Windowed probe printed
   `INK: rows 457.0..473.5`, `shot_hint_ink.png`.
 
-## EV-0219 - The `+0x3FC` end-of-level elapsed snapshot is mapped both ways
+### EV-0219 - The `+0x3FC` end-of-level elapsed snapshot is mapped both ways
 - Date: 2026-11-19
 - Type: note read; code change; headless suites
 - Source: `docs/analysis/notes/p2.6-progression.md` §5 (`Tank+0x3FC = FUN_00538040()` =
@@ -5605,7 +5605,7 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Runs**: `headless_tank_snapshot_check` 68 -> 71, `headless_level_check` 212 -> 213 (+1 for a
   finished save's double copy), all 24 suites green, script sum 1403 (+136 = 1539).
 
-## EV-0220 - The store screen's eight widgets are indexed by store slot, not by array position
+### EV-0220 - The store screen's eight widgets are indexed by store slot, not by array position
 - Date: 2026-11-19
 - Type: note read; code change; headless suites
 - Source: `docs/analysis/notes/p2.12-menus.md` §6/§6d, `docs/analysis/notes/p2.6-progression.md` §3,
@@ -5629,7 +5629,7 @@ behavior or specs; follow up with a binary observation entry.
   after a load, and that the bar has no eighth dome), `headless_profile_check` 56 -> 57 (the roller's
   shelf on the fresh roll); all 24 suites green, script sum 1410 (+136 = 1546).
 
-## EV-0221 - Review of the shelf-keyed store screen, plus an out-of-order load pin
+### EV-0221 - Review of the shelf-keyed store screen, plus an out-of-order load pin
 - Date: 2026-11-19
 - Type: review; code simplification; a new headless pin; full suite
 - Source: `scripts/ui/store_screen.gd`, `scripts/tank/level.gd`,
@@ -5652,7 +5652,7 @@ behavior or specs; follow up with a binary observation entry.
 - (4) **Runs**: `headless_store_ui_check` 70 -> 81, the other 23 suites unchanged, script sum 1421
   (+136 = 1557); `headless_integration_check` 136.
 
-## EV-0222 - The out-of-order load pin also proves the roller's shelf is derived
+### EV-0222 - The out-of-order load pin also proves the roller's shelf is derived
 - Date: 2026-11-19
 - Type: test hardening; one suite
 - Source: `tests/headless_store_ui_check.gd` (`_test_loaded_rows`)
@@ -5663,7 +5663,7 @@ behavior or specs; follow up with a binary observation entry.
   the screen found it there. `headless_store_ui_check` stays at 81 assertions (the two-part check
   replaced the one-part one) and the other 23 suites are untouched.
 
-## EV-0223 - The level end writes the level's slot and the Challenge tank's record
+### EV-0223 - The level end writes the level's slot and the Challenge tank's record
 - Date: 2026-11-19
 - Type: implementation + test; three scripts, one suite
 - Source: `docs/evidence/p2.6b-transition-verify.json` (procedures `0x514510`, `0x5144c0`),
@@ -5691,7 +5691,7 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Runs**: `headless_level_check` 222 -> 241 assertions (19 new); the other 23 suites untouched
   by this entry, re-run with the whole set at commit time.
 
-## EV-0224 - The out-of-order store pin reads the labels the screen draws
+### EV-0224 - The out-of-order store pin reads the labels the screen draws
 - Date: 2026-11-19
 - Type: test hardening; one suite + one screen method
 - Source: `tests/headless_store_ui_check.gd` (`_test_loaded_rows`), `scripts/ui/store_screen.gd`
@@ -5709,7 +5709,7 @@ behavior or specs; follow up with a binary observation entry.
 - (3) **Runs**: `headless_store_ui_check` 81 -> 97 assertions. The other 23 suites do not mount the
   screen (`StoreScreen.build` is additive) and were re-run at commit time.
 
-## EV-0225 - Three rendering defects: the diamond coin's navy key, the buy spawn's drop, the shop's shelves
+### EV-0225 - Three rendering defects: the diamond coin's navy key, the buy spawn's drop, the shop's shelves
 - Date: 2026-11-19
 - Type: rendering fixes; three scripts, two suites
 - Source: `scripts/tank/sprite_key.gd`, `scripts/tank/level.gd` (`_spawn_bought_fish`),
@@ -5735,7 +5735,7 @@ behavior or specs; follow up with a binary observation entry.
   (the drop), `headless_store_ui_check` 97 unchanged; screenshots `shot_store.png`/`shot_probe_store.png`
   showed the diamond clean and the 1-3 shop's five shelves with their icons and prices.
 
-## EV-0226 - The menu mermaid's fin is rotated onto the tail's measured stump
+### EV-0226 - The menu mermaid's fin is rotated onto the tail's measured stump
 - Date: 2026-11-19 (owner: the mermaid tail is improper again)
 - Type: measurement + windowed visual; a port fit replaced
 - Source: `assets_raw/images/selectorback.png`, `tailflop.png`, `masks/tailflop_.png`;
@@ -5755,12 +5755,12 @@ behavior or specs; follow up with a binary observation entry.
 - (4) **Runs**: `headless_menu_check` 28 assertions unchanged (the recovered `framemap`/delays are
   still pinned); `shot_menu.png` re-captured and viewed.
 
-## EV-0227 - The menu fin covers the painted tail's end only when its fluke faces out
+### EV-0227 - The menu fin covers the painted tail's end only when its fluke faces out
 - Date: 2026-11-22 (owner: the baked tail's rounded lip still pokes through the fin)
 - Type: measurement + windowed visual (fit matrix over the real `selectorback.png`); a port fit
 - Source: `assets_raw/images/selectorback.png`, `tailflop.png`, `masks/tailflop_.png`;
   `scripts/ui/game_selector.gd`; captures `shot_menu.png`, temporary
-  `tools/godot/tune_tail_fit.gd`/`solve_tail_fit.gd`
+  a one-off compositing/coverage tool (deleted after the pass)
 - (1) **Why the -40 fit could not work.** Composited over the bare art, the fin's neck is narrower
   than the baked tail's end: at every notch-on-stump offset tried (scale 0.55-0.75, rotation
   -20..-48, per-axis stretch to 1.05) the painted end's lower-left silhouette stayed visible below
@@ -5775,12 +5775,12 @@ behavior or specs; follow up with a binary observation entry.
   measured notch/stump anchor - viewed on the full 1280x960 capture (`shot_menu.png`) and in
   2x crops. `headless_menu_check` still 28 assertions (playback timing untouched).
 
-## EV-0228 - Each guppy row's mouth point, measured on the state sheets
+### EV-0228 - Each guppy row's mouth point, measured on the state sheets
 - Date: 2026-11-22 (owner: the eating animation and hitbox are the same across stages)
 - Type: measurement (keyed cell pixels) + a code-shape change; the windows stay recovered
 - Source: `assets_raw/images/smallswim.png`, `smalleat.png` (10x5 cells of 80x80);
   `scripts/entities/fish.gd` (`MOUTH_TIPS`, `visual_offset`, `mouth_point`),
-  `scripts/tank/level.gd` (`_sync_visuals`); temporary `tools/godot/measure_guppy_mouth.gd`
+  `scripts/tank/level.gd` (`_sync_visuals`); a one-off keyed-cell measurement (deleted after use)
 - (1) **The sheets face left.** Cell (0, row) of both sheets has the eye and the lip on its left and
   the tail fin on its right, and the art grows per row: the opaque bbox is x 22..54 (row 0), 13..62,
   4..70, 2..70, i.e. 33 to 69 px wide in the same 80 px cell.
@@ -5798,3 +5798,23 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Runs**: `headless_fish_check` 121 -> 142 assertions (per-stage mouth for both facings, the
   18 px row-0/row-2 gap, a pellet at 34 px eaten vs 40 px not, and the eat state/art/row after the
   meal); the full suite passes (24 suites, 1558 assertions), integration 136, boot exit 0.
+
+### EV-0229 - The documentation pass: what was stale, and what it says now
+- Date: 2026-11-22 (owner: review and improve all the documentation)
+- Type: documentation audit (no behaviour claim, no code change)
+- Source: `README.md`, `AGENTS.md`, `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/AUDIT.md`,
+  `docs/P5-VALIDATION.md`, `docs/PLAN.md`, `docs/DECISIONS.md`, `docs/EVIDENCE.md`; one full suite run
+- (1) **Heading drift.** `docs/EVIDENCE.md` had 196 `### EV-` entries and 32 `## EV-` ones
+  (EV-0197 onward). All entries are now `###`, matching `DECISIONS.md`.
+- (2) **Stale totals and per-suite counts.** `README.md` quoted 24 suites at 1341 assertions and
+  per-suite comments from 2026-11-10 (fish 121, coin 154, level 122, store 40, pets 73, profile 29,
+  snapshot 54, integration 60); `docs/README.md` quoted 1431. Re-run 2026-11-22: **24 suites, 1558
+  assertions**, integration 136, boot exit 0; every quoted count is now that run's.
+- (3) **Stale mermaid state.** `ARCHITECTURE.md`'s gap table, `AUDIT.md` *5c*, `P5-VALIDATION.md`'s
+  export checklist, `PLAN.md`'s P4.14 note and R10 row, and two `DECISIONS.md` sections still said
+  the `MERYLTAIL` overlay was removed or fitted at `TAIL_OFFSET`/0.6. The overlay has been drawn since
+  EV-0188 and is now the fluke-out 145 deg / 0.65 / (-4,0) fit (D-0055, D-0056, EV-0226/EV-0227);
+  each place carries a dated correction, and the export checklist now names the sheet and mask it
+  reads at runtime.
+- (4) **Dead references.** EV-0227/EV-0228 cited two temporary tools deleted after their passes; both
+  now describe the method instead of a path that no longer resolves. `AGENTS.md` needed no change.

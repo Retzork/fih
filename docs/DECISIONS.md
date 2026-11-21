@@ -1193,7 +1193,9 @@ screen rect - the offset and the mirror are a port fit, not recovered bytes.
 separate crescent - its notch sat 22 px right of the stump and the cell was never turned. It is now
 placed by the measured notch/stump pair and rotated -40 degrees at 0.55 scale, so the fluke
 continues the baked tail's line (D-0055, EV-0226, `shot_menu.png`). Still a fit: Q-0055's exact
-screen rect is unrecovered.
+screen rect is unrecovered. **2026-11-22:** that turn was replaced - it could not cover the painted
+end, so the strip is now drawn fluke-out at 145 degrees and 0.65 scale with a (-4,0) nudge
+(D-0056, EV-0227).
 
 Still not drawn for the same missing-placement reason: `MERYLLIPS`/`MERYLBLINK` overlays - the
 baked art already has her mouth and eyes, and the blink is a `once` animation with its own trigger.
@@ -1803,7 +1805,9 @@ unidentified, and EV-0185 records the guide evidence for the mechanism itself.
 **2026-11-10 second pass on the mermaid (EV-0188):** the fin is drawn again. The baked tail's stump at
 ~(152,405) is real, so the `MERYLTAIL` crescent is the missing fin; at 1:1 it read as a second tail,
 so the port fits it at scale 0.6 with its root notch on the stump and keeps the recovered flop. The
-placement is still the port's (Q-0055), not a recovered coordinate.
+placement is still the port's (Q-0055), not a recovered coordinate. **2026-11-22:** this 0.6 fit was
+replaced twice (D-0055, then D-0056/EV-0227); the strip is drawn today at 145 degrees, 0.65 scale,
+fit (-4,0).
 
 ### D-0028 - The tank screen's bottom row: "Tank 1-1" and the hunger hint
 
@@ -2444,3 +2448,16 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   is the point they are measured from, which also puts the eat animation's mouth-open at the drawn
   mouth. Species drawn from their own sheets (Oscar, Sylvester, Ball, Bi) keep the old centre-based
   tip until their rows are measured too.
+
+### D-0058 - Documentation is kept to one shape: dated corrections, one heading level, current counts
+
+- Date: 2026-11-22 (owner: review and improve all the documentation)
+- Status: accepted; the review's findings are EV-0229.
+- Append-only ledgers still get *dated corrections* inside the entries they correct: a claim that is
+  no longer true (the mermaid overlay's state, the old `TAIL_OFFSET`/0.6 fit, the 1341/1431 suite
+  totals) is not silently left standing and is never rewritten as if it had always said the new
+  thing - a `**Corrected YYYY-MM-DD**` note names the decision and evidence that supersede it.
+- One heading level per ledger: every `EV-` entry is `###` (the newest 32 had drifted to `##`), every
+  `D-`/`Q-` entry is `###`, and `PLAN.md`'s Review rows are one line each.
+- Counts in the two READMEs and the audit are re-derived from a full run rather than carried forward:
+  as of this review that is 24 suites / 1558 assertions, integration 136, boot exit 0.

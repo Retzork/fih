@@ -448,8 +448,8 @@ documented unknown (DECISIONS `Q-*`), never a gate on the remake:
 | per-kind alien click box (Q-0046); alien wander target + bottom lane (Q-0045) | P4.8 |
 | laser draw/frame binding (Q-0023); the `Tank+0xBC` list stays empty | P4.10 |
 | battle-music trigger (Q-0031b) and the numeric event->sound table (Q-0030; the port maps by semantic name) | P4.13 |
-| menu buttons' baked bitmaps (labels are port text); the `MERYLTAIL` overlay is not drawn - the baked tail is used, no placement recovered (Q-0055/R10) | P4.14 |
-| `content.json` export inclusion is open until a real export is run (the tail overlay removal makes AUDIT F1 moot) | P5.5 |
+| menu buttons' baked bitmaps (labels are port text); the `MERYLTAIL` overlay is drawn as a viewed fit - turned fluke-out at 145 deg / 0.65 scale it covers the baked tail's painted end, exact placement unrecovered (Q-0055, D-0056/EV-0227) | P4.14 |
+| `content.json` export inclusion is open until a real export is run; the `MERYLTAIL` sheet and its mask are read at runtime again, so an export must carry both (the mask is applied in memory, so AUDIT F1's exported-mask warning does not return) | P5.5 |
 | renderer/packaging decisions (Forward+ kept as-is) | P5.5 |
 
 ## 10. File map (P4 output)

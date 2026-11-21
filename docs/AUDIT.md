@@ -236,7 +236,9 @@ All §5a rows and §6 priorities are closed against the recovered contract:
 - **G11/F1 fixed:** hunger/growth/pet/alien/wave/projectile cue signals are consumed
   (`CUE_SOUNDS` by semantic name, Q-0030 documented) and missile smoke/bursts spawn tick-counted
   particles; the tailflop loaded through the imported textures (no export warning on boot) and the
-  overlay was later removed entirely (R10, Q-0055).
+  overlay was later removed entirely (R10, Q-0055). **Corrected 2026-11-22:** the overlay is drawn
+  again (D-0056, EV-0227), so the sheet and its mask are runtime files an export must carry; the
+  imported-texture route is what keeps F1 quiet.
 - **P5 closed:** `docs/P5-VALIDATION.md` (differential table, playtest checklist, timing,
   perf, packaging). **Superseded 2026-11-08:** the completion pass was revoked after the owner's
   playtest; see `PLAN.md`'s Review table (R8/R9 open).
@@ -271,7 +273,9 @@ info line under the buy row should go.
   unfinished without `MERYLTAIL`. The overlay is restored with its mask (`MaskAlpha` +
   `masks/tailflop_.png` - the missing mask is what made the old attempt a green strap), fitted over
   the baked tail (mirrored, offset (120,268), resting on cell 0) and playing the recovered one-shot
-  flop. Exact placement stays a port fit (Q-0055, R10).
+  flop. Exact placement stays a port fit (Q-0055, R10). **Corrected 2026-11-22:** that mirrored fit
+  read as a second tail; the strip is now turned fluke-out (145 deg, scale 0.65, fit (-4,0) on the
+  measured notch/stump anchor) so its fluke covers the painted end (D-0056, EV-0226/EV-0227).
 - **Hatch card art.** `HatchScreen` now draws the recovered 640x480 `HATCHSCREEN` incubator, the
   three-cell `HATCHANIMATION` crack strip and the awarded pet's first cell. Both sheets keep an
   opaque coloured field in the extracted PNGs, so `SpriteKey` (black border key) is the wrong tool:
@@ -312,7 +316,8 @@ port divergence (D-0015) - the binary's TankScreen id 99 still closes the tank a
 - **Help.** The Help button replaces Options with the dimmed tutorial `HelpScreen` while the tank
   stays paused; Escape and the "Back to Game" button close it and resume.
 - **Verification.** `headless_integration_check` 81 -> 116 and `headless_level_check` 149 -> 153;
-  all 24 suites pass, **1431 assertions**; the 400-frame boot exits 0; the windowed probe freezes
+  all 24 suites pass, **1431 assertions** (the 2026-11-15 run; 1558 as of 2026-11-22); the
+  400-frame boot exits 0; the windowed probe freezes
   `age/wave/fullness`, drives the dialog's money/guppy/grow actions while paused, then exercises OK,
   Help+Escape, Back to Menu and the F1/F2/F3/F10 leg. Still open: the owner's live playtest (R8).
 

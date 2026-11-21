@@ -1,6 +1,6 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Progress audit (2026-11-05, re-run 2026-11-07):** all 19 headless suites re-run green on this checkout (1010 assertions after the projectile homing follow-up, EV-0158; at the 2026-11-05 audit baseline it was 992; the scene-backed integration suite covers menu -> level -> wave -> boss, the alien/boss HP bars and the native UI fonts); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md). **Review reset (2026-11-08):** the completion pass was revoked by the owner after a playtest - the suites prove modules, not the assembled game. `PLAN.md`'s Review table is the current work list (R8/R9 open); all 24 suites still pass (1431 assertions, re-run 2026-11-15).
+**Progress audit (2026-11-05, re-run 2026-11-07):** all 19 headless suites re-run green on this checkout (1010 assertions after the projectile homing follow-up, EV-0158; at the 2026-11-05 audit baseline it was 992; the scene-backed integration suite covers menu -> level -> wave -> boss, the alien/boss HP bars and the native UI fonts); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md). **Review reset (2026-11-08):** the completion pass was revoked by the owner after a playtest - the suites prove modules, not the assembled game. `PLAN.md`'s Review table is the current work list (R8/R9 open); all 24 suites still pass (1558 assertions, re-run 2026-11-22).
 
 **Handover status: Phase 2 closed (2026-11-02).** Phase 0, Phase 1 and Phase 3 are complete; Phase 2
 is 14/18 with **every technical system decoded** and `SPECS.md` written - only the two optional items
@@ -16,7 +16,7 @@ constructors and their click handlers, the dialog base plus all ten dialog ctors
 handlers); what is left there are the tracked open questions.
 **Phase 4 and Phase 5 are in review (2026-11-09):** the 2026-11-08 completion pass was revoked by
 the owner after a playtest, so P4.4-P4.14 and P5.1-P5.5 are back to `[~]`. All 24 headless checks
-pass (1431 assertions, re-run 2026-11-15), but the Review table in `PLAN.md` is the source of truth:
+pass (1558 assertions, re-run 2026-11-22), but the Review table in `PLAN.md` is the source of truth:
 R1/R2/R3/R4/R5/R6/R7 and R10 are fixed, R8 (the owner's live playtest of tanks 2-4/5-1) and R9 (pet
 guards) remain. The 2026-11-15 pass also rebuilt the in-tank Options dialog on the shipped art and
 wired the shared pause gate (`D-0016`, `EV-0192`).
@@ -25,7 +25,8 @@ wired the shared pause gate (`D-0016`, `EV-0192`).
 
 1. **New agent session:** read `../AGENTS.md` first, then `PLAN.md` (mandatory). Follow the
    session-end checklist in `AGENTS.md`.
-2. **Want the current state quickly?** Read `SPECS.md` (the behaviour contract - it summarises every
+2. **Want the current state quickly?** Read the Review table at the end of `PLAN.md` (the open
+   R-rows are the work list), then `SPECS.md` (the behaviour contract - it summarises every
    system and maps the P4 tasks), then the newest note `analysis/notes/p2.15-resources.md` (EV-0150..
    EV-0154; latest corrections EV-0155/EV-0156, plus EV-0157's font-global map), then
    `analysis/notes/p2.12-menus.md` for the
@@ -46,7 +47,7 @@ wired the shared pause gate (`D-0016`, `EV-0192`).
 | P1 target identity | Complete (10/10) |
 | P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In review (3/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, 16 slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser, all modes; 24 headless checks green (1431 assertions), but R8/R9 keep the assembled game unverified |
+| P4 Godot implementation | In review (3/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, 16 slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser, all modes; 24 headless checks green (1558 assertions), but R8/R9 keep the assembled game unverified |
 | P5 validation / polish | In review (0/5): `P5-VALIDATION.md` withdrawn pending R8/R9 |
 
 - **2026-11-15 in-tank Options (D-0015/D-0016, EV-0192):** the tank MENU opens the shipped-art
@@ -319,12 +320,12 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
 | `AUDIT.md` | Progress audit (2026-11-05): re-run test counts, per-system capability assessment, findings and next-step priority. |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0157). |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0229). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `SPECS.md` | Behaviour contract for P4 (P2.18 output): tick model, resource contract, entity rules, economy, modes, UI, persistence, audio, cross-system rules, shared constant sheet, open-question index. Read before any P4 task. |
 | `ARCHITECTURE.md` | Phase 4 design (P4.1): the tick contract and phase order, autoloads and scene tree, ownership map, coupling rules, project settings, verification commands, file map. |
-| `P5-VALIDATION.md` | Phase 5 validation (P5.1-P5.5 complete): differential table, playtest checklist, timing, perf, packaging. |
+| `P5-VALIDATION.md` | Phase 5 validation (withdrawn pending R8/R9): differential table, playtest checklist, timing, perf, packaging. |
 | `DECISIONS.md` | Settled decisions (D-####) and open questions (Q-####), including the current P2.6, P2.8-P2.15 opens and **Q-0034** (tick rate, the one item that affects every timed system). |
 | `analysis/notes/` | Per-subsystem dossiers (`p2.1-frameloop.md` ... `p2.15-resources.md`, `p3-assets.md`, `wiki-refs.md`); each P2 note ends with an "Implementation spec for P4". |
 | `analysis/` | Inventories (`resources.json`, `extraction.json`, ...), snapshots (gitignored), evidence maps. |
