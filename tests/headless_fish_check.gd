@@ -36,6 +36,7 @@ func _init() -> void:
 	_test_hunger_and_death()
 	_test_swim_machine()
 	_test_food_approach_and_eating()
+	_test_mouth_follows_stage()
 	_test_acceptance()
 	_test_nutrition_and_growth()
 	_test_star_and_breeding()
@@ -231,7 +232,7 @@ func _test_food_approach_and_eating() -> void:
 	_step(1)
 	_expect(is_equal_approx(fish.vy, -3.0), "vy clamps at -3")
 
-	# The eat window: fish center at the pellet consumes it.
+	# The eat window: a pellet at the mouth is consumed.
 	tank.shutdown()
 	tank.set_seed(104)
 	fish = _quiet_fish(Vector2(360.0, 160.0), -1, 0)
@@ -249,6 +250,64 @@ func _test_food_approach_and_eating() -> void:
 	_spawn_food(Vector2(400.0, 200.0), 0, 0, 0)
 	_step(1)
 	_expect(capped.fullness == 800, "quality 0 caps at 800 (got %d)" % capped.fullness)
+
+
+## D-0057 / EV-0228: the feed point is each art row's own measured lip, so a bigger stage's window
+## sits where its drawn mouth is rather than at one fixed point for every stage.
+func _test_mouth_follows_stage() -> void:
+	var origin := Vector2(240.0, 200.0)
+	# The measured lips in cell coordinates, per draw row.
+	var lips := [Vector2(22.0, 41.0), Vector2(13.0, 41.0), Vector2(4.0, 41.0), Vector2(5.0, 48.0)]
+	var rows := [0, 1, 2, 2, 3]
+	for stage in 5:
+		tank.shutdown()
+		tank.set_seed(400 + stage)
+		var fish: Fish = _quiet_fish(origin, stage, 300)
+		fish.vx = 0.0
+		fish.vy = 0.0
+		var row: int = rows[stage]
+		var lip: Vector2 = lips[row]
+		_expect(fish.sprite_row() == row, "stage %d draws art row %d" % [stage, row])
+		var expected := origin + FishScript.VISUAL_MARGIN + lip
+		_expect(fish.mouth_point().is_equal_approx(expected),
+			"stage %d mouth is its row's lip %s (got %s)" % [stage, expected, fish.mouth_point()])
+		# Mirrored, the same lip is the cell's right edge and the sprite is drawn 20 px further right.
+		fish.flip = true
+		fish.facing = -1
+		var mirrored := origin + FishScript.VISUAL_MARGIN + FishScript.VISUAL_FLIP_SHIFT + Vector2(FishScript.CELL_SIZE - lip.x, lip.y)
+		_expect(fish.mouth_point().is_equal_approx(mirrored),
+			"stage %d flipped mouth mirrors its own lip (got %s)" % [stage, fish.mouth_point()])
+
+	# The point really does move with the stage: row 2's lip is 18 px further out than row 0's, so a
+	# pellet that only a grown guppy can reach proves the window followed the art.
+	var mouth_x := {}
+	for stage in 3:
+		tank.shutdown()
+		tank.set_seed(420 + stage)
+		var f: Fish = _quiet_fish(origin, stage, 300)
+		f.vx = 0.0
+		f.vy = 0.0
+		mouth_x[stage] = f.mouth_point().x
+	_expect(is_equal_approx(mouth_x[0] - mouth_x[2], 18.0),
+		"row 0 and row 2 lips are 18 px apart (got %.1f)" % (mouth_x[0] - mouth_x[2]))
+
+	# A pellet 34 px from a stage-2 mouth is eaten; 40 px away is outside the 35 px window.
+	for dx in [34.0, 40.0]:
+		tank.shutdown()
+		tank.set_seed(int(440 + dx))
+		var big: Fish = _quiet_fish(origin, 2, 300)
+		big.vx = 0.0
+		big.vy = 0.0
+		var mouth := big.mouth_point()
+		var pellet: Food = _spawn_food(mouth + Vector2(dx, 0.0), 0, false, 0)
+		_step(1)
+		if dx < 35.0:
+			_expect(pellet.dead, "a pellet 34 px from the stage-2 mouth is eaten")
+			_expect(big.draw_state() == "eat", "the eater shows the eat state")
+			_expect(big.draw_image() == "IMAGE_SMALLEAT", "the eater draws the big row of SMALLEAT")
+			_expect(big.sprite_row() == 2, "the eat art keeps the stage-2 row")
+		else:
+			_expect(not pellet.dead, "a pellet 40 px from the stage-2 mouth is out of reach")
 
 
 func _test_acceptance() -> void:

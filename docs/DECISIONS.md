@@ -1718,6 +1718,11 @@ Open: the real per-cell hold and the pet reveal point.
   window, which is why the mouth window is 35 and not smaller.
 - **Limit.** The 16/3 px mouth offset is measured off the sprite, not a traced constant; a fish whose
   art puts its mouth elsewhere would need its own offset (only the guppy is drawn this way today).
+  **Corrected 2026-11-22 (D-0057, EV-0228):** that offset was measured against the cell centre with
+  the facing sign inverted, so it did not sit on the drawn lip, and it was one point for every
+  stage although the art grows per row. Each row's lip is now measured and the mouth is built from
+  the sprite's own draw offset; the fixed 35/50 px windows are unchanged, but they are measured from
+  a point that follows the stage.
 
 ### D-0023 - The bar follows the base-game recording: `$` prices, the green wallet and the violet badge
 
@@ -2422,3 +2427,20 @@ placement is still the port's (Q-0055), not a recovered coordinate.
   +145 degrees lays the fluke along the tail with its mass over the painted end and hides the stem
   inside the body, so the tail reads as one shape. Scale 0.65, fit (-4, 0) on the measured
   notch-on-stump anchor; Q-0055's exact screen rect is still open.
+
+### D-0057 - Feeding follows each art row's measured mouth, not one fixed point
+
+- Date: 2026-11-22 (owner: the eating animation and hitbox are identical across guppy stages though
+  the art size differs)
+- Status: accepted; `headless_fish_check` pins it (142 assertions).
+- The state sheets are 80x80 cells that face left, and the bigger stages are drawn bigger: the lip
+  is 18 px left of the cell centre in row 0, 27 px in row 1, 36 px in row 2 and 35 px (8 px lower) in
+  row 3. `Fish.mouth_point()` used one offset of 16 px from the cell centre with the facing sign
+  applied the wrong way, so it landed inside the body for small fish and near the tail when mirrored,
+  and it could not sit on a big guppy's mouth at all. The four lips are now measured constants
+  (`MOUTH_TIPS`), mirrored inside the cell when flipped and offset by the sprite's own draw position
+  (`Fish.visual_offset()`, which `Level._sync_visuals` also uses so the two cannot drift). The
+  recovered 35 px eat window and 50 px anticipation window are unchanged; what moves with the stage
+  is the point they are measured from, which also puts the eat animation's mouth-open at the drawn
+  mouth. Species drawn from their own sheets (Oscar, Sylvester, Ball, Bi) keep the old centre-based
+  tip until their rows are measured too.

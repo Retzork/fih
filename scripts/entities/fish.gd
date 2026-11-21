@@ -124,12 +124,26 @@ const HUNGER_HINTS := [-1, -200, -400]
 ## (D-0024). The windows are the recovered numbers; what moved is the point they are measured from.
 const EAT_WINDOW := 35.0
 const EAT_ANTICIPATION := 50.0
-## The mouth in the 80x80 body cell, measured off `SMALLSWIM`'s stage-0 frame: the fish spans x 23..54,
-## y 24..54 of the cell and its mouth is the front tip at (24, 43), i.e. 16 px ahead of the cell centre
-## and 3 px below it, mirrored by facing. Feeding used to be measured from the body centre, so a pellet
-## 30 px from the mouth still vanished - the owner's "collision is way off" (D-0024).
-const MOUTH_AHEAD := 16.0
-const MOUTH_DROP := 3.0
+## The mouth of each art row, measured off the state sheets' first cell: the guppy faces left, so
+## the mouth is the row's leftmost lip, and the bigger stages are drawn bigger with the mouth further
+## out - row 0's lip is 18 px left of the cell centre, row 2's is 36 px. One fixed offset therefore
+## cannot serve every stage: it put a big guppy's feed point inside its head while hanging a stage-0
+## pellet off its nose (D-0024, D-0057, EV-0228).
+## Species that draw from their own sheet keep the unmeasured centre-based tip (16 px ahead, 3 px
+## below the cell centre) until their rows are measured too.
+const LEGACY_MOUTH_AHEAD := 16.0
+const LEGACY_MOUTH_DROP := 3.0
+const MOUTH_TIPS := [
+	Vector2(22.0, 41.0),  # row 0: stage 0
+	Vector2(13.0, 41.0),  # row 1: stage 1
+	Vector2(4.0, 41.0),  # row 2: stages 2 and 3
+	Vector2(5.0, 48.0),  # row 3: stage 4, whose crowned art carries the mouth lower
+]
+## The 80x80 cell the art is drawn in, and the sprite's origin inside the fish's box (the same rule
+## `Level._sync_visuals` uses): 20 px in from the box's top-left, 20 px further right when mirrored.
+const CELL_SIZE := 80.0
+const VISUAL_MARGIN := Vector2(20.0, 20.0)
+const VISUAL_FLIP_SHIFT := Vector2(20.0, 0.0)
 const EAT_FX_TICKS := 8
 const ANTICIPATION_TICKS := 0x14
 ## Food approach (P2.2 §5.5): ±5/±10 px bands; vx ±4, vy -3..+4.
@@ -618,9 +632,26 @@ func _steer_to_shelter(mouth: Vector2) -> void:
 		target_timer += 1
 
 
-## The mouth point: the cell centre offset by the measured mouth tip, flipped with the facing.
+## Where the sprite sits relative to the fish's own position, mirroring included. `Level` draws with
+## this and the mouth is measured from it, so the feed point cannot drift from the drawn lip.
+func visual_offset() -> Vector2:
+	return VISUAL_MARGIN + (VISUAL_FLIP_SHIFT if flip else Vector2.ZERO)
+
+
+## The mouth point: the current art row's measured lip, placed inside the drawn cell (mirrored when
+## the fish is flipped) and offset by where the sprite is drawn. Each stage row has its own lip, so
+## feeding follows the art's size instead of using one point for every stage (D-0057).
 func mouth_point() -> Vector2:
-	return position + Vector2(40.0 + facing * MOUTH_AHEAD, 40.0 + MOUTH_DROP)
+	var def: Dictionary = SPECIES_DRAW.get(species, {"image": "", "row": -1})
+	if String(def["image"]) != "":
+		# A species drawn from its own sheet (Oscar, Sylvester, Ball, Bi): its rows are not measured,
+		# so it keeps the old centre-based tip rather than borrowing a guppy row's lip.
+		return position + Vector2(40.0 + facing * LEGACY_MOUTH_AHEAD, 40.0 + LEGACY_MOUTH_DROP)
+	var row := clampi(sprite_row(), 0, MOUTH_TIPS.size() - 1)
+	var lip: Vector2 = MOUTH_TIPS[row]
+	if flip:
+		lip.x = CELL_SIZE - lip.x
+	return position + visual_offset() + lip
 
 
 ## P2.3 §7.3: a ~35 px window consumes, ~50 px only opens the mouth (anticipation) - both from the

@@ -2480,8 +2480,9 @@ func _sync_visuals() -> void:
 			visual.flip_h = corpse.facing < 0
 		elif entity is Fish:
 			var fish := entity as Fish
-			# Fish box offsets: the drawn 40x40 art sits in the middle of the 80x80 bounds box.
-			visual.position = Vector2(20.0, 20.0) + Vector2(20.0, 0.0) * (1.0 if fish.flip else 0.0)
+			# Fish box offsets: the drawn 40x40 art sits in the middle of the 80x80 bounds box. The rule
+			# lives on the fish, because the mouth point is measured from the same offset.
+			visual.position = fish.visual_offset()
 			visual.flip_h = fish.flip
 		else:
 			visual.position = Vector2.ZERO

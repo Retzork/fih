@@ -5774,3 +5774,27 @@ behavior or specs; follow up with a binary observation entry.
 - (3) **Chosen fit**: `TAIL_ROTATION_DEGREES 145`, `TAIL_SCALE 0.65`, `TAIL_FIT (-4, 0)` on the
   measured notch/stump anchor - viewed on the full 1280x960 capture (`shot_menu.png`) and in
   2x crops. `headless_menu_check` still 28 assertions (playback timing untouched).
+
+## EV-0228 - Each guppy row's mouth point, measured on the state sheets
+- Date: 2026-11-22 (owner: the eating animation and hitbox are the same across stages)
+- Type: measurement (keyed cell pixels) + a code-shape change; the windows stay recovered
+- Source: `assets_raw/images/smallswim.png`, `smalleat.png` (10x5 cells of 80x80);
+  `scripts/entities/fish.gd` (`MOUTH_TIPS`, `visual_offset`, `mouth_point`),
+  `scripts/tank/level.gd` (`_sync_visuals`); temporary `tools/godot/measure_guppy_mouth.gd`
+- (1) **The sheets face left.** Cell (0, row) of both sheets has the eye and the lip on its left and
+  the tail fin on its right, and the art grows per row: the opaque bbox is x 22..54 (row 0), 13..62,
+  4..70, 2..70, i.e. 33 to 69 px wide in the same 80 px cell.
+- (2) **The lip per row**, taken as the leftmost opaque column at the mouth line (swim sheet; the eat
+  sheet agrees within 1 px): row 0 (22, 41), row 1 (13, 41), row 2 (4, 41), row 3 (5, 48 - its
+  crowned art carries the mouth lower, and the leftmost pixels are the crown, not the face).
+- (3) **The old point.** `position + (40 + facing * 16, 43)` ignored the sprite's own draw offset
+  (`(20, 20)` plus 20 px when mirrored) and pointed the offset the wrong way, so for an unflipped
+  guppy it sat 14 px behind row 0's lip and 32 px behind row 2's, and on a mirrored fish it was on
+  the tail side. The mouth now mirrors row 2's lip 36 px out instead of 16 px, and the biggest stage
+  takes its pellet at its own face.
+- (4) **Draw and mouth share one rule**: `Fish.visual_offset()` is now what `Level._sync_visuals`
+  positions the sprite with, and `mouth_point()` adds it to the row's lip, so the feed point cannot
+  drift from the drawn mouth.
+- (5) **Runs**: `headless_fish_check` 121 -> 142 assertions (per-stage mouth for both facings, the
+  18 px row-0/row-2 gap, a pellet at 34 px eaten vs 40 px not, and the eat state/art/row after the
+  meal); the full suite passes (24 suites, 1558 assertions), integration 136, boot exit 0.
