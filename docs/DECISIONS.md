@@ -2460,4 +2460,23 @@ fit (-4,0).
 - One heading level per ledger: every `EV-` entry is `###` (the newest 32 had drifted to `##`), every
   `D-`/`Q-` entry is `###`, and `PLAN.md`'s Review rows are one line each.
 - Counts in the two READMEs and the audit are re-derived from a full run rather than carried forward:
-  as of this review that is 24 suites / 1558 assertions, integration 136, boot exit 0.
+  as of this review that is 24 suites / 1564 assertions, integration 136, boot exit 0.
+
+### D-0059 - A turning guppy keeps its body in place; the mouth mirrors inside the same art box
+
+- Date: 2026-11-22 (owner: windowed check with stages 0-3 both ways, and fix the draw/mouth relation
+  if the mirrored mouth or the turn shift is wrong)
+- Status: accepted; viewed windowed and pinned headless (`headless_fish_check` 148).
+- The cell's art is not centred in its 80 px box (row 0 spans x 22..54, row 2 x 4..70), so mirroring
+  it around the sprite rect shifted the drawn body by `100 - (min + max)` - 24 px for row 0 and 26 px
+  for row 2. That is the shift that was visible when a fish turned, and it moved the pellet's target
+  with the drawing. `Fish.visual_offset()` now derives the flipped origin from the row's measured art
+  centre (`20 + 2 * centre - 80`, i.e. 16/15/14/12 for rows 0-3), so the drawn art box is identical on
+  both facings and only the lip changes side. `mouth_point()` reads the same offset, so the mouth is
+  on the drawn lip for both facings and every stage; the row lips (D-0057) are unchanged.
+- Windowed evidence: eight guppies (stages 0-3 x both facings) with a cross on each mouth and a pellet
+  on it - the crosses sit on the lips, the pellets vanish there (8/8 through `_try_eat`, and one tick
+  through the tank's own `_tick` for both facings in the suite); a stage-2 fish drawn unflipped then
+  flipped against a dot on its own position shows the body footprint unchanged.
+- Species drawn from their own sheets (Oscar, Sylvester, Ball, Bi) keep the old `+20` cell shift,
+  because their art centres are not measured yet.

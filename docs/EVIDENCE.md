@@ -5818,3 +5818,28 @@ behavior or specs; follow up with a binary observation entry.
   reads at runtime.
 - (4) **Dead references.** EV-0227/EV-0228 cited two temporary tools deleted after their passes; both
   now describe the method instead of a path that no longer resolves. `AGENTS.md` needed no change.
+
+### EV-0230 - Windowed proof that the mouth sits on the drawn lip, and the turn shift it exposed
+- Date: 2026-11-22 (owner: the guppy mouth change was only pinned by geometry - see it land)
+- Type: windowed observation (real tank, real sprites) + a measured draw-rule fix
+- Source: `scripts/entities/fish.gd` (`visual_offset`, `mouth_point`, `ART_CENTRES_X`);
+  `tests/headless_fish_check.gd`; one-off windowed probe (deleted after the pass)
+- (1) **The mouth on the lip.** Stages 0-3, unflipped and flipped, each with a red cross on
+  `mouth_point()` and a pellet spawned on it: the crosses sit on the painted lips in all eight cases,
+  and the pellets disappear at those points (8/8 through the fish's own `_try_eat`; the captures show
+  the pellets at the lips and the same frame after they are gone).
+- (2) **The turn shift was real.** The state cells are not centred in their 80 px box (row 0 art
+  x 22..54, row 2 x 4..70). Mirroring around the sprite rect with the old fixed +20 put a flipped
+  body at `120 - max` where unflipped it sits at `20 + min` - 24 px right for row 0, 26 px for row 2.
+  A stage-2 fish drawn unflipped then flipped against a dot on its own position showed the body moved
+  with the old rule; with the new one the art box is identical (24..90 for row 2) and only the lip
+  changes side.
+- (3) **The fix.** `Fish.visual_offset()` derives the flipped origin from the row's measured art
+  centre (`20 + 2c - 80` = 16/15/14/12 for rows 0-3, D-0059); `mouth_point()` adds the same offset, so
+  mouth and drawing cannot diverge. Fixed-image species keep the old shift.
+- (4) **Runs**: `headless_fish_check` 142 -> 148 (art box preserved per row, a pellet on the plain and
+  the flipped stage-2 lip eaten through the tank's own `_tick`); full suite 24 suites / 1564
+  assertions, integration 136, boot exit 0.
+- (5) **Limit.** The windowed probe's live unpause path hung in the harness after the frozen captures,
+  so the "pellet vanishes" check is the frozen-frame pair plus `_try_eat` and the tick-driven suite,
+  not a free-running play session.

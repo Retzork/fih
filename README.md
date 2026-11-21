@@ -21,7 +21,7 @@ current work list.** R1/R2/R3 (starting money, HUD, egg on the `MENUBAR` dome) a
 (species art, coin art, pellet sink-out + Angie's re-lay) are fixed with evidence
 EV-0162..EV-0176, and R10's masked mermaid tail plus the Hatch card art are in; the Review table has since grown to R48
 (R11-R48 fixed 2026-11-10..2026-11-22, latest: the documentation pass, D-0058); **R8 (the owner's live playtest of tanks 2-4 and 5-1 - its windowed frames are captured) and R9 (4 named pet guards: Seymour's aura writer, Amp's click, Nostradamus' sneeze, Walter's glove launch) are open.** R9 was narrowed on 2026-11-10: Wadsworth's shelter, Gumbo's corner steering, Blip's instant unlock and Presto's transform now act in the tank, the CHANGE-O picker and its "Recharging..." notice are in (EV-0177..EV-0182). The suites still pass - **24 headless
-checks, 1558 assertions** (23 `--script` suites + the scene-backed integration suite, re-run
+checks, 1564 assertions** (23 `--script` suites + the scene-backed integration suite, re-run
 2026-11-22) - which is necessary but not sufficient for the assembled feel. The 2026-11-10 additions
 are the render path, the 5-1 completion walk, the egg in the bar's seventh dome and the Hatch
 card art: the level's effect layer is now covered
@@ -72,7 +72,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\convert-fonts.ps1
 # the entity/tank seam and Food rules (43 assertions; exits 0 on pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_entity_check.gd
 
-# the Fish entity (142 assertions; exit 0 = pass)
+# the Fish entity (148 assertions; exit 0 = pass)
 & "C:\Users\Fauzi\Desktop\Godot_v4.7.1-stable_win64.exe" --headless --path . --script res://tests/headless_fish_check.gd
 
 # the Coin entity (161 assertions; exit 0 = pass)

@@ -271,12 +271,30 @@ func _test_mouth_follows_stage() -> void:
 		var expected := origin + FishScript.VISUAL_MARGIN + lip
 		_expect(fish.mouth_point().is_equal_approx(expected),
 			"stage %d mouth is its row's lip %s (got %s)" % [stage, expected, fish.mouth_point()])
-		# Mirrored, the same lip is the cell's right edge and the sprite is drawn 20 px further right.
+		# Mirrored, the same lip is the cell's right edge and the sprite is drawn at its flipped
+		# origin (which keeps the body in place, D-0059).
 		fish.flip = true
 		fish.facing = -1
-		var mirrored := origin + FishScript.VISUAL_MARGIN + FishScript.VISUAL_FLIP_SHIFT + Vector2(FishScript.CELL_SIZE - lip.x, lip.y)
+		var mirrored := origin + fish.visual_offset() + Vector2(FishScript.CELL_SIZE - lip.x, lip.y)
 		_expect(fish.mouth_point().is_equal_approx(mirrored),
 			"stage %d flipped mouth mirrors its own lip (got %s)" % [stage, fish.mouth_point()])
+
+	# Turning must not move the body: mirroring a cell whose art is not centred would shift it by
+	# `2 * (centre - 40)`. The measured art box is the same on both facings (D-0059).
+	var boxes := [[22.0, 54.0], [13.0, 62.0], [4.0, 70.0], [2.0, 70.0]]
+	for row in 4:
+		tank.shutdown()
+		tank.set_seed(430 + row)
+		var f: Fish = _quiet_fish(origin, [0, 1, 2, 4][row], 300)
+		f.vx = 0.0
+		f.vy = 0.0
+		var plain_left: float = FishScript.VISUAL_MARGIN.x + boxes[row][0]
+		var plain_right: float = FishScript.VISUAL_MARGIN.x + boxes[row][1]
+		f.flip = true
+		var off := f.visual_offset().x
+		_expect(is_equal_approx(off + FishScript.CELL_SIZE - boxes[row][1], plain_left)
+			and is_equal_approx(off + FishScript.CELL_SIZE - boxes[row][0], plain_right),
+			"row %d keeps its art box when flipped (%.1f..%.1f)" % [row, off + FishScript.CELL_SIZE - boxes[row][1], off + FishScript.CELL_SIZE - boxes[row][0]])
 
 	# The point really does move with the stage: row 2's lip is 18 px further out than row 0's, so a
 	# pellet that only a grown guppy can reach proves the window followed the art.
@@ -290,6 +308,21 @@ func _test_mouth_follows_stage() -> void:
 		mouth_x[stage] = f.mouth_point().x
 	_expect(is_equal_approx(mouth_x[0] - mouth_x[2], 18.0),
 		"row 0 and row 2 lips are 18 px apart (got %.1f)" % (mouth_x[0] - mouth_x[2]))
+
+	# Through the tank's own tick, on both facings: the pellet sits on the drawn lip and is gone
+	# after one tick (D-0057, D-0059).
+	for flip in [false, true]:
+		tank.shutdown()
+		tank.set_seed(500 + (1 if flip else 0))
+		var side: Fish = _quiet_fish(origin, 2, 300)
+		side.flip = flip
+		side.facing = -1 if flip else 1
+		side.vx = 0.0
+		side.vy = 0.0
+		var lip_pellet: Food = _spawn_food(side.mouth_point(), 0, false, 0)
+		_step(1)
+		_expect(lip_pellet.dead,
+			"a pellet on the %s stage-2 lip is eaten by the tick" % ("flipped" if flip else "plain"))
 
 	# A pellet 34 px from a stage-2 mouth is eaten; 40 px away is outside the 35 px window.
 	for dx in [34.0, 40.0]:

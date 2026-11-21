@@ -139,11 +139,15 @@ const MOUTH_TIPS := [
 	Vector2(4.0, 41.0),  # row 2: stages 2 and 3
 	Vector2(5.0, 48.0),  # row 3: stage 4, whose crowned art carries the mouth lower
 ]
-## The 80x80 cell the art is drawn in, and the sprite's origin inside the fish's box (the same rule
-## `Level._sync_visuals` uses): 20 px in from the box's top-left, 20 px further right when mirrored.
+## The 80x80 cell the art is drawn in and the sprite's origin inside the fish's box (the same rule
+## `Level._sync_visuals` uses): 20 px in from the box's top-left.
 const CELL_SIZE := 80.0
 const VISUAL_MARGIN := Vector2(20.0, 20.0)
 const VISUAL_FLIP_SHIFT := Vector2(20.0, 0.0)
+## The measured art centre of each state row (x only). Mirroring a sprite that is not centred in its
+## cell moves the art by `2 * (centre - 40)`, which made a turning guppy jump sideways; the flipped
+## origin is derived from this centre so the drawn body stays in the same box position (D-0059).
+const ART_CENTRES_X := [38.0, 37.5, 37.0, 36.0]
 const EAT_FX_TICKS := 8
 const ANTICIPATION_TICKS := 0x14
 ## Food approach (P2.2 §5.5): ±5/±10 px bands; vx ±4, vy -3..+4.
@@ -635,7 +639,14 @@ func _steer_to_shelter(mouth: Vector2) -> void:
 ## Where the sprite sits relative to the fish's own position, mirroring included. `Level` draws with
 ## this and the mouth is measured from it, so the feed point cannot drift from the drawn lip.
 func visual_offset() -> Vector2:
-	return VISUAL_MARGIN + (VISUAL_FLIP_SHIFT if flip else Vector2.ZERO)
+	if not flip:
+		return VISUAL_MARGIN
+	var def: Dictionary = SPECIES_DRAW.get(species, {"image": "", "row": -1})
+	if String(def["image"]) != "":
+		# A species on its own sheet keeps the plain cell shift; its art centres are not measured.
+		return VISUAL_MARGIN + VISUAL_FLIP_SHIFT
+	var centre: float = ART_CENTRES_X[clampi(sprite_row(), 0, ART_CENTRES_X.size() - 1)]
+	return VISUAL_MARGIN + Vector2(2.0 * centre - CELL_SIZE, 0.0)
 
 
 ## The mouth point: the current art row's measured lip, placed inside the drawn cell (mirrored when
