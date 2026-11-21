@@ -2335,6 +2335,11 @@ fit (-4,0).
   caps), hiding the shop/egg dome for the round, and collecting through the existing click path.
 - **Still out (Q-0053):** the pre-bonus store, the score record `FUN_00514510`, and the
   `scr%d.dat` escrow for `Tank+0x400`.
+- 2026-11-22: `tests/headless_bonus_flow_check.gd` now pins `Main`'s own hand-off - the cards, the
+  round's 540/720/900-tick duration per tank, a shell going to the round instead of the wallet, the
+  payout banked once, the card, and Continue on the next tank - because `headless_bonus_check` only
+  drove the level itself (EV-0231). The three-minigame recollection was re-checked against every
+  evidence file and is still unproven: one caption, one payout branch, no selector.
 
 ### D-0052 - The Beetlemuncher sells as a Gekko, because that is the purchase the evidence binds
 
@@ -2460,7 +2465,7 @@ fit (-4,0).
 - One heading level per ledger: every `EV-` entry is `###` (the newest 32 had drifted to `##`), every
   `D-`/`Q-` entry is `###`, and `PLAN.md`'s Review rows are one line each.
 - Counts in the two READMEs and the audit are re-derived from a full run rather than carried forward:
-  as of this review that is 24 suites / 1564 assertions, integration 136, boot exit 0.
+  as of this review that is 25 suites / 1628 assertions, integration 136, boot exit 0.
 
 ### D-0059 - A turning guppy keeps its body in place; the mouth mirrors inside the same art box
 

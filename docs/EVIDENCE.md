@@ -5843,3 +5843,38 @@ behavior or specs; follow up with a binary observation entry.
 - (5) **Limit.** The windowed probe's live unpause path hung in the harness after the frozen captures,
   so the "pellet vanishes" check is the frozen-frame pair plus `_try_eat` and the tick-driven suite,
   not a free-running play session.
+
+### EV-0231 - The bonus round through the real main scene: cards, wait, timer, payout, next tank
+- Date: 2026-11-22 (owner: finishing a tank jumps straight to the next tank instead of playing the
+  bonus rounds - port them, wire `BonusScreen` into the real flow and cover it headless)
+- Type: headless end-to-end check of `Main`'s own between-level wiring
+- Source: `tests/headless_bonus_flow_check.gd` (new, 64 assertions); `scripts/main.gd`
+  (`_on_level_completed`/`_show_hatch`/`_show_pets`/`_show_bonus`/`_on_bonus_finished`);
+  `scripts/tank/level.gd` (`begin_bonus_round`, `_tick_bonus`); `scripts/tank/bonus_round.gd`
+- **What was already in.** The round, the 160-tick wait, the timer, the shells routing and the
+  payout switch landed 2026-11-19 (`5e80b22`, D-0051), and a windowed probe walked 1-5 -> Hatch ->
+  Pets -> round -> card (EV-0069 and the `shot_bonus_*` captures). Re-run today on the real
+  `scenes/main.tscn`, that probe still passes every step: the HUD reads "BONUS ROUND" / "Collect as
+  many shells as you can!" / a counter / "Time Remaining: 0:14", a clicked shell moves the counter to
+  15, the clock runs out and the card pays 15.
+- **What was missing.** No test drove `Main`'s hand-off: `headless_bonus_check` calls
+  `begin_bonus_round` on a level it built itself, so a regression in `Main` (an empty `_pending_bonus`,
+  `Game.mode` compared as an enum, the tank left paused) would have looked exactly like "a finished
+  tank jumps straight on" with every suite green.
+- **The new check** boots the real main scene four times and, for tanks 1/2/3 at level 5, buys the
+  three egg pieces, asserts Hatch -> Pets -> `is_bonus_active()` with the HUD mounted, the per-tank
+  duration at the sentinel (540/720/900 ticks = 15/20/25 s), the 160-tick wait ending in `PLAYING`,
+  a clicked shell going to `bonus_shells` and not the wallet, the clock running out with the coin
+  list empty, `BonusScreen` carrying that total with `profile.shells` increased by exactly the card's
+  payout (banked once), and Continue starting 2-1/3-1/4-1. Tank 4 is the fast path: Hatch -> Pets ->
+  card with no `BonusHud`, then 5-1.
+- **Result:** `headless_bonus_flow_check: PASS (64 assertions)`; 25 suites, 1628 assertions, exit 0.
+- **The three minigames are still not in the evidence.** Every recovered reference to the round -
+  `p2.6b-bonus-payout.json`, `p2.6c-bonus-store-calls.json`, the `FUN_0053EAF0` strings and the
+  `FUN_0051C8E0` switch - describes one round: shells dropped by the tank's own fish, clicked for
+  `Tank+0x3F4`. There is no second caption, no selector and no second payout branch, so nothing was
+  invented for a second and third game (D-0051 stands).
+- **Test-only observation:** pressing the card's Continue in the same frame the round closed made the
+  new Level lose its name to Godot's duplicate-name fallback, because the freed tank was still a child
+  for that frame. The check now lets the frame pass first; it is not reachable by a player, whose click
+  cannot land in the frame the card is built.

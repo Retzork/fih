@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-22 (documentation pass - R48, D-0058, EV-0229: the evidence ledger's
 heading level, both READMEs' suite counts, the audit's and the export checklist's mermaid-tail state
-were brought back in line with the code. **All 24 suites pass, 1564 assertions**; integration 136;
+were brought back in line with the code. **All 25 suites pass, 1628 assertions**; integration 136;
 the 400-frame boot exits 0. The Review list now runs to R48.)
 
 Last updated: 2026-11-16 (OWNER REVIEW 2: the in-tank Options' debug grid moved to its own
@@ -756,7 +756,11 @@ set.
     instead of the wallet (`FUN_0053C1E0`), and that total is what the card pays (`FUN_0051C8E0`,
     `BonusScreen.payout_for`). The HUD draws the recovered `FUN_0053EAF0` strings; tank 4's level 5
     and tank 5 keep their no-round paths, and Bonus Adventure's per-level rounds are not ported
-    (Q-0053). `tests/headless_bonus_check.gd` pins 59 assertions.
+    (Q-0053). `tests/headless_bonus_check.gd` pins 59 assertions on the round itself; "
+    "`tests/headless_bonus_flow_check.gd` pins `Main`'s own hand-off (2026-11-22, EV-0231): 1/2/3-5 "
+    "-> cards -> round at 540/720/900 ticks -> shells banked once -> card -> 2-1/3-1/4-1, and "
+    "tank 4's no-round fast path to 5-1 (64 assertions). Only one round is recovered - one caption, "
+    "one payout branch, no selector - so no second or third minigame exists to port (D-0051).
   - **The Hall of Fame records are in (2026-11-19, D-0053):** `Level.complete_level()` snapshots the
     run's seconds (`elapsed_seconds()`, the `+0x3FC` quantity, D-0047) and writes them per level
     (`FUN_00514510`; skipped when the advance lands on level 6, so 1-5..3-5 stay untimed) and per
@@ -897,7 +901,7 @@ set.
   for the unfound 100 Hz gate.
 - [~] **P5.4** Performance sanity (target: trivial for a 2D game; check draw calls on tank scenes)
   - docs/P5-VALIDATION.md §P5.4. Dozens of one-sprite entities, no physics, no shaders,
-  cached colour-keying; 24 suites + 400-frame boot + 1200-frame integration all exit 0.
+  cached colour-keying; 25 suites + 400-frame boot + 1200-frame integration all exit 0.
 - [~] **P5.5** Packaging decision + README for running the remake
   - docs/P5-VALIDATION.md §P5.5. Forward Plus kept, canvas_items/keep at 640x480,
   content.json export inclusion, ssets_raw regeneration, personal-use note.
@@ -1033,6 +1037,7 @@ until each row is fixed, covered by a suite, and re-shotted windowed.
 | R47 | 2026-11-22 owner: the eating animation and hitbox are identical across guppy stages even though the art size differs - measure each stage row's mouth point in the swim/eat sheets, make feeding and the eat animation follow the stage's own size, and cover it headless. | Keyed-cell measurement of `SMALLSWIM`/`SMALLEAT` rows 0-3; `Fish.mouth_point`/`visual_offset`, `Level._sync_visuals`; fish suite plus full run. | FIXED (D-0057, EV-0228): the lips are (22,41)/(13,41)/(4,41)/(5,48) in cell coordinates (18/27/36/35 px left of the centre), the mouth mirrors the row's own lip inside the cell and adds the sprite's draw offset (now a shared `Fish.visual_offset()`), and the recovered 35/50 px windows are measured from it. `headless_fish_check` 121 -> 142 (per-stage mouths both facings, the 18 px row gap, 34 px eaten vs 40 px not, eat state/art/row); 24 suites, 1558 assertions; integration 136, boot 0. |
 | R48 | 2026-11-22 owner: review and improve all the documentation. | Read `README.md`, `AGENTS.md`, `docs/README.md`, `ARCHITECTURE.md`, `AUDIT.md`, `P5-VALIDATION.md`, `PLAN.md`, `DECISIONS.md`, `EVIDENCE.md`; checked heading levels, suite totals, per-suite counts, cross-references and every claim the last three turns changed. | DONE (D-0058, EV-0229): the Evidence ledger's 32 newest entries used `##` while the other 196 use `###`; both READMEs carried counts two to three lifetimes stale (fish 121, coin 154, level 122, store 40, pets 73, profile 29, snapshot 54, integration 60, totals 1341/1431); five files still said the `MERYLTAIL` overlay was removed or unwired although it has been drawn since EV-0188 and re-fitted twice (ARCHITECTURE's gap table, AUDIT *5c*, P5-VALIDATION's export checklist, PLAN's P4.14 note, DECISIONS' Q-0055 and 2026-11-10 sections), and two Evidence entries cited temporary tools that no longer exist. All corrected in place with dated notes; no code changed. |
 | R49 | 2026-11-22 owner: the guppy mouth change was only pinned by geometry tests - do a windowed check with stage 0-3 guppies facing both ways and a pellet at each mouth, and fix the draw/mouth relation if the mirrored mouth or the turn shift is wrong. | Windowed real-tank captures of eight guppies (stages 0-3 x both facings) with crosses and pellets on the mouth points; `Fish.visual_offset`, `mouth_point`; fish suite plus full run. | FIXED (D-0059, EV-0230): the mouths do land on the lips, but the mirrored draw shifted the body 24-26 px because the art is not centred in its 80 px cell; the flipped origin is now derived from each row's measured art centre (16/15/14/12), so the art box is identical on both facings and the pellet vanishes at the visible lip. `headless_fish_check` 142 -> 148; 24 suites, 1564 assertions; integration 136, boot 0. |
+| R50 | 2026-11-22 owner: finishing a tank jumps straight to the next tank instead of playing the bonus rounds. Port them from the recovered evidence (the 160-tick wait, the timer, the payout switch, the three minigames), wire the existing BonusScreen into the real flow, and cover it headless. | Re-read of the bonus evidence (`p2.6` §6, `p2.6b-bonus-payout`, `p2.6c-bonus-store-calls`) against `scripts/main.gd` and `scripts/tank/level.gd`; re-run of `tools/godot/shot_bonus.gd`; new `tests/headless_bonus_flow_check.gd`. | ALREADY IN + NOW PINNED (D-0051, EV-0231): the round, wait, timer, shells routing, payout switch and BonusScreen hand-off landed 2026-11-19 (`5e80b22`) and the round still plays end to end (windowed HUD/card captures, 15 shells paid). What was missing was proof of `Main`'s wiring, now covered headless: tanks 1/2/3 level 5 -> Hatch -> Pets -> round (540/720/900 ticks), shell to the round not the wallet, banked once, card pays it, Continue on 2-1/3-1/4-1; tank 4 fast path to a card and 5-1. 64 assertions; 25 suites, 1628. The three minigames are not in any evidence file - one shell round with one caption and one payout branch is - so none was invented (D-0051). |
 
 
 Fixes land here as they are verified; this table is the source of truth for the review.
