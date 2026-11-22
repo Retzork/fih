@@ -2465,7 +2465,7 @@ fit (-4,0).
 - One heading level per ledger: every `EV-` entry is `###` (the newest 32 had drifted to `##`), every
   `D-`/`Q-` entry is `###`, and `PLAN.md`'s Review rows are one line each.
 - Counts in the two READMEs and the audit are re-derived from a full run rather than carried forward:
-  as of this review that is 25 suites / 1628 assertions, integration 136, boot exit 0.
+  as of this review that is 26 suites / 1658 assertions, integration 136, boot exit 0.
 
 ### D-0059 - A turning guppy keeps its body in place; the mouth mirrors inside the same art box
 
@@ -2485,3 +2485,17 @@ fit (-4,0).
   flipped against a dot on its own position shows the body footprint unchanged.
 - Species drawn from their own sheets (Oscar, Sylvester, Ball, Bi) keep the old `+20` cell shift,
   because their art centres are not measured yet.
+
+### D-0060 - `flip` is the mirror flag, and the right-facing fish is the mirrored one
+
+- Date: 2026-11-22 (owner: fish are drawn facing opposite their movement; check the base's draw rule,
+  fix it if genuinely inverted, cover it headless)
+- Status: accepted; measured against the shipped art and the draw dispatch, covered headless
+  (`headless_fish_check` 162, `headless_facing_draw_check` 16).
+- The shipped swim/eat cells face **left**, and slot 26 draws `facing > 0` with `flip = (+0xF5 == 0)`
+  and `facing < 0` with `flip = (+0xF5 != 0)` (EV-0232). With the fresh-fish `+0xF5` of 0 that means
+  the right-facer is mirrored and the left-facer is drawn as painted. The port had the opposite side
+  mirrored, so every fish swam tail-first; `_configure`, `_tick_motion` and the corpse draw now follow
+  the base's side, and `facing` keeps meaning the direction of travel.
+- `mouth_point()` and `visual_offset()` keep reading the same flag, so the feed point stays on the
+  drawn lip on both sides (D-0057, D-0059 unchanged).

@@ -2476,8 +2476,10 @@ func _sync_visuals() -> void:
 		if entity is DeadFish:
 			# The corpse keeps the fish's box and facing; it is drawn but does not swim.
 			var corpse := entity as DeadFish
-			visual.position = Vector2(20.0, 20.0) + Vector2(20.0, 0.0) * (1.0 if corpse.facing < 0 else 0.0)
-			visual.flip_h = corpse.facing < 0
+			# Same convention as a live fish: the unflipped art faces left, so the right-facing corpse is
+			# the mirrored one and takes the cell shift (D-0060).
+			visual.position = Vector2(20.0, 20.0) + Vector2(20.0, 0.0) * (1.0 if corpse.facing > 0 else 0.0)
+			visual.flip_h = corpse.facing > 0
 		elif entity is Fish:
 			var fish := entity as Fish
 			# Fish box offsets: the drawn 40x40 art sits in the middle of the 80x80 bounds box. The rule

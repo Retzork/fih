@@ -318,13 +318,16 @@ func _configure(
 	max_y = float(def["max_y"])
 
 	speed_divisor = float(SPEED_CLASSES[rng.randi_range(0, SPEED_CLASSES.size() - 1)])
+	# The unflipped cell art faces left (the mouth is its leftmost lip), so `flip` is the mirror flag
+	# and a right-facing fish is the one drawn mirrored. Slot 26 passes `+0xF5 == 0` for `facing > 0`
+	# and `+0xF5 != 0` for `facing < 0` (EV-0042, D-0060).
 	if facing_ == 0:
 		flip = (rng.randi() & 1) == 1
 	else:
-		flip = facing_ < 0
-	facing = -1 if flip else 1
-	# Common ctor: one side gets vx -0.1, the other 0; vy is always -0.5.
-	vx = -0.1 if flip else 0.0
+		flip = facing_ > 0
+	facing = 1 if flip else -1
+	# Common ctor: one side gets vx -0.1 (the unmirrored, left-facing side), the other 0; vy is -0.5.
+	vx = 0.0 if flip else -0.1
 	vy = -0.5
 
 	fullness = int(def["hunger_min"]) + rng.randi_range(0, int(def["hunger_span"]) - 1)
@@ -982,12 +985,14 @@ func _tick_motion() -> void:
 	if position.x < WALL_LEFT and vx < -0.1:
 		vx += WALL_DAMP
 
+	# Mirror the art on the right-facing side, not the left: the sheet's own lip is on the left
+	# (D-0060). Before this the fish swam tail-first in both directions.
 	if vx < -0.05:
 		facing = -1
-		flip = true
+		flip = false
 	elif vx > 0.05:
 		facing = 1
-		flip = false
+		flip = true
 
 	var divisor := speed_divisor
 	if slow_override:

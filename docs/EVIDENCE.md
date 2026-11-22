@@ -5878,3 +5878,37 @@ behavior or specs; follow up with a binary observation entry.
   new Level lose its name to Godot's duplicate-name fallback, because the freed tank was still a child
   for that frame. The check now lets the frame pass first; it is not reachable by a player, whose click
   cannot land in the frame the card is built.
+
+### EV-0232 - Every fish was drawn tail-first: the mirror flag belongs to the right-facing side
+- Date: 2026-11-22 (owner: `flip` is set from `vx < 0` but the unflipped sheet art faces left, so the
+  fish swim tail-first - check it against the base's draw rule, fix it if it is genuinely inverted,
+  and cover it headless)
+- Type: art observation + decompiled draw dispatch + code fix, with headless coverage
+- Source: `assets_raw/frames/SMALLSWIM/f000.png`; `docs/analysis/notes/p2.2-tank-sim.md` §draw entry
+  (the facing dispatch); `scripts/entities/fish.gd` (`_configure`, `_tick_motion`, `visual_offset`,
+  `mouth_point`); `scripts/tank/level.gd` (`_sync_visuals`); `tests/headless_fish_check.gd`,
+  `tests/headless_facing_draw_check.gd` (new)
+- (1) **Which way the art faces.** The first `SMALLSWIM` cell has the head and mouth at its left edge
+  and the tail fin on the right: unflipped = facing left. The measured lips (D-0057) sit on that head.
+- (2) **The base's rule.** Slot 26's facing dispatch (`p2.2` §draw entry) is explicit: `facing > 0` ->
+  slot 83 with `flip = (this+0xF5 == 0)`; `facing < 0` -> `flip = (this+0xF5 != 0)`. `+0xF5` is 0 on
+  a fresh fish, so the **right**-facing fish is the mirrored one and the left-facer draws as painted;
+  `flip` reaches `FUN_005008F0`, the cell blit (EV-0043/EV-0165).
+- (3) **The inversion.** The port set `flip = vx < 0` and mirrored on that side, so every fish was
+  mirrored while swimming left and unmirrored while swimming right - tail-first in both directions.
+  The mouth (`mouth_point`) and the mirrored draw origin (`visual_offset`, D-0057/D-0059) read the
+  same flag, so a pellet still vanished at a painted lip, just the lip the fish was swimming away from.
+- (4) **The fix.** `flip` now means "drawn mirrored" and is set on the right-facing side: `_configure`
+  derives `flip` from `facing > 0` (and `facing = 1 if flip else -1`), the constructor's -0.1 drift goes
+  to the unmirrored (left) side, `_tick_motion` latches `flip = vx > 0.05` / `= false` below -0.05, and
+  the corpse in `Level._sync_visuals` mirrors on `facing > 0` with its cell shift on the same side.
+  `facing` keeps its meaning (the direction the fish moves), so saved fishes and breeding spawns are
+  unaffected.
+- (5) **Checks.** `headless_fish_check` 148 -> 162: a forced facing pairs `flip` with the direction,
+  four random spawns stay coherent, and a fish driven left draws as painted while a fish driven right
+  draws mirrored with its mouth 20 px past the art centre (left: 16 px short of it).
+  `headless_facing_draw_check` (new, 16) boots `main.tscn` and reads the sprites the level builds:
+  `flip_h`, `visual_offset()`, the mouth side, and both corpse facings with their 20/40 px cell shift.
+  Full run: 26 suites, 1658 assertions, all exit 0; integration 136; 400-frame boot 0.
+- (6) **Not re-shot windowed.** The drawn side is asserted on real sprites through the level's own draw
+  call, but no new windowed frame was captured for this entry.

@@ -20,8 +20,8 @@ modules, not the assembled game. **The Review table in [`docs/PLAN.md`](docs/PLA
 current work list.** R1/R2/R3 (starting money, HUD, egg on the `MENUBAR` dome) and R5/R6/R7
 (species art, coin art, pellet sink-out + Angie's re-lay) are fixed with evidence
 EV-0162..EV-0176, and R10's masked mermaid tail plus the Hatch card art are in; the Review table has since grown to R48
-(R11-R50 fixed 2026-11-10..2026-11-22, latest: the bonus round's real-flow check, EV-0231); **R8 (the owner's live playtest of tanks 2-4 and 5-1 - its windowed frames are captured) and R9 (4 named pet guards: Seymour's aura writer, Amp's click, Nostradamus' sneeze, Walter's glove launch) are open.** R9 was narrowed on 2026-11-10: Wadsworth's shelter, Gumbo's corner steering, Blip's instant unlock and Presto's transform now act in the tank, the CHANGE-O picker and its "Recharging..." notice are in (EV-0177..EV-0182). The suites still pass - **25 headless
-checks, 1628 assertions** (24 `--script` suites + the scene-backed integration suite, re-run
+(R11-R50 fixed 2026-11-10..2026-11-22, latest: the bonus round's real-flow check, EV-0231); **R8 (the owner's live playtest of tanks 2-4 and 5-1 - its windowed frames are captured) and R9 (4 named pet guards: Seymour's aura writer, Amp's click, Nostradamus' sneeze, Walter's glove launch) are open.** R9 was narrowed on 2026-11-10: Wadsworth's shelter, Gumbo's corner steering, Blip's instant unlock and Presto's transform now act in the tank, the CHANGE-O picker and its "Recharging..." notice are in (EV-0177..EV-0182). The suites still pass - **26 headless
+checks, 1658 assertions** (25 `--script` suites + the scene-backed integration suite, re-run
 2026-11-22) - which is necessary but not sufficient for the assembled feel. The 2026-11-10 additions
 are the render path, the 5-1 completion walk, the egg in the bar's seventh dome and the Hatch
 card art: the level's effect layer is now covered

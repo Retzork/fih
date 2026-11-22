@@ -33,6 +33,7 @@ func _init() -> void:
 	tank.setup(sim, 424242)
 
 	_test_spawn_defaults()
+	_test_facing_draw_rule()
 	_test_hunger_and_death()
 	_test_swim_machine()
 	_test_food_approach_and_eating()
@@ -61,6 +62,38 @@ func _init() -> void:
 
 # --- scenarios ---------------------------------------------------------------
 
+## The sheet's own art faces left, so the mirror flag belongs to the right-facing side; a fish that
+## moved left used to be drawn mirrored and swam tail-first (D-0060, EV-0232).
+func _test_facing_draw_rule() -> void:
+	for facing in [-1, 1]:
+		tank.shutdown()
+		tank.set_seed(700 + facing)
+		var fish: Fish = tank.spawn_fish(GUPPY, Vector2(300.0, 200.0), -1, facing)
+		_expect(fish.facing == facing, "spawn keeps facing %d" % facing)
+		_expect(fish.flip == (facing > 0), "facing %d draws %s" % [facing, "mirrored" if facing > 0 else "as painted"])
+	# A random side still pairs the flag with the direction it reports.
+	for seed in [701, 702, 703, 704]:
+		tank.shutdown()
+		tank.set_seed(seed)
+		var rolled: Fish = tank.spawn_fish(GUPPY, Vector2(300.0, 200.0), -1, 0)
+		_expect(rolled.flip == (rolled.facing > 0), "seed %d pairs flip with facing" % seed)
+	# Motion latches the side: left keeps the painted art, right mirrors it.
+	for vx in [-1.0, 1.0]:
+		tank.shutdown()
+		tank.set_seed(710 + (1 if vx > 0.0 else 0))
+		var swimmer: Fish = _quiet_fish(Vector2(300.0, 200.0), 2, 300)
+		swimmer.vx = vx
+		swimmer.vy = 0.0
+		# Only the motion tail: the swim machine would steer vx back toward 0 on this seed.
+		swimmer._tick_motion()
+		_expect(swimmer.facing == (1 if vx > 0.0 else -1), "vx %.0f faces %d" % [vx, swimmer.facing])
+		_expect(swimmer.flip == (vx > 0.0), "vx %.0f draws %s" % [vx, "mirrored" if vx > 0.0 else "as painted"])
+		# The mouth sits on the side the fish is swimming towards, from the same flag.
+		var ahead := swimmer.mouth_point().x - swimmer.position.x
+		_expect(ahead < 40.0 if vx < 0.0 else ahead > 40.0,
+			"vx %.0f mouth is ahead of the cell centre (%.1f)" % [vx, ahead])
+
+
 func _test_spawn_defaults() -> void:
 	tank.shutdown()
 	tank.set_seed(100)
@@ -74,7 +107,7 @@ func _test_spawn_defaults() -> void:
 	_expect(fish.min_x == 10.0 and fish.min_y == 95.0 and fish.max_x == 540.0 and fish.max_y == 370.0,
 		"common ctor bounds are 10..540 x 95..370")
 	_expect(fish.can_seek, "a guppy can seek food")
-	_expect(fish.facing == 1 and not fish.flip, "forced facing 1 is not flipped")
+	_expect(fish.facing == 1 and fish.flip, "forced facing 1 is drawn mirrored (D-0060)")
 	_expect(fish.coin_threshold >= 150 and fish.coin_threshold <= 349,
 		"guppy coin threshold starts 150..349 (got %d)" % fish.coin_threshold)
 	_expect(fish.swim_mode >= 0 and fish.swim_mode <= 9, "initial swim mode is rand%10")
@@ -590,7 +623,8 @@ func _test_rng_reproducibility() -> void:
 # --- helpers -----------------------------------------------------------------
 
 func _quiet_fish(pos: Vector2, stage: int = -1, fullness: int = 800, species: int = GUPPY) -> Fish:
-	var fish: Fish = tank.spawn_fish(species, pos, stage, 1)
+	# Facing -1 keeps the painted art (unmirrored), so the measured lips below are the sheet's own.
+	var fish: Fish = tank.spawn_fish(species, pos, stage, -1)
 	fish.fullness = fullness
 	return fish
 
@@ -604,7 +638,7 @@ func _spawn_food(pos: Vector2, kind: int, landed: bool, quality: int, variant: i
 func _eat_value(species: int, quality: int, variant: int, stage: int) -> int:
 	tank.shutdown()
 	tank.set_seed(200 + quality + species)
-	var fish: Fish = tank.spawn_fish(species, Vector2(360.0, 160.0), stage, 1)
+	var fish: Fish = tank.spawn_fish(species, Vector2(360.0, 160.0), stage, -1)
 	fish.fullness = 0
 	var pellet: Food = FoodScript.create(Vector2(400.0, 200.0), 0, false, variant, quality, tank.rng)
 	pellet.inedible = 0
