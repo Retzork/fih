@@ -450,6 +450,16 @@ func _test_nutrition_and_growth() -> void:
 	_step(1)
 	_expect(fish.stage == 1 and fish.food_points == 0, "points >= threshold grows 0 -> 1 and resets points")
 	_expect(fish.grow_timer == FishScript.GROW_POP_TICKS, "a stage-up starts the 10-tick grow pop")
+	# The pop is visible: the draw scale inflates while `+0x1CC` runs, peaks mid-timer, and clears.
+	_expect(fish.grow_scale() > 1.0, "the grow pop inflates the draw rect (%.3f)" % fish.grow_scale())
+	fish._tick_effect_timers()
+	fish._tick_effect_timers()
+	_expect(is_equal_approx(fish.grow_scale(), 1.125),
+		"the pop peaks at 5 px per side (%.3f)" % fish.grow_scale())
+	for i in range(2, FishScript.GROW_POP_TICKS):
+		fish._tick_effect_timers()
+	_expect(fish.grow_timer == 0 and is_equal_approx(fish.grow_scale(), 1.0),
+		"the draw returns to 1.0 when the pop ends")
 
 	# Stage 2 + huge overshoot -> stage 4 (the second `if`, not an else).
 	tank.shutdown()

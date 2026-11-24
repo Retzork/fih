@@ -20,7 +20,7 @@ func _run() -> void:
 	for i in MENU_FRAMES:
 		await process_frame
 	var shot := root.get_texture().get_image()
-	shot.save_png("res://shot_menu.png")
+	shot.save_png("res://docs/captures/shot_menu.png")
 	print("shot_menu.png ", shot.get_size())
 	var selector := root.find_child("GameSelector", true, false)
 	if selector == null:
@@ -37,7 +37,7 @@ func _run() -> void:
 		for i in 3:
 			await process_frame
 	shot = root.get_texture().get_image()
-	shot.save_png("res://shot_level.png")
+	shot.save_png("res://docs/captures/shot_level.png")
 	print("shot_level.png ", shot.get_size())
 	# The shop opens from the port-only `S` key (Q-0052); give the dialog a few frames to draw.
 	if level != null:
@@ -45,6 +45,6 @@ func _run() -> void:
 		for i in 12:
 			await process_frame
 		shot = root.get_texture().get_image()
-		shot.save_png("res://shot_store.png")
+		shot.save_png("res://docs/captures/shot_store.png")
 		print("shot_store.png ", shot.get_size())
 	quit(0)

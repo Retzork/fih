@@ -1,7 +1,7 @@
 # P5 - Validation & polish (in review)
 
 Status: **withdrawn pending the Review fixes** (2026-11-09). The 2026-11-08 completion pass was
-revoked by the owner after a playtest; `PLAN.md`'s Review table is the work list. This document
+revoked by the owner after a playtest; `REVIEW.md` is the work list. This document
 keeps the constant sheet (P5.1), the playtest checklist (P5.2), the timing model (P5.3), the
 performance sanity (P5.4) and the packaging decision (P5.5) as reference evidence, but P5.2/P5.3
 cannot close until R8 (windowed tanks 2-4/5-1) and R9 (pet guards) pass. Every value below cites
@@ -88,7 +88,7 @@ Statuses are what the headless suites already assert; anything that needs eyes i
 
 Screenshots: `tools/godot/screenshot.gd` still captures menu/level/store windowed;
 `tools/godot/shot_menu_debug.gd` drives the in-tank MENU -> Options -> Help/Back flow and writes
-`shot_menu_options.png`. The headless driver renders nothing, so the art check stays a human step.
+`captures/shot_menu_options.png`. The headless driver renders nothing, so the art check stays a human step.
 
 ## P5.3 - Timing / feel
 

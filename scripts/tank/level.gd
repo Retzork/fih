@@ -58,6 +58,10 @@ const HINT_OUTLINE_SIZE := 2
 const HINT_TEXT := "Fish are hungry! Click to drop food!"
 const HINT_TEXT_SEVERE := "Fish are REALLY hungry! Click to feed!"
 const HINT_TEXT_DYING := "Fish are about to die of hunger! Click on aquarium!"
+## Every pet and alien sheet is a 10-column grid whose rows are separate animations; the tank draws
+## one row at a time (`row_cell`), never the whole sheet.
+const PET_SHEET_COLUMNS := 10
+const ALIEN_SHEET_COLUMNS := 10
 ## Guppy swim frames are three separate images (`SIMSWIM1..3`, 40x40).
 const FISH_IMAGES := ["IMAGE_SIMSWIM1", "IMAGE_SIMSWIM2", "IMAGE_SIMSWIM3"]
 ## The guppy body sheet: 10 frames per row, one row per growth stage (`SMALLSWIM`, 50 frames). The
@@ -169,6 +173,9 @@ signal menu_requested
 ## Port-only NEXT LEVEL (D-0018): the profile has already been walked on, so `Main` only has to
 ## swap the level. The between-level cards are skipped.
 signal skip_level_requested
+## The tank ran out of fish (`Tank::Update`'s defeat block, EV-0249): every coin has been collected
+## and the level has latched its loss, so `Main` mounts the "GAME OVER" card. Emitted once.
+signal defeated
 
 ## The game mode the selector writes (P2.12 EV-0131): 0 adventure, 1 time trial, 3 sandbox,
 ## 4 challenge, 5 virtual tank. Mode branches live in `start_level` and `_on_sim_tick`
@@ -245,6 +252,10 @@ var _composite_selection := -1
 const ALIEN_CLICK_BOX := 80.0
 ## Render sprites and the HUD. False for headless checks (no Content access, no sprites).
 var render := true
+## The loss latch (`Tank::Update`'s defeat block, EV-0249), set at most once per level by
+## `_check_defeat`. The tank keeps ticking - the original only covers it with a modal - but its coins
+## are already collected and `Main` pauses the game behind the "GAME OVER" card.
+var game_over := false
 
 ## Every sound the level asked for, in order: the headless checks read this instead of listening.
 var sounds_played: Array[String] = []
@@ -509,8 +520,9 @@ func drop_food(pos: Vector2) -> Food:
 		if money < PELLET_PRICE:
 			return null
 		money -= PELLET_PRICE
-	# A bought star potion turns the next manual drop into a quality-3 pellet (P2.3 §2).
-	var quality := 3 if star_potion_armed else 0
+	# `Tank::DropFood` gives a manual pellet the tank's food-quality level (`DAT_005e89dc`, 0..2);
+	# a bought star potion overrides the next drop with quality 3 (P2.3 §2).
+	var quality := 3 if star_potion_armed else food_quality
 	star_potion_armed = false
 	var pellet: Food = FoodScript.create(pos, 0, false, 0, quality, tank.rng)
 	play_sound("SOUND_DROPFOOD")
@@ -1274,6 +1286,23 @@ func _on_coin_collected(_coin, amount: int) -> void:
 	add_money(amount)
 
 
+## The pickup burst of `FUN_004F5050`'s collection tail (P2.5 §5): the count is recovered
+## (`rand%3+3` at the pickup, kind 0x11's `rand%2+2`), the lifetime and the ring radius are the
+## port's - the binary's particle helper `FUN_005436F0` is not decoded, and the burst is laid out on
+## a deterministic ring rather than drawing extra numbers from the tank stream, which would perturb
+## every later level roll (ARCHITECTURE §7).
+const PICKUP_PARTICLE_LIFE := 5
+const PICKUP_PARTICLE_RADIUS := 10.0
+
+
+func _on_coin_burst(at: Vector2, count: int, _special: bool) -> void:
+	var thrown := maxi(count, 1)
+	for i in thrown:
+		var angle := TAU * float(i) / float(thrown)
+		spawn_particle(at + Vector2(cos(angle), sin(angle)) * PICKUP_PARTICLE_RADIUS,
+			"burst", PICKUP_PARTICLE_LIFE)
+
+
 ## Virtual Tank banked hand-off (`Coin.banked` at (550,30)): shells, not money.
 func _on_coin_banked(coin) -> void:
 	if coin != null and not coin.dead:
@@ -1307,6 +1336,35 @@ func fire_at(point: Vector2) -> bool:
 	return false
 
 
+## `Tank::CanContinue` (`FUN_005392A0`, EV-0249): the tank is still playable while a fish is in it.
+## The base also ORs three entity lists (`Tank+0xA0/+0xA4/+0xD0`) and four global predicates
+## (`FUN_004E3ED0/3F00/3F30/3F60`); only the fish list is identified in the port, so the test is the
+## narrow one and defeat can only fire on a tank that is empty of fish.
+func can_continue() -> bool:
+	if tank == null:
+		return false
+	return not tank.fish().is_empty()
+
+
+## The defeat check `Tank::Update` runs after its hint block (EV-0249): no fish, no victory and no
+## bonus round means the level is lost. The base's own path clears `Tank+0x4EE`, collects every coin
+## (`FUN_0053C2D0`, the call the Time Trial expiry already reuses) and opens the id-17 dialog; the
+## latched `game_over` is what `Main` turns into that card.
+##
+## `level_index > 0` stands in for `Tank+0x2A5`, the base byte that gates the whole block: a level that
+## was never started (the headless suites build tanks directly) is not a candidate for losing.
+func _check_defeat() -> void:
+	if game_over or completed or bonus != null or level_index <= 0:
+		return
+	if game_mode == MODE_VIRTUAL:
+		return
+	if can_continue():
+		return
+	game_over = true
+	collect_all_coins()
+	defeated.emit()
+
+
 func _on_sim_tick(_tick: int) -> void:
 	# The shared pause gate must stop the level's own clock too, not just the entities: time-trial
 	# budget, particles, store refresh and held fire all live here. The original's tank update is
@@ -1321,6 +1379,7 @@ func _on_sim_tick(_tick: int) -> void:
 		inflate_prices(1)
 	if game_mode == MODE_TIME_TRIAL and not completed:
 		_tick_time_trial()
+	_check_defeat()
 	_tick_particles()
 	if store_bar != null:
 		store_bar.refresh_if_changed()
@@ -2180,6 +2239,7 @@ func _on_entity_spawned(entity: SimEntity) -> void:
 	if entity is Coin:
 		(entity as Coin).collected.connect(_on_coin_collected)
 		(entity as Coin).banked.connect(_on_coin_banked)
+		(entity as Coin).burst_requested.connect(_on_coin_burst)
 	if entity is Larva:
 		(entity as Larva).shells_payout.connect(_on_larva_payout)
 		(entity as Larva).burst_requested.connect(_on_larva_burst)
@@ -2263,6 +2323,15 @@ func _sim_tick() -> int:
 	return _sim.tick_count if _sim != null else 0
 
 
+## A row-locked cell: the animation frame cycles inside `columns` and the row selects the animation.
+## Playing the sheet's whole frame list walked through every row - two or more separate animations
+## back to back (owner 2026-11-23).
+static func row_cell(row: int, frame: int, columns: int) -> int:
+	if columns <= 1:
+		return maxi(row, 0)
+	return maxi(row, 0) * columns + posmod(frame, columns)
+
+
 
 
 
@@ -2289,9 +2358,11 @@ func _draw_entity_frame(entity: SimEntity, sprite: Sprite2D, anim: AnimState) ->
 			death_row * GUPPY_COLS + corpse.sprite_frame())
 		return
 	if entity is Pet:
-		# The sheet's own metadata plays the swim loop (`loop`/`pingpong`, `framedelay`); the pet does
-		# not pick a column itself (Q-0044 keeps the per-pet animation cells open).
-		sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")), anim.frame_at(_sim_tick()))
+		# One row at a time: the row is the animation (row 0 idle, Niko's shell cycle otherwise), and
+		# the frame cycles inside its 10 columns only (Q-0044 keeps the other action rows open).
+		var pet := entity as Pet
+		var cell := row_cell(pet.anim_row(), anim.frame_at(_sim_tick()), PET_SHEET_COLUMNS)
+		sprite.texture = _keyed_cell(String(sprite.get_meta("source", "")), cell)
 		return
 	if entity is Alien:
 		# Alien sheets declare their own loop. Bilaterus is the exception: its sheet has no `anim`
@@ -2299,9 +2370,10 @@ func _draw_entity_frame(entity: SimEntity, sprite: Sprite2D, anim: AnimState) ->
 		var alien := entity as Alien
 		var source := String(sprite.get_meta("source", ""))
 		if anim.res != null and anim.res.anim == "":
-			sprite.texture = _keyed_cell(source, 0)
+			sprite.texture = _masked_cell(source, 0)
 		else:
-			sprite.texture = _keyed_cell(source, anim.frame_at(_sim_tick()))
+			var cell := row_cell(alien.anim_row(), anim.frame_at(_sim_tick()), ALIEN_SHEET_COLUMNS)
+			sprite.texture = _masked_cell(source, cell)
 		_update_health_bar(alien)
 		return
 	if entity is Projectile:
@@ -2435,6 +2507,41 @@ func _keyed_cell(id: String, cell: int) -> Texture2D:
 	return texture
 
 
+## An alien cell composed with its `masks/_<file>` alpha companion (P3.3, R63). The border key keeps
+## enclosed holes filled by design (a dark outline must survive), but the shipped alien sheets are
+## masked art whose enclosed holes are transparent - without this a Destructor's body gaps draw
+## solid.
+func _masked_cell(id: String, cell: int) -> Texture2D:
+	if _content == null or not _content.has_image(id):
+		return null
+	var res: ImageRes = _content.image(id)
+	if res == null:
+		return null
+	var index := clampi(cell, 0, maxi(res.frame_count - 1, 0))
+	var key := "masked:%s#%d" % [id, index]
+	if _cell_cache.has(key):
+		return _cell_cache[key]
+	var texture := res.frame(index)
+	var sheet_mask := MaskAlpha.mask_for(res.path)
+	if sheet_mask == null or texture == null:
+		var plain := _keyed_cell(id, cell)
+		_cell_cache[key] = plain
+		return plain
+	var region := Rect2i(Vector2i.ZERO, sheet_mask.get_size())
+	if texture is AtlasTexture:
+		var atlas := texture as AtlasTexture
+		region = Rect2i(int(atlas.region.position.x), int(atlas.region.position.y),
+			int(atlas.region.size.x), int(atlas.region.size.y))
+	var composed := MaskAlpha.apply(texture.get_image(), sheet_mask.get_region(region))
+	if composed == null:
+		var keyed := _keyed_cell(id, cell)
+		_cell_cache[key] = keyed
+		return keyed
+	var composed_texture := ImageTexture.create_from_image(composed)
+	_cell_cache[key] = composed_texture
+	return composed_texture
+
+
 ## The pellet has no free-running animation: `anim_frame` is the simulation's own counter, advanced
 ## one per tick and wrapped at `anim_cycle * 10 - 1`; `Food.column()` turns it into the tumbler
 ## column of the `FOOD` sheet, each column held `anim_cycle` ticks (D-0024).
@@ -2484,7 +2591,14 @@ func _sync_visuals() -> void:
 			var fish := entity as Fish
 			# Fish box offsets: the drawn 40x40 art sits in the middle of the 80x80 bounds box. The rule
 			# lives on the fish, because the mouth point is measured from the same offset.
-			visual.position = fish.visual_offset()
+			var pop := fish.grow_scale()
+			visual.scale = Vector2.ONE * pop
+			var offset := fish.visual_offset()
+			if pop != 1.0:
+				# The sprite is uncentred, so scaling starts from the art's top-left; pull it back by
+				# half the growth to pop about the art's centre instead of pushing it right and down.
+				offset -= Vector2((pop - 1.0) * 40.0, (pop - 1.0) * 40.0)
+			visual.position = offset
 			visual.flip_h = fish.flip
 		else:
 			visual.position = Vector2.ZERO

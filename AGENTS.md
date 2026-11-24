@@ -16,6 +16,8 @@ inspection. Human owner: Fauzi.
 
 1. `AGENTS.md` (this file).
 2. `docs/PLAN.md` - master task list with statuses and evidence refs. **Source of truth for progress.**
+   The confirmed playtest defects and their fix status live in `docs/REVIEW.md` (`R1-R66`), which is
+   the source of truth for what is still wrong.
 
 **Read on demand only, when the current task needs them:**
 

@@ -36,6 +36,7 @@ func _init() -> void:
 	_test_pool_shrinks()
 	_test_pool_reuses_dots()
 	_test_effects_expire_between_frames()
+	_test_row_locked_cells()
 
 	level.tank.shutdown()
 	level.free()
@@ -150,3 +151,11 @@ func _expect(condition: bool, what: String) -> void:
 	else:
 		_failures += 1
 		printerr("  FAIL ", what)
+
+## A row-locked cell: the frame cycles inside its own row's 10 columns and can never spill into the
+## next animation (owner 2026-11-23: alien and pet sheets mixed their rows into one loop).
+func _test_row_locked_cells() -> void:
+	_expect(LevelScript.row_cell(0, 19, 10) == 9, "frame 20 on row 0 is the row's last cell")
+	_expect(LevelScript.row_cell(1, 9, 10) == 19, "row 1 starts at its own first column")
+	_expect(LevelScript.row_cell(0, -1, 10) == 9, "a negative frame folds inside the row")
+	_expect(LevelScript.row_cell(2, 7, 10) == 27, "row 2 frame 8 is cell 28")

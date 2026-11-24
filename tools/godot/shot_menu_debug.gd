@@ -3,7 +3,7 @@ extends SceneTree
 ## Boots the real main path, starts Adventure, clicks the tank MENU button and checks that the
 ## base-art Options dialog opens over a *frozen* tank: the level clock, the wave clock and fish
 ## hunger must not advance while it is up. It then drives the port-only debug buttons (money,
-## guppy, grow) through the real dialog, captures `shot_menu_options.png`, exercises the Help
+## guppy, grow) through the real dialog, captures `docs/captures/shot_menu_options.png`, exercises the Help
 ## replacement (Escape closes it), and finally leaves through Back to Main Menu. Leg 2 drives the
 ## F1/F2/F3/F10 keys on a fresh tank.
 ##   Godot --path . --audio-driver Dummy --script res://tools/godot/shot_menu_debug.gd
@@ -40,7 +40,7 @@ func _shot(out: String) -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
-	image.save_png("res://" + out)
+	image.save_png("res://docs/captures/" + out)
 	print("SHOT ", out, " ", image.get_size())
 
 

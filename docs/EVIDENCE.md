@@ -4424,7 +4424,7 @@ behavior or specs; follow up with a binary observation entry.
 - Source: `assets_raw/images/eggpieces.png` (138x39, three 46x39 cells); the `MENUBAR` dome x table
   in EV-0171 (`FUN_005409B0`); `Progression.EGG_PRICES`/`STORE_TABLE` (the tank-5 egg is the free
   row at slot 6); `scripts/ui/egg_widget.gd`, `scripts/ui/store_bar.gd`,
-  `scripts/tank/level.gd:_mount_egg_widget`; captures `shot_level.png`, `shot_tank5_bar.png`
+  `scripts/tank/level.gd:_mount_egg_widget`; captures `captures/shot_level.png`, `captures/shot_tank5_bar.png`
 - Confidence: high for the art, the cell and the free-price row; the placement inside the dome is a
   port fit (the original widget rect is unrecovered, Q-0053)
 - Notes: (1) **Why the earlier widget was invisible:** it was a `Node2D` child of the level, and the
@@ -4443,7 +4443,7 @@ behavior or specs; follow up with a binary observation entry.
 - Source: `assets_raw/images/tailflop.png` (1904x165, eight 238x165 cells);
   `assets_raw/masks/tailflop_.png` (same dimensions); `MERYLTAIL`'s resources.xml metadata
   (`anim="once"`, `framemap="7,6,5,4,3,2,1,0"`, `framedelay="2"`, `begindelay="3"`);
-  `scripts/ui/game_selector.gd`; capture `shot_menu.png`
+  `scripts/ui/game_selector.gd`; capture `captures/shot_menu.png`
 - Confidence: high for the sheet, the mask, the playback and the composite; the screen offset and
   mirror are a port fit (Q-0055)
 - Notes: (1) The old green strap was the unmasked sheet - its field is opaque green, so compositing
@@ -4475,7 +4475,7 @@ behavior or specs; follow up with a binary observation entry.
 - Source: `resources/content.json` `IMAGE_HATCHSCREEN` (640x480, 1 cell),
   `IMAGE_HATCHANIMATION` (3x1 cells 57x60, `SpriteFrames`);
   `assets_raw/masks/_HatchANIMATION.png` (171x60) and `assets_raw/masks/_presto.png` (800x240);
-  `scripts/ui/hatch_screen.gd`; captures `shot_tank5_award.png`, `shot_tank5_hatched.png`
+  `scripts/ui/hatch_screen.gd`; captures `captures/shot_tank5_award.png`, `captures/shot_tank5_hatched.png`
 - Confidence: high for the art, the cell grid and the masking; the crack hold is a port choice
   (Q-0060)
 - Notes: (1) `HATCHANIMATION`'s field is brown (~132,92,42), not black, so `SpriteKey.keyed()` (which
@@ -4611,7 +4611,7 @@ behavior or specs; follow up with a binary observation entry.
 - Date: 2026-11-10
 - Type: visual evidence (windowed run) + one implementation fix
 - Source: `tools/godot/shot_presto.gd` (run with `--audio-driver Dummy`); captures
-  `shot_presto_picker.png` and `shot_presto_recharging.png` (1280x960: the 640x480 viewport under
+  `captures/shot_presto_picker.png` and `captures/shot_presto_recharging.png` (1280x960: the 640x480 viewport under
   `canvas_items` stretch); `scripts/ui/presto_picker.gd`
 - Confidence: high for what the two frames show
 - Notes: (1) The picker opens through the real path (`Level.open_presto_picker` -> `Screens.dialog`)
@@ -4629,8 +4629,8 @@ behavior or specs; follow up with a binary observation entry.
 - Type: decompile + measured art + windowed visual
 - Source: `docs/evidence/p2.12-fn-5409B0.json` (`FUN_005409B0`),
   `docs/evidence/p2.12-fn-5373C0.json` (`FUN_005373C0`), `assets_raw/images/menubar.png`;
-  `scripts/ui/store_bar.gd`, `scripts/ui/egg_widget.gd`; captures `shot_bar_tank1.png` (1-3) and
-  `shot_bar_tank5.png` (5-1)
+  `scripts/ui/store_bar.gd`, `scripts/ui/egg_widget.gd`; captures `captures/shot_bar_tank1.png` (1-3) and
+  `captures/shot_bar_tank5.png` (5-1)
 - Confidence: high for the widget class, the green label colour, the 58-px width and the plate/wallet
   rects; medium for the 60-px height (pushed argument order) and for the per-item icon binding (the
   `SCL_*` sheets are the shipped 40-px creature icons, but the original's own image id `0xBC` was not
@@ -4664,7 +4664,7 @@ behavior or specs; follow up with a binary observation entry.
   seconds into the game") for the pet unlock; `docs/analysis/notes/p2.7-pets.md` §4.14 / EV-0094 for
   the 200/720-tick thresholds; `scripts/progression/progression.gd` (`reveal_rules`),
   `scripts/tank/level.gd` (`_prime_store_reveals`), `scripts/ui/store_bar.gd`,
-  `scripts/ui/egg_widget.gd`; captures `shot_bar_tank1.png` (1-3 with the shelves revealed)
+  `scripts/ui/egg_widget.gd`; captures `captures/shot_bar_tank1.png` (1-3 with the shelves revealed)
 - Confidence: high for tank 1's list (the guide states it item by item) and for the mechanism (the
   bar stays up; items are absent until unlocked, exactly what `FUN_005409B0`'s null return means);
   medium for tanks 2-4's ordering (same pattern, not itemised - Q-0062)
@@ -4692,18 +4692,18 @@ behavior or specs; follow up with a binary observation entry.
 - Type: measurement + windowed visual; a guess removed
 - Source: `assets_raw/images/selectorback.png` (`IMAGE_SELECTORSCREEN`), `tailflop.png` and
   `masks/tailflop_.png`; `tools/godot/measure_mermaid.gd`, `tools/godot/preview_tail.gd`;
-  capture `shot_menu.png`; `scripts/ui/game_selector.gd`
+  capture `captures/shot_menu.png`; `scripts/ui/game_selector.gd`
 - Confidence: high for the measurements and for what the two frames show; the strip's screen
   position stays unrecovered (Q-0055)
 - Notes: (1) The baked mermaid's green tail measures x 95..283, y 323..439 and ends in a rounded
   **stump** at about (152, 405); `MERYLTAIL`'s cells are 238x165 transparent strips whose visible
   fringe occupies only y 78..163 (cell 0: x 1..199, root notch at (107, 84)). (2) Four placements
-  were composited against that measurement (`shot_tail_candidates.png`): (150,270) plain and
+  were composited against that measurement (`captures/shot_tail_candidates.png`): (150,270) plain and
   mirrored, (150,300) flipped vertically and (120,300) mirrored+flipped. Every one draws a long
   second tail across the baked one or over the button panel - the strip is not a fluke sized to the
   baked stump, so no offset can make one silhouette. (3) `SELECTORSCREEN` is the shipped menu art and
   already contains the mermaid; the port now draws exactly that and no longer mounts the strip, which
-  is why `shot_menu.png` shows one clean green tail. (4) `MERYLTAIL`'s recovered playback
+  is why `captures/shot_menu.png` shows one clean green tail. (4) `MERYLTAIL`'s recovered playback
   (`framemap 7..0`, `framedelay 2`, `begindelay 3`) is kept as data and still pinned by
   `headless_menu_check` (28 assertions); Q-0055 stays open for the draw position.
 
@@ -4728,7 +4728,7 @@ behavior or specs; follow up with a binary observation entry.
 - Type: measurement + windowed visual (supersedes EV-0186's removal)
 - Source: `assets_raw/images/selectorback.png`, `tailflop.png`, `masks/tailflop_.png`;
   `tools/godot/measure_mermaid.gd`, `tools/godot/preview_tail.gd`; `scripts/ui/game_selector.gd`;
-  capture `shot_menu.png`
+  capture `captures/shot_menu.png`
 - Confidence: high for the measurements and the result; the fin's exact placement is still a port fit
   (Q-0055)
 - Notes: (1) The owner's read was right: the baked tail stops in a rounded stump at about (152, 405)
@@ -4736,7 +4736,7 @@ behavior or specs; follow up with a binary observation entry.
   visible crescent has its root notch at (107, 84). (2) At 1:1 the crescent is twice the stump's
   width and reads as a second tail; scaled to `TAIL_SCALE` 0.6 (143x99) and placed at
   `TAIL_OFFSET` (110, 360) the notch meets the stump and the fin trails down-right, which is what
-  `shot_menu.png` shows. (3) The strip still plays its recovered one-shot flop (`framemap 7..0`,
+  `captures/shot_menu.png` shows. (3) The strip still plays its recovered one-shot flop (`framemap 7..0`,
   2 ticks a frame, 3-tick hold) and returns to cell 0; `headless_menu_check` 28 passes unchanged.
   (4) Q-0055 keeps the exact draw position open - only the fit is port choice, the art and timing are
   recovered.
@@ -4780,8 +4780,8 @@ behavior or specs; follow up with a binary observation entry.
 ### EV-0190 - Windowed check: MENU returns to the selector; F1/F2/F3/F10 act in the rendered tank
 - Date: 2026-11-11
 - Type: windowed rendered probe with synthetic input + screenshots
-- Source: `tools/godot/shot_menu_debug.gd`; captures `shot_menu_tank.png`, `shot_menu_return.png`,
-  `shot_debug_panel.png`; `scripts/ui/store_bar.gd`, `scripts/tank/level.gd`, `scripts/main.gd`
+- Source: `tools/godot/shot_menu_debug.gd`; captures `captures/shot_menu_tank.png`, `captures/shot_menu_return.png`,
+  `captures/shot_debug_panel.png`; `scripts/ui/store_bar.gd`, `scripts/tank/level.gd`, `scripts/main.gd`
 - Confidence: high for the probe's assertions and the three frames; this is not the owner's live
   playtest
 - Notes: (1) The probe boots the real `scenes/main.tscn` windowed (`--audio-driver Dummy`), waits
@@ -4789,9 +4789,9 @@ behavior or specs; follow up with a binary observation entry.
   `GameSelector.press(1, {})` - the same path as the menu. (2) It sends a synthetic left click at
   the centre of the `Menu` button's global rect (525, 4, 80, 26). `Main` released the level,
   mounted a fresh `GameSelector` and wrote `user://shot_menu_debug.dat` (the D-0014 safety net);
-  `shot_menu_return.png` shows the selector. (3) On a second level, `F1` showed the panel,
+  `captures/shot_menu_return.png` shows the selector. (3) On a second level, `F1` showed the panel,
   `F2` took money 200 -> 1200, `F3` took the first live fish stage 0 -> 1 and `F10` took the FISH
-  phase 2 -> 3; `shot_debug_panel.png` shows the panel over the tank with 1200 on the wallet
+  phase 2 -> 3; `captures/shot_debug_panel.png` shows the panel over the tank with 1200 on the wallet
   plate and the baked MENUBAR MENU label at top right. (4) Exit 0; the Ogg vendor-comment warnings
   and the ObjectDB/resource-at-exit notices are the known AUDIT F2 noise. (5) This verifies the
   rendered wiring, not timing/feel; the owner's live playtest (R8 and the assembled feel) stays
@@ -4803,7 +4803,7 @@ behavior or specs; follow up with a binary observation entry.
 - Source: `scripts/main.gd` (`_on_menu_requested`, `_close_options`, `_leave_tank`),
   `scripts/ui/options_dialog.gd`, `scripts/ui/store_bar.gd`, `scripts/autoload/game.gd`,
   `tests/headless_integration_check_scene.gd`, `tools/godot/shot_menu_debug.gd`; captures
-  `shot_menu_tank.png`, `shot_menu_options.png`, `shot_menu_return.png`, `shot_debug_panel.png`
+  `captures/shot_menu_tank.png`, `captures/shot_menu_options.png`, `captures/shot_menu_return.png`, `captures/shot_debug_panel.png`
 - Confidence: high for the port wiring and the probe; the binary's own id-99 dispatch is still
   close-tank + main menu (EV-0189), so this is a deliberate divergence, not a recovered behavior
 - Notes: (1) The owner reported that the tank MENU went straight to the main menu and asked for
@@ -4834,8 +4834,8 @@ behavior or specs; follow up with a binary observation entry.
   `scripts/entities/fish.gd`, `scripts/autoload/game.gd`,
   `tests/headless_integration_check_scene.gd`, `tests/headless_level_check.gd`,
   `tests/headless_store_ui_check.gd`, `tools/godot/shot_menu_debug.gd`; captures
-  `shot_menu_options.png`, `shot_menu_help.png`, `shot_menu_tank.png`, `shot_menu_return.png`,
-  `shot_debug_panel.png`
+  `captures/shot_menu_options.png`, `captures/shot_menu_help.png`, `captures/shot_menu_tank.png`, `captures/shot_menu_return.png`,
+  `captures/shot_debug_panel.png`
 - Confidence: high for the port wiring and the headless/windowed assertions. The base dialog's
   contents and ids are recovered (P2.12 §11.3); the debug block, Show Money placement and the
   Custom Cursors/Hardware Acceleration storage are port-only (D-0014/D-0016).
@@ -5369,13 +5369,13 @@ behavior or specs; follow up with a binary observation entry.
   1-1, reading the name label, the bar's wallet number, the bar's seven price labels and the egg
   dome's price/pieces **before** the load, **right after the call** and **one tick later**.
 - (2) **Before**: `Tank  1-1`, wallet 200, dome `$150` at 1/4, rows `[$100, -, -, -, -, -, -]`.
-  `shot_load_refresh_before.png` shows exactly that (one guppy dome, the egg dome, the green 200).
+  `captures/shot_load_refresh_before.png` shows exactly that (one guppy dome, the egg dome, the green 200).
 - (3) **Right after the call**: the name is already `Tank  2-3` (`load_game` refreshes it), and the
   wallet reads 4321, but the bar still prints `200` and the dome still prints `$150` at 1/4 - the bar
   and the dome repaint from the tank's tick, not from the load, which is the documented split.
 - (4) **One tick later (14 frames)**: `Tank  2-3`, bar wallet `4321`, dome `$5000` at 2/4, and the
   rows read `[$100, $200, $300, $250, $750, $1000, -]`, which is the saved 2-3 table
-  (`0:0@100, 1:2@200, 2:3@300, 3:5@250, 4:6@750, 5:10@1000`). `shot_load_refresh_after.png`.
+  (`0:0@100, 1:2@200, 2:3@300, 3:5@250, 4:6@750, 5:10@1000`). `captures/shot_load_refresh_after.png`.
 - (5) **Finding, fixed (D-0040)**: the first run of the capture had the rows come back **blank** -
   seven empty domes - while the wallet and dome repainted correctly. The save's store rows are the
   fixed 17-byte records (slot, price, base, increment, present, P2.13 §6.3); the port's `shelf` is
@@ -5536,15 +5536,15 @@ behavior or specs; follow up with a binary observation entry.
   state where the repaint provably has not happened. It is released afterwards.
 - (2) **The save is another tank and level**: a scratch level saved as tank 3 level 4, wallet 4321,
   two egg pieces, stock `0:0@100, 1:2@200, 2:3@300, 3:7@750, 4:8@2000, 5:10@2000`, egg price 10000.
-- (3) **Before** (`shot_load_refresh_before.png`): `Tank  1-1`, wallet 200, dome `$150` at 1/4, rows
+- (3) **Before** (`captures/shot_load_refresh_before.png`): `Tank  1-1`, wallet 200, dome `$150` at 1/4, rows
   `[$100, -, -, -, -, -, -]`.
-- (4) **After the call, tick still held** (`shot_load_refresh_stale.png`): the name already reads
+- (4) **After the call, tick still held** (`captures/shot_load_refresh_stale.png`): the name already reads
   `Tank  3-4` and `level.money` is 4321, but the bar prints `200`, the dome still `$150` at 1/4, and
   the rows are still the 1-1 set. The pixels agree: wallet fingerprint unchanged (1400569856), price
   band unchanged (747309248), egg dome unchanged (1106355456), while the name label's pixels **did**
   change (819193792 vs the pre-load frame) - the name is refreshed inside `load_game`, the bar and
   dome only from the tick.
-- (5) **After one tick** (`shot_load_refresh_after.png`): the wallet reads 4321, the dome `$10000` at
+- (5) **After one tick** (`captures/shot_load_refresh_after.png`): the wallet reads 4321, the dome `$10000` at
   2/4, and the shelves are `[$100, $200, $300, $750, $2000, $2000, -]` - the restored 3-4 stock. All
   three fingerprints moved (wallet 975426752, band 1948995840, egg 1018250944); the name's did not
   (819193792), since nothing changed it.
@@ -5579,7 +5579,7 @@ behavior or specs; follow up with a binary observation entry.
   the integration clearance check compares the stats rect against the ink band instead of the box.
 - (5) **Runs**: `headless_level_check` 209 -> 212, `headless_integration_check` 136, the other 22
   suites unchanged, script sum 1399 (+136 = 1535). Windowed probe printed
-  `INK: rows 457.0..473.5`, `shot_hint_ink.png`.
+  `INK: rows 457.0..473.5`, `captures/shot_hint_ink.png`.
 
 ### EV-0219 - The `+0x3FC` end-of-level elapsed snapshot is mapped both ways
 - Date: 2026-11-19
@@ -5732,7 +5732,7 @@ behavior or specs; follow up with a binary observation entry.
   cell, weapon cell chosen by the upgrade level). The store's own per-item art is still unrecovered
   (Q-0052); this reuses a port binding rather than claiming the original's store art.
 - (4) **Runs**: `headless_coin_check` 154 -> 161 (the keying pin), `headless_level_check` 241 -> 248
-  (the drop), `headless_store_ui_check` 97 unchanged; screenshots `shot_store.png`/`shot_probe_store.png`
+  (the drop), `headless_store_ui_check` 97 unchanged; screenshots `captures/shot_store.png`/`captures/shot_probe_store.png`
   showed the diamond clean and the 1-3 shop's five shelves with their icons and prices.
 
 ### EV-0226 - The menu mermaid's fin is rotated onto the tail's measured stump
@@ -5740,7 +5740,7 @@ behavior or specs; follow up with a binary observation entry.
 - Type: measurement + windowed visual; a port fit replaced
 - Source: `assets_raw/images/selectorback.png`, `tailflop.png`, `masks/tailflop_.png`;
   `tools/godot/measure_mermaid.gd`, `tools/godot/preview_tail.gd`; `scripts/ui/game_selector.gd`;
-  capture `shot_menu.png`
+  capture `captures/shot_menu.png`
 - (1) **The defect.** The fin was drawn at (110, 360) with no rotation, so its root notch landed
   ~22 px right of the baked tail's stump: a green crescent hanging under her hip, visibly detached.
   It read as a second, small tail.
@@ -5753,13 +5753,13 @@ behavior or specs; follow up with a binary observation entry.
   keeps the baked end's rounded lip from showing above the fin's neck. All of it is a port fit -
   Q-0055's exact screen rect is still unrecovered.
 - (4) **Runs**: `headless_menu_check` 28 assertions unchanged (the recovered `framemap`/delays are
-  still pinned); `shot_menu.png` re-captured and viewed.
+  still pinned); `captures/shot_menu.png` re-captured and viewed.
 
 ### EV-0227 - The menu fin covers the painted tail's end only when its fluke faces out
 - Date: 2026-11-22 (owner: the baked tail's rounded lip still pokes through the fin)
 - Type: measurement + windowed visual (fit matrix over the real `selectorback.png`); a port fit
 - Source: `assets_raw/images/selectorback.png`, `tailflop.png`, `masks/tailflop_.png`;
-  `scripts/ui/game_selector.gd`; captures `shot_menu.png`, temporary
+  `scripts/ui/game_selector.gd`; captures `captures/shot_menu.png`, temporary
   a one-off compositing/coverage tool (deleted after the pass)
 - (1) **Why the -40 fit could not work.** Composited over the bare art, the fin's neck is narrower
   than the baked tail's end: at every notch-on-stump offset tried (scale 0.55-0.75, rotation
@@ -5772,7 +5772,7 @@ behavior or specs; follow up with a binary observation entry.
   stem runs back inside the body where its outlines read as the fin's crease. The owner-visible
   symptom (pale lip / rounded end through the join) disappears.
 - (3) **Chosen fit**: `TAIL_ROTATION_DEGREES 145`, `TAIL_SCALE 0.65`, `TAIL_FIT (-4, 0)` on the
-  measured notch/stump anchor - viewed on the full 1280x960 capture (`shot_menu.png`) and in
+  measured notch/stump anchor - viewed on the full 1280x960 capture (`captures/shot_menu.png`) and in
   2x crops. `headless_menu_check` still 28 assertions (playback timing untouched).
 
 ### EV-0228 - Each guppy row's mouth point, measured on the state sheets
@@ -5912,3 +5912,511 @@ behavior or specs; follow up with a binary observation entry.
   Full run: 26 suites, 1658 assertions, all exit 0; integration 136; 400-frame boot 0.
 - (6) **Not re-shot windowed.** The drawn side is asserted on real sprites through the level's own draw
   call, but no new windowed frame was captured for this entry.
+
+### EV-0233 - Windowed re-check: a swimming fish's head already follows its direction (R54 vs R51)
+- Date: 2026-11-22 (owner: do a windowed re-check of the fish facing, since R51 may already cover
+  R54's "swimming direction is wrong")
+- Type: windowed real-tank capture + read state, no recovered constant
+- Source: `tools/godot/shot_facing.gd` (new, temporary aid); `docs/captures/shot_facing.png`
+  (gitignored); `scripts/entities/fish.gd` (`_configure`, `_tick_motion`);
+  `scripts/tank/level.gd` (`_sync_visuals`)
+- (1) **Staged state.** Tank 1-1 through the real main path (content 326/326), the starter fish
+  cleared, then four guppies spawned and driven: stages 0 and 2 at x 150 with `vx = +3`, and the
+  same two stages at x 490 with `vx = -3`. Two `Sim` slices latch facing/flip (D-0060), then
+  `Game.gameplay_paused` freezes the tank for the frame.
+- (2) **What the draw did.** Right-movers: `facing = 1`, `flip = true`, `sprite.flip_h = true`.
+  Left-movers: `facing = -1`, `flip = false`, `sprite.flip_h = false` - D-0060's rule (the unflipped
+  art faces left, so the right-facing fish is the mirrored one).
+- (3) **What the frame shows.** All four guppies draw head-first: the two labelled `vx=+3` put
+  their mouths on the right with the tail fin trailing left, and the two labelled `vx=-3` point
+  left with the fin trailing right. No fish swims tail-first.
+- (4) **R54 is covered by R51.** The owner's "swimming direction is wrong" was captured on
+  2026-11-22, the same day the mirror flag was corrected; this frame is that build. R54 is recorded
+  as covered, not as a separate open defect, and nothing was re-inverted.
+- (5) **Limits.** 1-1 only, guppies at stages 0 and 2; the other species share the rule but are not
+  in this frame, and the capture is a frozen pose rather than motion. The run was windowed at
+  1280x960; the headless suite's `flip_h` pin is `headless_facing_draw_check` (16 assertions).
+
+### EV-0234 - The Food Quality upgrade reaches the manual pellet (R66)
+- Date: 2026-11-22 (owner: fix R66 in `REVIEW.md` - the pellet upgrade increments `food_quality` but
+  `Level.drop_food` ignores it, so the purchase does nothing)
+- Type: port behaviour fix pinned headless; the rule is the already-decoded `Tank::DropFood`
+- Source: `scripts/tank/level.gd` (`drop_food`); `tests/headless_level_check.gd`
+  (`_test_food_quality`); `docs/analysis/notes/p2.3-feeding.md` §2 (EV-0166)
+- (1) **Recovered rule.** `Tank::DropFood` sets `Food+0x188 = DAT_005e89dc` for a manual drop, and
+  only the star potion (`Tank+0x440`, kind 0, flag 0) overrides it with 3; a non-manual drop
+  (`kind != 0`) gets 1. `DAT_005e89dc` is the 0..2 Food Quality counter that store item 2
+  increments (`FUN_00549380`, capped at 2).
+- (2) **The port's defect.** `Level.drop_food` built every manual pellet with `quality = 0` (3 when
+  armed), so `buy_item`'s `food_quality += 1` reached the save, the store guard and `TankScalars`,
+  but never the pellet a fish eats.
+- (3) **Fix.** `drop_food` now passes `food_quality` (0..2) as the pellet's quality, keeping the
+  star-potion override at 3. No other drop path changes: Angie's re-lay already carries the taken
+  pellet's quality (`Pet._angie_relay_food`), and `Tank.spawn_food`'s special drops keep their
+  explicit quality/kind.
+- (4) **Headless pin.** `headless_level_check` gains `_test_food_quality`: a fresh level buys shelf
+  row 2 (200 shells) and asserts the level rises to 1, the next manual drop's `quality == 1`,
+  setting 2 drops `quality == 2`, an armed potion still drops 3 and clears, and the following drop
+  falls back to 2. Suite: **254 assertions, exit 0** (+6). Full run: 26 script suites, 1,664
+  assertions, all exit 0; integration 136; 400-frame boot 0.
+- (5) **Effect end to end.** `Fish._consume` already maps quality 1/2 to +700/+1100 (caps
+  1000/1400), pinned by `headless_fish_check` (`_eat_value` 699/1099 after the hunger tick), so the
+  purchase now changes feeding with no new nutrition table.
+
+### EV-0235 - Ordinary alien HP bars stay off until `Tank+0x178` is armed (R62)
+- Date: 2026-11-22 (owner: R62 - aliens show a health bar by default, but the original hides it)
+- Type: port default fix pinned headless; the draw gate itself was already recovered
+- Source: `scripts/tank/tank.gd` (`show_alien_health`); `scripts/tank/level.gd`
+  (`_alien_health_visible`); `tests/headless_integration_check_scene.gd`; P2.9 §5 (EV-0118, Q-0058)
+- (1) **Recovered gate.** `0x455E40` draws `IMAGE_HEALTHBAR` only for `kind == 0x15` (Cyrax) or when
+  `Tank+0x178 != 0 && Tank+0x3C8 != 5`. The flag's writer is still unlocated (Q-0058), so the port
+  keeps the field settable.
+- (2) **The port's defect.** `Tank.show_alien_health` defaulted to `true`, so every ordinary alien
+  drew a bar the shipped build hides unless the flag is armed.
+- (3) **Fix.** The default is now `false`. `Level._alien_health_visible` is unchanged: Cyrax returns
+  true before the flag, and tank 5 still suppresses ordinary bars.
+- (4) **Headless pin.** `headless_integration_check` now asserts the spawned Destructor's bar is
+  hidden on spawn, becomes visible after `tank.show_alien_health = true` and a bar refresh, and
+  still cuts to the half fill; Cyrax's existing "always draws an HP bar" assertion is unchanged.
+  Integration: **137 assertions, exit 0** (+1). Affected script suites still pass:
+  `headless_alien_check` 65 and `headless_level_check` 254. Full run: 26 script suites, 1,664
+  assertions; 27 checks, 1,801.
+- (5) **Still open.** The writer of `Tank+0x178` remains unknown (Q-0058); the field is a parameter,
+  not a recovered driver, so nothing yet arms it the way the original's level script may.
+
+### EV-0236 - Alien sprites are cut out with their mask companion, not the border key (R63)
+- Date: 2026-11-22 (owner: R63 - an alien sprite with a hole inside it draws the hole filled)
+- Type: port draw fix pinned in the integration scene; the alpha model is P3.3's
+- Source: `scripts/tank/level.gd` (`_masked_cell`, the Alien branch of `_draw_entity_frame`);
+  `scripts/data/mask_alpha.gd`; `tests/headless_integration_check_scene.gd`
+- (1) **Cause.** Alien sheets are masked art with a grayscale companion under
+  `assets_raw/masks/_<name>.png` (P3.3). `SpriteKey` clears only background **connected to the cell
+  border** - deliberately, so a dark outline inside the art survives - so an enclosed hole stayed
+  opaque and drew as solid colour.
+- (2) **Measured.** A border flood fill over each alien alpha companion leaves enclosed dark
+  regions in every alien mask: Destructor 14,191 px, Psychosquid 12,588, Ulysses 1,922, Cyrax
+  (BOSS) 1,648, Sylvester 599, Balrog 487, Bilaterus 208, Minisylvester 52, Gus 8.
+- (3) **Fix.** The alien branch builds its cell through `Level._masked_cell`: the frame's atlas
+  region is composed with the matching `masks/_<file>` companion (`MaskAlpha.apply`, cached per
+  `id#cell`), falling back to the border key only when no companion lines up. Fish, pellets, coins
+  and pets keep the key - their sheets have no mask companion.
+- (4) **Headless pin.** `headless_integration_check` finds a pixel the mask clears but the border key
+  keeps (Destructor frame 0) and asserts the spawned alien's drawn texture is transparent there:
+  alpha 0.00. Integration **139 assertions, exit 0** (+2); `headless_alien_check` 65, exit 0.
+  Full run: 26 script suites 1,664; 27 checks 1,803.
+- (5) **Limits.** Asserted on the Destructor's first cell; the same path serves every alien kind
+  (including Cyrax) but no other kind is pinned, and no windowed frame was captured.
+
+### EV-0237 - The recovered grow pop is drawn (R55)
+- Date: 2026-11-23 (owner: R55 - the size-up animation is missing, fish have no growth transition)
+- Type: port draw fix; the timer and the fact that draw consumes it are recovered, the inflation
+  amounts are a port fit
+- Source: P2.2 §5.2 (`+0x1CC > 0` -> "RNG-inflated draw rect" in Draw), P2.3 §7 (stage-up sets
+  `[0x1CC] = 10`), P2.4 §5 (Sylvester's grow anim `+0x1CC = 10`); `scripts/entities/fish.gd`
+  (`grow_scale`), `scripts/tank/level.gd` (`_sync_visuals` fish branch),
+  `tests/headless_fish_check.gd`
+- (1) **Cause.** `Fish.grow_timer` was already the recovered `+0x1CC`: `_apply_growth` and
+  `debug_grow` arm it with `GROW_POP_TICKS` (10) and `_tick_effect_timers` counts it down, but no
+  draw path read it - `Level._sync_visuals` only set position and flip - so a stage-up changed the
+  `SMALLSWIM` row with no transition at all.
+- (2) **Fix.** `Fish.grow_scale()` maps the timer to 1.025 / 1.075 / 1.125 (1 / 3 / 5 px per side,
+  cycling) and the fish branch of `_sync_visuals` applies it to the sprite. Because the fish sprite is
+  uncentred, the position is pulled back by `(scale - 1) * 40` so the art pops about its centre
+  rather than growing right and down; the scale returns to exactly 1.0 when the timer clears.
+- (3) **Port fit.** The binary's draw inflates the rect by an amount it takes from the RNG, and that
+  draw body is not in the recovered corpus; the 10-tick duration is recovered, the three inflation
+  amounts are the port's stand-in. Recorded as such rather than presented as measured.
+- (4) **Headless pin.** `headless_fish_check` 162 -> 165 (+3: the pop inflates the draw, peaks at
+  1.125 two ticks in, and returns to 1.0 when `+0x1CC` reaches 0), exit 0. Still green:
+  `headless_level_check` 254, `headless_facing_draw_check` 16, `headless_render_check`, and the
+  integration scene at **139 assertions**, exit 0. Full run: 26 script suites 1,667; 27 checks 1,806.
+- (5) **Limits.** No windowed capture of the pop, and the random inflation amounts remain
+  unrecovered; death's row change is untouched by this path.
+
+### EV-0238 - Pet and alien sheets draw one row at a time (R59, R67)
+- Date: 2026-11-23 (owner: pet animation is weird; alien animation is not separated; each row is a
+  different animation, so never go to another row; a lot of fish animation is missing from the review)
+- Type: port draw fix plus a review-tool change; the clip/assertion counts are measured
+- Source: P2.15's 10xN grid model, P2.2 §5.2, P2.8 §3, Q-0044; `scripts/entities/pet.gd`
+  (`SHEET_COLUMNS`, `anim_row`), `scripts/entities/alien.gd` (`anim_row`),
+  `scripts/tank/level.gd` (`row_cell` and both draw branches), `tools/review/build_review.py`
+  (`ROW_NOTES`, the per-row clip builder), `tools/review/review_meta.py`
+- (1) **Cause.** Both draw branches fed `anim.frame_at()` (0..playCount-1) straight into the cell
+  index. Pet and alien sheets are 10 columns x N rows, so a 20-60-frame loop played row 1, row 2 and
+  so on back to back: Balrog's walk was followed by its roar, Sylvester's swim by its dive, and
+  Stinky crawled, hid and slept inside one cycle. The animation page inherited the same merge (one
+  clip per sheet), and the entity-driven fish sheets - which have no `anim` metadata - were absent
+  from it entirely.
+- (2) **Fix.** `Level.row_cell(row, frame, columns)` returns `row * columns + posmod(frame, columns)`,
+  so the frame cycles inside its own row and can never spill into the next animation. Pets draw
+  `Pet.anim_row()` - row 0 for every pet, with Niko's closed / opening / open-with-pearl rows
+  following his recovered 1224/1233/1440/1450 cycle - and aliens draw `Alien.anim_row()` (row 0).
+  Bilaterus still draws its first cell because its sheet has no playback metadata.
+- (3) **Review.** Every 10xN sheet is now one clip per row (STANLEY 6, WALTER 3, BALROG 2, SYLV 2,
+  Psychosquid 5, ...), and the entity-driven fish sheets are clips too: guppy swim/eat/turn, the
+  hungry twins, the eye layers, the species bodies and BALLS, at `AnimState.SHEET_FRAME_TICKS`
+  (5 ticks per column). The page went from 66 clips to **247 clips in 41 groups**; `ROW_NOTES` names
+  the rows read from the art (Stanley's green/brown variants and bark, Walter's swim/leap/punch,
+  Stinky's crawl/hide/sleep, Niko's shell, Meryl's four rows, Balrog's walk/roar, Sylvester's
+  swim/dive).
+- (4) **Pins.** `headless_pet_check` 113 -> 119 (`SHEET_COLUMNS`, the idle row, Niko's three rows and
+  the close back to row 0), `headless_alien_check` 65 -> 68, `headless_render_check` 17 -> 21
+  (`row_cell` arithmetic, including a negative frame). Full run: 26 script suites **1,680**;
+  integration **139**; 27 checks **1,819**, all exit 0.
+- (5) **Limits.** Stanley's/Walter's action rows and the aliens' lunge rows are still unbound
+  (Q-0044/Q-0046), so those animations exist in the sheets and the review but do not play in-game.
+  The filmstrip PDF and the 66 GIFs still present the merged sheets - only `animations.html` is
+  row-split. MERYL row 4 has five empty cells in the shipped sheet (its loop goes blank halfway);
+  that is the art, not the split.
+
+### EV-0239 - Guppy "stage 5" is carnivore art; stages grouped one section per row
+- Date: 2026-11-23 (owner: stage 5 of the small and hungry guppy is actually the carnivore sprite;
+  also group the stages)
+- Type: review-tool correction; measured page counts
+- Source: `resources/content.json` (SMALLSWIM/HUNGRYSWIM/SMALLEAT/HUNGRYEAT/SMALLTURN/HUNGRYTURN/
+  SMALLDIE are 10x5 at 80x80; the eye layers SIMSWIM1..3 / SIMTURN1..3 / SIMEAT1..3 are 10x3);
+  `Fish.row_for` (`scripts/entities/fish.gd`: stage 0 -> row 0, stage 1 -> row 1, stages 2/3 -> row 2,
+  stage 4 -> row 3); the row-5 art itself compared with `SIMCARNIVORE`
+- (1) **Finding.** The small/hungry sheets have five rows, but the fifth (the page's old "stage 5")
+  is carnivore art, not another guppy stage. The tank never draws it: `Fish.row_for` folds every
+  real guppy stage onto rows 0-3, and `headless_fish_check` already pins 3 -> 2 and 4 -> 3.
+- (2) **Change.** The animation page now has four Guppy sections - stage 1 (smallest, fish stage 0),
+  stage 2 (fish stage 1), stage 3 (large, fish stages 2-3) and stage 4 (crowned, fish stage 4) -
+  instead of one Guppy section ordered by state sheet. Each stage holds its swim, starving swim, eat,
+  starving eat, turn, starving turn and corpse clips in that order, with the three eye layers on
+  stages 1-3 (those sheets only carry three rows). The carnivore row is excluded and named in the
+  stage-4 blurb. Page counts: **247 -> 240 clips**, 41 -> 44 groups; the sidebar now lists the four
+  stage sections in place of Guppy.
+- (3) **No game change.** The draw path already used `row_for`, so this was a review-label bug, not
+  a ported-behaviour bug. `headless_fish_check` (165 assertions) still covers the row folding.
+- (4) **Limits.** The eye-layer sheets have no fourth row, so stage 4 shows body clips only; the
+  sprite page still shows the whole sheet including the carnivore row (with its description updated
+  to say what that row is).
+
+### EV-0240 - Review rows named by function; guppy groups named by size
+- Date: 2026-11-23 (owner: do not just use row 1/2/3, give the function; group the guppy stages by
+  size)
+- Type: review-tool naming; measured page counts
+- Source: the 31 multi-row pet/alien sheets read row by row (`docs/review/` contact sheets), the
+  guppy state sheets and `GUPPY_STATE_NAMES`, `Fish.row_for`
+- (1) **Guppy.** The four stage sections are now sizes - "Guppy · small", "Guppy · medium",
+  "Guppy · large", "Guppy · crowned" - and the clips are named for what they do: Swim, Starving
+  swim, Eat, Starving eat, Turn, Starving turn, Corpse, and Eye layer · swim/turn/eat 1..3 on the
+  sizes whose sheets carry those rows. The group blurb says which fish stage each size is drawn for.
+- (2) **Pets and aliens.** Every row clip is named from the art instead of its index: STANLEY ·
+  green walk / green run / brown walk / brown run / brown bark / green rest, WALTER · swim / leap /
+  punch, BALROG · walk / roar, SYLV · swim / attack, STINKY · crawl / hide-emerge / sleep, NIKO ·
+  closed / opening / pearl open, PSYCHOSQUID's red/blue rest poses, plus the shorter sheets
+  (SEYMOUR · head out/head in, PRESTO · fish/ball/transform cloud, ...). BILATERUS' eight unlabelled
+  rows are named by the view they show (left profile / front mouth states / top-down).
+- (3) **Other fish.** Their rows are growth stages, so they read "· growth N" rather than "· row N".
+- (4) **Verified.** 240 clips / 44 groups, every clip's sheet loads (no broken sheets), no blank
+  canvases, and no clip name ends in "row N" or "stage N" any more.
+- (5) **Limit.** The pet/alien names describe the pose in the sheet; they are not recovered game
+  states, and binding those rows to play states is still Q-0044.
+
+### EV-0241 - Animation PDF and GIFs rebuilt from the per-row clips
+- Date: 2026-11-23 (owner: the PDF and GIFs still show whole sheets; regenerate them per row with the
+  same functional names as the HTML)
+- Type: static artifact rebuild; counts measured
+- Source: `animation_groups` (the single clip model behind `animations.html`), `clip_strip`,
+  `build_clip_gif`, `clip_schedule`; `tools/review/build_review.py`
+- (1) **One model.** The HTML, the PDF and the GIFs now all read `animation_groups()`: one clip per
+  sheet row, functional names (STANLEY · green walk, WALTER · punch, BALROG · roar, ...), guppy
+  states grouped by size and named "Swim (small)" / "Starving swim (large)" / "Eye layer · eat 2
+  (medium)". Nothing renders a whole multi-row sheet as one loop any more.
+- (2) **PDF.** 240 clip filmstrips in 44 group sections (Guppy · small/medium/large/crowned first),
+  each strip cropped to its own row with tick holds under every frame and the functional caption;
+  films are cleaned out of `frames/` at build start. The contents page reads "240 clips in 44
+  groups".
+- (3) **GIFs.** One per clip, 240 files / 16.9 MB, named from the functional clip (`STANLEY - green
+  walk.gif`, `Swim (small).gif`); `animations.zip` 14.4 MB, 240 entries. Playback uses the clip's
+  own begin/end/delay/pingpong schedule (WALTER · punch is the pingpong 18-position cycle).
+- (4) **Verified.** Sampled first frames show each gif holding one row only (green walk vs brown
+  bark vs punch; small vs large vs crowned guppy), PDF text extraction lists all 44 headings and the
+  functional captions, and gif files = clip files = 240 with no missing sheets.
+- (5) **Limit.** GIF filenames drop the parentheses FPDF/PIL cannot keep portable on every OS
+  ("Swim (small).gif" is stored as "Swim small.gif"); the banner and the HTML card keep the exact
+  label.
+
+### EV-0242 - Carnivore row split onto Oscar; Oscar gets his swim/starve/turn/die clips
+- Date: 2026-11-23 (owner: the small and hungry sprite still shows the carnivore; Oscar's animation
+  has no swim, starve, turn or die)
+- Type: review-tool correction; counts measured
+- Source: `Fish.SPECIES_DRAW` (`scripts/entities/fish.gd`: Oscar's draw row is fixed at 4) and
+  `Fish.row_for` (every guppy stage folds onto rows 0-3); `STATE_SHEETS` (SMALLSWIM/HUNGRYSWIM,
+  SMALLEAT/HUNGRYEAT, SMALLTURN/HUNGRYTURN) plus `SMALLDIE` for the corpse; the five-row sheets
+  read row by row in `docs/review/`
+- (1) **Sprite pages.** The guppy body sheets' fifth row is no longer drawn on the guppy card:
+  `sprite_cards()` crops rows 1-4 into `crops/<NAME>_guppy.png` for the guppy card and row 5 into
+  `crops/<NAME>_oscar.png` for a new `OSCAR · swim / starving swim / eat / starving eat / turn /
+  starving turn / corpse` card, in both `sprites.html` and `sprites.pdf`. The guppy descriptions say
+  where the row went; the sprite PDF now reads "253 cards" (246 sheets + the 7 carnivore rows).
+- (2) **Animation page.** Oscar's group carries those seven row-5 clips - Swim, Starving swim, Eat,
+  Starving eat, Turn, Starving turn, Corpse, each named "(carnivore)" - ahead of the 12
+  `SIMCARNIVORE` rows and the SCL icon. The clip model maps a guppy body sheet's fifth row to the
+  `oscar` bucket instead of dropping it, so the row is reviewed once, under the fish that draws it.
+- (3) **Static output.** Built from the same model: `animations.pdf` (45 pages, "247 clips in 44
+  groups"), 247 GIFs and `animations.zip` (247 entries). The guppy GIFs still hold one row each.
+- (4) **Verified.** Page counts, crop sizes (800x320 for the four guppy rows, 800x80 for the
+  carnivore row), the seven gif first frames (small/medium/large/crowned guppy, carnivore swim,
+  carnivore corpse) and the Oscar card order were read back from the built files.
+- (5) **Limit.** The corpse clip still plays a whole row (cells 0-9) rather than the recovered cells
+  6-9; that predates this pass and is unchanged.
+
+### EV-0245 - Review grouped by row family, Meryl's menu art split out, and the last label fixes
+- Date: 2026-11-23 (owner: carnivore layer masking is improper; group more by row like Breeder's
+  growths; Stinky's idle while hiding is missing; Prego's fourth label is wrong; Meryl's menu art
+  needs its own previewer; Brinkley is wrong; Stanley is slightly wrong; Walter's punch should show
+  the whole animation; alien labels are wrong)
+- Type: review-tool restructure plus one pet-draw fix
+- Source: `docs/review/assets/*.png` row strips; `pet.gd` `is_hidden`/`anim_row`; EV-0168 (the
+  carnivore's four tinted layers); `level.gd` `_food_row`/`laser_cell_for`; `coin.gd` row tables
+- (1) **Grouping.** Rows that form a family are now sub-sections of their entity: Breeder's three
+  normal growths and Hungry Breeder's three starving growths plus its eat pose, Grubber's normal and
+  starving pairs, Gekko's green/yellow pair, Psychosquid's red/blue pair and colour change,
+  Bilaterus' side view and top-down, Oscar's four layers per pose, Stanley's green/brown pair and
+  colour change, and Itchy's closed/open-mouth pairs - 24 sub-sections, rendered as headings in the
+  HTML and the PDF. 44 groups became 45.
+- (2) **Carnivore masking.** SIMCARNIVORE's three white layers ship white-on-black (opaque black
+  corner, 0% transparency), so each clip read as a black box. The build now keys the black of a mask
+  row to alpha and draws the shape as a neutral silhouette (79-86% of the cell transparent), which
+  reads on both the dark page and the light PDF; the coloured body row is already transparent and is
+  untouched. The layers are named body/fin/teeth mask and the context points at EV-0168's tint stack.
+- (3) **Meryl.** `SELECTORSCREEN`, `MERYLTAIL` and the fitted menu composite moved out of the pet
+  group into their own "Meryl - main menu" group, so the menu mermaid is reviewed apart from the tank
+  pet (which keeps MERYL, MERYLBLINK, MERYLLIPS and the icon).
+- (4) **Labels.** Brinkley is idle / eat (trunk up); Stanley's fifth row is the brown eat, not a
+  head-down pose; Destructor has no cannon - row 1 is a red-tipped claw held overhead and row 2 is
+  the turn to the viewer; Ulysses' second and third rows are turns with the arms down and up.
+  Prego's fourth row stays "swim, belly full, head up" (EV-0244). Walter's punch now plays once
+  forward instead of pingpong, which ran the glove out and back.
+- (5) **Stinky.** `Pet.anim_row()` returns row 2 while `is_hidden()`, so the retracted-shell idle is
+  drawn while the hide counter is full and row 0 returns when it clears. `headless_pet_check`
+  119 -> 121.
+
+### EV-0246 - A collected coin throws its recovered pickup burst (R57)
+- Date: 2026-11-24 (owner: the coin pickup animation is missing, and coins vanish before they read -
+  R56/R57)
+- Type: implementation of a recovered claim (no new binary read)
+- Source: `analysis/notes/p2.5-economy.md` §5 (`Coin::Update` `FUN_004F5050`'s collection tail: the
+  removal `FUN_004D5510` plus `rand%3+3` particles through `FUN_005436F0`; kind 0x11, gated on
+  `+0x198 == 0`, adds sound `0x11D` and 2..4 particles); `scripts/entities/coin.gd`,
+  `scripts/tank/level.gd`
+- (1) **The burst.** `Coin.collect()` rolls the recovered count and emits
+  `burst_requested(at, count, special)` at the coin's centre before `despawn()`: `rand%3 + 3` for an
+  ordinary coin, `rand%2 + 2` for kind 0x11. The roll comes off the tank's seeded stream, so a level
+  run stays reproducible (ARCHITECTURE §7).
+- (2) **The particles.** `Level._on_coin_burst` lays the count on a deterministic 10-px ring with a
+  5-tick life. The count is recovered; the radius and the life are port constants, because
+  `FUN_005436F0`'s body is not decoded and a per-particle RNG draw would perturb every later level
+  roll. Kind 0x11's sound `0x11D` is **not** ported: the port's semantic sound table has no binding
+  for that numeric id (Q-0030).
+- (3) **Verification.** `headless_coin_check` 161 -> 168: the burst is announced once, sits on the
+  coin's centre, an ordinary pickup's count stays inside `rand%3+3`, kind 0x11 takes the special
+  branch with its `rand%2+2` bound. `headless_level_check` 254 (the click path still credits and the
+  coin leaves the tank), `headless_render_check` 21 (the dot pool tracks the effect list) and the
+  integration scene 139 all stay green.
+- (4) **R56.** The 20/108/150/200-tick expiry modes and the 5-tick fade are unchanged - they are
+  pinned to P2.5 §5 - so the owner's "disappears before it reads" is answered by the burst marking
+  the pickup, not by retuning recovered timers.
+
+### EV-0247 - The pet chooser is the shipped 24-button grid (R60)
+- Date: 2026-11-24 (owner: the pet select screen is missing)
+- Type: implementation of a recovered layout
+- Source: `analysis/notes/p2.12-menus.md` §10.6/§11 (`Sexy::PetsScreen` `FUN_00527820` and its
+  listener `FUN_005289F0`); `resources/content.json` (`PETBUTTON` 4x1 of 90x83,
+  `PETBUTTONHOLE`/`PETBUTTONREFLECT`/`PETBUTTONRING` 90x83, `SCREENBACK` 240x240);
+  `scripts/ui/pets_screen.gd`
+- (1) **The grid.** Origin `(0x19, 0x5E)`, cell `0x5A x 0x53`, row pitch `0x53`, run breaks at
+  i = 5/10/15/19/22 -> rows of 5/5/5/4/3/2. Each button composes a `PETBUTTON` cell over
+  `PETBUTTONHOLE`, with `PETBUTTONRING` drawn on a selected pet and the pet's own first cell
+  (`Pet.IMAGES`) inside it; the sheets go through their `masks/` companions like the Hatch card.
+- (2) **The rules.** An unowned pet has no button (`FUN_00501410(i) == 0` -> hidden). The selection
+  is capped at four (`+0x130 = min(profile+0xB4, profile+0x18)`, clamped to 4 in mode 0) and the
+  continue path (`FUN_005289F0`) asks "Select More Pets?" below three selections with the binary's
+  two bodies ("...without selecting 3 pets?" when the cap is under four, "...at least 3 pets?"
+  otherwise) before writing `profile+0x5A`. `press_confirm()` is the already-answered path.
+- (3) **The buttons.** id 99 "Click Here To Continue" at `(0xE1, 0xFA, 0xBA)`, id 100 "Menu" at
+  `(0x20D, 4, 0x50)`; the ctor passes a width only, so both row heights stay the port's.
+- (4) **The scroll panel.** The six rows are `94 + 6*83 = 592` px tall, so the ctor's panel `+0xFC`
+  is modelled as a clipped viewport scrolled by the wheel, cut above the id-99 row.
+- (5) **Verification.** `headless_profile_check` 57 -> 74 pins the geometry (origin, 90-px column,
+  83-px pitch, the stagger, the 592-px content), per-pet availability, the cap, both "Select More
+  Pets?" bodies and the write-back; the windowed capture is EV-0248.
+
+### EV-0248 - The pet chooser, captured windowed through the real main path
+- Date: 2026-11-24
+- Type: windowed observation
+- Source: `tools/godot/shot_pets.gd` (real `scenes/main.tscn`, Adventure 1-5, three egg purchases,
+  the Hatch card's OK), captures written to `docs/captures/shot_pets_empty.png`,
+  `shot_pets_selected.png`, `shot_pets_scrolled.png` (gitignored, regenerable)
+- (1) 24 buttons exist in the scrolling grid; the five owned pets (0, 1, 6, 7, 8 are granted by the
+  probe) draw their `PETBUTTON` ring with their own art, the other nineteen have no widget - which is
+  why the grid reads sparse on a new profile: the binary hides an unowned pet's button too.
+- (2) Selecting three pets draws their ring; `selection_cap()` reads 4 and the continue path returns
+  true at three selections.
+- (3) The wheel reaches the last rows (scroll 166 px of the 342-px range) with the grid clipped above
+  the id-99 row, so "Click Here To Continue" stays legible.
+- (4) Recorded as still off: `SCREENBACK` tiles at 240x240, so the backdrop reads as six panels (its
+  own art, not a layout error), and the ring is a thin outline that is easy to miss at 1:1 - whether
+  `PETBUTTONRING` is the selection marker at all stays open (Q-0063).
+- (6) **Verified.** 247 clips in 45 groups with 24 sub-sections, no duplicate name, all 247 clip
+  names present in `animations.pdf`, 247 GIFs and `animations.zip`; the sprite page has the menu
+  group (3 cards) and the pet group without the menu art (4 cards); the keyed carnivore strip was
+  read back; `headless_pet_check` and `headless_render_check` pass.
+- (7) **Order and nav.** Loose clips render before the row families and the SCL portrait last, so
+  Oscar's state-sheet art stays ahead of his layer sheet and no group opens with an icon; the
+  animation sidebar uses each group's real kind instead of tagging every group "fish" (it had one
+  45-item "Fish" heading, now Fish / Pets / Aliens / Tanks & world / Interface), and a filter that
+  hides every card of a row family hides its heading too.
+
+### EV-0244 - Every row label checked against the art; the seven fallback sheets named
+- Date: 2026-11-23 (owner: verify all label)
+- Type: review-tool correction; all 66 multi-row sheets rendered row by row
+- Source: `docs/review/assets/*.png` row strips at 2x/3x/6x, per-row pixel diffs and per-frame
+  bounding boxes; `level.gd` `_food_row`/`laser_cell_for`, `coin.gd` `MONEY_ROWS`/`SHELL_ROWS`,
+  `pet.gd` `anim_row`
+- (1) **Rows the art contradicts.** ITCHY rows 3-4 were called "spines out": the body is the swim
+  and turn art to within 1.6% of pixels (only the mouth changes), so they are eat and eat-turn.
+  PREGO row 4 was "turn, belly full": it never rotates (width 55-60 px, no collapse) - it is the
+  belly-full swim with the head up. ULYSSES row 2 is not a crouch - the body turns to the front
+  with the arms hanging down. STANLEY rows 2 and 4 were "rear": the width collapses 77 -> 42 px at
+  constant height, the same turn every other pet plays. HUNGRYBREEDER rows 10-12 were "growth 4":
+  there is no fourth size (bbox 49/61/76 px = growths 1/2/3), so they are the eat pose at each of
+  the three sizes. BILATERUS was named facing left/turn/facing right/front: no row is a right-facing
+  swim, rows 1-2 and 4-6 are the same left-facing skull with a different jaw or fin (rows 1-2 and 4-5
+  rotate through the front view) and rows 7-8 are the top-down pod.
+- (2) **The one sheet still on the fallback is named.** AMP's two rows are its swim and turn.
+  FOOD, MONEY, SHELLS, LASERS, AMPCHARGE and GUMBOLIGHT carry no playback metadata, so they stay
+  sprite cards rather than clips; their rows are named in their card descriptions instead (FOOD's
+  five kinds in `level.gd`'s order, MONEY's five coin tiers plus the beetle art, SHELLS' four tiers,
+  LASERS' six weapon tiers, Amp's charge/discharge and Gumbo's two glow halves). The "growth N"
+  fallback is now "row N", so no sheet can claim growth stages it does not have.
+- (3) **Verified.** 247 clips in 44 groups, no duplicate clip name, no clip on the fallback; HTML,
+  `animations.pdf` (45 pages), 247 GIFs and `animations.zip` (247 entries) rebuilt from the same
+  model, and the clip names for the corrected sheets read back from the built page.
+- (4) **Limit.** The names describe the art and the port's own row tables; which row the tank binds
+  to a live state is still Q-0042/Q-0044 for most species and pets.
+
+### EV-0243 - Every multi-row sheet re-read: species states, Oscar's layers, pet poses
+- Date: 2026-11-23 (owner: Oscar has no growth - that is his layering; Breeder has three growths,
+  each with swim/eat; Grubber has no growth; many labels are wrong, especially the pets)
+- Type: review-tool correction; every multi-row sheet read row by row
+- Source: `docs/review/assets/*.png` read row by row at 2x, with the guppy rows as the state
+  reference (SMALLEAT holds a wide red mouth open; SMALLTURN rotates the body through 180 degrees);
+  `Fish.SPECIES_DRAW`/`Fish.row_for` for which row is drawn
+- (1) **Species sheets are states, not growth.** BREEDER (9 rows) is three growth stages, each with
+  swim, turn and eat. HUNGRYBREEDER (12) is four starving growth stages: swim/turn/death on the
+  first three and swim plus two eat poses on the fourth. GRUBBER (5) is brown swim and eat, then the
+  starving green swim, death and eat - no growth rows. STARCATCHER (3) is purple swim, green
+  starving swim and green starving death. ULTRA (4) is swim/eat/turn/death at one size. GEKKO (7) is
+  green swim/turn/eat, then the starving yellow swim/turn/death/eat. BALLS (4) is one ball design
+  per row: white, beach, soccer, basketball.
+- (2) **Oscar is layers.** SIMCARNIVORE's 12 rows are not growth stages: they are the body mask, fin
+  mask, teeth and body of the swim, turn and eat poses - the four tinted layers the carnivore draw
+  stacks. The clips now read "Swim · body mask", "Turn · body", "Eat · teeth", ...
+- (3) **Pets.** Every pet sheet was re-read. Most second rows are the 180-degree turn the old labels
+  called something else: STINKY crawl/turn/hide, NIKO closed/opening with pearl/closing, ITCHY
+  swim/turn/spines out/spines out turn, PREGO swim/swim belly full/turn/turn belly full, ZORF
+  swim/turn/spit, VERT swim/turn, RUFUS idle/snap, MERYL swim/sing/turn/hair flip, WADSWORTH
+  swim/turn/mouth open (shelter), SEYMOUR, SHRAPNEL, GUMBO, BLIP, NIMBUS, AMP and ANGIE swim/turn,
+  RHUBARB idle/claw raise, GASH swim/turn/bite, PRESTO fish/turn/transform cloud, BRINKLEY trunk
+  down/trunk up, NOSTRADAMUS idle/turn, STANLEY green walk/green rear/brown walk/brown rear/brown
+  head down/green to brown, WALTER swim/turn/punch.
+- (4) **Aliens and halo.** GUS idle/arms out/grin, DESTRUCTOR cannon up/cannon out, ULYSSES
+  walk/crouch arms down/arms up, PSYCHOSQUID red swim/red turn/blue swim/blue turn/red to blue,
+  BILATERUS swim facing left/turn/swim facing right/front mouth closed/open/wide/top-down fins
+  out/turned, HALO glow wide/glow narrow.
+- (5) **Verified.** 247 clips in 44 groups, no duplicate clip name, and no clip left on the old
+  "growth N" fallback (HALO was the last one). Gifs, `animations.zip` (247 entries), `animations.pdf`
+  (contents "247 clips in 44 groups", 44 headings) and `sprites.html`/`sprites.pdf` were rebuilt from
+  the same model; sampled gif first frames show the row each label names (Breeder turn, Gekko
+  starving death, Oscar's fin mask and turn body).
+- (6) **Limit.** The names describe the art: a wide red mouth held open is read as eat, a 180-degree
+  body rotation as turn, a body fading white with X eyes as death, a colour shift as the starving
+  twin. Which row the tank binds to a live state is still Q-0042/Q-0044 for most species and pets.
+
+### EV-0249 - the loss card: "GAME OVER" / "Oops!  All of your fish have died!" / "Click to Continue"
+- Date: 2026-11-24 (owner: the lose screen is missing - there is no game-over/loss screen)
+- Type: static (Ghidra xrefs, `function` and `decompile` of the shipped game module) plus a windowed
+  confirmation of the port's card
+- Source: `xrefs 0x5A86DC` -> 0x548F84 and 0x549081, both inside `FUN_00547610` (`Tank::Update`);
+  its assembly 0x548E05..0x5490B8; `decompile 0x5392A0`; strings 0x5A8360 "Click to Continue",
+  0x5A86B8 "Oops!  All of your pets have died!", 0x5A86DC "GAME OVER", 0x5A86E8 "Oops!  All of your
+  fish have died!"
+- (1) **The gate.** The whole block sits behind `CMP byte [Tank+0x2A5], 0; JNZ exit`, skips mode 5
+  (Virtual Tank) and exits at once when `FUN_005392A0(Tank)` returns non-zero, so that call is the
+  "can this tank still be played?" test.
+- (2) **`Tank::CanContinue` (0x5392A0).** It ORs three entity lists - `Tank+0xA0`, `+0xA4`, `+0xD0`
+  (each tested as list.count == 0) - and then four globals `FUN_004E3ED0/3F00/3F30/3F60`; the tank
+  can continue when any is non-empty/true. No money term: the loss is "no living fish", not "broke"
+  (the out-of-money dialogue is a separate path, P2.5 §1).
+- (3) **The failure path.** Outside mode 5 the tank calls `FUN_0053DB80(1)`, offers the rescue hint
+  (0x5A870C "YOUR LAST FISH HAS DIED!" + 0x5A8728 "Normally this would end your game, but this time
+  we'll give you another fish to keep playing!...") when `FUN_00537B80()` says so, and otherwise
+  clears `Tank+0x4EE`, collects every coin (`FUN_0053C2D0`, the call the Time Trial expiry also uses)
+  and builds `FUN_0054B5B0(0x11, 1, ...)` from three strings: 0x5A86DC "GAME OVER" (title), 0x5A86E8
+  "Oops!  All of your fish have died!" (body) and 0x5A8360 "Click to Continue" (button). Mode 5 has
+  its own builder just below (0x549046) with "Oops!  All of your pets have died!" (0x5A86B8).
+- (4) **After the click.** Not recovered: the id-17 handler and the rescue hint's flag are internal to
+  `FUN_0054B5B0`'s screen table, so Q-0065 records both as open.
+- (5) **The port.** `Level.can_continue()` tests `Tank.fish()` (the `+0xA0` stand-in) and
+  `Level._check_defeat()` runs the recovered order - latch once, collect all, emit `defeated` - with
+  `level_index > 0` standing in for `Tank+0x2A5`. `Main` mounts `GameOverDialog` on it, pauses the
+  tank, and its "Click to Continue" takes the leave-tank path (D-0062). Verified headless
+  (`headless_level_check` 254 -> 264: latch, one emission, coins collected first, a fish keeps the
+  level alive, mode 5 and a never-started level do not lose) and windowed: `shot_gameover.png` and
+  `shot_gameover_zoom.png` show the brass card with the "GAME OVER" plaque, the body line and the
+  purple "Click to Continue" button over a live 1-1 tank (`tools/godot/shot_gameover.gd`, all five
+  inline checks pass).
+
+### EV-0250 - a selected pet reads: brightened dome, ring, and the sheets' alpha companions
+- Date: 2026-11-24 (owner: make selecting a pet clearly visible in the chooser and re-capture it
+  zoomed in to prove the ring or highlight reads)
+- Type: windowed capture + art inspection
+- Source: `assets_raw/images/petbutton.png` (4 cells of 90x83), `petbuttonring.png`,
+  `petbuttonhole_.png`, `petbuttonreflect_.png`; `tools/godot/shot_pets.gd` ->
+  `docs/captures/shot_pets_zoom.png`
+- (1) **The ring alone does not read.** `PETBUTTONRING` is a thin gold outline on the same gold dome,
+  so at 1:1 it disappears; the four `PETBUTTON` cells are one gold dome with rivets plus three flat
+  colour blobs, and which cell is the base art, the highlight or the selected face is still unread
+  (Q-0063).
+- (2) **The "hole"/"reflect" layers were never art.** Content's `IMAGE_PETBUTTONHOLE` and
+  `IMAGE_PETBUTTONREFLECT` resolve to the sheets' alpha companions (`petbuttonhole_.png`,
+  `petbuttonreflect_.png`), i.e. masks - drawing them through the border key added nothing - so the
+  port no longer draws them as layers.
+- (3) **What a selection now does.** The base dome is brightened to `SELECTED_TINT`
+  (1.35/1.3/1.05) and an unselected one dimmed to `UNSELECTED_TINT` (0.78 grey), with the ring kept
+  on top; both are port fits (`PetsScreen.button_tint`), pinned in `headless_profile_check` (76).
+- (4) **Verified.** `shot_pets_zoom.png` is a 190x96 crop of the selected pet 0 and the unselected
+  pet 1 at 3x: the selected dome is bright yellow and its portrait fully lit while its neighbour is
+  dark olive, so the state reads without hunting for the rim.
+
+### EV-0251 - what `PETBUTTONRING` draws, and the selection now uses a shipped bright face
+- Date: 2026-11-24 (owner: a selected pet still cannot be told from an unselected one, so a click
+  looks like nothing happened; check what `PETBUTTONRING` draws and make the state read)
+- Type: observation (pixel reads) + windowed capture
+- Source: `tools/godot/probe_petbutton.gd` -> `docs/captures/probe_petbutton_cell0..3.png` and
+  `probe_petbutton_ring.png`; `assets_raw/images/petbutton.png` (360x83, 4 cells of 90x83),
+  `petbuttonring.png` + `masks/petbuttonring_.png`; `tools/godot/shot_pets.gd` ->
+  `shot_pets_zoom.png` / `shot_pets_selected.png`
+- (1) **The ring is an outline, not a marker with presence.** `PETBUTTONRING` is 90x83; its mask has
+  1,292 opaque pixels, of which 734 are lit (luminance > 0.55) and span (0,3)..(87,74) - a roughly
+  2-px gold stroke plus four bolt bosses on a flat `161,101,37` field the mask keys out. There is no
+  fill and no contrasting colour, so at 1:1 against the gold dome it disappears (EV-0250 (1)).
+- (2) **`PETBUTTON`'s cells are four whole dome faces.** Cell 0 is the gold glass dome: interior
+  `237,203,103`, rounded rim and shine, brown `161,101,37` corners that the border key removes. Cells
+  1-3 are the same 90x83 rectangle in flat colourways - corner/interior `83,43,139`/`77,52,179`
+  (purple), `255,198,0`/`255,240,0` (gold), `0,243,255`/`0,201,255` (cyan). They are opaque across
+  the whole cell, so they read strongly but must be clipped; which state each cell means is still
+  unread (Q-0063).
+- (3) **The port.** `PetsScreen.dome_frame` gives a selected pet cell 2 (the bright gold face) and
+  every other pet cell 0. A coloured face is alpha-clipped to cell 0's keyed silhouette
+  (`_clip_to_dome`) so its rectangle corners cannot spill across the button, and the recovered ring
+  is still drawn on top; unselected domes keep cell 0 dimmed to `UNSELECTED_TINT` (0.55/0.55/0.6).
+  The cell assignment is a port fit (Q-0063 item 2); the art and the ring are shipped.
+- (4) **Verified.** `shot_pets_zoom.png` (190x96 logical at 3x) shows selected pet 0 as a vivid gold
+  disc inside the bolted bezel beside pet 1's dark olive dome, and `shot_pets_selected.png` shows the
+  same at 1:1 among five owned pets. The capture's inline checks now pin both the different face and
+  the dimmed neighbour; `headless_profile_check` 77.

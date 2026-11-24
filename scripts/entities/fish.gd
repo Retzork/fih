@@ -516,6 +516,16 @@ func _exit_tree() -> void:
 
 
 
+## `+0x1CC` grow pop: a stage-up arms this 10-tick timer and the base's draw inflates the fish's
+## draw rect while it runs (P2.2 §5.2, P2.3 §7). The exact random amount lives in the unrecovered
+## draw, so the port pulses 1/3/5 px per side across the timer - a visible size-up pop.
+func grow_scale() -> float:
+	if grow_timer <= 0:
+		return 1.0
+	var step := GROW_POP_TICKS - grow_timer
+	return 1.0 + float(1 + (step % 3) * 2) / 40.0
+
+
 func _tick_effect_timers() -> void:
 	if grow_timer > 0:
 		grow_timer -= 1

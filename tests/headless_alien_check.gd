@@ -37,6 +37,7 @@ func _init() -> void:
 	_test_eating()
 	_test_death()
 	_test_wave_clock()
+	_test_anim_row()
 
 	tank.shutdown()
 	sim.free()
@@ -273,3 +274,14 @@ func _expect(condition: bool, what: String) -> void:
 	else:
 		_failures += 1
 		printerr("  FAIL ", what)
+
+## Owner 2026-11-23: an alien sheet's rows are separate animations (swim vs lunge), so only row 0
+## is drawn until the attack rows are mapped - the old full-sheet loop played both back to back.
+func _test_anim_row() -> void:
+	var balrog: Alien = AlienScript.create(0x03, Vector2(300.0, 200.0))
+	_expect(balrog.anim_row() == 0, "Balrog swims on row 0")
+	_expect(balrog.anim_row() * 10 < 10, "the drawn cell stays inside the swim row")
+	var syl: Alien = AlienScript.create(0x01, Vector2(300.0, 200.0))
+	_expect(syl.anim_row() == 0, "Sylvester stays on row 0 too")
+	balrog.free()
+	syl.free()

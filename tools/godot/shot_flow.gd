@@ -9,7 +9,7 @@ func _initialize() -> void:
 
 func _shot(out: String) -> void:
 	var image := root.get_texture().get_image()
-	image.save_png("res://" + out)
+	image.save_png("res://docs/captures/" + out)
 	print(out, " ", image.get_size())
 
 

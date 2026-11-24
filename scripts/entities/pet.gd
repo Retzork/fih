@@ -498,6 +498,27 @@ func is_hidden() -> bool:
 	return hide_counter >= STINKY_HIDE_MAX
 
 
+## Each pet sheet is a 10xN grid and **each row is its own animation** (owner 2026-11-23: Stanley
+## and Walter keep several rows; rows must never be played through). Row 0 is the idle/swim loop.
+## Niko's shell rows follow his recovered pearl cycle (closed -> opening -> open with the pearl);
+## the other pets' action rows are still unmapped (Q-0044), so they hold row 0 instead of walking
+## into a different animation.
+const SHEET_COLUMNS := 10
+
+
+func anim_row() -> int:
+	if index == NIKO:
+		if action_timer >= NIKO_PEARL and action_timer < NIKO_CLOSE_SOUND:
+			return 2
+		if action_timer >= NIKO_OPEN_SOUND and action_timer < NIKO_PEARL:
+			return 1
+	# Stinky hides in his shell once the counter fills (`+0x1B4` = 9): row 2 is the retracted shell,
+	# and holding it is his idle while hidden (owner 2026-11-23: the hiding idle was missing).
+	if index == STINKY and is_hidden():
+		return 2
+	return 0
+
+
 ## Niko (`+0x1B4`): sound at 1224, pearl at 1233, close sound at 1440, reset to `rand % 50` at 1450.
 func _niko_cycle() -> void:
 	match action_timer:

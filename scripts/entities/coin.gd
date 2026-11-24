@@ -113,6 +113,15 @@ const BOB_BANDS := [
 const FRAME_WRAP := 79
 const FRAME_TICKS := 10
 const FADE_TICKS := 5
+## The collection burst (`FUN_004F5050`'s removal tail, P2.5 §5): a collected coin removes itself and
+## throws `rand%3 + 3` particles at the pickup; kind 0x11 (Shrapnel's drop) is the special path -
+## `rand%2 + 2` particles and sound id `0x11D`, whose resource name the port's semantic sound table
+## does not bind (Q-0030), so only the count and the extra particle are ported. The particle's
+## lifetime and spread are not recovered, so the level owns both as named constants.
+const PICKUP_BURST_BASE := 3
+const PICKUP_BURST_RANGE := 3
+const SPECIAL_BURST_BASE := 2
+const SPECIAL_BURST_RANGE := 2
 ## Expiry after landing: hinted tanks hold coins longer, demo/tank-flag modes differ (P2.5 §5).
 const EXPIRY_DEFAULT := 20
 const EXPIRY_HINTED := 150
@@ -136,6 +145,9 @@ signal collected(coin, amount: int)
 signal expired(coin)
 ## Emitted when a Virtual Tank coin reaches the HUD hand-off point.
 signal banked(coin)
+## Emitted when a collection burst is owed: `at` is the coin's centre and `count` the particle
+## number the collection tail rolls (P2.5 §5). `special` marks kind 0x11's own branch.
+signal burst_requested(at: Vector2, count: int, special: bool)
 
 var kind := 0x01
 ## `+0x198`: a collector reserved the coin (P2.7 §4.1 excludes already-claimed coins).
@@ -235,13 +247,25 @@ func can_collect(collector_centre: Vector2) -> bool:
 		and absf(collector_centre.y - (position.y + COLLECT_CENTER.y)) <= COLLECT_BOX * 0.5
 
 
-## Take the coin. Safe to call twice; the amount is reported, never credited here.
+## Take the coin. Safe to call twice; the amount is reported, never credited here. The burst is
+## announced before the despawn so the level still sees the pickup position.
 func collect() -> void:
 	if dead:
 		return
 	var amount_value := amount()
+	var special := not virtual_mode() and kind in MISCITEM_KINDS
+	var count := (SPECIAL_BURST_BASE if special else PICKUP_BURST_BASE) \
+		+ _roll(SPECIAL_BURST_RANGE if special else PICKUP_BURST_RANGE)
+	burst_requested.emit(position + COLLECT_CENTER, count, special)
 	collected.emit(self, amount_value)
 	despawn()
+
+
+## One roll off the tank's seeded stream - the only randomness a coin may use (ARCHITECTURE §3).
+func _roll(bound: int) -> int:
+	if tank == null or bound <= 0:
+		return 0
+	return tank.rng.randi_range(0, bound - 1)
 
 
 func expire() -> void:

@@ -43,7 +43,14 @@ func _run() -> void:
 	# `start_level` must have armed the wave from the recovered table; the test does not call it.
 	_expect(level.alien_selection == 5,
 		"the production start arms 2-4's wave selection 5 (got %d)" % level.alien_selection)
-	_step(WaveClockScript.WAVE_TICKS)
+	# The wait is the wave clock's, not a starvation test: the stock guppies are kept fed so the run is
+	# still playable when the wave lands. Since EV-0249 an empty tank ends the game instead.
+	var waited := 0
+	while waited < WaveClockScript.WAVE_TICKS:
+		for swimmer in _live_fish(level.tank):
+			swimmer.fullness = maxi(swimmer.fullness, 400)
+		_step(100)
+		waited += 100
 	_expect(level.tank.alien_count() == 1,
 		"one wave alien spawned after %d ticks (got %d)" % [WaveClockScript.WAVE_TICKS, level.tank.alien_count()])
 	_expect(level.tank.aliens_present, "the spawned wave raises the tank's aliens-present flag")
@@ -55,9 +62,21 @@ func _run() -> void:
 	var alien_sprite := _visual_node(alien)
 	_expect(alien_sprite != null and alien_sprite.centered,
 		"the alien sprite is centred on its 160x160 box")
+	# R63: the alien art is a masked sheet; the border key alone would fill its enclosed holes.
+	var hole := _interior_hole("IMAGE_DESTRUCTOR")
+	_expect(hole != Vector2i(-1, -1), "the Destructor sheet has an enclosed mask hole")
+	var drawn := alien_sprite.texture.get_image() if alien_sprite != null else null
+	_expect(drawn != null and hole.x >= 0 and drawn.get_pixelv(hole).a < 0.05,
+		"the drawn Destructor clears its enclosed hole (alpha %.2f)"
+			% (drawn.get_pixelv(hole).a if drawn != null and hole.x >= 0 else -1.0))
 	var alien_bar := _health_bar(alien)
+	# R62: `Tank+0x178` gates an ordinary alien's bar and defaults off; Cyrax is exempt.
+	_expect(alien_bar != null and not alien_bar.visible,
+		"an ordinary alien hides its HP bar while Tank+0x178 is clear")
+	level.tank.show_alien_health = true
+	level._update_health_bar(alien)
 	_expect(alien_bar != null and alien_bar.visible,
-		"the Destructor draws an HP bar")
+		"arming Tank+0x178 draws the Destructor's HP bar")
 	_expect(alien_bar != null and alien_bar.position == Vector2(-70.0, 77.0),
 		"the bar sits at x 10 / y box-3 inside the box (got %s)" % [_bar_position(alien)])
 	_expect(_health_fill(alien) != null and _health_fill(alien).texture != null
@@ -71,8 +90,7 @@ func _run() -> void:
 	_expect(_health_fill(alien) != null and roundf(_health_fill(alien).region_rect.size.x) == 64.0,
 		"at half hp the fill is cut to 64 px (got %s)" % [_fill_width(alien)])
 
-	# No eligible fish means no shot (EV-0158). The 3000-tick wave wait starves the stock
-	# guppies, so restock one live victim if they are gone.
+	# No eligible fish means no shot (EV-0158), so restock one live victim if none is left.
 	if _live_fish(level.tank).is_empty():
 		level.spawn_guppy(Vector2(460.0, 200.0))
 	# The Destructor's own 75-tick timer asks the tank for a missile; the spawn path builds its
@@ -518,6 +536,35 @@ func _health_fill(entity) -> Sprite2D:
 	if bar == null:
 		return null
 	return bar.get_node_or_null("Fill") as Sprite2D
+
+
+## R63: a pixel the sheet's mask clears but the border key keeps - an enclosed hole in the art.
+func _interior_hole(id: String) -> Vector2i:
+	var res: ImageRes = Content.image(id)
+	if res == null:
+		return Vector2i(-1, -1)
+	var texture := res.frame(0)
+	if texture == null:
+		return Vector2i(-1, -1)
+	var base := texture.get_image()
+	var sheet_mask := MaskAlpha.mask_for(res.path)
+	if base == null or sheet_mask == null:
+		return Vector2i(-1, -1)
+	var region := Rect2i(Vector2i.ZERO, sheet_mask.get_size())
+	if texture is AtlasTexture:
+		var atlas := texture as AtlasTexture
+		region = Rect2i(int(atlas.region.position.x), int(atlas.region.position.y),
+			int(atlas.region.size.x), int(atlas.region.size.y))
+	var cell_mask := sheet_mask.get_region(region)
+	var keyed := SpriteKey.keyed(texture).get_image()
+	if keyed == null or cell_mask.get_size() != base.get_size() or keyed.get_size() != base.get_size():
+		return Vector2i(-1, -1)
+	for y in base.get_height():
+		for x in base.get_width():
+			var m := cell_mask.get_pixel(x, y)
+			if (m.r + m.g + m.b) / 3.0 < 0.05 and keyed.get_pixel(x, y).a > 0.5:
+				return Vector2i(x, y)
+	return Vector2i(-1, -1)
 
 
 func _bar_position(entity) -> String:

@@ -25,6 +25,8 @@ var _options_dialog: OptionsDialog = null
 var _help_dialog: Control = null
 ## The port-only debug dialog opened from Options' DEBUG row (D-0017), null while it is closed.
 var _debug_dialog: DebugDialog = null
+## The "GAME OVER" card the level raises when its last fish dies (EV-0249), null while it is closed.
+var _game_over_dialog: GameOverDialog = null
 const STATS_KEY := KEY_F12
 
 var _frames := 0
@@ -76,6 +78,7 @@ func _on_start_requested(mode: int) -> void:
 	_level.setup(Sim, 4242)
 	_level.profile = Game.profile
 	_level.level_completed.connect(_on_level_completed)
+	_level.defeated.connect(_on_defeated)
 	_level.menu_requested.connect(_on_menu_requested)
 	_level.skip_level_requested.connect(_on_level_skip)
 	# P2.6 §1.1: the adventure's current tank and level, with that tank's store table and egg price.
@@ -193,6 +196,33 @@ func _close_options() -> void:
 	Screens.close_dialog()
 	_options_dialog = null
 	Game.gameplay_paused = false
+
+
+## The tank lost: `Level._check_defeat` has already collected every coin (EV-0249), so this only shows
+## the recovered card and holds the tank behind it, the same way Options holds it. The click takes the
+## leave-tank path below - the base's own id-17 handler is not recovered (Q-0065).
+func _on_defeated() -> void:
+	if _level == null or _game_over_dialog != null:
+		return
+	if _options_dialog != null:
+		_close_options()
+	if _debug_dialog != null:
+		_close_debug_only()
+	_level.holding_fire = false
+	Game.gameplay_paused = true
+	var dialog := GameOverDialog.new()
+	dialog.name = "GameOverDialog"
+	dialog.continue_pressed.connect(_on_game_over_continue)
+	if not Screens.open_dialog(dialog):
+		dialog.queue_free()
+		return
+	_game_over_dialog = dialog
+
+
+func _on_game_over_continue() -> void:
+	Screens.close_dialog()
+	_game_over_dialog = null
+	_leave_tank()
 
 
 ## The binary's id-99 leave-tank path: save as a port safety net (D-0014, because menu starts do

@@ -42,7 +42,7 @@ func _init() -> void:
 		var crop := frame.get_region(Rect2i(60, 250, 340, 230))
 		crop.resize(680, 460, Image.INTERPOLATE_NEAREST)
 		out.blit_rect(crop, Rect2i(0, 0, 680, 460), Vector2i(index * 680, 0))
-	out.save_png("res://shot_tail_candidates.png")
+	out.save_png("res://docs/captures/shot_tail_candidates.png")
 	print("saved candidates")
 	quit(0)
 

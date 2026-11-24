@@ -30,6 +30,7 @@ func _init() -> void:
 	_test_bob()
 	_test_expiry()
 	_test_collection()
+	_test_collection_burst()
 	_test_virtual_flight()
 	_test_animation_timer()
 	_test_sprite_binding()
@@ -214,6 +215,40 @@ func _test_collection() -> void:
 	_expect(tank.coin_count() == 0, "the tank no longer counts the coin")
 	coin.collect()
 	_expect(amounts.size() == 1, "collecting twice does nothing")
+
+
+## The collection tail (`FUN_004F5050`, P2.5 §5): a picked-up coin throws `rand%3 + 3`
+## particles at its centre, and kind 0x11 (Shrapnel's drop) takes its own branch with
+## `rand%2 + 2`. The count is recovered; the level owns the particles.
+func _test_collection_burst() -> void:
+	tank.shutdown()
+	var coin: Coin = tank.spawn_coin(0x04, Vector2(300.0, 300.0))
+	var centre := coin.position + CoinScript.COLLECT_CENTER
+	var bursts: Array = []
+	coin.burst_requested.connect(func(at: Vector2, count: int, special: bool) -> void:
+		bursts.append({"at": at, "count": count, "special": special}))
+	coin.collect()
+	_expect(bursts.size() == 1, "a pickup announces one burst (got %d)" % bursts.size())
+	if bursts.size() == 1:
+		_expect(bursts[0]["at"] == centre, "the burst sits on the coin's centre")
+		var burst_count := int(bursts[0]["count"])
+		_expect(burst_count >= CoinScript.PICKUP_BURST_BASE
+			and burst_count < CoinScript.PICKUP_BURST_BASE + CoinScript.PICKUP_BURST_RANGE,
+			"an ordinary pickup throws rand%3+3 particles (got %d)" % burst_count)
+		_expect(not bool(bursts[0]["special"]), "an ordinary coin is not the special branch")
+
+	var drop: Coin = tank.spawn_coin(0x11, Vector2(200.0, 300.0))
+	var special: Array = []
+	drop.burst_requested.connect(func(_at: Vector2, count: int, is_special: bool) -> void:
+		special.append({"count": count, "special": is_special}))
+	drop.collect()
+	_expect(special.size() == 1, "kind 0x11 announces its own burst (got %d)" % special.size())
+	if special.size() == 1:
+		var special_count := int(special[0]["count"])
+		_expect(bool(special[0]["special"]), "kind 0x11 takes the special branch")
+		_expect(special_count >= CoinScript.SPECIAL_BURST_BASE
+			and special_count < CoinScript.SPECIAL_BURST_BASE + CoinScript.SPECIAL_BURST_RANGE,
+			"kind 0x11 throws rand%%2+2 particles (got %d)" % special_count)
 
 
 func _test_virtual_flight() -> void:

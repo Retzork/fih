@@ -125,6 +125,13 @@ func image_id() -> String:
 	return image_id_for(kind)
 
 
+## The alien sheets are 10xN grids too: row 0 is the swim/walk loop, row 1+ hold the lunge and
+## attack art (Balrog rears up, Sylvester dives). Only row 0 is bound until the attack rows are
+## mapped, so the tank never walks through two animations in one loop (owner 2026-11-23).
+func anim_row() -> int:
+	return 0
+
+
 func def() -> Dictionary:
 	return DEFS[kind]
 

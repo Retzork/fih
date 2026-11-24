@@ -69,7 +69,7 @@ func _run() -> void:
 	for i in 10:
 		await process_frame
 	var shot := root.get_texture().get_image()
-	shot.save_png("res://" + NOTICE_OUT)
+	shot.save_png("res://docs/captures/" + NOTICE_OUT)
 	print(NOTICE_OUT, " ", shot.get_size())
 	# 2. The picker itself, now that the timer is spent.
 	level.clear_presto_notice()
@@ -78,6 +78,6 @@ func _run() -> void:
 	for i in 14:
 		await process_frame
 	shot = root.get_texture().get_image()
-	shot.save_png("res://" + PICKER_OUT)
+	shot.save_png("res://docs/captures/" + PICKER_OUT)
 	print(PICKER_OUT, " ", shot.get_size())
 	quit(0)

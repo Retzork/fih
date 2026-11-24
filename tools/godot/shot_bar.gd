@@ -61,6 +61,6 @@ func _run() -> void:
 		await process_frame
 	var out := "shot_bar_tank%d.png" % tank
 	var shot := root.get_texture().get_image()
-	shot.save_png("res://" + out)
+	shot.save_png("res://docs/captures/" + out)
 	print("SHOT ", out, " ", shot.get_size(), " ", tank, "-", lvl)
 	quit(0)

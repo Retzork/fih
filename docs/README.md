@@ -1,31 +1,31 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Progress audit (2026-11-05, re-run 2026-11-07):** all 19 headless suites re-run green on this checkout (1010 assertions after the projectile homing follow-up, EV-0158; at the 2026-11-05 audit baseline it was 992; the scene-backed integration suite covers menu -> level -> wave -> boss, the alien/boss HP bars and the native UI fonts); the capability and implementation-fidelity assessment, export-risk findings and recommended order are in [AUDIT.md](AUDIT.md). **Review reset (2026-11-08):** the completion pass was revoked by the owner after a playtest - the suites prove modules, not the assembled game. `PLAN.md`'s Review table is the current work list (R8/R9 open); all 26 suites still pass (1658 assertions, re-run 2026-11-22).
+**Verification (2026-11-24):** all **27 headless checks** pass on this checkout - **1,862
+assertions** (26 `--script` suites at 1,723 plus the 139-assertion scene-backed integration suite);
+the 400-frame boot exits 0. The capability and implementation-fidelity assessment, export-risk
+findings and recommended order are in [AUDIT.md](AUDIT.md). **Review reset (2026-11-08):** the
+completion pass was revoked by the owner after a playtest - the suites prove modules, not the
+assembled game. [`REVIEW.md`](REVIEW.md) is the current work list (R1-R68).
 
-**Handover status: Phase 2 closed (2026-11-02).** Phase 0, Phase 1 and Phase 3 are complete; Phase 2
-is 14/18 with **every technical system decoded** and `SPECS.md` written - only the two optional items
-P2.16 (screensaver variants) and P2.17 (cheats) remain. **P2.18 `docs/SPECS.md` is complete**: the
-behaviour-side contract for P4, twin of `PIPELINE.md` (D-0008), and the first thing to read before any
-Phase 4 task. It also raises **Q-0034**, the one genuine cross-system contradiction found while
-writing it: P2.1's wrapper loop is 10 ms (100 Hz) but P2.7-P2.9's gameplay timers calibrate at ~36 Hz
-(the ratio is 100/36 ≈ 2.78). The remake runs the 36 Hz reading (2026-11-04) and keeps the rate in
-one constant until P5.3 measures the original. P2.1-P2.4, P2.7-P2.15 and P2.18 are closed, P2.5 and
-P2.6 are substantially complete with tracked open questions, and P2.12 has its screen and dialog
-passes done (screen map, mode writer, store screen and stock refresh, level-start flow, all 13 screen
-constructors and their click handlers, the dialog base plus all ten dialog ctors and their click
-handlers); what is left there are the tracked open questions.
-**Phase 4 and Phase 5 are in review (2026-11-09):** the 2026-11-08 completion pass was revoked by
-the owner after a playtest, so P4.4-P4.14 and P5.1-P5.5 are back to `[~]`. All 24 headless checks
-pass (1658 assertions, re-run 2026-11-22), but the Review table in `PLAN.md` is the source of truth:
-R1/R2/R3/R4/R5/R6/R7 and R10 are fixed, R8 (the owner's live playtest of tanks 2-4/5-1) and R9 (pet
-guards) remain. The 2026-11-15 pass also rebuilt the in-tank Options dialog on the shipped art and
-wired the shared pause gate (`D-0016`, `EV-0192`).
+**Handover status: Phase 2 closed (2026-11-02; P2.5/P2.6 closed 2026-11-22).** Phase 0, Phase 1 and
+Phase 3 are complete; Phase 2 is 16/18 with **every technical system decoded** and `SPECS.md` written -
+only the two optional items P2.16 (screensaver variants) and P2.17 (cheats) remain. **P2.18
+`docs/SPECS.md` is complete**: the behaviour-side contract for P4, twin of `PIPELINE.md` (D-0008),
+and the first thing to read before any Phase 4 task. It also raises **Q-0034**, the one genuine
+cross-system contradiction found while writing it: P2.1's wrapper loop is 10 ms (100 Hz) but
+P2.7-P2.9's gameplay timers calibrate at ~36 Hz (the ratio is 100/36 ≈ 2.78). The remake runs the
+36 Hz reading (2026-11-04) and keeps the rate in one constant until P5.3 measures the original.
+**Phase 4 and Phase 5 are in review:** the 2026-11-08 completion pass was revoked by the owner after
+a playtest, so P4.4-P4.14 and P5.1-P5.5 are back to `[~]`. The review list in `REVIEW.md` is the
+source of truth: 61 rows closed, R9 partial (4 pet guards), R8 captured but awaiting the owner's
+live playtest of tanks 2-4/5-1, and R52/R53/R58/R61/R64 open. The 2026-11-15 pass also rebuilt the
+in-tank Options dialog on the shipped art and wired the shared pause gate (`D-0016`, `EV-0192`).
 
 ## Start here
 
 1. **New agent session:** read `../AGENTS.md` first, then `PLAN.md` (mandatory). Follow the
    session-end checklist in `AGENTS.md`.
-2. **Want the current state quickly?** Read the Review table at the end of `PLAN.md` (the open
+2. **Want the current state quickly?** Read `REVIEW.md` (the open
    R-rows are the work list), then `SPECS.md` (the behaviour contract - it summarises every
    system and maps the P4 tasks), then the newest note `analysis/notes/p2.15-resources.md` (EV-0150..
    EV-0154; latest corrections EV-0155/EV-0156, plus EV-0157's font-global map), then
@@ -45,9 +45,9 @@ wired the shared pause gate (`D-0016`, `EV-0192`).
 | --- | --- |
 | P0 environment / tooling | Complete (13/13) |
 | P1 target identity | Complete (10/10) |
-| P2 reverse engineering | Closed (14/18): P2.1-P2.4 `[x]`; P2.5 `[~]`; P2.6 `[~]`; P2.7-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
+| P2 reverse engineering | Closed (16/18): P2.1-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In review (3/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, 16 slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser, all modes; 26 headless checks green (1658 assertions), but R8/R9 keep the assembled game unverified |
+| P4 Godot implementation | In review (5/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser sparks, four selectable modes + Sandbox plumbing; 27 checks green (1,862 assertions: 1,723 across 26 script suites + the 139-assertion integration scene), but R9 (pet guards), the 5 open rows (R52/R53/R58/R61/R64) and R8's live playtest keep the assembled game unverified |
 | P5 validation / polish | In review (0/5): `P5-VALIDATION.md` withdrawn pending R8/R9 |
 
 - **2026-11-15 in-tank Options (D-0015/D-0016, EV-0192):** the tank MENU opens the shipped-art
@@ -257,6 +257,7 @@ wired the shared pause gate (`D-0016`, `EV-0192`).
 | `docs/` | Plan, evidence, decisions, target dossier, asset contract, subsystem notes, raw evidence. |
 | `docs/analysis/snapshots/` | **Gitignored:** regenerable REA snapshots, including the carved game module. |
 | `docs/evidence/` | Committed raw REA evidence JSON, cited from `EVIDENCE.md`. |
+| `docs/captures/` | **Gitignored:** windowed verification captures (`shot_*.png`), generated by `tools/godot/`; `.gdignore` keeps them out of Godot's import scan. |
 
 ## Quick start
 
@@ -319,8 +320,10 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 | --- | --- |
 | `../AGENTS.md` (project root) | Handoff protocol, hard rules, REA commands. **Read first when starting a session.** |
 | `PLAN.md` | Master checklist: every task, status, date, evidence refs, `Next:` pointer. **Source of truth for progress.** |
+| `REVIEW.md` | Confirmed defects and their fix status (`R1-R68`) - the playtest work list, append-only and split out of `PLAN.md`. |
 | `AUDIT.md` | Progress audit (2026-11-05): re-run test counts, per-system capability assessment, findings and next-step priority. |
-| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0229). |
+| `polish.md` | Owner playtest feedback (2026-11-22) and agent suggestions for the final polish pass; a working checklist, not evidence. |
+| `EVIDENCE.md` | Append-only ledger: each verified claim + how it was verified + confidence. Newest IDs are at the bottom (currently EV-0251). |
 | `TARGET.md` | Immutable facts: game paths, SHA-256s, versions, environment, REA setup. |
 | `PIPELINE.md` | Asset pipeline + Godot usage contract (P3 output; read before P4/asset work). |
 | `SPECS.md` | Behaviour contract for P4 (P2.18 output): tick model, resource contract, entity rules, economy, modes, UI, persistence, audio, cross-system rules, shared constant sheet, open-question index. Read before any P4 task. |
@@ -333,10 +336,9 @@ $snap = "docs\analysis\snapshots\insaniquarium-game-module.json"
 
 ## Handover checklist
 
-- [x] Remake scope complete (P4 + P5). Next work is optional: windowed eye-check (P5.2 art),
-  REA-only unknowns (see PLAN) and new feature scope.
 - [ ] Read `../AGENTS.md` and `PLAN.md`; check `git status` is clean.
-- [ ] Read `SPECS.md` and the completion pass in `PLAN.md`; P5 detail is in `P5-VALIDATION.md`.
+- [ ] Read `REVIEW.md` first: the open rows (R52/R53/R58/R61/R64), R9's pet guards and R8's live
+  playtest are the work list; then `SPECS.md` and the current system note.
 - [ ] Check the open questions first - Q-0034 (tick rate) affects everything timed.
 - [ ] Keep the target read-only; every claim gets an `EV-` entry; correct old EVs with new ones.
 - [ ] End the session with: updated `PLAN.md` (statuses, `Last updated`, `Next:`), appended

@@ -124,6 +124,27 @@
   and keep it out of the save format (food is not persisted). `headless_entity_check` pins the rest
   window and the resumed sink-out.
 
+### D-0061 - R57/R60's port fits are named constants, and nothing recovered was retuned
+- Date: 2026-11-24
+- Decision: two review rows landed with their recovered parts pinned and their unrecovered parts
+  kept as named constants a reader can move.
+  - **Coin pickup (R57, EV-0246).** The burst count is recovered (`rand%3+3`, kind 0x11's
+    `rand%2+2`); `Level.PICKUP_PARTICLE_LIFE` (5) and `Level.PICKUP_PARTICLE_RADIUS` (10) are the
+    port's, because `FUN_005436F0`'s body is not decoded. The particles are laid on a deterministic
+    ring rather than drawn from the tank stream, so the burst cannot shift the level's later rolls.
+    The expiry modes and the 5-tick fade were **not** touched - they are pinned to P2.5 §5 - so R56
+    is answered by the pickup being marked, not by retuning recovered timers.
+  - **Pet chooser (R60, EV-0247).** The grid origin, cell, pitch, run breaks, the two button rects,
+    the hide-unowned rule, the four-pet cap and the three-pet confirm gate are recovered. The
+    per-row indent, which `PETBUTTON` of the ship's four cells is drawn on a selected pet
+    (`PETBUTTONRING` is used, as its name says), and the scroll panel's clip rect are port fits -
+    the note records the `+0xFC` panel but not its rect. `profile+0xB4`, the cap's other operand,
+    still has no located writer, so `SELECTION_CAP` uses the recovered clamp of 4.
+- Why: the review protocol forbids inventing behaviour; keeping each unrecovered figure in one named
+  constant is what lets a later reading replace it without touching the rest of the system.
+- Boundaries: neither fit may be cited as evidence for the original's behaviour. Q-0063 records what
+  is still open on the chooser.
+
 ## Open questions
 
 ### Q-0001 - Godot editor availability - ANSWERED 2026-10-15
@@ -967,7 +988,7 @@ placeholder text called unnamed:
   (`FUN_005475B0`), spawned by `Level._on_boss_pulse`;
 - the **HP bar** is a draw rule, not a simulation rule (the boss bar is always drawn; other
   aliens only when the tank's flag is set and the tank is not 5). It is implemented; Q-0058
-  records the missing flag writer and the remake's default.
+  records the missing flag writer and the remake's default (off since R62).
 
 `Level.start_level` reads Cyrax's hp counter from `Profile.cyrax_attempts`
 (`profile+0x54`) when no explicit counter is given, death wipes the field
@@ -1184,7 +1205,7 @@ mermaid as unfinished - the backdrop's pale flat tail is the shape that "isn't p
 `MaskAlpha` composing `masks/tailflop_.png`, the sprite is transparent where it should be, and a
 windowed fit places cell 0 (the flop's last cell, so it doubles as the idle pose) at (120, 268)
 with `flip_h = true`: mirrored, its dark silhouette wraps the pale baked tail and the mermaid reads
-as one tail (`shot_menu.png`). The recovered playback is unchanged and now covered
+as one tail (`captures/shot_menu.png`). The recovered playback is unchanged and now covered
 (`headless_menu_check` 28): `anim="once"`, `framemap="7,6,5,4,3,2,1,0"`, `framedelay="2"`,
 `begindelay="3"` on the 36 Hz clock, then the rest cell. Q-0055 stays open as a missing **exact**
 screen rect - the offset and the mirror are a port fit, not recovered bytes.
@@ -1192,7 +1213,7 @@ screen rect - the offset and the mirror are a port fit, not recovered bytes.
 **2026-11-19 update (owner: the tail is improper again):** the fin was hanging under the hip as a
 separate crescent - its notch sat 22 px right of the stump and the cell was never turned. It is now
 placed by the measured notch/stump pair and rotated -40 degrees at 0.55 scale, so the fluke
-continues the baked tail's line (D-0055, EV-0226, `shot_menu.png`). Still a fit: Q-0055's exact
+continues the baked tail's line (D-0055, EV-0226, `captures/shot_menu.png`). Still a fit: Q-0055's exact
 screen rect is unrecovered. **2026-11-22:** that turn was replaced - it could not cover the painted
 end, so the strip is now drawn fluke-out at 145 degrees and 0.65 scale with a (-4,0) nudge
 (D-0056, EV-0227).
@@ -1295,14 +1316,16 @@ The menu mermaid's tail plays its recovered one-shot flop when the menu opens an
 rest pose; Q-0055 records the port-placed offset/mirror and why the return is a port choice rather
 than holding the last cell.
 
-### Q-0058 - `Tank+0x178` has no located writer, so the remake shows alien HP bars by default
+### Q-0058 - `Tank+0x178` has no located writer; ordinary alien HP bars default off (R62)
 
 P2.9 §5 recovers the HP bar down to the draw instruction: `IMAGE_HEALTHBAR` clipped to
 `round(127 * hp / hp0)` under the full `IMAGE_HEALTHBARTUBE` glass, at x 10 and y box height - 3;
 Cyrax (kind 0x15) always draws it, ordinary aliens only when `Tank+0x178` is set and the tank index
-is not 5. The flag's writer was never located (bounded negative, EV-0118), so the remake adds
-`Tank.show_alien_health` (default `true`) instead of leaving ordinary aliens barless, and keeps the
-tank-5 suppression. If the writer is found, drive the flag from that path and drop the default.
+is not 5. The flag's writer was never located (bounded negative, EV-0118), so the remake keeps
+`Tank.show_alien_health` as the parameter, defaulting it **off** (R62, 2026-11-22, EV-0235: the
+shipped gate hides ordinary bars unless the flag is armed, so the old `true` default showed bars the
+original does not). Cyrax still bypasses the flag and tank 5 still suppresses. If the writer is
+found, drive the flag from that path.
 
 `Level` builds the bar once per alien (`_make_health_bar`) and re-cuts the fill every frame from
 `hp / initial_hp()`; `Alien.initial_hp()` is the spawn copy (`+0x1F8`, 0 for Bilaterus, so no bar),
@@ -1330,8 +1353,8 @@ counts; only the erroneous "20 ms/30 ms" comment was corrected, not the recovere
 `HATCHANIMATION` ships three 57x60 cells but no `anim`/`framedelay` metadata in its manifest entry,
 so the original hatch screen's per-cell hold and pet-reveal point were not recovered. The port
 holds each cell for 0.3 s and shows the pet after 0.9 s (`HatchScreen.CRACK_SECONDS`,
-`crack_frame()`, `hatched()`); the windowed captures are `shot_tank5_award.png` /
-`shot_tank5_hatched.png`. Everything else on the screen is recovered art (`HATCHSCREEN` 640x480;
+`crack_frame()`, `hatched()`); the windowed captures are `captures/shot_tank5_award.png` /
+`captures/shot_tank5_hatched.png`. Everything else on the screen is recovered art (`HATCHSCREEN` 640x480;
 the id-99 plate at (186,445,264,30), id-100 at (525,4,80,26)) with the "Please Wait..." and "Menu"
 labels. The strip and the pet cell are `MaskAlpha`-composited (`masks/_HatchANIMATION.png`,
 `masks/_<pet>.png`) because their PNG fields are opaque colours, and the composition is cropped per
@@ -1577,7 +1600,7 @@ Open: the real per-cell hold and the pet reveal point.
 - **When it changes.** `_refresh_level_label()` runs from `_add_level_label()`, `start_level()` and
   `load_game()`; nothing polls it per frame. With `render = false` (headless checks) the label is
   never built and the getter stays null.
-- Verified against `shot_menu_tank.png` (1-1 in the corner) with `headless_level_check` 155,
+- Verified against `captures/shot_menu_tank.png` (1-1 in the corner) with `headless_level_check` 155,
   `headless_integration_check` 134 and the boot run all clean.
 
 ### D-0021 - "The shop" in owner reports is the in-tank bar, not the Fish Emporium
@@ -2419,7 +2442,7 @@ fit (-4,0).
 ### D-0055 - The menu mermaid's fin is placed by the measured notch and turned onto the tail's line
 
 - Date: 2026-11-19 (owner: the mermaid tail is improper again)
-- Status: accepted, viewed in `shot_menu.png`; Q-0055 stays open for the exact screen rect.
+- Status: accepted, viewed in `captures/shot_menu.png`; Q-0055 stays open for the exact screen rect.
 - The old fit put the fin's notch 22 px right of the baked stump with no rotation, so the crescent
   hung below the hip as a separate shape. The notch (`107, 84` in cell 0) now lands on the stump
   (`152, 405` in the menu art) and the cell turns -40 degrees at 0.55 scale, which continues the
@@ -2429,7 +2452,7 @@ fit (-4,0).
 ### D-0056 - The menu tail fin is turned fluke-out so it covers the painted end
 
 - Date: 2026-11-22
-- Status: accepted (viewed on `shot_menu.png`); supersedes D-0055's turn, keeps its notch/stump anchor.
+- Status: accepted (viewed on `captures/shot_menu.png`); supersedes D-0055's turn, keeps its notch/stump anchor.
 - D-0055 turned the fin -40 degrees, which put its broad fluke across the hip and left the baked
   tail's rounded end (and its pale rim) showing below and through the fin's notch. No offset/scale
   fixed that - the fin's neck is narrower than the tail's painted end (EV-0227). Turning the strip
@@ -2499,3 +2522,48 @@ fit (-4,0).
   the base's side, and `facing` keeps meaning the direction of travel.
 - `mouth_point()` and `visual_offset()` keep reading the same flag, so the feed point stays on the
   drawn lip on both sides (D-0057, D-0059 unchanged).
+
+### Q-0063 - the pet chooser's unfixed geometry
+- OPEN (2026-11-24, EV-0247/EV-0248). Four details of `Sexy::PetsScreen` are still unread, each kept
+  as one port constant rather than guessed into the layout (D-0061):
+  1. the per-row x offset of the five-column stagger - the port indents a short row by half a cell per
+     missing column, which centres the 5/5/5/4/3/2 runs under the recovered origin;
+  2. which of `PETBUTTON`'s four 90x83 cells is the normal face, the highlight and the selected pose -
+     the port draws cell 0 normally and cell 2 (a bright gold colourway) for a selection, clipped
+     to cell 0's alpha, with `PETBUTTONRING` on top; the pixel reads are in EV-0251;
+  3. the scroll panel's rect (`+0xFC` exists, its size does not) - the port clips at the id-99 row;
+  4. `profile+0xB4`, the other operand of the four-pet cap `+0x130 = min(+0xB4, +0x18)`.
+  Also unread: whether the screen draws a title plate at all (`SCREENTITLE`/`SCREENTITLEHOLE` are the
+  generic pair, and the screen's own title string is not in any note).
+
+### D-0062 - the loss is the shipped message card, and its button leaves the tank
+
+- Date: 2026-11-24 (owner: the lose screen is missing)
+- Status: accepted; built from EV-0249, covered headless (`headless_level_check` 264) and windowed
+  (`shot_gameover*.png`).
+- The base has no loss *screen*: `Tank::Update` collects every coin, clears `Tank+0x4EE` and opens a
+  three-part message dialog - title "GAME OVER", body "Oops!  All of your fish have died!", button
+  "Click to Continue" - through the same helper that builds OUT OF MONEY and the help prompts. The
+  port therefore adds a `GameOverDialog` on the existing `DialogSkin` panel instead of a new screen.
+- The trigger is `Tank::CanContinue` (0x5392A0), not the wallet: a tank with no living fish is lost
+  even with money in hand. `Level._check_defeat` latches it once, collects the coins first (the
+  recovered order) and emits `defeated`; `Main` pauses the tank behind the card the way Options does.
+- Only the fish list (`Tank+0xA0`) is identified among the four inputs, so `Level.can_continue()` tests
+  fish alone and the loss stays conservative: it can fire only on a genuinely empty tank. Which
+  entity lists `+0xA4`/`+0xD0` are and what the four `FUN_004E3Exx` globals test is Q-0065.
+- "Click to Continue" takes the leave-tank path (save, free, menu). The base's id-17 handler is not
+  recovered (Q-0065), and a modal that cannot be dismissed would strand the player, so the port picks
+  the one exit the code already has; when the handler is read this is the line to change.
+- The base's rescue branch ("YOUR LAST FISH HAS DIED! ... we'll give you another fish") sits in the
+  same block but is gated by a hint flag inside `FUN_00537B80`, so the port does not fake it: R65
+  covers the loss only, and the rescue is part of Q-0065.
+
+### Q-0065 - the loss card's handler, its rescue branch and the unread half of `CanContinue`
+- OPEN (2026-11-24, EV-0249). Four things around the loss are still unread:
+  1. what `FUN_0054B5B0`'s id-17 handler actually does when "Click to Continue" is pressed (restart the
+     level, back to the menu, or the score card) - the port uses the leave-tank path (D-0062);
+  2. `FUN_00537B80`, the predicate that offers the "we'll give you another fish" rescue, and the hint
+     state it reads - likely the same profile hint flags the loading-screen tips use, unlocated;
+  3. what `Tank+0xA4` and `Tank+0xD0` list, so the port's `can_continue()` can stop being fish-only;
+  4. what `FUN_004E3ED0/3F00/3F30/3F60` test - four globals that can each keep an otherwise empty tank
+     alive.

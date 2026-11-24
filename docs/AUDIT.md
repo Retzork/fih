@@ -241,7 +241,7 @@ All §5a rows and §6 priorities are closed against the recovered contract:
   imported-texture route is what keeps F1 quiet.
 - **P5 closed:** `docs/P5-VALIDATION.md` (differential table, playtest checklist, timing,
   perf, packaging). **Superseded 2026-11-08:** the completion pass was revoked after the owner's
-  playtest; see `PLAN.md`'s Review table (R8/R9 open).
+  playtest; see `REVIEW.md` (R8/R9 open).
 
 Totals: **24 suites, 1263 assertions** (23 `--script` at 1203 + the scene-backed integration suite
 at 60), boot exit 0. The F2 Ogg/ObjectDB notices are unchanged and are not failures.

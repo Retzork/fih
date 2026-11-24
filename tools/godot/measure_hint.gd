@@ -65,7 +65,7 @@ func _run() -> void:
 		return
 
 	var image := root.get_texture().get_image()
-	image.save_png("res://" + OUT)
+	image.save_png("res://docs/captures/" + OUT)
 	var min_y := 99999
 	var max_y := -1
 	var min_x := 99999

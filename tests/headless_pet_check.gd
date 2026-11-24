@@ -34,6 +34,7 @@ func _init() -> void:
 	_test_stinky_chase()
 	_test_coin_predicate()
 	_test_niko_cycle()
+	_test_anim_rows()
 	_test_angie_revive()
 	_test_angie_relay()
 	_test_timer_drops()
@@ -119,9 +120,11 @@ func _test_stinky_hide() -> void:
 	_step(10)
 	_expect(stinky.hide_counter == PetScript.STINKY_HIDE_MAX, "the counter caps at 9")
 	_expect(stinky.is_hidden(), "a full counter means hidden")
+	_expect(stinky.anim_row() == 2, "a hidden Stinky draws the retracted shell (got %d)" % stinky.anim_row())
 	tank.pet_sources_busy = false
 	_step(4)
 	_expect(stinky.hide_counter == 5, "the counter falls when the sources clear (got %d)" % stinky.hide_counter)
+	_expect(stinky.anim_row() == 0, "an unhidden Stinky is back on the crawl row (got %d)" % stinky.anim_row())
 
 
 func _test_stinky_chase() -> void:
@@ -491,3 +494,21 @@ func _expect(condition: bool, what: String) -> void:
 	else:
 		_failures += 1
 		printerr("  FAIL ", what)
+
+## Owner 2026-11-23: every sheet row is a different animation, so a pet never walks into the next
+## row. Row 0 is the idle loop; Niko's shell rows follow his recovered pearl cycle (EV-0238).
+func _test_anim_rows() -> void:
+	var stinky: Pet = PetScript.create(PetScript.STINKY, Vector2(100.0, 100.0))
+	_expect(PetScript.SHEET_COLUMNS == 10, "pet sheets are 10 columns wide")
+	_expect(stinky.anim_row() == 0, "an ordinary pet idles on row 0")
+	var niko: Pet = PetScript.create(PetScript.NIKO, Vector2(100.0, 100.0))
+	niko.action_timer = 100
+	_expect(niko.anim_row() == 0, "Niko's closed shell is row 0")
+	niko.action_timer = PetScript.NIKO_OPEN_SOUND + 2
+	_expect(niko.anim_row() == 1, "his opening frames are row 1")
+	niko.action_timer = PetScript.NIKO_PEARL + 10
+	_expect(niko.anim_row() == 2, "his open-with-pearl frames are row 2")
+	niko.action_timer = PetScript.NIKO_CLOSE_SOUND + 1
+	_expect(niko.anim_row() == 0, "closing returns him to row 0")
+	stinky.free()
+	niko.free()

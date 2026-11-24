@@ -44,6 +44,7 @@ func _init() -> void:
 	_test_click_routing()
 	_test_money()
 	_test_store()
+	_test_food_quality()
 	_test_coin_pickup()
 	_test_death_and_successor()
 	_test_fish_animation_speed()
@@ -64,6 +65,7 @@ func _init() -> void:
 	_test_time_trial_load()
 	_test_records()
 	_test_spawn_drop()
+	_test_defeat()
 
 	level.tank.shutdown()
 	level.free()
@@ -974,10 +976,75 @@ func _test_records() -> void:
 	level.game_mode = 0
 
 
+func _test_food_quality() -> void:
+	var fresh: Level = LevelScript.new()
+	fresh.render = false
+	fresh.setup(sim, 5250)
+	fresh.food_quantity = LevelScript.FOOD_QUANTITY_MAX
+	# Tank 1's shelf 1 is the Food Quality row (item id 2, 200 shells).
+	fresh.store_rows([2])
+	fresh.money = 500
+	_expect(fresh.buy_item(0), "the food-quality upgrade is bought")
+	_expect(fresh.food_quality == 1, "the purchase raises the food-quality level")
+	var rich := fresh.drop_food(Vector2(300.0, 250.0))
+	_expect(rich != null and rich.quality == 1,
+		"a manual drop uses the upgraded quality (got %d)" % (rich.quality if rich != null else -1))
+	fresh.food_quality = 2
+	var top := fresh.drop_food(Vector2(330.0, 250.0))
+	_expect(top != null and top.quality == 2, "quality level 2 drops a quality-2 pellet")
+	fresh.money = 500
+	fresh.star_potion_armed = true
+	var potion := fresh.drop_food(Vector2(360.0, 250.0))
+	_expect(potion != null and potion.quality == 3, "the star potion still overrides the level")
+	var after := fresh.drop_food(Vector2(390.0, 250.0))
+	_expect(after != null and after.quality == 2, "the next drop falls back to the bought quality")
+	fresh.tank.shutdown()
+	fresh.free()
+
+
 func _step(count: int) -> void:
 	sim.flush_backlog()
 	for i in count:
 		sim.advance(SimScript.TICK_MS)
+
+
+## The loss (`Tank::Update`'s defeat block, EV-0249): the tank collects its coins, latches once and
+## raises `defeated`; a fish, the virtual tank and a level that never started all keep it alive.
+func _test_defeat() -> void:
+	level.tank.shutdown()
+	level.game_over = false
+	level.completed = false
+	level.game_mode = 0
+	level.level_index = 1
+	level.money = 0
+	var deaths := [0]
+	level.defeated.connect(func() -> void: deaths[0] += 1)
+	_expect(not level.can_continue(), "an empty tank cannot continue")
+	level.tank.spawn_coin(1, Vector2(300.0, 300.0))
+	_step(1)
+	_expect(level.game_over, "the empty tank latches the loss on its next tick")
+	_expect(deaths[0] == 1, "`defeated` fires once (got %d)" % deaths[0])
+	_expect(level.money == 15, "the loss collects the coins first (money %d)" % level.money)
+	_expect(level.tank.coins().is_empty(), "no coin is left on the floor")
+	_step(5)
+	_expect(deaths[0] == 1, "and it does not fire again while the card is up (got %d)" % deaths[0])
+	level.game_over = false
+	level.spawn_guppy(Vector2(300.0, 200.0), 0)
+	_expect(level.can_continue(), "one fish is enough to continue")
+	_step(1)
+	_expect(not level.game_over, "a tank with a fish does not lose")
+	# `Tank::Update` skips the whole block on mode 5, and `Tank+0x2A5` gates it while no level runs.
+	level.tank.shutdown()
+	level.game_mode = LevelScript.MODE_VIRTUAL
+	level.game_over = false
+	_step(1)
+	_expect(not level.game_over, "the virtual tank never loses")
+	level.game_mode = 0
+	level.level_index = 0
+	level.game_over = false
+	_step(1)
+	_expect(not level.game_over, "a level that never started cannot lose")
+	level.tank.shutdown()
 
 
 func _expect(condition: bool, what: String) -> void:

@@ -4,7 +4,7 @@ extends SceneTree
 ##   Godot --path . --audio-driver Dummy --script res://tools/godot/shot_r8.gd -- tank=2 level=4 out=shot_r8_2_4.png
 ##   Godot --path . --audio-driver Dummy --script res://tools/godot/shot_r8.gd -- tank=1 level=2 stage=coins out=shot_r8_coins.png
 ##
-## Pass `--audio-driver Dummy`: a capture run needs no sound, and staying off WASAPI keeps the audio
+## Outputs are written under `docs/captures/`. Pass `--audio-driver Dummy`: a capture run needs no sound, and staying off WASAPI keeps the audio
 ## device (which Godot re-opens in a tight loop when Windows invalidates it - see the 2026-11-10
 ## godot.log) out of a debug run that can hang.
 
@@ -156,6 +156,6 @@ func _run() -> void:
 	print("R8: taking screenshot")
 	var shot := root.get_texture().get_image()
 	print("R8: saving ", out, " size=", shot.get_size())
-	shot.save_png("res://" + out)
+	shot.save_png("res://docs/captures/" + out)
 	print(out, " ", shot.get_size())
 	quit(0)

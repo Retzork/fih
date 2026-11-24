@@ -69,9 +69,10 @@ var pet_sources_busy := false
 ## A boss is alive: it freezes the wave clock and suppresses alien death Diamonds.
 var boss_alive := false
 ## `Tank+0x178`: draw a health bar over ordinary aliens (Cyrax always has one). The binary's writer
-## was not located (P2.9 §5), so the remake keeps it configurable and on by default; tank 5 still
-## suppresses the ordinary bars, per the recovered draw gate.
-var show_alien_health := true
+## was not located (P2.9 §5, Q-0058), so the remake keeps it configurable; it defaults **off** like
+## the shipped gate, whose ordinary bars only appeared with this flag armed (R62). Tank 5 still
+## suppresses the ordinary bars, and Cyrax bypasses the flag.
+var show_alien_health := false
 ## Pet slots (2 normally); the boss forces 10, which also sets the shot damage (P2.9 §10).
 var pet_capacity := 2
 ## A live boss freezes the wave clock.
@@ -344,6 +345,19 @@ func coins() -> Array[Coin]:
 
 func coin_count() -> int:
 	return coins().size()
+
+
+## Live fish, i.e. `Tank+0xA0`'s list - the one the defeat check tests (EV-0249). A fish leaves this
+## list the moment it dies: the corpse replaces it.
+func fish() -> Array[Fish]:
+	var found: Array[Fish] = []
+	for entity in entities:
+		if not is_instance_valid(entity) or entity.dead:
+			continue
+		var swimmer := entity as Fish
+		if swimmer != null:
+			found.append(swimmer)
+	return found
 
 
 func randi_below(limit: int) -> int:

@@ -12,6 +12,11 @@ assets_raw/
 shot_*.png
 shot_*.png.import
 
+# Probe/review captures under docs/captures stay local too; only .gdignore is tracked so Godot
+# skips the folder in a fresh checkout.
+docs/captures/*
+!docs/captures/.gdignore
+
 # Ghidra headless stderr dumps (the durable extract beside them in docs/evidence/ is the record)
 docs/evidence/*.err
 
@@ -21,3 +26,11 @@ tmp_*.import
 
 # Live player saves written by the game itself, not part of the tree
 userdata/
+
+# Art review artifacts (regenerable: tools/godot/export_review_assets.gd + tools/review/build_review.py)
+docs/review/
+.venv-review/
+
+# Python caches from the review-art tooling
+__pycache__/
+*.pyc

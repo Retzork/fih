@@ -192,7 +192,7 @@ func _fingerprint(image: Image, rect: Rect2i) -> int:
 
 
 func _save_now(path: String) -> void:
-	root.get_texture().get_image().save_png("res://" + path)
+	root.get_texture().get_image().save_png("res://docs/captures/" + path)
 	print(path, " saved")
 
 

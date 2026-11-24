@@ -53,17 +53,78 @@ func _test_hatch_and_bonus() -> void:
 	_expect(BonusScript.payout_for(1, 1, 200, 1, 0) == 10, "Time Trial pays money*5/100")
 
 
+## R60: the chooser is the shipped 24-button grid (`FUN_00527820`), not a text list. The geometry,
+## per-pet availability, the cap and the three-pet confirm gate are all checkable standalone.
 func _test_pets_selection() -> void:
 	var profile: Profile = ProfileScript.new()
-	profile.grant_pet(0)
-	profile.grant_pet(6)
+	for index in [0, 1, 6, 7, 8]:
+		profile.grant_pet(index)
 	var screen: PetsScreen = PetsScript.new()
 	screen.setup(profile)
 	_expect(profile.selected_pets.count(1) == 0, "opening Pets clears the pending selection")
-	# Standalone (no tree): the buttons exist only after _ready, so drive the write-back directly.
-	profile.selected_pets[6] = 1
-	_expect(profile.selected_pets[6] == 1, "the selection writes profile+0x5A")
+
+	# `FUN_00527820`: origin (0x19, 0x5E), cell 0x5A x 0x53, pitch 0x53, run breaks at 5/10/15/19/22.
+	# These four numbers are recovered and pinned as such.
+	_expect(PetsScript.ROW_COUNTS == [5, 5, 5, 4, 3, 2],
+		"24 buttons in the recovered 5-column stagger")
+	_expect(PetsScript.GRID_ORIGIN == Vector2(25.0, 94.0), "the grid origin is the recovered (0x19, 0x5E)")
+	_expect(PetsScript.CELL == Vector2(90.0, 83.0), "a button is the recovered 0x5A x 0x53")
+	_expect(PetsScript.ROW_PITCH == 83.0, "the row pitch is the recovered 0x53")
+	_expect(PetsScript.grid_rect(0).position == PetsScript.GRID_ORIGIN, "index 0 sits on the origin")
+	# A full five-button row has no indent, so it alone pins the recovered 0x5A column step.
+	_expect(PetsScript.grid_rect(1).position - PetsScript.grid_rect(0).position == Vector2(90.0, 0.0),
+		"a column is 0x5A wide")
+	_expect(PetsScript.grid_rect(5).position == PetsScript.GRID_ORIGIN + Vector2(0.0, 83.0),
+		"a row is 0x53 deep")
+	_expect(PetsScript.grid_rect(23).size == PetsScript.CELL, "every button is 0x5A x 0x53")
+	# The run breaks and the row pitch are recovered; the indent of a short row is the port's fit
+	# (Q-0063), so it is checked as its invariant - every run centred under the five-column width -
+	# and never as a pinned offset.
+	_expect(PetsScript.row_of(19) == 4 and PetsScript.row_of(22) == 5,
+		"the run breaks land at 19 and 22")
+	_expect(PetsScript.grid_rect(19).position.y == 426.0, "row 4 sits on the recovered 0x53 pitch")
+	_expect(_rows_centred(), "a short row is centred under the five-column run (port fit, Q-0063)")
+	_expect(PetsScript.content_height() > 480.0, "the grid is taller than the screen, so it scrolls")
+
+	# `FUN_00501410`: an unowned pet's widget is hidden, an owned one is a button.
+	_expect(screen.is_available(0), "an owned pet has a button")
+	_expect(not screen.is_available(2), "an unowned pet's button is hidden")
+
+	# The cap (`+0x130`, clamped to 4) and the three-pet confirm gate (`FUN_005289F0`).
+	_expect(PetsScript.button_tint(true) != PetsScript.button_tint(false),
+		"a selected pet's dome reads differently from an unselected one")
+	_expect(PetsScript.dome_frame(true) != PetsScript.dome_frame(false),
+		"a selected pet draws a different PETBUTTON face (the bright gold cell)")
+	_expect(screen.toggle(0) and screen.selected_count() == 1, "a click selects a pet")
+	_expect(screen.toggle(1) and screen.toggle(6) and screen.toggle(7), "four pets fit the cap")
+	_expect(not screen.toggle(8) and screen.selected_count() == 4, "the cap refuses a fifth pet")
+	_expect(screen.request_confirm(), "four pets continue without asking")
+	_expect(not screen.toggle(7) and not screen.toggle(6) and screen.selected_count() == 2,
+		"clicking a selected pet clears it")
+	_expect(not screen.request_confirm(), "fewer than three pets asks first")
+	_expect(PetsScript.ask_body(profile.pet_count()) == PetsScript.ASK_AT_CAP,
+		"with four or more owned the box asks about 'at least 3'")
+	_expect(PetsScript.ask_body(2) == PetsScript.ASK_FEW_PETS,
+		"with fewer than four owned the box names three pets")
+	screen.press_confirm()
+	_expect(profile.selected_pets.count(1) == 2, "the answered path writes profile+0x5A")
 	screen.queue_free()
+
+
+## The port fit of Q-0063: each row's run is centred under the five-column width. Any indent that
+## keeps the two gaps equal passes, so the 45-px-per-missing-column offset is not asserted as if it
+## were recovered.
+func _rows_centred() -> bool:
+	var span := float(PetsScript.MAX_COLUMNS) * PetsScript.CELL.x
+	for row in PetsScript.ROW_COUNTS.size():
+		var count: int = PetsScript.ROW_COUNTS[row]
+		var start := PetsScript.row_start(row)
+		var left := PetsScript.grid_rect(start).position.x - PetsScript.GRID_ORIGIN.x
+		var right := (PetsScript.GRID_ORIGIN.x + span
+			- PetsScript.grid_rect(start + count - 1).position.x - PetsScript.CELL.x)
+		if left < 0.0 or not is_equal_approx(left, right):
+			return false
+	return true
 
 
 ## The "PRESTO CHANGE-O" picker (`FUN_0054C6F0`, EV-0100/EV-0181): the roster binding, the recharge
