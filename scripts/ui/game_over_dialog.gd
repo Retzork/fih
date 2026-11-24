@@ -8,14 +8,20 @@ extends Control
 ## the title, "Oops!  All of your fish have died!" (0x5A86E8) as the body and "Click to Continue"
 ## (0x5A8360) as the single button. This is that card on the shared `DialogSkin` panel.
 ##
-## What the base does after the click is not recovered (Q-0065), so the card only emits
-## `continue_pressed` and `Main` takes the tank down its leave-tank path; the owner's own recovery of
-## the id-17 handler is what would replace that.
+## The card's id is recovered: every `FUN_0054B5B0` call site pushes its key, and the loss is id 17
+## (`0x11`), beside the rescue hint's id 16 (`0x10`) - EV-0252. `WinFishApp::NewDialog` (0x54B940)
+## does not branch on the key, so 17 names this card in the app's dialog map rather than a screen
+## class. What its button leads to is still open (Q-0065), so the card only emits `continue_pressed`
+## and `Main` takes the tank down its leave-tank path.
 ##
 ## The owner (`Main`) owns the tank's pause, exactly like `OptionsDialog`.
 
 signal continue_pressed
 
+## The base's message-dialog keys: `PUSH 0x11` at both loss call sites (0x5490B8 and the mode-5
+## branch that jumps there) and `PUSH 0x10` on the rescue hint (0x548ED5) - EV-0252.
+const DIALOG_ID := 17
+const RESCUE_DIALOG_ID := 16
 const TITLE_TEXT := "GAME OVER"
 const BODY_TEXT := "Oops!  All of your fish have died!"
 const BUTTON_TEXT := "Click to Continue"

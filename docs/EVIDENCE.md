@@ -6420,3 +6420,38 @@ behavior or specs; follow up with a binary observation entry.
   disc inside the bolted bezel beside pet 1's dark olive dome, and `shot_pets_selected.png` shows the
   same at 1:1 among five owned pets. The capture's inline checks now pin both the different face and
   the dimmed neighbour; `headless_profile_check` 77.
+
+### EV-0252 - the loss card is message-dialog id 17; the dialog factory ignores the key; the rescue gate is tank 1 / level 1 / one profile byte
+- Date: 2026-11-24 (owner: recover the failure path and the original's game-over screen id)
+- Type: observation (decompile/assembly/byte reads) plus a bounded negative
+- Source: `decompile 0x54B5B0` (wrapper), `0x54B5A0` (app slot), `0x47A9C0` (ShowDialog),
+  `0x54B940` (WinFishApp::NewDialog), `0x537B80` (rescue gate), `0x537E20` (level reset),
+  `0x54B2A0` (level-over predicate), `0x54CF40`/`0x54CFC0` (dialog close/unpause);
+  `function 0x547610` (`Tank::Update`, assembly 0x548E05..0x5490B8); raw byte reads at the seven
+  `FUN_0054B5B0` call sites and the WinFishApp vtable (0x5A8CCC)
+- (1) **The id.** Every `FUN_0054B5B0` call site ends `PUSH 0x1; PUSH <id>`: 0x540C3D pushes `0x13`,
+  0x54849D/0x548579/0x548664 `0x0E`, 0x548ED5 `0x10` (rescue), 0x5490B8 `0x11` (the loss, and the
+  mode-5 branch at 0x5490B2 jumps to the same call with `0x11`), 0x54EC33 `0x26`. The original's
+  game-over message is therefore **id 17 (0x11)** and the rescue hint **id 16 (0x10)**.
+- (2) **The key is not a screen selector.** `FUN_0054B5B0` calls the app's vtable `+0x120`
+  (WinFishApp 0x5A8CCC -> 0x54B5A0 -> `SexyAppBase::ShowDialog` 0x47A9C0), which removes any dialog
+  with that id, calls `NewDialog`, and registers the result; the wrapper then calls the dialog's
+  slot `+0x130` with `0x1e` (30). `WinFishApp::NewDialog` (0x54B940) never branches on the id: it
+  allocates one message dialog (`FUN_00530920`) and sizes it from the header text. There is no
+  separate game-over screen class; 17 is only the map key for this card.
+- (3) **The rescue gate.** `FUN_00537B80` returns true only when `Tank+0x3C8 == 1` (tank 1),
+  `Tank+0x3CC == 1` (level 1) and `*(profile + 0x59) == 0`, with `profile = *(*(tank+0x8C)+0x8B8)`
+  - the same object whose `+0x5A` is the 24-byte pet selection (`FUN_00552380` clears it), so `+0x59`
+  is the tutorial/hint byte immediately before that array. The block then builds the id-16 message
+  from 0x5A870C and 0x5A8728.
+- (4) **After the click (bounded negative).** The defeat block makes no screen or flow call: it
+  pauses (`FUN_0053DB80(1)`), optionally shows id 16, otherwise clears `Tank+0x4EE`, collects every
+  coin and shows id 17. It never calls `FUN_0054CBF0` (the level-advance/reset flow) and never calls
+  a screen change. Closing any dialog runs `FUN_0054CFC0` (`RemoveDialog`), which unpauses only when
+  no other modal is up (`FUN_0054CF40` tests `+0x810/+0x80C/+0x824/+0x828`). Searched and not found:
+  a listener branch keyed on 17, and a write of `Tank+0x2A5` (the level-over byte, set only by
+  `FUN_00537E20`) from the loss path. So what the original shows after "Click to Continue" remains
+  unread; the port keeps the leave-tank path as a named fit (D-0062, Q-0065).
+- (5) **The port.** `GameOverDialog.DIALOG_ID` is 17 and `RESCUE_DIALOG_ID` 16, and the card's three
+  strings are the recovered ones. `headless_level_check` 264 -> 267 pins the ids and the strings
+  beside the existing latch/collect/emit coverage; the windowed card is unchanged.

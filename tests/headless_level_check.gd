@@ -1017,6 +1017,13 @@ func _test_defeat() -> void:
 	level.game_mode = 0
 	level.level_index = 1
 	level.money = 0
+	# The card is the base's id-17 message, with its three shipped strings (EV-0252).
+	_expect(GameOverDialog.DIALOG_ID == 17, "the loss card is the base's id-17 dialog")
+	_expect(GameOverDialog.RESCUE_DIALOG_ID == 16, "the rescue hint is id 16, a separate message")
+	_expect(GameOverDialog.TITLE_TEXT == "GAME OVER"
+		and GameOverDialog.BODY_TEXT == "Oops!  All of your fish have died!"
+		and GameOverDialog.BUTTON_TEXT == "Click to Continue",
+		"the card carries the recovered title, body and button strings")
 	var deaths := [0]
 	level.defeated.connect(func() -> void: deaths[0] += 1)
 	_expect(not level.can_continue(), "an empty tank cannot continue")

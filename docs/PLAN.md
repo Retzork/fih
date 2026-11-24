@@ -4,14 +4,19 @@ Last updated: 2026-11-24 (review pass - **R65, R57 and R60 fixed**: the loss is 
 "GAME OVER" card (title / "Oops!  All of your fish have died!" / "Click to Continue") that
 `Tank::CanContinue` raises once the tank has no living fish, with the coins collected first, and the
 port no longer invents a screen for it; a collected coin throws its recovered `rand%3+3` pickup burst
-(kind 0x11 `rand%2+2`) so a pickup reads; the pet chooser is the shipped 24-button grid with the
+(kind 0x11 `rand%2+2`) so a pickup reads; the loss card is the base's message id 17 (rescue 16, one generic dialog class for every id);
+the pet chooser is the shipped 24-button grid with the
 four-pet cap, and a selection now draws `PETBUTTON`'s bright gold face (clipped to the dome
 silhouette) plus its ring while every other dome is dimmed (the `PETBUTTONHOLE`/`PETBUTTONREFLECT`
 layers are gone - those ids are the sheets' alpha companions, not art). R60's per-row indent stops being asserted as recovered and is now pinned only as its centring invariant; R56 is covered by the burst (the
 expiries stay pinned to P2.5 §5) and R29's two hint deviations are confirmed fixed in R42. New
-evidence EV-0246..EV-0251; D-0061/D-0062 and Q-0063/Q-0065 carry the port fits and the open handler.
-All 26 script suites pass, **1,723 assertions**, plus the 139-assertion integration scene = 27 checks
-/ 1,862; the 400-frame boot exits 0.)
+evidence EV-0246..EV-0252; D-0061/D-0062 and Q-0063/Q-0065 carry the port fits and the open handler.
+All 26 script suites pass, **1,726 assertions**, plus the 139-assertion integration scene = 27 checks
+/ 1,869; the 400-frame boot exits 0.)
+A scene gallery (`docs/review/scenes.html`, one labelled capture per implemented screen from a
+single live run) now sits beside `REVIEW.md`; regenerate it with `tools/godot/scene_gallery.gd` and
+`tools/review/build_scenes.py`.
+
 
 
 Last updated: 2026-11-22 (polish triage + Phase 2 reconciliation - R52-R66 folded in from

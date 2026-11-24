@@ -2551,19 +2551,27 @@ fit (-4,0).
 - Only the fish list (`Tank+0xA0`) is identified among the four inputs, so `Level.can_continue()` tests
   fish alone and the loss stays conservative: it can fire only on a genuinely empty tank. Which
   entity lists `+0xA4`/`+0xD0` are and what the four `FUN_004E3Exx` globals test is Q-0065.
-- "Click to Continue" takes the leave-tank path (save, free, menu). The base's id-17 handler is not
-  recovered (Q-0065), and a modal that cannot be dismissed would strand the player, so the port picks
-  the one exit the code already has; when the handler is read this is the line to change.
+- "Click to Continue" takes the leave-tank path (save, free, menu). The card's id is recovered as the
+  base's 17 (EV-0252), but what its button leads to is a bounded negative (Q-0065); a modal that
+  cannot be dismissed would strand the player, so the port picks the one exit the code already has.
+  When the handler is read this is the line to change.
 - The base's rescue branch ("YOUR LAST FISH HAS DIED! ... we'll give you another fish") sits in the
   same block but is gated by a hint flag inside `FUN_00537B80`, so the port does not fake it: R65
   covers the loss only, and the rescue is part of Q-0065.
 
-### Q-0065 - the loss card's handler, its rescue branch and the unread half of `CanContinue`
-- OPEN (2026-11-24, EV-0249). Four things around the loss are still unread:
-  1. what `FUN_0054B5B0`'s id-17 handler actually does when "Click to Continue" is pressed (restart the
-     level, back to the menu, or the score card) - the port uses the leave-tank path (D-0062);
-  2. `FUN_00537B80`, the predicate that offers the "we'll give you another fish" rescue, and the hint
-     state it reads - likely the same profile hint flags the loading-screen tips use, unlocated;
-  3. what `Tank+0xA4` and `Tank+0xD0` list, so the port's `can_continue()` can stop being fish-only;
-  4. what `FUN_004E3ED0/3F00/3F30/3F60` test - four globals that can each keep an otherwise empty tank
-     alive.
+### Q-0065 - what the loss card's button does, and the unread inputs of `CanContinue`
+- OPEN (2026-11-24, EV-0249/EV-0252). Recovered since EV-0249: the card is message-dialog id 17
+  (`0x11`), the rescue hint id 16 (`0x10`), and `WinFishApp::NewDialog` never branches on the key -
+  one generic message dialog serves every id, so there is no separate game-over screen class. The
+  rescue gate is `Tank+0x3C8 == 1 && Tank+0x3CC == 1 && profile+0x59 == 0` (`FUN_00537B80`), with
+  `+0x59` the hint byte before the profile's pet-selection array.
+  Still unread:
+  1. what the id-17 button leads to. The defeat block makes no screen/flow call, and closing a
+     dialog only unpauses (`FUN_0054CFC0` -> `FUN_0053DB80(0)`); no listener branch keyed on 17 and
+     no write of `Tank+0x2A5` from the block were found. This is the bounded negative; the port
+     takes the leave-tank path (D-0062);
+  2. the rescue itself: the block builds the id-16 message but contains no fish-spawn call, so which
+     branch gives the extra fish (presumably the dialog's button) is unread, and the port does not
+     fake it;
+  3. what `Tank+0xA4`/`+0xD0` list and what the four `FUN_004E3Exx` globals test, so
+     `Level.can_continue()` stays fish-only.

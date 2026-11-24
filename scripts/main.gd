@@ -199,8 +199,9 @@ func _close_options() -> void:
 
 
 ## The tank lost: `Level._check_defeat` has already collected every coin (EV-0249), so this only shows
-## the recovered card and holds the tank behind it, the same way Options holds it. The click takes the
-## leave-tank path below - the base's own id-17 handler is not recovered (Q-0065).
+## the recovered card and holds the tank behind it, the same way Options holds it. The card's id is
+## the base's 17 (EV-0252), but what its button leads to is still open (Q-0065), so the click takes
+## the leave-tank path below as a named fit.
 func _on_defeated() -> void:
 	if _level == null or _game_over_dialog != null:
 		return

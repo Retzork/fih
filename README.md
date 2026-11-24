@@ -13,7 +13,7 @@ saves and the original art/audio extracted from the owned copy. It is **not fini
 owner's playtest list in [`docs/REVIEW.md`](docs/REVIEW.md) still has open rows, and the suites
 prove modules, not the assembled feel.
 
-> **Status date: 2026-11-24.** 27 headless checks green, **1,862 assertions**; the 400-frame boot
+> **Status date: 2026-11-24.** 27 headless checks green, **1,869 assertions**; the 400-frame boot
 > exits 0. See [Status at a glance](#status-at-a-glance) and [What is still open](#what-is-still-open).
 
 ---
@@ -30,7 +30,7 @@ prove modules, not the assembled feel.
 | **P4 — Godot implementation** | **In review** (5/14 tasks `[x]`: architecture, content registry, entities, boss, modes). The rest is implemented but kept `[~]` until the assembled game passes the playtest |
 | **P5 — validation/polish** | **0/5, withdrawn** pending the playtest (`docs/P5-VALIDATION.md`): constant sheet, side-by-side and packaging stay reference-only |
 | **Playtest review (R-list)** | **R1-R68**: 61 rows closed, **R9 partial** (4 pet guards), **R8** captured but awaiting the owner's live playtest, and **5 open**: R52, R53, R58, R61, R64 |
-| **Verification** | **27 checks / 1,862 assertions** — 26 script suites (1,723) + the scene-backed integration suite (139); all re-run green on 2026-11-24 |
+| **Verification** | **27 checks / 1,869 assertions** — 26 script suites (1,726) + the scene-backed integration suite (139); all re-run green on 2026-11-24 |
 
 The evidence side currently runs to **`EV-0251`**, with the settled decisions (`D-`) and open
 questions (`Q-`) registers alongside. `docs/PLAN.md` is the source of truth for task status;
@@ -228,8 +228,8 @@ mounts the selector. `tools/godot/screenshot.gd` captures menu/level/store to `d
 ### 3. Run the checks
 
 Every suite is a standalone headless run that exits **0 on pass** and prints its assertion count.
-Re-run on 2026-11-24: **1,723 assertions across 26 script suites**, plus the 139-assertion
-integration scene = **27 checks / 1,862 assertions**.
+Re-run on 2026-11-24: **1,726 assertions across 26 script suites**, plus the 139-assertion
+integration scene = **27 checks / 1,869 assertions**.
 
 | Suite | Covers | Asserts |
 | --- | --- | --- |

@@ -1,11 +1,19 @@
 # Insaniquarium Deluxe -> Godot 4.7 remake - documentation index
 
-**Verification (2026-11-24):** all **27 headless checks** pass on this checkout - **1,862
-assertions** (26 `--script` suites at 1,723 plus the 139-assertion scene-backed integration suite);
+**Verification (2026-11-24):** all **27 headless checks** pass on this checkout - **1,869
+assertions** (26 `--script` suites at 1,726 plus the 139-assertion scene-backed integration suite);
 the 400-frame boot exits 0. The capability and implementation-fidelity assessment, export-risk
 findings and recommended order are in [AUDIT.md](AUDIT.md). **Review reset (2026-11-08):** the
 completion pass was revoked by the owner after a playtest - the suites prove modules, not the
 assembled game. [`REVIEW.md`](REVIEW.md) is the current work list (R1-R68).
+
+**Scene gallery (2026-11-24):** [`review/scenes.html`](review/scenes.html) is one page with every
+implemented screen and state - menus, tank levels, the shop, the between-level cards, the loss card,
+the tank's dialogs and the modes - captured in a single live run and labelled with that run's own
+values (tank, money, fish, open dialog, paused). It embeds the captures, so the page is a single
+self-contained file. Regenerate after a change with
+`Godot --path . --audio-driver Dummy --script res://tools/godot/scene_gallery.gd`, then
+`python tools/review/build_scenes.py`. Last run: 19 captures, 0 failures.
 
 **Handover status: Phase 2 closed (2026-11-02; P2.5/P2.6 closed 2026-11-22).** Phase 0, Phase 1 and
 Phase 3 are complete; Phase 2 is 16/18 with **every technical system decoded** and `SPECS.md` written -
@@ -47,7 +55,7 @@ in-tank Options dialog on the shipped art and wired the shared pause gate (`D-00
 | P1 target identity | Complete (10/10) |
 | P2 reverse engineering | Closed (16/18): P2.1-P2.15, P2.18 `[x]`; P2.16/P2.17 optional |
 | P3 assets | Complete (8/8): 129 `SpriteFrames`, audio/music/fonts regenerate into `assets_raw/` |
-| P4 Godot implementation | In review (5/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser sparks, four selectable modes + Sandbox plumbing; 27 checks green (1,862 assertions: 1,723 across 26 script suites + the 139-assertion integration scene), but R9 (pet guards), the 5 open rows (R52/R53/R58/R61/R64) and R8's live playtest keep the assembled game unverified |
+| P4 Godot implementation | In review (5/14): playable level, store + roller, Hatch/Pets/Bonus, selector + Options/Help/Hall, audio + cues, saves + golden fixtures, pets (all steer, slot-81 bodies), aliens, Cyrax, projectiles + Larva, laser sparks, four selectable modes + Sandbox plumbing; 27 checks green (1,869 assertions: 1,726 across 26 script suites + the 139-assertion integration scene), but R9 (pet guards), the 5 open rows (R52/R53/R58/R61/R64) and R8's live playtest keep the assembled game unverified |
 | P5 validation / polish | In review (0/5): `P5-VALIDATION.md` withdrawn pending R8/R9 |
 
 - **2026-11-15 in-tank Options (D-0015/D-0016, EV-0192):** the tank MENU opens the shipped-art
